@@ -1,7 +1,7 @@
 /*
  * sydbox/config.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2015, 2021 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2015, 2018, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 

@@ -341,6 +341,22 @@ AM_CONDITIONAL([WANT_SECCOMP], test x"$WANT_SECCOMP" = x"yes")
 AC_DEFINE_UNQUOTED([SYDBOX_HAVE_SECCOMP], [$SYDBOX_HAVE_SECCOMP], [Enable seccomp support])
 AC_SUBST([SYDBOX_HAVE_SECCOMP])
 
+AC_MSG_CHECKING([for dry run])
+AC_ARG_WITH([dry-run],
+	AS_HELP_STRING([--without-dry-run],
+		       ["Avoid linking event dumper into sydbox binary"]),
+	[WANT_DUMP_BUILTIN="$withval"],
+	[WANT_DUMP_BUILTIN=yes])
+if test x"$WANT_DUMP_BUILTIN" = x"yes"; then
+	SYDBOX_WANT_DUMP_BUILTIN=1
+else
+	SYDBOX_WANT_DUMP_BUILTIN=0
+fi
+AC_MSG_RESULT([$WANT_DUMP_BUILTIN])
+AM_CONDITIONAL([SYDBOX_HAVE_DUMP_BUILTIN], test x"$WANT_DUMP_BUILTIN" = x"yes")
+AC_DEFINE_UNQUOTED([SYDBOX_HAVE_DUMP_BUILTIN], [$SYDBOX_WANT_DUMP_BUILTIN], [Enable builtin event dumper])
+AC_SUBST([SYDBOX_WANT_DUMP_BUILTIN])
+
 dnl extra CFLAGS
 SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wno-unused-parameter"
 for flag in $SYDBOX_WANTED_CFLAGS ; do

@@ -171,6 +171,12 @@
               system calls for magic commands as well.
             </para>
           </note>
+
+          <note>
+            <para>
+              Inspection (dry run, sandbox mode = dump) behaves identical to off for magic <function>stat</function><manvolnum>2</manvolnum>
+            </para>
+          </note>
         </para>
       </listitem>
     </itemizedlist>
@@ -924,13 +930,23 @@
       <listitem><para>Network sandboxing</para></listitem>
     </orderedlist>
 
-    <para>Sandboxing may have three states:</para>
+    <para>Sandboxing may have four states:</para>
 
     <variablelist>
       <varlistentry>
         <term><varname>off</varname></term>
         <listitem>
           <para>Sandboxing is off, none of the relevant system calls are checked and all access is allowed.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>dump</varname></term>
+        <listitem>
+          <para>Sandboxing is off, none of the relevant system calls are checked and all access is allowed.
+            In addition to the off state, inspection is written into a dump file in JSON lines for inspection
+            (with shoebox or otherwise).
+          </para>
         </listitem>
       </varlistentry>
 
@@ -1289,6 +1305,11 @@
       Report bugs by direct mail to <email>alip@exherbo.org</email>
     </para>
 
+    <para>
+      Refer to BUGS on http://git.exherbo.org/sydbox-1.git/tree/BUGS
+      for more information on providing information with bug reports.
+    </para>
+
     <note>
       <para>Attaching poems encourages consideration tremendously.</para>
     </note>
@@ -1298,8 +1319,11 @@
     <title>Security</title>
 
     <para>
-      Sydbox is not designed to be used as a security measure. There are many ways to circumvent the sandbox.
-      Use this for diagnosing or debugging.
+      Sydbox is not an adequate security measure and suffers from TOCTOU attacks even with seccomp due to the use of
+      <constant>SECCOMP_RET_TRACE</constant>, see:
+      <citerefentry><refentrytitle>seccomp</refentrytitle><manvolnum>2</manvolnum></citerefentry>. Use this for
+      diagnosing or debugging or use other means to prevent such attack surfaces (chroot, namespaces, noexec, nosuid,
+      ymmv).
     </para>
   </refsect1>
 
@@ -1308,7 +1332,8 @@
     <para>
       <citerefentry><refentrytitle>sydfmt</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
       <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>,
-      <citerefentry><refentrytitle>strace</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+      <citerefentry><refentrytitle>seccomp</refentrytitle><manvolnum>2</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>strace</refentrytitle><manvolnum>1</manvolnum></citerefentry>.
     </para>
   </refsect1>
 

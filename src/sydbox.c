@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2020, 2021 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2018, 2020, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -81,6 +81,11 @@ static void about(void)
 	puts(")");
 
 	printf("Options:");
+#if SYDBOX_HAVE_DUMP_BUILTIN
+	printf(" dump:yes");
+#else
+	printf(" dump:no");
+#endif
 #if SYDBOX_HAVE_SECCOMP
 	printf(" seccomp:yes");
 #else
@@ -99,6 +104,7 @@ static void usage(FILE *outfp, int code)
 usage: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
 -h          -- Show usage and exit\n\
 -v          -- Show version and exit\n\
+-d          -- Inspect only, dry run, shorthand for dump mode\n\
 -c pathspec -- path spec to the configuration file, may be repeated\n\
 -m magic    -- run a magic command during init, may be repeated\n\
 -E var=val  -- put var=val in the environment for command, may be repeated\n\
@@ -1570,6 +1576,7 @@ int main(int argc, char **argv)
 	char *profile_name;
 	struct option long_options[] = {
 		{"help",	no_argument,		NULL,	'h'},
+		{"dry-run",	no_argument,		NULL,	'd'},
 		{"version",	no_argument,		NULL,	'v'},
 		{"profile",	required_argument,	NULL,	0},
 		{NULL,		0,		NULL,	0},
@@ -1582,7 +1589,7 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "hvc:m:E:", long_options, &options_index)) != EOF) {
+	while ((opt = getopt_long(argc, argv, "hdvc:m:E:", long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
 			if (streq(long_options[options_index].name, "profile")) {
@@ -1597,6 +1604,15 @@ int main(int argc, char **argv)
 			usage(stderr, 1);
 		case 'h':
 			usage(stdout, 0);
+#if SYDBOX_HAVE_DUMP_BUILTIN
+		case 'd':
+			sydbox->config.violation_decision = VIOLATION_NOOP;
+			magic_set_sandbox_all("dump", NULL);
+			break;
+#else
+		case 'd':
+			usage(stderr, 1);
+#endif
 		case 'v':
 			about();
 			return 0;

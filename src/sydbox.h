@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox.h
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2018, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -77,6 +77,7 @@ enum sandbox_mode {
 };
 static const char *const sandbox_mode_table[] = {
 	[SANDBOX_OFF] = "off",
+	[SANDBOX_DUMP] = "dump",
 	[SANDBOX_DENY] = "deny",
 	[SANDBOX_ALLOW] = "allow",
 };
@@ -95,11 +96,13 @@ static const char *const lock_state_table[] = {
 DEFINE_STRING_TABLE_LOOKUP(lock_state, int)
 
 enum violation_decision {
+	VIOLATION_NOOP,
 	VIOLATION_DENY,
 	VIOLATION_KILL,
 	VIOLATION_KILLALL,
 };
 static const char *const violation_decision_table[] = {
+	[VIOLATION_NOOP] = "noop",
 	[VIOLATION_DENY] = "deny",
 	[VIOLATION_KILL] = "kill",
 	[VIOLATION_KILLALL] = "killall",
@@ -561,6 +564,12 @@ typedef struct sysinfo sysinfo_t;
 /* Global variables */
 extern sydbox_t *sydbox;
 
+#if SYDBOX_HAVE_DUMP_BUILTIN
+# define inspecting() ((sydbox)->config.violation_decision == VIOLATION_NOOP)
+#else
+# define inspecting() (0)
+#endif
+
 #define entering(p) (!((p)->flags & SYD_IN_SYSCALL))
 #define exiting(p) ((p)->flags & SYD_IN_SYSCALL)
 #define sysdeny(p) ((p)->retval)
@@ -569,6 +578,7 @@ extern sydbox_t *sydbox;
 #define sandbox_allow(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_ALLOW))
 #define sandbox_deny(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_DENY))
 #define sandbox_off(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_OFF))
+#define sandbox_dry(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_DUMP))
 
 #define sandbox_allow_exec(p) (sandbox_allow((p), exec))
 #define sandbox_allow_read(p) (sandbox_allow((p), read))
@@ -581,6 +591,12 @@ extern sydbox_t *sydbox;
 #define sandbox_off_write(p) (sandbox_off((p), write))
 #define sandbox_off_network(p) (sandbox_off((p), network))
 #define sandbox_off_file(p) (sandbox_off_exec((p)) && sandbox_off_read((p)) && sandbox_off_write((p)))
+
+#define sandbox_dry_exec(p) (sandbox_dry((p), exec))
+#define sandbox_dry_read(p) (sandbox_dry((p), read))
+#define sandbox_dry_write(p) (sandbox_dry((p), write))
+#define sandbox_dry_network(p) (sandbox_dry((p), network))
+#define sandbox_dry_file(p) (sandbox_dry_exec((p)) && sandbox_dry_read((p)) && sandbox_dry_write((p)))
 
 #define sandbox_deny_exec(p) (sandbox_deny((p), exec))
 #define sandbox_deny_read(p) (sandbox_deny((p), read))
@@ -811,6 +827,7 @@ int magic_set_sandbox_exec(const void *val, syd_process_t *current);
 int magic_set_sandbox_read(const void *val, syd_process_t *current);
 int magic_set_sandbox_write(const void *val, syd_process_t *current);
 int magic_set_sandbox_network(const void *val, syd_process_t *current);
+int magic_set_sandbox_all(const void *val, syd_process_t *current);
 int magic_append_exec_kill_if_match(const void *val, syd_process_t *current);
 int magic_remove_exec_kill_if_match(const void *val, syd_process_t *current);
 int magic_append_exec_resume_if_match(const void *val, syd_process_t *current);

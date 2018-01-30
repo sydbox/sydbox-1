@@ -119,11 +119,11 @@ if WANT_DEBUG
 sydbox_LDADD+= $(libunwind_LIBS)
 endif
 
-DUMP_SRCS= $(sydbox_SOURCES) dump.c
+DUMP_SRCS= dump.c
 DUMP_COMPILER_FLAGS= $(AM_CFLAGS) -O0 -g -ggdb3
 DUMP_PREPROCESSOR_FLAGS= -DSYDBOX_DUMP
 DUMP_LINKER_LIBRARY_ADD= $(sydbox_LIBADD)
-DUMP_LINKER_ADD= $(sydbox_LDADD)
+DUMP_LINKER_ADD=
 DUMP_LINKER_FLAGS= \
 	  -Wl,--wrap=pink_trace_resume \
 	  -Wl,--wrap=pink_trace_kill \
@@ -143,7 +143,12 @@ DUMP_LINKER_FLAGS= \
 	  -Wl,--wrap=pink_trace_seize \
 	  -Wl,--wrap=pink_trace_interrupt \
 	  -Wl,--wrap=pink_trace_listen \
-	  -Wl,--wrap=pink_write_syscall
+	  -Wl,--wrap=pink_write_syscall \
+	  -Wl,--wrap=pink_read_syscall \
+	  -Wl,--wrap=pink_read_argument \
+	  -Wl,--wrap=pink_read_vm_data_nul \
+	  -Wl,--wrap=pink_read_socket_argument \
+	  -Wl,--wrap=pink_read_socket_address
 
 syddir=$(libexecdir)/$(PACKAGE)/dump
 syd_SCRIPTS= shoebox
@@ -158,11 +163,28 @@ shoebox: shoebox.in
 CLEANFILES+= shoebox
 EXTRA_DIST+= shoebox.in
 
-sydbox_dump_SOURCES= $(DUMP_SRCS)
+sydbox_dump_SOURCES=
 sydbox_dump_CFLAGS= $(DUMP_COMPILER_FLAGS)
-sydbox_dump_CPPFLAGS= $(DUMP_PREPROCESSOR_FLAGS)
-sydbox_dump_LDADD= $(DUMP_LINKER_ADD)
-sydbox_dump_LDFLAGS= $(DUMP_LINKER_FLAGS)
+sydbox_dump_CPPFLAGS=
+sydbox_dump_LDADD=
+sydbox_dump_LDFLAGS=
+
+if SYDBOX_HAVE_DUMP_BUILTIN
+sydbox_SOURCES+= $(DUMP_SRCS)
+sydbox_CPPFLAGS+= $(DUMP_PREPROCESSOR_FLAGS)
+sydbox_LDADD+= $(DUMP_LINKER_ADD)
+sydbox_LDFLAGS+= $(DUMP_LINKER_FLAGS)
+sydbox_dump_SOURCES+= $(sydbox_SOURCES)
+sydbox_dump_CPPFLAGS+= $(sydbox_CPPFLAGS)
+sydbox_dump_LDADD+= $(sydbox_LDADD)
+sydbox_dump_LDFLAGS+= $(DUMP_LINKER_FLAGS)
+else
+sydbox_dump_SOURCES+= $(sydbox_SOURCES) $(DUMP_SRCS)
+sydbox_dump_CFLAGS+= $(DUMP_COMPILER_FLAGS)
+sydbox_dump_CPPFLAGS+= $(DUMP_PREPROCESSOR_FLAGS)
+sydbox_dump_LDADD+= $(sydbox_LDADD) $(DUMP_LINKER_ADD)
+sydbox_dump_LDFLAGS+= $(DUMP_LINKER_FLAGS)
+endif
 
 # Convenience for users, more ugliness for meself...
 # PATH=${syddir} cave resolve ...

@@ -3,7 +3,7 @@
  *
  * Event dumper using JSON lines
  *
- * Copyright (c) 2014, 2021 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2014, 2018, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -23,6 +23,7 @@
 #include <sched.h>
 #include <signal.h>
 #include <time.h>
+#include <arpa/inet.h>
 
 #include "dump.h"
 #include "path.h"
@@ -32,6 +33,7 @@
 #define J(s)		"\""#s"\":"
 #define J_BOOL(b)	(b) ? "true" : "false"
 
+unsigned long dump_inspect = INSPECT_DEFAULT;
 static FILE *fp;
 static char pathdump[PATH_MAX];
 static int nodump = -1;
@@ -74,6 +76,25 @@ pink_wrap(trace_seize(pid_t pid, int options), trace_seize, int, pid, options)
 pink_wrap(trace_interrupt(pid_t pid), trace_interrupt, int, pid)
 pink_wrap(trace_listen(pid_t pid), trace_listen, int, pid)
 pink_wrap(write_syscall(pid_t pid, void *regset, long sysnum), write_syscall, int, pid, regset, sysnum)
+/* note on pointers below, dump is always called after function call */
+pink_wrap(read_syscall(pid_t pid, void *regset, long *sysnum),
+	  read_syscall, int,
+	  pid, regset, sysnum)
+pink_wrap(read_argument(pid_t pid, void *regset, unsigned arg_index, long *argval),
+	  read_argument, int,
+	  pid, regset, arg_index, argval)
+pink_wrap(read_vm_data_nul(pid_t pid, void *regset, long addr, char *dest, size_t len),
+	  read_vm_data_nul, ssize_t,
+	  pid, regset, addr, dest, len)
+pink_wrap(read_socket_argument(pid_t pid, void *regset, bool decode_socketcall,
+			       unsigned arg_index, unsigned long *argval),
+			       read_socket_argument, int,
+			       pid, regset, decode_socketcall, arg_index, argval)
+pink_wrap(read_socket_address(pid_t pid, void *regset,
+			      bool decode_socketcall, unsigned arg_index,
+			      int *fd, struct pink_sockaddr *sockaddr),
+	  read_socket_address, int,
+	  pid, regset, decode_socketcall, arg_index, fd, sockaddr)
 
 static void dump_flush(void)
 {
@@ -557,10 +578,17 @@ static void dump_pink(const char *name, int retval, int save_errno, pid_t pid, v
 
 		fprintf(fp, ","J(options));
 		dump_ptrace_options(options);
-	} else if (streq(name, "write_syscall")) {
+	} else if (streq(name, "read_syscall") || streq(name, "write_syscall")) {
 		const char *sysname;
-		va_arg(ap, struct pink_regset *);
-		long sysnum = va_arg(ap, long);
+		va_arg(ap, struct pink_regset *); /* regset is unused */
+		long sysnum;
+
+		if (streq(name, "read_syscall")) {
+			long *sysnum_ptr = va_arg(ap, long *);
+			sysnum = (save_errno == 0 && sysnum_ptr) ? *sysnum_ptr : 0;
+		} else { /* streq(name, "write_syscall") */
+			sysnum = va_arg(ap, long);
+		}
 		syd_process_t *p = lookup_process(pid);
 
 		fprintf(fp, ","J(sysnum)"%ld", sysnum);
@@ -571,6 +599,73 @@ static void dump_pink(const char *name, int retval, int save_errno, pid_t pid, v
 				fprintf(fp, "\"%s\"", sysname);
 			else
 				dump_null();
+		} else {
+			dump_null();
+		}
+	} else if (streq(name, "read_argument")) {
+		va_arg(ap, struct pink_regset *); /* regset is unused */
+		unsigned arg_index = va_arg(ap, unsigned);
+		long *argval = va_arg(ap, long *);
+		/* syd_process_t *p = lookup_process(pid); */
+
+		fprintf(fp, ","J(arg_idx)"%u"
+			    ","J(arg_val)"%ld",
+			    arg_index,
+			    save_errno == 0 ? *argval : -1);
+	} else if (streq(name, "read_vm_data_nul")) {
+		va_arg(ap, struct pink_regset *); /* regset is unused */
+		long addr = va_arg(ap, long);
+		const char *dest = va_arg(ap, char *);
+		size_t len = va_arg(ap, size_t);
+
+		fprintf(fp, ","J(addr)"%ld,"J(dest)"\"%s\","J(len)"%zu",
+			addr, dest, len);
+	} else if (streq(name, "read_socket_address")) {
+		va_arg(ap, struct pink_regset *); /* regset is unused */
+		bool decode_socketcall = !!va_arg(ap, int);
+		unsigned arg_index = va_arg(ap, unsigned);
+		int *fd = va_arg(ap, int *);
+		struct pink_sockaddr *paddr = va_arg(ap, struct pink_sockaddr *);
+
+		bool abstract;
+		const char *family;
+		char ip[64] = { '\0' }; /* FIXME: duplication with
+				sandbox.c:box_report_violation_sock */
+
+		fprintf(fp, ","J(decode_socketcall)"%s"
+			    ","J(arg_idx)"%u"
+			    ","J(fd)"%d",
+			    J_BOOL(decode_socketcall),
+			    arg_index,
+			    (save_errno == 0 && fd) ? *fd : -1);
+
+		if (save_errno == 0) {
+			switch (paddr->family) {
+			case AF_UNIX:
+				abstract = path_abstract(paddr->u.sa_un.sun_path);
+				fprintf(fp, ","J(addr)"\"%s%s\"",
+					abstract ? "unix-abstract:" : "unix:",
+					abstract ? paddr->u.sa_un.sun_path + 1
+						 : paddr->u.sa_un.sun_path);
+				break;
+			case AF_INET:
+				inet_ntop(AF_INET, &paddr->u.sa_in.sin_addr, ip, sizeof(ip));
+				fprintf(fp, ","J(addr)"\"inet:%s:%d\"",
+					ip, ntohs(paddr->u.sa_in.sin_port));
+				break;
+#if SYDBOX_HAVE_IPV6
+			case AF_INET6:
+				inet_ntop(AF_INET6, &paddr->u.sa6.sin6_addr, ip, sizeof(ip));
+				fprintf(fp, ","J(addr)"\"inet6:%s:%d\"",
+					ip, ntohs(paddr->u.sa6.sin6_port));
+				break;
+#endif
+			default:
+				family = pink_name_socket_family(paddr->family);
+				fprintf(fp, ","J(addr)"\"%s:?\"",
+					family ? family : "AF_???");
+				break;
+			}
 		} else {
 			dump_null();
 		}
@@ -745,6 +840,9 @@ void dump(enum dump what, ...)
 	va_list ap;
 	time_t now;
 
+	if (!inspecting())
+		return;
+
 	if (dump_init() != 0)
 		return;
 	if (what == DUMP_INIT)
@@ -757,6 +855,9 @@ void dump(enum dump what, ...)
 		dump_flush();
 		return;
 	}
+
+	if (!inspected_i(what))
+		return;
 
 	time(&now);
 	va_start(ap, what);
@@ -836,6 +937,12 @@ void dump(enum dump what, ...)
 		fprintf(fp, "}");
 	} else if (what == DUMP_PINK) {
 		const char *name = va_arg(ap, const char *);
+
+		if (!strncmp(name, "trace_", 6) && !inspected_f(INSPECT_PINK_TRACE))
+			goto out;
+		if (!strncmp(name, "read_", 5) && !inspected_f(INSPECT_PINK_READ))
+			goto out;
+
 		int retval = va_arg(ap, int);
 		int save_errno = va_arg(ap, int);
 		pid_t pid = va_arg(ap, pid_t);
@@ -854,6 +961,41 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "}");
 #if 0
+	} else if (what == DUMP_SYSCALL) {
+		syd_process_t *p = va_arg(ap, syd_process_t *);
+		const char *name = va_arg(ap, const char *);
+		const char *rmsg = va_arg(ap, const char *);
+		int retval = va_arg(ap, int);
+		int narg = va_arg(ap, int);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(time)"%llu,"
+			J(event)"%u,"
+			J(event_name)"\"%s\","
+			J(pid)"%d",
+			id++, (unsigned long long)now,
+			DUMP_SYSCALL, "syscall", p->pid);
+
+		fprintf(fp, ","J(process));
+		dump_process(p->pid); /* FIXME: use p directly!, stupid */
+
+		fprintf(fp, ","J(syscall));
+		fprintf(fp, "{"
+			J(name)"\"%s\","
+			J(rval)"%d,"
+			J(stat)"\"%s\","
+			J(argv)"[",
+			name, retval, rmsg);
+
+		for (int i = 0; i < narg; i++) {
+			fprintf(fp, "\"%s\"", va_arg(ap, const char *));
+			if (i + 1 == narg)
+				fputc(',', fp);
+		}
+		fprintf(fp, "]}");
+
+		fprintf(fp, "}");
 	} else if (what == DUMP_PTRACE_EXECVE) {
 		pid_t pid = va_arg(ap, pid_t);
 		long old_tid = va_arg(ap, long);
@@ -977,6 +1119,7 @@ void dump(enum dump what, ...)
 		abort();
 	}
 
-	va_end(ap);
 	dump_cycle();
+out:
+	va_end(ap);
 }

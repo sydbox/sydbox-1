@@ -1,7 +1,7 @@
 /*
  * sydbox/panic.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2018 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -133,6 +133,8 @@ int deny(syd_process_t *current, int err_no)
 {
 	int r;
 
+	if (sandbox_dry_file(current))
+		return 0; /* dry-run, no intervention. */
 	current->retval = errno2retval(err_no);
 
 	/* Restore syscall */
@@ -152,6 +154,9 @@ int restore(syd_process_t *current)
 			return r;
 	}
 #endif
+
+	if (sandbox_dry_file(current))
+		return 0; /* dry-run, no intervention. */
 
 	/* return the saved return value */
 	if (current->retval < 0) { /* failure */
