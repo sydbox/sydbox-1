@@ -1,7 +1,7 @@
 /*
  * sydbox/magic-sandbox.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2021 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2018, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -114,4 +114,20 @@ int magic_set_sandbox_write(const void *val, syd_process_t *current)
 int magic_set_sandbox_network(const void *val, syd_process_t *current)
 {
 	return magic_set_sandbox(SANDBOX_NETWORK, val, current);
+}
+
+int magic_set_sandbox_all(const void *val, syd_process_t *current)
+{
+	int r;
+
+	if ((r = magic_set_sandbox_exec(val, current)) != MAGIC_RET_OK)
+		return r;
+	if ((r = magic_set_sandbox_read(val, current)) != MAGIC_RET_OK)
+		return r;
+	if ((r = magic_set_sandbox_write(val, current)) != MAGIC_RET_OK)
+		return r;
+	if ((r = magic_set_sandbox_network(val, current)) != MAGIC_RET_OK)
+		return r;
+
+	return MAGIC_RET_OK;
 }

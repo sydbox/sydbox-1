@@ -3,7 +3,7 @@
  *
  * Special system call handlers
  *
- * Copyright (c) 2011, 2012, 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013, 2014, 2015, 2018, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -72,7 +72,7 @@ int sysx_chdir(syd_process_t *current)
 		return r;
 
 	if (retval < 0) {
-		/* TODO: dump(DUMP_SYSCALL, current, "chdir", retval, "ignore"); */
+		/* dump_syscall_0(current, "chdir", "IGNORE", retval); */
 		return 0;
 	}
 
@@ -81,7 +81,7 @@ int sysx_chdir(syd_process_t *current)
 		return panic(current);
 	}
 
-	/* TODO: dump(DUMP_SYSCALL, current, "chdir", retval, "success", P_CWD(current), newcwd); */
+	/* dump_syscall_2(current, "chdir", "OK", retval, P_CWD(current), newcwd); */
 
 	if (P_CWD(current))
 		free(P_CWD(current));
@@ -273,6 +273,7 @@ static int do_stat(syd_process_t *current, const char *path,
 		/* Write stat buffer */
 		const char *bufaddr = NULL;
 		size_t bufsize;
+		enum violation_decision violation_decision;
 		struct stat buf;
 #define FAKE_MODE (S_IFCHR|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
 #define FAKE_RDEV 259 /* /dev/null */
@@ -325,8 +326,25 @@ static int do_stat(syd_process_t *current, const char *path,
 skip_write:
 #endif
 		/* magic command accepted */
-		errno = (r == MAGIC_RET_FALSE) ? ENOENT : 0;
+		if (r < 0)
+			errno = -r;
+		else if (r == MAGIC_RET_FALSE)
+			errno = ENOENT;
+		else
+			errno = 0;
+
+		violation_decision = sydbox->config.violation_decision;
+		if (violation_decision == VIOLATION_NOOP) {
+			/* Special case for dry-run: intervention is OK for magic. */
+			sydbox->config.violation_decision = VIOLATION_DENY;
+			magic_set_sandbox_all("deny", current);
+		}
+
 		r = deny(current, errno);
+		if (violation_decision == VIOLATION_NOOP) {
+			sydbox->config.violation_decision = VIOLATION_NOOP;
+			magic_set_sandbox_all("dump", current);
+		}
 	}
 
 	/* r is one of:

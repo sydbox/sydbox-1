@@ -62,6 +62,7 @@ class ShoeBox:
 
         self.fmt  = None
         self.head = None
+        self._events = None
 
     def __enter__(self):
         self.fd = os.open(self.dump, os.O_RDONLY|os.O_NOFOLLOW|os.O_NOATIME)
@@ -82,7 +83,9 @@ class ShoeBox:
 
     @property
     def events(self):
-        return self.read_events()
+        if self._events is None:
+            self._events = tuple(self.read_events())
+        return self._events
 
     @property
     def child(self):
@@ -238,6 +241,9 @@ class ShoeBox:
                 continue
             events.append(event)
 
+            if pid == self.child_pid:
+                continue
+
             if 'process' in event:
                 if 'stat' in event['process']:
                     if event['process']['stat'] is not None:
@@ -356,6 +362,19 @@ def command_show(args):
     for event in events:
         dump_json(event, args.format)
 
+def generate_events(args):
+    if args.pattern is None:
+        pattern = None
+        match_format = None
+    else:
+        pattern = re.compile(args.pattern, re.I|re.U)
+        match_format = args.match
+
+    with ShoeBox(dump_path(args)) as sb:
+        events = sb.tree(args.pid, pattern, match_format)
+        for event in events:
+            yield event
+
 def command_tree(args):
     if args.pattern is None:
         pattern = None
@@ -368,6 +387,52 @@ def command_tree(args):
         events = sb.tree(args.pid, pattern, match_format)
         for event in events:
             dump_json(event, args.format)
+
+def command_magic(args):
+    call_graph = dict()
+    sys_call   = None
+    for event in generate_events(args):
+        if 'pink' in event:
+            pink = event['pink']
+            pid = pink['pid']
+            name = pink['name']
+
+            if pid not in call_graph:
+                call_graph[pid] = []
+
+            if name == 'read_syscall': # syscall-entry-point
+                sys_call = [pink['sysname'], None, None, None, None, None]
+                call_graph[pid].append(sys_call)
+            elif name == 'read_argument':
+                sys_call[pink['arg_idx'] + 1] = pink['arg_val']
+            elif name == 'read_vm_data_nul':
+                idx = sys_call.index(pink['addr'])
+                sys_call[idx] = pink['dest']
+            elif name == 'read_socket_address':
+                sys_call[pink['arg_idx'] + 1] = pink['addr']
+
+    magic = set()
+    for pid in call_graph:
+        for sys_call in call_graph[pid]:
+            if sys_call[0] == 'access':
+                if sys_call[2] & os.W_OK:
+                    prefix = 'whitelist/write+'
+                else:
+                    prefix = 'whitelist/read+'
+                magic.add(prefix + sys_call[1])
+            elif sys_call[0] == 'openat':
+            elif sys_call[0] == 'connect':
+                magic.add('whitelist/network/connect+%s' % sys_call[2])
+            else:
+                call = sys_call[0] + '('
+                if any(sys_call[1:]):
+                    call += ', '.join(map(lambda x: x is None and '?' or str(x), sys_call[1:]))
+                call += ')'
+
+                sys.stdout.write("%d\t%s\n" % (pid, call))
+
+    for spell in sorted(magic):
+        print(spell)
 
 def main():
     parser = argparse.ArgumentParser(prog='shoebox',
@@ -412,6 +477,14 @@ Attaching poems encourages consideration tremendously.''')
                              default = -1, nargs = '?',
                              help = 'PID to match, default: detect eldest child')
     parser_tree.set_defaults(func = command_tree)
+
+    parser_magic = subparser.add_parser('magic', help = 'Turn dump into a set of magic commands')
+    parser_magic.add_argument('-m', '--match', default = '{pink.sysname}', help = 'Match format')
+    parser_magic.add_argument('-p', '--pattern', help = 'Match pattern (regex)')
+    parser_magic.add_argument('pid', type = int, metavar = 'PID',
+                             default = -1, nargs = '?',
+                             help = 'PID to match, default: detect eldest child')
+    parser_magic.set_defaults(func = command_magic)
 
     args = parser.parse_args()
     if getattr(args, 'func', None):

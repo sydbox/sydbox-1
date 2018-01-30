@@ -3,7 +3,7 @@
  *
  * pinktrace wrapper functions
  *
- * Copyright (c) 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2013, 2014, 2015, 2018 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 

@@ -3,7 +3,7 @@
  *
  * Socket related system call handlers
  *
- * Copyright (c) 2011, 2012, 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013, 2014, 2015, 2018, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -20,6 +20,7 @@
 #include "pink.h"
 #include "bsd-compat.h"
 #include "sockmap.h"
+#include "dump.h"
 
 int sys_bind(syd_process_t *current)
 {
@@ -131,6 +132,7 @@ zero:
 static int sys_connect_or_sendto(syd_process_t *current, unsigned arg_index)
 {
 	sysinfo_t info;
+
 #define sub_connect(p, i)	((i) == 1 && \
 				 (p)->subcall == PINK_SOCKET_SUBCALL_CONNECT)
 #define sub_sendto(p, i)	((i) == 4 && \
