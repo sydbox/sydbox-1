@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding: utf-8
 
 import os, sys, re, json, argparse
@@ -388,6 +388,16 @@ def command_tree(args):
         for event in events:
             dump_json(event, args.format)
 
+def whitelist_open(flags):
+    mode  = flags & os.O_ACCMODE
+
+    if mode == os.O_RDONLY:
+        return (flags & os.O_CREAT) and 'write' or 'read'
+    elif mode == os.O_RDONLY or mode == os.O_RDWR:
+        return 'write'
+    else: # Invalid mode
+        return None
+
 def command_magic(args):
     call_graph = dict()
     sys_call   = None
@@ -404,23 +414,33 @@ def command_magic(args):
                 sys_call = [pink['sysname'], None, None, None, None, None]
                 call_graph[pid].append(sys_call)
             elif name == 'read_argument':
-                sys_call[pink['arg_idx'] + 1] = pink['arg_val']
+                val = pink['arg_val']
+                if val == -100 and sys_call[0].endswith('at'):
+                    val = 'AT_FDCWD'
+                sys_call[pink['arg_idx'] + 1] = val
             elif name == 'read_vm_data_nul':
                 idx = sys_call.index(pink['addr'])
                 sys_call[idx] = pink['dest']
             elif name == 'read_socket_address':
-                sys_call[pink['arg_idx'] + 1] = pink['addr']
+                sys_call[pink['arg_idx'] + 1] = pink['saddr']
 
     magic = set()
     for pid in call_graph:
         for sys_call in call_graph[pid]:
             if sys_call[0] == 'access':
-                if sys_call[2] & os.W_OK:
+                mode = sys_call[2]
+                if mode & os.W_OK:
                     prefix = 'whitelist/write+'
                 else:
                     prefix = 'whitelist/read+'
                 magic.add(prefix + sys_call[1])
-            elif sys_call[0] == 'openat':
+            elif sys_call[0] in ('open', 'openat'):
+                off = sys_call[0][-2:] == 'at' and 1 or 0
+                wlist = whitelist_open(sys_call[off + 2])
+                if wlist is not None:
+                    magic.add('whitelist/%s+%s' % (wlist, sys_call[off + 1]))
+#            elif sys_call[0] in ('stat',):
+
             elif sys_call[0] == 'connect':
                 magic.add('whitelist/network/connect+%s' % sys_call[2])
             else:

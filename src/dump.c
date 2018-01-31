@@ -643,26 +643,26 @@ static void dump_pink(const char *name, int retval, int save_errno, pid_t pid, v
 			switch (paddr->family) {
 			case AF_UNIX:
 				abstract = path_abstract(paddr->u.sa_un.sun_path);
-				fprintf(fp, ","J(addr)"\"%s%s\"",
+				fprintf(fp, ","J(saddr)"\"%s%s\"",
 					abstract ? "unix-abstract:" : "unix:",
 					abstract ? paddr->u.sa_un.sun_path + 1
 						 : paddr->u.sa_un.sun_path);
 				break;
 			case AF_INET:
 				inet_ntop(AF_INET, &paddr->u.sa_in.sin_addr, ip, sizeof(ip));
-				fprintf(fp, ","J(addr)"\"inet:%s:%d\"",
+				fprintf(fp, ","J(saddr)"\"inet:%s:%d\"",
 					ip, ntohs(paddr->u.sa_in.sin_port));
 				break;
 #if SYDBOX_HAVE_IPV6
 			case AF_INET6:
 				inet_ntop(AF_INET6, &paddr->u.sa6.sin6_addr, ip, sizeof(ip));
-				fprintf(fp, ","J(addr)"\"inet6:%s:%d\"",
+				fprintf(fp, ","J(saddr)"\"inet6:%s:%d\"",
 					ip, ntohs(paddr->u.sa6.sin6_port));
 				break;
 #endif
 			default:
 				family = pink_name_socket_family(paddr->family);
-				fprintf(fp, ","J(addr)"\"%s:?\"",
+				fprintf(fp, ","J(saddr)"\"%s:?\"",
 					family ? family : "AF_???");
 				break;
 			}
