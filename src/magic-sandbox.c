@@ -43,7 +43,7 @@ static int magic_query_sandbox(enum sandbox_type t, syd_process_t *current)
 		assert_not_reached();
 	}
 
-	return MAGIC_BOOL(mode != SANDBOX_OFF);
+	return MAGIC_BOOL(mode > SANDBOX_DUMP);
 }
 
 static int magic_set_sandbox(enum sandbox_type t, const char *str, syd_process_t *current)
