@@ -2,9 +2,12 @@
 # Copyright 2014 Ali Polatel <alip@exherbo.org>
 # Released under the terms of the GNU General Public License v2
 
+optdef="@SYDBOX_TEST_DEFOPTS@"
+[ x"$SYDBOX_DUMP" = x"1" ] && optdef="$optdef --dry-run"
+
 if [ x"$1" = x"prove" ]; then
     shift
-    exec '@SYDBOX_MAKE@' -sC '@SYDBOX_TEST_DIRECTORY@' DEFAULT_TEST_TARGET=prove SYDBOX_TEST_OPTS="$@"
+    exec '@SYDBOX_MAKE@' -sC '@SYDBOX_TEST_DIRECTORY@' DEFAULT_TEST_TARGET=prove SYDBOX_TEST_OPTS="$optdef $@"
 else
-    exec '@SYDBOX_MAKE@' -sC '@SYDBOX_TEST_DIRECTORY@' DEFAULT_TEST_TARGET=test SYDBOX_TEST_OPTS="$@"
+    exec '@SYDBOX_MAKE@' -sC '@SYDBOX_TEST_DIRECTORY@' DEFAULT_TEST_TARGET=test SYDBOX_TEST_OPTS="$optdef $@"
 fi

@@ -53,6 +53,7 @@ sydtest: sydtest.sh.in
 	$(AM_V_at)$(SED) \
 		-e "s:@SYDBOX_MAKE@:$(MAKE):g" \
 		-e "s:@SYDBOX_TEST_DIRECTORY@:$(syddir):g" \
+		-e "s:@SYDBOX_TEST_DEFOPTS@:$(SYDBOX_TEST_DEFOPTS):g" \
 		$< > $@
 	$(AM_V_at)chmod +x $@
 
