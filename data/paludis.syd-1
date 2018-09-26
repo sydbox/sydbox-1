@@ -63,6 +63,7 @@ whitelist/network/bind+LOOPBACK6@1024-65535
 
 whitelist/network/connect+unix:/var/run/nscd/socket
 whitelist/network/connect+unix:/run/nscd/socket
+whitelist/network/connect+unix:/var/lib/sss/pipes/nss
 
 #blacklist/exec+
 #blacklist/read+
