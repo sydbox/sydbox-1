@@ -126,11 +126,11 @@ void seatest_simple_test_result_log(int passed, const char* reason, const char* 
 		{
 			if (vs_mode)
 			{
-				printf("%s (%u)		%s,%s\r\n", seatest_current_fixture_path, line, function, reason );
+				printf("%s (%u)		%s,%s" SEATEST_NL, seatest_current_fixture_path, line, function, reason );
 			}
 			else
 			{
-				printf("%s%s,%s,%u,%s\r\n", seatest_magic_marker, seatest_current_fixture_path, function, line, reason );
+				printf("%s%s,%s,%u,%s" SEATEST_NL, seatest_magic_marker, seatest_current_fixture_path, function, line, reason );
 			}
 
 		}
@@ -138,17 +138,17 @@ void seatest_simple_test_result_log(int passed, const char* reason, const char* 
 		{
 			if ( vs_mode )
 			{
-				printf("%s (%u)		%s,%s\r\n", seatest_current_fixture_path, line, function, reason );
+				printf("%s (%u)		%s,%s" SEATEST_NL, seatest_current_fixture_path, line, function, reason );
 			}
 			else
 			{
-				printf("%-30s Line %-5d %s\r\n", function, line, reason );
+				printf("%-30s Line %-5d %s" SEATEST_NL, function, line, reason );
 			}
 		}
 		sea_tests_failed++;
 
 		#ifdef ABORT_TEST_IF_ASSERT_FAIL
-		printf("Test has been finished with failure.\r\n");
+		printf("Test has been finished with failure." SEATEST_NL);
 		longjmp(env,1);
 		#endif
 	}
@@ -158,11 +158,11 @@ void seatest_simple_test_result_log(int passed, const char* reason, const char* 
 		{
 			if(seatest_machine_readable)
 			{
-				printf("%s%s,%s,%u,Passed\r\n", seatest_magic_marker, seatest_current_fixture_path, function, line );
+				printf("%s%s,%s,%u,Passed" SEATEST_NL, seatest_magic_marker, seatest_current_fixture_path, function, line );
 			}
 			else
 			{
-				printf("%-30s Line %-5d Passed\r\n", function, line);
+				printf("%-30s Line %-5d Passed" SEATEST_NL, function, line);
 			}
 		}
 		sea_tests_passed++;
@@ -292,7 +292,7 @@ void seatest_header_printer(const char* s, int length, char f)
 	if(l==0) printf("%c%c", f, f);
 	else printf(" %s ", s);
 	for(i = (d+l+2); i<length; i++) printf("%c",f);
-	printf("\r\n");
+	printf(SEATEST_NL);
 }
 
 
@@ -313,7 +313,7 @@ void seatest_test_fixture_end()
 	sprintf(s, "%d run  %d failed", sea_tests_run-seatest_fixture_tests_run, sea_tests_failed-seatest_fixture_tests_failed);
 	seatest_header_printer(s, seatest_screen_width, ' ');
 	if(seatest_is_display_only() || seatest_machine_readable) return;
-	printf("\r\n");
+	printf(SEATEST_NL);
 }
 
 static const char* seatest_fixture_filter = 0;
@@ -340,7 +340,7 @@ static void set_magic_marker(const char* marker)
 void seatest_display_test(const char* fixture_name, const char* test_name)
 {
 	if(test_name == NULL) return;
-	printf("%s,%s\r\n", fixture_name, test_name);
+	printf("%s,%s" SEATEST_NL, fixture_name, test_name);
 }
 
 int seatest_should_run(const char* fixture, const char* test)
@@ -392,9 +392,9 @@ int run_tests(seatest_void_void tests)
 
 	if(seatest_is_display_only() || seatest_machine_readable) return SEATEST_RET_OK;
 	sprintf(version, "SEATEST v%s", SEATEST_VERSION);
-	printf("\r\n\r\n");
+	printf(SEATEST_NL SEATEST_NL);
 	seatest_header_printer(version, seatest_screen_width, '=');
-	printf("\r\n");
+	printf(SEATEST_NL);
 	if (sea_tests_failed > 0) {
 		seatest_header_printer("Failed", seatest_screen_width, ' ');
 	}
@@ -405,7 +405,7 @@ int run_tests(seatest_void_void tests)
 	seatest_header_printer(s, seatest_screen_width, ' ');
 	sprintf(s,"in %lu ms",end - start);
 	seatest_header_printer(s, seatest_screen_width, ' ');
-	printf("\r\n");
+	printf(SEATEST_NL);
 	seatest_header_printer("", seatest_screen_width, '=');
 
 	return SEATEST_RET_FAILED_COUNT(sea_tests_failed);
@@ -413,24 +413,24 @@ int run_tests(seatest_void_void tests)
 
 void seatest_show_usage( void )
 {
-	printf("Usage: [-t <testname>] [-f <fixturename>] [-d] [help] [-v] [-m] [-k <marker>]\r\n");
+	printf("Usage: [-t <testname>] [-f <fixturename>] [-d] [help] [-v] [-m] [-k <marker>]" SEATEST_NL);
 }
 void seatest_show_help( void )
 {
 	seatest_show_usage();
-	printf("Flags:\r\n");
-	printf("\thelp:\twill display this help\r\n");
-	printf("\t-t:\twill only run tests that match <testname>\r\n");
-	printf("\t-f:\twill only run fixtures that match <fixturename>\r\n");
-	printf("\t-d:\twill just display test names and fixtures without\r\n");
-	printf("\t   \trunning the test\r\n");
-	printf("\t-v:\twill print a more verbose version of the test run\r\n");
-	printf("\t-m:\twill print a machine readable format of the test run, i.e.:\r\n");
-	printf("\t   \t<textfixture>,<testname>,<linenumber>,<testresult><EOL>\r\n");
-	printf("\t-vs:\tcauses messages to be adapted to match Visual Studio\r\n");
-	printf("\t   \tcode browsing\r\n");
-	printf("\t-k:\twill prepend <marker> before machine readable output;\r\n");
-	printf("\t   \t<marker> cannot start with a '-'\r\n");
+	printf("Flags:" SEATEST_NL);
+	printf("\thelp:\twill display this help" SEATEST_NL);
+	printf("\t-t:\twill only run tests that match <testname>" SEATEST_NL);
+	printf("\t-f:\twill only run fixtures that match <fixturename>" SEATEST_NL);
+	printf("\t-d:\twill just display test names and fixtures without" SEATEST_NL);
+	printf("\t   \trunning the test" SEATEST_NL);
+	printf("\t-v:\twill print a more verbose version of the test run" SEATEST_NL);
+	printf("\t-m:\twill print a machine readable format of the test run, i.e.:" SEATEST_NL);
+	printf("\t   \t<textfixture>,<testname>,<linenumber>,<testresult><EOL>" SEATEST_NL);
+	printf("\t-vs:\tcauses messages to be adapted to match Visual Studio" SEATEST_NL);
+	printf("\t   \tcode browsing" SEATEST_NL);
+	printf("\t-k:\twill prepend <marker> before machine readable output;" SEATEST_NL);
+	printf("\t   \t<marker> cannot start with a '-'" SEATEST_NL);
 }
 
 
@@ -447,7 +447,7 @@ int seatest_parse_commandline_option_with_value(seatest_testrunner_t* runner, in
 	{
 		if(!seatest_commandline_has_value_after(runner, arg))
 		{
-			printf("Error: The %s option expects to be followed by a value\r\n", option);
+			printf("Error: The %s option expects to be followed by a value" SEATEST_NL, option);
 			runner->action = SEATEST_DO_ABORT;
 			return 0;
 		}
@@ -478,7 +478,7 @@ void seatest_interpret_commandline(seatest_testrunner_t* runner)
 		else if(seatest_parse_commandline_option_with_value(runner,arg,"-k", set_magic_marker)) arg++;
 		else
 		{
-			printf("unknown option: %s\r\n", runner->argv[arg]);
+			printf("unknown option: %s" SEATEST_NL, runner->argv[arg]);
 			seatest_show_usage();
 			runner->action = SEATEST_DO_ABORT;
 		}

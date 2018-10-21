@@ -10,6 +10,11 @@ Defines
 #define SEATEST_PROJECT_HOME "https://github.com/mcci-usb/seatest/"
 #define SEATEST_PRINT_BUFFER_SIZE 100000
 
+/* in some environments you may want \r\n */
+#ifndef SEATEST_NL
+# define SEATEST_NL	"\n"
+#endif
+
 #ifdef ABORT_TEST_IF_ASSERT_FAIL
 #include <setjmp.h>
 jmp_buf env;
