@@ -1,5 +1,7 @@
 #include "seatest.h"
 #include <string.h>
+#include <stdint.h>
+#include <inttypes.h>
 #ifdef WIN32
 #include "windows.h"
 int seatest_is_string_equal_i(const char* s1, const char* s2)
@@ -48,8 +50,8 @@ static int seatest_display_only = 0;
 static int seatest_verbose = 0;
 static int vs_mode = 0;
 static int seatest_machine_readable = 0;
-static char* seatest_current_fixture;
-static char* seatest_current_fixture_path;
+static const char* seatest_current_fixture;
+static const char* seatest_current_fixture_path;
 static char seatest_magic_marker[20] = "";
 
 static seatest_void_void seatest_suite_setup_func = 0;
@@ -57,7 +59,7 @@ static seatest_void_void seatest_suite_teardown_func = 0;
 static seatest_void_void seatest_fixture_setup = 0;
 static seatest_void_void seatest_fixture_teardown = 0;
 
-void (*seatest_simple_test_result)(int passed, char* reason, const char* function, unsigned int line) = seatest_simple_test_result_log;
+seatest_simple_test_result_fn_t *seatest_simple_test_result = seatest_simple_test_result_log;
 
 void suite_setup(seatest_void_void setup)
 {
@@ -102,9 +104,9 @@ void seatest_teardown( void )
 	if(seatest_fixture_teardown != 0) seatest_fixture_teardown();
 }
 
-char* test_file_name(char* path)
+const char* test_file_name(const char* path)
 {
-	char* file = path + strlen(path);
+	const char* file = path + strlen(path);
 	while(file != path && *file!= '\\' ) file--;
 	if(*file == '\\') file++;
 	return file;
@@ -114,7 +116,7 @@ static int seatest_fixture_tests_run;
 static int seatest_fixture_tests_failed;
 
 
-void seatest_simple_test_result_log(int passed, char* reason, const char* function, unsigned int line)
+void seatest_simple_test_result_log(int passed, const char* reason, const char* function, unsigned int line)
 {
 	if (!passed)
 	{
@@ -195,7 +197,7 @@ void seatest_assert_ulong_equal(unsigned long expected, unsigned long actual, co
 void seatest_assert_size_t_equal(size_t expected, size_t actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
-	sprintf(s, "Expected %zu but was %zu", expected, actual);
+	sprintf(s, "Expected %" PRIuMAX " but was %" PRIuMAX, (uintmax_t) expected, (uintmax_t) actual);
 	seatest_simple_test_result(expected==actual, s, function, line);
 }
 
@@ -217,7 +219,7 @@ void seatest_assert_double_equal( double expected, double actual, double delta, 
 	seatest_simple_test_result( result <= delta, s, function, line);
 }
 
-void seatest_assert_string_equal(char* expected, char* actual, const char* function, unsigned int line)
+void seatest_assert_string_equal(const char* expected, const char* actual, const char* function, unsigned int line)
 {
         int comparison;
 	char s[SEATEST_PRINT_BUFFER_SIZE];
@@ -246,40 +248,40 @@ void seatest_assert_string_equal(char* expected, char* actual, const char* funct
 	seatest_simple_test_result(comparison, s, function, line);
 }
 
-void seatest_assert_string_ends_with(char* expected, char* actual, const char* function, unsigned int line)
+void seatest_assert_string_ends_with(const char* expected, const char* actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
 	sprintf(s, "Expected \"%s\" to end with \"%s\"", actual, expected);
 	seatest_simple_test_result(strcmp(expected, actual+(strlen(actual)-strlen(expected)))==0, s, function, line);
 }
 
-void seatest_assert_string_starts_with(char* expected, char* actual, const char* function, unsigned int line)
+void seatest_assert_string_starts_with(const char* expected, const char* actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
 	sprintf(s, "Expected \"%s\" to start with \"%s\"", actual, expected);
 	seatest_simple_test_result(strncmp(expected, actual, strlen(expected))==0, s, function, line);
 }
 
-void seatest_assert_string_contains(char* expected, char* actual, const char* function, unsigned int line)
+void seatest_assert_string_contains(const char* expected, const char* actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
 	sprintf(s, "Expected \"%s\" to be in \"%s\"", expected, actual);
 	seatest_simple_test_result(strstr(actual, expected)!=0, s, function, line);
 }
 
-void seatest_assert_string_doesnt_contain(char* expected, char* actual, const char* function, unsigned int line)
+void seatest_assert_string_doesnt_contain(const char* expected, const char* actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
 	sprintf(s, "Expected \"%s\" not to have \"%s\" in it", actual, expected);
 	seatest_simple_test_result(strstr(actual, expected)==0, s, function, line);
 }
 
-void seatest_run_test(char* fixture, char* test)
+void seatest_run_test(const char* fixture, const char* test)
 {
 	sea_tests_run++;
 }
 
-void seatest_header_printer(char* s, int length, char f)
+void seatest_header_printer(const char* s, int length, char f)
 {
 	int l = strlen(s);
 	int d = (length- (l + 2)) / 2;
@@ -293,7 +295,7 @@ void seatest_header_printer(char* s, int length, char f)
 }
 
 
-void seatest_test_fixture_start(char* filepath)
+void seatest_test_fixture_start(const char* filepath)
 {
 	seatest_current_fixture_path = filepath;
 	seatest_current_fixture = test_file_name(filepath);
@@ -313,33 +315,34 @@ void seatest_test_fixture_end()
 	printf("\r\n");
 }
 
-static char* seatest_fixture_filter = 0;
-static char* seatest_test_filter = 0;
+static const char* seatest_fixture_filter = 0;
+static const char* seatest_test_filter = 0;
 
-void fixture_filter(char* filter)
+/* TODO(tmm@mcci.com): rename to seatest_set_fixture_filter */
+void fixture_filter(const char* filter)
 {
 	seatest_fixture_filter = filter;
 }
 
-
-void test_filter(char* filter)
+/* TODO(tmm@mcci.com): rename to setteast_set_test_filter() */
+void test_filter(const char* filter)
 {
 	seatest_test_filter = filter;
 }
 
-void set_magic_marker(char* marker)
+static void set_magic_marker(const char* marker)
 {
 	if(marker == NULL) return;
 	strcpy(seatest_magic_marker, marker);
 }
 
-void seatest_display_test(char* fixture_name, char* test_name)
+void seatest_display_test(const char* fixture_name, const char* test_name)
 {
 	if(test_name == NULL) return;
 	printf("%s,%s\r\n", fixture_name, test_name);
 }
 
-int seatest_should_run( char* fixture, char* test)
+int seatest_should_run(const char* fixture, const char* test)
 {
 	int run = 1;
 
@@ -360,7 +363,7 @@ int seatest_should_run( char* fixture, char* test)
 	return run;
 }
 
-void seatest_test(char* fixture, char* test, void (*test_function)(void))
+void seatest_test(const char* fixture, const char* test, void (*test_function)(void))
 {
 	seatest_suite_setup();
 	seatest_setup();
@@ -511,7 +514,7 @@ int seatest_testrunner(int argc, char** argv, seatest_void_void tests, seatest_v
 }
 
 #ifdef SEATEST_INTERNAL_TESTS
-void seatest_simple_test_result_nolog(int passed, char* reason, const char* function, unsigned int line)
+void seatest_simple_test_result_nolog(int passed, const char* reason, const char* function, unsigned int line)
 {
   sea_test_last_passed = passed;
 }
