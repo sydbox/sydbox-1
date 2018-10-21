@@ -1,6 +1,7 @@
 #include "seatest.h"
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <inttypes.h>
 #ifdef WIN32
 #include "windows.h"
@@ -410,20 +411,25 @@ int run_tests(seatest_void_void tests)
 	return SEATEST_RET_FAILED_COUNT(sea_tests_failed);
 }
 
-
+void seatest_show_usage( void )
+{
+	printf("Usage: [-t <testname>] [-f <fixturename>] [-d] [help] [-v] [-m] [-k <marker>]\r\n");
+}
 void seatest_show_help( void )
 {
-	printf("Usage: [-t <testname>] [-f <fixturename>] [-d] [help] [-v] [-m] [-k <marker>\r\n");
+	seatest_show_usage();
 	printf("Flags:\r\n");
 	printf("\thelp:\twill display this help\r\n");
 	printf("\t-t:\twill only run tests that match <testname>\r\n");
 	printf("\t-f:\twill only run fixtures that match <fixturename>\r\n");
 	printf("\t-d:\twill just display test names and fixtures without\r\n");
-	printf("\t-d:\trunning the test\r\n");
+	printf("\t   \trunning the test\r\n");
 	printf("\t-v:\twill print a more verbose version of the test run\r\n");
-	printf("\t-m:\twill print a machine readable format of the test run, ie :- \r\n");
+	printf("\t-m:\twill print a machine readable format of the test run, i.e.:\r\n");
 	printf("\t   \t<textfixture>,<testname>,<linenumber>,<testresult><EOL>\r\n");
-	printf("\t-k:\twill prepend <marker> before machine readable output \r\n");
+	printf("\t-vs:\tcauses messages to be adapted to match Visual Studio\r\n");
+	printf("\t   \tcode browsing\r\n");
+	printf("\t-k:\twill prepend <marker> before machine readable output;\r\n");
 	printf("\t   \t<marker> cannot start with a '-'\r\n");
 }
 
@@ -454,21 +460,28 @@ int seatest_parse_commandline_option_with_value(seatest_testrunner_t* runner, in
 void seatest_interpret_commandline(seatest_testrunner_t* runner)
 {
 	int arg;
-	for(arg=0; (arg < runner->argc) && (runner->action != SEATEST_DO_ABORT); arg++)
+	for(arg=1; (arg < runner->argc) && (runner->action != SEATEST_DO_ABORT); arg++)
 	{
-		if(seatest_is_string_equal_i(runner->argv[arg], "help"))
+		if(seatest_is_string_equal_i(runner->argv[arg], "help") ||
+		   seatest_is_string_equal_i(runner->argv[arg], "--help"))
 		{
 			seatest_show_help();
 			runner->action = SEATEST_DO_NOTHING;
 			return;
 		}
-		if(seatest_is_string_equal_i(runner->argv[arg], "-d")) runner->action = SEATEST_DISPLAY_TESTS;
-		if(seatest_is_string_equal_i(runner->argv[arg], "-v")) seatest_verbose = 1;
-		if(seatest_is_string_equal_i(runner->argv[arg], "-vs")) vs_mode = 1;
-		if(seatest_is_string_equal_i(runner->argv[arg], "-m")) seatest_machine_readable = 1;
-		if(seatest_parse_commandline_option_with_value(runner,arg,"-t", test_filter)) arg++;
-		if(seatest_parse_commandline_option_with_value(runner,arg,"-f", fixture_filter)) arg++;
-		if(seatest_parse_commandline_option_with_value(runner,arg,"-k", set_magic_marker)) arg++;
+		else if(seatest_is_string_equal_i(runner->argv[arg], "-d")) runner->action = SEATEST_DISPLAY_TESTS;
+		else if(seatest_is_string_equal_i(runner->argv[arg], "-v")) seatest_verbose = 1;
+		else if(seatest_is_string_equal_i(runner->argv[arg], "-vs")) vs_mode = 1;
+		else if(seatest_is_string_equal_i(runner->argv[arg], "-m")) seatest_machine_readable = 1;
+		else if(seatest_parse_commandline_option_with_value(runner,arg,"-t", test_filter)) arg++;
+		else if(seatest_parse_commandline_option_with_value(runner,arg,"-f", fixture_filter)) arg++;
+		else if(seatest_parse_commandline_option_with_value(runner,arg,"-k", set_magic_marker)) arg++;
+		else
+		{
+			printf("unknown option: %s\r\n", runner->argv[arg]);
+			seatest_show_usage();
+			runner->action = SEATEST_DO_ABORT;
+		}
 	}
 }
 
