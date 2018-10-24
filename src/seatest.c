@@ -108,8 +108,8 @@ void seatest_teardown( void )
 const char* test_file_name(const char* path)
 {
 	const char* file = path + strlen(path);
-	while(file != path && *file!= '\\' ) file--;
-	if(*file == '\\') file++;
+	while(file != path && *file != '\\' && *file != '/') file--;
+	if(*file == '\\' || *file == '/') file++;
 	return file;
 }
 
