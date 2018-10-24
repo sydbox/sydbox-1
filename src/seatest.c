@@ -356,7 +356,8 @@ int seatest_should_run(const char* fixture, const char* test)
 
 	if(seatest_fixture_filter)
 	{
-		if(strncmp(seatest_fixture_filter, fixture, strlen(seatest_fixture_filter)) != 0) run = 0;
+		const char * const sFixture = test_file_name(fixture);
+		if(strncmp(seatest_fixture_filter, sFixture, strlen(seatest_fixture_filter)) != 0) run = 0;
 	}
 	if(seatest_test_filter && test != NULL)
 	{
