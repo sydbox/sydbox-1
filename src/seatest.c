@@ -400,7 +400,7 @@ int run_tests(seatest_void_void tests)
 	unsigned long end;
 	unsigned long start = GetTickCount();
 	char version[40];
-	char s[40];
+	char s[80];
 	tests();
 	end = GetTickCount();
 
@@ -411,11 +411,14 @@ int run_tests(seatest_void_void tests)
 	printf(SEATEST_NL);
 	if (sea_tests_failed > 0) {
 		seatest_header_printer("Failed", seatest_screen_width, ' ');
+		sprintf(s,"%d tests run  %d tests failed  %d assertions failed",
+			sea_tests_run, sea_test_functions_failed, sea_tests_failed
+			);
 	}
 	else {
 		seatest_header_printer("ALL TESTS PASSED", seatest_screen_width, ' ');
+		sprintf(s,"%d tests run", sea_tests_run);
 	}
-	sprintf(s,"%d tests run", sea_tests_run);
 	seatest_header_printer(s, seatest_screen_width, ' ');
 	sprintf(s,"in %lu ms",end - start);
 	seatest_header_printer(s, seatest_screen_width, ' ');
