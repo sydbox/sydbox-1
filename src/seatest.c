@@ -47,6 +47,7 @@ static int seatest_screen_width = 70;
 static int sea_tests_run = 0;
 static int sea_tests_passed = 0;
 static int sea_tests_failed = 0;
+static int sea_test_functions_failed = 0;
 static int seatest_display_only = 0;
 static int seatest_verbose = 0;
 static int vs_mode = 0;
@@ -114,6 +115,7 @@ const char* test_file_name(const char* path)
 }
 
 static int seatest_fixture_tests_run;
+static int seatest_fixture_test_functions_failed;
 static int seatest_fixture_tests_failed;
 
 
@@ -303,6 +305,7 @@ void seatest_test_fixture_start(const char* filepath)
 	seatest_header_printer(seatest_current_fixture, seatest_screen_width, '-');
 	seatest_fixture_tests_failed = sea_tests_failed;
 	seatest_fixture_tests_run = sea_tests_run;
+	seatest_fixture_test_functions_failed = sea_test_functions_failed;
 	seatest_fixture_teardown = 0;
 	seatest_fixture_setup = 0;
 }
@@ -310,7 +313,11 @@ void seatest_test_fixture_start(const char* filepath)
 void seatest_test_fixture_end()
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
-	sprintf(s, "%d run  %d failed", sea_tests_run-seatest_fixture_tests_run, sea_tests_failed-seatest_fixture_tests_failed);
+	sprintf(s, "%d run  %d failed  %d asserts failed",
+		sea_tests_run-seatest_fixture_tests_run,
+		sea_test_functions_failed-seatest_fixture_test_functions_failed,
+		sea_tests_failed-seatest_fixture_tests_failed
+		);
 	seatest_header_printer(s, seatest_screen_width, ' ');
 	if(seatest_is_display_only() || seatest_machine_readable) return;
 	printf(SEATEST_NL);
@@ -366,6 +373,8 @@ int seatest_should_run(const char* fixture, const char* test)
 
 void seatest_test(const char* fixture, const char* test, void (*test_function)(void))
 {
+	const int save_sea_tests_failed = sea_tests_failed;
+
 	seatest_suite_setup();
 	seatest_setup();
 
@@ -378,6 +387,10 @@ void seatest_test(const char* fixture, const char* test, void (*test_function)(v
 
 	seatest_teardown();
 	seatest_suite_teardown();
+
+	if (sea_tests_failed != save_sea_tests_failed)
+		++sea_test_functions_failed;
+
 	seatest_run_test(fixture, test);
 }
 
