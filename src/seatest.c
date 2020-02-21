@@ -3,12 +3,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <inttypes.h>
+
 #ifdef WIN32
 #include "windows.h"
 int seatest_is_string_equal_i(const char* s1, const char* s2)
 {
 	#pragma warning(disable: 4996)
-	return stricmp(s1, s2) == 0;
+	return _stricmp(s1, s2) == 0;
 }
 
 #else
@@ -279,6 +280,9 @@ void seatest_assert_string_doesnt_contain(const char* expected, const char* actu
 	seatest_simple_test_result(strstr(actual, expected)==0, s, function, line);
 }
 
+#ifdef WIN32
+# pragma warning(disable : 4100)
+#endif
 void seatest_run_test(const char* fixture, const char* test)
 {
 	sea_tests_run++;
@@ -286,7 +290,7 @@ void seatest_run_test(const char* fixture, const char* test)
 
 void seatest_header_printer(const char* s, int length, char f)
 {
-	int l = strlen(s);
+	int l = (int) strlen(s);
 	int d = (length- (l + 2)) / 2;
 	int i;
 	if(seatest_is_display_only() || seatest_machine_readable) return;
@@ -540,7 +544,6 @@ int seatest_testrunner(int argc, char** argv, seatest_void_void tests, seatest_v
 			return SEATEST_RET_ERROR;
 		}
 	}
-	return SEATEST_RET_ERROR;
 }
 
 #ifdef SEATEST_INTERNAL_TESTS
