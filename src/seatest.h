@@ -8,7 +8,7 @@ Defines
 
 #define SEATEST_VERSION "2.0.0-alpha1"
 #define SEATEST_PROJECT_HOME "https://github.com/mcci-usb/seatest/"
-#define SEATEST_PRINT_BUFFER_SIZE 100000
+#define SEATEST_PRINT_BUFFER_SIZE 256
 
 /* in some environments you may want \r\n */
 #ifndef SEATEST_NL
