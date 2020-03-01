@@ -227,21 +227,21 @@ void seatest_assert_false(int test, const char* function, unsigned int line)
 void seatest_assert_int_equal(int expected, int actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
-	sprintf(s, "Expected %d but was %d", expected, actual);
+	seatest_snprintf(s, sizeof(s), "Expected %d but was %d", expected, actual);
 	seatest_simple_test_result(expected==actual, s, function, line);
 }
 
 void seatest_assert_ulong_equal(unsigned long expected, unsigned long actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
-	sprintf(s, "Expected %lu but was %lu", expected, actual);
+	seatest_snprintf(s, sizeof(s), "Expected %lu but was %lu", expected, actual);
 	seatest_simple_test_result(expected==actual, s, function, line);
 }
 
 void seatest_assert_size_t_equal(size_t expected, size_t actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
-	sprintf(s, "Expected %" PRIuMAX " but was %" PRIuMAX, (uintmax_t) expected, (uintmax_t) actual);
+	seatest_snprintf(s, sizeof(s), "Expected %" PRIuMAX " but was %" PRIuMAX, (uintmax_t) expected, (uintmax_t) actual);
 	seatest_simple_test_result(expected==actual, s, function, line);
 }
 
@@ -249,7 +249,7 @@ void seatest_assert_float_equal( float expected, float actual, float delta, cons
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
 	float result = expected-actual;
-	sprintf(s, "Expected %f but was %f", expected, actual);
+	seatest_snprintf(s, sizeof(s), "Expected %f but was %f", expected, actual);
 	if(result < 0.0) result = 0.0f - result;
 	seatest_simple_test_result( result <= delta, s, function, line);
 }
@@ -258,7 +258,7 @@ void seatest_assert_double_equal( double expected, double actual, double delta, 
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
 	double result = expected-actual;
-	sprintf(s, "Expected %f but was %f", expected, actual);
+	seatest_snprintf(s, sizeof(s), "Expected %f but was %f", expected, actual);
 	if(result < 0.0) result = 0.0 - result;
 	seatest_simple_test_result( result <= delta, s, function, line);
 }
@@ -270,23 +270,23 @@ void seatest_assert_string_equal(const char* expected, const char* actual, const
 
 	if ((expected == (char *)0) && (actual == (char *)0))
 	{
-          sprintf(s, "Expected <NULL> but was <NULL>");
+          seatest_snprintf(s, sizeof(s), "Expected <NULL> but was <NULL>");
 	  comparison = 1;
 	}
         else if (expected == (char *)0)
 	{
-	  sprintf(s, "Expected <NULL> but was \"%s\"", actual);
+	  seatest_snprintf(s, sizeof(s), "Expected <NULL> but was \"%s\"", actual);
 	  comparison = 0;
 	}
         else if (actual == (char *)0)
 	{
-	  sprintf(s, "Expected \"%s\" but was <NULL>", expected);
+	  seatest_snprintf(s, sizeof(s), "Expected \"%s\" but was <NULL>", expected);
 	  comparison = 0;
 	}
 	else
 	{
 	  comparison = strcmp(expected, actual) == 0;
-	  sprintf(s, "Expected \"%s\" but was \"%s\"", expected, actual);
+	  seatest_snprintf(s, sizeof(s), "Expected \"%s\" but was \"%s\"", expected, actual);
 	}
 
 	seatest_simple_test_result(comparison, s, function, line);
@@ -295,28 +295,28 @@ void seatest_assert_string_equal(const char* expected, const char* actual, const
 void seatest_assert_string_ends_with(const char* expected, const char* actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
-	sprintf(s, "Expected \"%s\" to end with \"%s\"", actual, expected);
+	seatest_snprintf(s, sizeof(s), "Expected \"%s\" to end with \"%s\"", actual, expected);
 	seatest_simple_test_result(strcmp(expected, actual+(strlen(actual)-strlen(expected)))==0, s, function, line);
 }
 
 void seatest_assert_string_starts_with(const char* expected, const char* actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
-	sprintf(s, "Expected \"%s\" to start with \"%s\"", actual, expected);
+	seatest_snprintf(s, sizeof(s), "Expected \"%s\" to start with \"%s\"", actual, expected);
 	seatest_simple_test_result(strncmp(expected, actual, strlen(expected))==0, s, function, line);
 }
 
 void seatest_assert_string_contains(const char* expected, const char* actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
-	sprintf(s, "Expected \"%s\" to be in \"%s\"", expected, actual);
+	seatest_snprintf(s, sizeof(s), "Expected \"%s\" to be in \"%s\"", expected, actual);
 	seatest_simple_test_result(strstr(actual, expected)!=0, s, function, line);
 }
 
 void seatest_assert_string_doesnt_contain(const char* expected, const char* actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
-	sprintf(s, "Expected \"%s\" not to have \"%s\" in it", actual, expected);
+	seatest_snprintf(s, sizeof(s), "Expected \"%s\" not to have \"%s\" in it", actual, expected);
 	seatest_simple_test_result(strstr(actual, expected)==0, s, function, line);
 }
 
@@ -357,7 +357,7 @@ void seatest_test_fixture_start(const char* filepath)
 void seatest_test_fixture_end()
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
-	sprintf(s, "%d run  %d failed  %d asserts failed",
+	seatest_snprintf(s, sizeof(s), "%d run  %d failed  %d asserts failed",
 		sea_tests_run-seatest_fixture_tests_run,
 		sea_test_functions_failed-seatest_fixture_test_functions_failed,
 		sea_tests_failed-seatest_fixture_tests_failed
@@ -449,22 +449,22 @@ int run_tests(seatest_void_void tests)
 	end = GetTickCount();
 
 	if(seatest_is_display_only() || seatest_machine_readable) return SEATEST_RET_OK;
-	sprintf(version, "SEATEST v%s", SEATEST_VERSION);
+	seatest_snprintf(version, sizeof(version), "SEATEST v%s", SEATEST_VERSION);
 	printf(SEATEST_NL SEATEST_NL);
 	seatest_header_printer(version, seatest_screen_width, '=');
 	printf(SEATEST_NL);
 	if (sea_tests_failed > 0) {
 		seatest_header_printer("Failed", seatest_screen_width, ' ');
-		sprintf(s,"%d tests run  %d tests failed  %d assertions failed",
+		seatest_snprintf(s, sizeof(s), "%d tests run  %d tests failed  %d assertions failed",
 			sea_tests_run, sea_test_functions_failed, sea_tests_failed
 			);
 	}
 	else {
 		seatest_header_printer("ALL TESTS PASSED", seatest_screen_width, ' ');
-		sprintf(s,"%d tests run", sea_tests_run);
+		seatest_snprintf(s, sizeof(s), "%d tests run", sea_tests_run);
 	}
 	seatest_header_printer(s, seatest_screen_width, ' ');
-	sprintf(s,"in %lu ms",end - start);
+	seatest_snprintf(s, sizeof(s), "in %lu ms", end - start);
 	seatest_header_printer(s, seatest_screen_width, ' ');
 	printf(SEATEST_NL);
 	seatest_header_printer("", seatest_screen_width, '=');
