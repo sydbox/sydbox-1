@@ -22,6 +22,46 @@ int seatest_is_string_equal_i(const char* s1, const char* s2)
 }
 #endif
 
+// seatest_snprintf()
+size_t seatest_snprintf(char *pOutbuf, size_t nOutbuf, const char *pFmt, ...)
+{
+	va_list ap;
+	int iResult;
+	size_t nResult;
+
+	if (pOutbuf == NULL)
+		return 0;
+	if (nOutbuf == 0 || nOutbuf > INT_MAX)
+		return 0;
+
+	va_start(ap, pFmt);
+
+#ifdef WIN32
+# pragma warning(push)
+# pragma warning(disable:4996)
+#endif // WIN32
+	iResult = vsnprintf(pOutbuf, nOutbuf - 1, pFmt, ap);
+#ifdef WIN32
+# pragma warning(pop)
+#endif // WIN32
+
+	va_end(ap);
+
+	if (iResult < 0)
+	{
+		iResult = 0;
+	}
+	nResult = iResult;
+
+	if (nResult > nOutbuf - 1)
+	{
+		nResult = nOutbuf - 1;
+	}
+
+	pOutbuf[nResult] = 0; 
+	return nResult;
+}
+
 #ifdef SEATEST_INTERNAL_TESTS
 static int sea_test_last_passed = 0;
 #endif

@@ -58,6 +58,8 @@ void seatest_teardown( void );
 void seatest_suite_teardown( void );
 void seatest_suite_setup( void );
 void seatest_test(const char* fixture, const char* test, void(*test_function)(void));
+size_t seatest_snprintf(char *pbuffer, size_t nbuffer, const char *pFmt, ...);
+
 /*
 Assert Macros
 */
@@ -68,7 +70,7 @@ Assert Macros
 #define assert_ulong_equal(expected, actual) do {  seatest_assert_ulong_equal(expected, actual, __FUNCTION__, __LINE__); } while (0)
 #define assert_size_t_equal(expected, actual) do {  seatest_assert_size_t_equal(expected, actual, __FUNCTION__, __LINE__); } while (0)
 #define assert_string_equal(expected, actual) do {  seatest_assert_string_equal(expected, actual, __FUNCTION__, __LINE__); } while (0)
-#define assert_n_array_equal(expected, actual, n) do { size_t seatest_count; size_t const seatest_n = (n); for(seatest_count=0; seatest_count<seatest_n; seatest_count++) { char s_seatest[SEATEST_PRINT_BUFFER_SIZE]; sprintf(s_seatest,"Expected %d to be %d at position %u", (int)((actual)[seatest_count]), (int)((expected)[seatest_count]), (unsigned)seatest_count); seatest_simple_test_result(((expected)[seatest_count] == (actual)[seatest_count]), s_seatest, __FUNCTION__, __LINE__);} } while (0)
+#define assert_n_array_equal(expected, actual, n) do { size_t seatest_count; size_t const seatest_n = (n); for(seatest_count=0; seatest_count<seatest_n; seatest_count++) { char s_seatest[256]; seatest_snprintf(s_seatest, sizeof(s_seatest), "Expected %d to be %d at position %u", (int)((actual)[seatest_count]), (int)((expected)[seatest_count]), (unsigned)seatest_count); seatest_simple_test_result(((expected)[seatest_count] == (actual)[seatest_count]), s_seatest, __FUNCTION__, __LINE__);} } while (0)
 #define assert_bit_set(bit_number, value) { seatest_simple_test_result(((1 << (bit_number)) & (value)), " Expected bit to be set" ,  __FUNCTION__, __LINE__); } while (0)
 #define assert_bit_not_set(bit_number, value) { seatest_simple_test_result(!((1 << (bit_number)) & (value)), " Expected bit not to to be set" ,  __FUNCTION__, __LINE__); } while (0)
 #define assert_bit_mask_matches(value, mask) { seatest_simple_test_result((((value) & (mask)) == (mask)), " Expected all bits of mask to be set" ,  __FUNCTION__, __LINE__); } while (0)
