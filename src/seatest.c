@@ -23,6 +23,11 @@ int seatest_is_string_equal_i(const char* s1, const char* s2)
 #endif
 
 // seatest_snprintf()
+#ifndef WIN32
+# include <limits.h>
+# include <stdarg.h>
+#endif // !WIN32
+
 size_t seatest_snprintf(char *pOutbuf, size_t nOutbuf, const char *pFmt, ...)
 {
 	va_list ap;
