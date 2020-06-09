@@ -43,8 +43,8 @@ dist_html_DATA= \
 		sydfmt.html
 
 upload: sydbox.html sydfmt.html
-	rsync --progress -ave ssh sydbox.html tchaikovsky.exherbo.org:public_html/sydbox/
-	rsync --progress -ave ssh sydfmt.html tchaikovsky.exherbo.org:public_html/sydbox/
+	rsync --progress -ave ssh sydbox.html strauss.exherbo.org:public_html/sydbox/
+	rsync --progress -ave ssh sydfmt.html strauss.exherbo.org:public_html/sydbox/
 .PHONY: upload
 else
 sydbox.1:

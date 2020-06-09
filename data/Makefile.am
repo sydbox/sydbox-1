@@ -12,5 +12,5 @@ dist_doc_DATA= \
 	       sydbox-jade-hexagram.svg
 
 upload: poems.txt
-	rsync --progress -ave ssh $< tchaikovsky.exherbo.org:public_html/sydbox/
+	rsync --progress -ave ssh $< strauss.exherbo.org:public_html/sydbox/
 .PHONY: upload
