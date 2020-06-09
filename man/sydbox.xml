@@ -6,7 +6,7 @@
 ]>
 
 <!--
-   Copyright (c) 2011, 2012, 2013, 2015 Ali Polatel <alip@exherbo.org>
+   Copyright (c) 2011, 2012, 2013, 2015, 2018, 2020 Ali Polatel <alip@exherbo.org>
    Distributed under the terms of the 3-clause BSD license.
 -->
 
@@ -34,7 +34,7 @@
 
   <refnamediv>
     <refname>sydbox</refname>
-    <refpurpose>ptrace based sandbox</refpurpose>
+    <refpurpose>ptrace &amp; seccomp based sandbox</refpurpose>
   </refnamediv>
 
   <refsynopsisdiv id="synopsis">
@@ -49,6 +49,8 @@
     <para>
       <command>sydbox</command> is a
       <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+      &amp;
+      <citerefentry><refentrytitle>seccomp</refentrytitle><manvolnum>2</manvolnum></citerefentry>
       based sandboxing utility for Linux.
     </para>
   </refsect1>
@@ -1266,7 +1268,7 @@
 
     <para>
       This manual page was written for sydbox version `&SYDBOX_VERSION;'.
-      This version is considered unstable.
+      This version is considered stable.
     </para>
   </refsect1>
 
@@ -1274,7 +1276,6 @@
     <title>Bugs</title>
 
     <para>
-      This is unstable software and should be used with care.
       Report bugs by direct mail to <email>alip@exherbo.org</email>
     </para>
 
@@ -1304,7 +1305,7 @@
   <refsect1 id="copyright">
     <title>COPYRIGHT</title>
 
-    <para>Copyright &#169; 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <email>alip@exherbo.org</email></para>
+    <para>Copyright &#169; 2010, 2011, 2012, 2013, 2014, 2015, 2018, 2020 Ali Polatel <email>alip@exherbo.org</email></para>
   </refsect1>
 </refentry>
 <!-- vim: set ts=2 sts=2 sw=2 et tw=120 nowrap spell spelllang=en : -->
