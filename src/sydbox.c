@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2020 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -94,7 +94,7 @@ PINK_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
-"PACKAGE"-"VERSION GITVERSION" -- ptrace based sandbox\n\
+"PACKAGE"-"VERSION GITVERSION" -- ptrace & seccomp based sandbox\n\
 usage: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
 -h          -- Show usage and exit\n\
 -v          -- Show version and exit\n\
