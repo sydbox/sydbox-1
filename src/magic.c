@@ -1,7 +1,7 @@
 /*
  * sydbox/magic.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2020 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -454,6 +454,7 @@ enum magic_ret magic_check_call(int rval)
 		if (errno != EAFNOSUPPORT)
 			return MAGIC_RET_OK;
 		/* fall through (for cases like --disable-ipv6) */
+		PINK_GCC_ATTR((fallthrough));
 	case EAFNOSUPPORT:
 		return MAGIC_RET_NOT_SUPPORTED;
 	default:
