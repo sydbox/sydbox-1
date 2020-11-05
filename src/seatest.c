@@ -109,6 +109,7 @@ static seatest_void_void seatest_fixture_teardown = 0;
 
 /* for aborting tests */
 jmp_buf seatest_test_abort_env;
+jmp_buf seatest_run_tests_abort_env;
 
 seatest_simple_test_result_fn_t *seatest_simple_test_result = seatest_simple_test_result_log;
 
@@ -168,9 +169,24 @@ static int seatest_fixture_test_functions_failed;
 static int seatest_fixture_tests_failed;
 static int seatest_fixture_tests_failed_limit;
 static int seatest_fixture_tests_failed_limit_default = -1;
+static int seatest_global_tests_failed_limit = -1;
+
+static int check_reached_global_limit(int my_sea_tests_failed)
+{
+	if (seatest_global_tests_failed_limit < 0)
+		return 0;
+
+	if (my_sea_tests_failed > seatest_global_tests_failed_limit)
+		return 1;
+	else
+		return 0;
+}
 
 static int check_reached_test_limit(int my_sea_tests_failed)
 {
+	if (check_reached_global_limit(my_sea_tests_failed))
+		return 1;
+
 	if (seatest_fixture_tests_failed_limit < 0)
 		return 0;
 
@@ -213,7 +229,6 @@ void seatest_simple_test_result_log(int passed, const char* reason, const char* 
 
 		if (check_reached_test_limit(sea_tests_failed))
 		{
-			printf("Failure limit(%d) exceeded; test has been finished with failure." SEATEST_NL, seatest_fixture_tests_failed_limit);
 			longjmp(seatest_test_abort_env, 1);
 		}
 		#ifdef ABORT_TEST_IF_ASSERT_FAIL
@@ -391,6 +406,11 @@ void seatest_global_set_test_fixture_failed_limit_default(int limit)
 	seatest_fixture_tests_failed_limit_default = limit;
 }
 
+void seatest_global_set_failed_limit(int limit)
+{
+	seatest_global_tests_failed_limit = limit;
+}
+
 void seatest_test_fixture_end()
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
@@ -460,9 +480,21 @@ void seatest_test(const char* fixture, const char* test, void (*test_function)(v
 	seatest_suite_setup();
 	seatest_setup();
 
-	if (! setjmp(seatest_test_abort_env))
+	switch(setjmp(seatest_test_abort_env))
 	{
+	case 0:
 		test_function();
+		break;
+	default:
+		/* test limit exceeded */
+		if (check_reached_global_limit(sea_tests_failed))
+			{
+			++sea_test_functions_failed;
+			longjmp(seatest_run_tests_abort_env, 1);
+			}
+		/* otherwise print abort message and go on */
+		printf("...Test failure limit(%d) exceeded; test has been finished with failure." SEATEST_NL, seatest_fixture_tests_failed_limit);
+		break;
 	}
 
 	seatest_teardown();
@@ -506,7 +538,17 @@ int run_tests(seatest_void_void tests)
 {
 	unsigned long end;
 	unsigned long start = GetTickCount();
-	tests();
+
+	switch (setjmp(seatest_run_tests_abort_env))
+		{
+	case 0:
+		tests();
+		break;
+	default:
+		printf("...Test run aborted due to global error limit (%d)" SEATEST_NL, seatest_global_tests_failed_limit);
+		break;
+		}
+
 	end = GetTickCount();
 
 	return seatest_finish(end - start);

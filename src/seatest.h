@@ -6,7 +6,7 @@
 Defines
 */
 
-#define SEATEST_VERSION "2.0.0-alpha1"
+#define SEATEST_VERSION "2.0.0-alpha2"
 #define SEATEST_PROJECT_HOME "https://github.com/mcci-usb/seatest/"
 #define SEATEST_PRINT_BUFFER_SIZE 256
 
@@ -36,6 +36,7 @@ void seatest_test_fixture_start(const char* filepath);
 void seatest_test_fixture_end( void );
 void seatest_test_fixture_set_failed_limit(int limit);
 void seatest_global_set_test_fixture_failed_limit_default(int limit);
+void seatest_global_set_failed_limit(int limit);
 seatest_simple_test_result_fn_t seatest_simple_test_result_log;
 void seatest_assert_true(int test, const char* function, unsigned int line);
 void seatest_assert_false(int test, const char* function, unsigned int line);

@@ -16,7 +16,7 @@ If you have experience with other xUnit type frameworks, you may wish to read th
 - [Seatest Hello World](#seatest-hello-world)
 - [Fixtures](#fixtures)
 - [Getting Started](#getting-started)
-- [Abort test on first test failure](#abort-test-on-first-test-failure)
+- [Abort tests on failures](#abort-tests-on-failures)
 - [Meta](#meta)
 	- [Release Notes](#release-notes)
 
@@ -145,14 +145,14 @@ Note, this section is currently getting built up and might seem a bit incomplete
 
 7. Run
 
-## Abort test on first test failure
+## Abort tests on failures
 
-Normally Seatest will run all asserts in a test no matter whether they pass or fail. If you want the test to abort on the first failure then set the #define `ABORT_TEST_IF_ASSERT_FAIL`.
+Normally Seatest will run all asserts in a test no matter whether they pass or fail.
 
-The compile-time variable only sets a default. You can fine tune the behavior of Seatest using two APIs.
+You can fine tune the behavior of Seatest using two APIs.
 
 ```c
-void seatest_set_fixture_default_failed_limit(int limit);
+void seatest_global_set_test_fixture_failed_limit_default(int limit);
 ```
 
 This function updates the default limit for failed assertions in every test fixture run after this API is called. If `limit` is `-1`, no limit is applied.
@@ -163,10 +163,18 @@ void seatest_test_fixture_set_failed_limit(int limit);
 
 This function sets the limit for failed assertions in the *current* test fixture. It only affects assertions that fail after this API is called, so if 5 errors have occurred already in the current fixture, and you call `seatest_test_fixture_set_failed_limit(0)`, the fixture still proceeds until the next assertion fails.
 
+```c
+void seatest_global_set_failed_limit(int limit);
+```
+
+This function sets the limit for failed assertions in the entire test run. It only affects assertions that fail after this API is called, so if 5 errors have occurred already in the current fixture, and you call `seatest_global_set_failed_limit(0)`, the fixture still proceeds until the next assertion fails.
+
 ## Meta
 
 ### Release Notes
 
-- `v2.0.0-alpha1`: add `seatest_set_fixture_default_failed_limit()` and `seatest_test_fixture_set_failed_limit()` APIs.
+- `v2.0.0-alpha2`: add `seatest_global_set_failed_limit()` API.
+
+- `v2.0.0-alpha1`: add `seatest_global_set_test_fixture_failed_limit_default()` and `seatest_test_fixture_set_failed_limit()` APIs.
 
 - `v1.1.0`: first MCCI version
