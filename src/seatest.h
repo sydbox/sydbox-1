@@ -15,11 +15,8 @@ Defines
 # define SEATEST_NL	"\n"
 #endif
 
-#ifdef ABORT_TEST_IF_ASSERT_FAIL
 #include <setjmp.h>
-jmp_buf env;
-int skip_failed_test;
-#endif
+extern jmp_buf seatest_test_abort_env;
 
 /*
 Typedefs
@@ -37,6 +34,8 @@ Declarations
 seatest_simple_test_result_fn_t *seatest_simple_test_result;
 void seatest_test_fixture_start(const char* filepath);
 void seatest_test_fixture_end( void );
+void seatest_test_fixture_set_failed_limit(int limit);
+void seatest_global_set_test_fixture_failed_limit_default(int limit);
 seatest_simple_test_result_fn_t seatest_simple_test_result_log;
 void seatest_assert_true(int test, const char* function, unsigned int line);
 void seatest_assert_false(int test, const char* function, unsigned int line);

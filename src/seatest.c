@@ -107,6 +107,9 @@ static seatest_void_void seatest_suite_teardown_func = 0;
 static seatest_void_void seatest_fixture_setup = 0;
 static seatest_void_void seatest_fixture_teardown = 0;
 
+/* for aborting tests */
+jmp_buf seatest_test_abort_env;
+
 seatest_simple_test_result_fn_t *seatest_simple_test_result = seatest_simple_test_result_log;
 
 void suite_setup(seatest_void_void setup)
@@ -163,7 +166,20 @@ const char* test_file_name(const char* path)
 static int seatest_fixture_tests_run;
 static int seatest_fixture_test_functions_failed;
 static int seatest_fixture_tests_failed;
+static int seatest_fixture_tests_failed_limit;
+static int seatest_fixture_tests_failed_limit_default = -1;
 
+static int check_reached_test_limit(int my_sea_tests_failed)
+{
+	if (seatest_fixture_tests_failed_limit < 0)
+		return 0;
+
+	int const fixture_tests_failed = my_sea_tests_failed - seatest_fixture_tests_failed;
+	if (fixture_tests_failed > seatest_fixture_tests_failed_limit)
+		return 1;
+	else
+		return 0;
+}
 
 void seatest_simple_test_result_log(int passed, const char* reason, const char* function, unsigned int line)
 {
@@ -195,9 +211,14 @@ void seatest_simple_test_result_log(int passed, const char* reason, const char* 
 		}
 		sea_tests_failed++;
 
+		if (check_reached_test_limit(sea_tests_failed))
+		{
+			printf("Failure limit(%d) exceeded; test has been finished with failure." SEATEST_NL, seatest_fixture_tests_failed_limit);
+			longjmp(seatest_test_abort_env, 1);
+		}
 		#ifdef ABORT_TEST_IF_ASSERT_FAIL
 		printf("Test has been finished with failure." SEATEST_NL);
-		longjmp(env,1);
+		longjmp(seatest_test_abort_env,1);
 		#endif
 	}
 	else
@@ -357,6 +378,17 @@ void seatest_test_fixture_start(const char* filepath)
 	seatest_fixture_test_functions_failed = sea_test_functions_failed;
 	seatest_fixture_teardown = 0;
 	seatest_fixture_setup = 0;
+	seatest_fixture_tests_failed_limit = seatest_fixture_tests_failed_limit_default;
+}
+
+void seatest_test_fixture_set_failed_limit(int limit)
+{
+	seatest_fixture_tests_failed_limit = limit;
+}
+
+void seatest_global_set_test_fixture_failed_limit_default(int limit)
+{
+	seatest_fixture_tests_failed_limit_default = limit;
 }
 
 void seatest_test_fixture_end()
@@ -428,12 +460,10 @@ void seatest_test(const char* fixture, const char* test, void (*test_function)(v
 	seatest_suite_setup();
 	seatest_setup();
 
-#ifdef ABORT_TEST_IF_ASSERT_FAIL
-	skip_failed_test = setjmp(env);
-	if(!skip_failed_test) test_function();
-#else
-	test_function();
-#endif
+	if (! setjmp(seatest_test_abort_env))
+	{
+		test_function();
+	}
 
 	seatest_teardown();
 	seatest_suite_teardown();
@@ -444,15 +474,10 @@ void seatest_test(const char* fixture, const char* test, void (*test_function)(v
 	seatest_run_test(fixture, test);
 }
 
-int run_tests(seatest_void_void tests)
+static int seatest_finish(unsigned long timediff)
 {
-	unsigned long end;
-	unsigned long start = GetTickCount();
 	char version[40];
 	char s[80];
-	tests();
-	end = GetTickCount();
-
 	if(seatest_is_display_only() || seatest_machine_readable) return SEATEST_RET_OK;
 	seatest_snprintf(version, sizeof(version), "SEATEST v%s", SEATEST_VERSION);
 	printf(SEATEST_NL SEATEST_NL);
@@ -469,12 +494,22 @@ int run_tests(seatest_void_void tests)
 		seatest_snprintf(s, sizeof(s), "%d tests run", sea_tests_run);
 	}
 	seatest_header_printer(s, seatest_screen_width, ' ');
-	seatest_snprintf(s, sizeof(s), "in %lu ms", end - start);
+	seatest_snprintf(s, sizeof(s), "in %lu ms", timediff);
 	seatest_header_printer(s, seatest_screen_width, ' ');
 	printf(SEATEST_NL);
 	seatest_header_printer("", seatest_screen_width, '=');
 
 	return SEATEST_RET_FAILED_COUNT(sea_tests_failed);
+}
+
+int run_tests(seatest_void_void tests)
+{
+	unsigned long end;
+	unsigned long start = GetTickCount();
+	tests();
+	end = GetTickCount();
+
+	return seatest_finish(end - start);
 }
 
 void seatest_show_usage( void )

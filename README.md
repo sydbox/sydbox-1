@@ -6,6 +6,24 @@ If you are new to TDD / Unit Testing, you may wish to jump straight to Getting S
 
 If you have experience with other xUnit type frameworks, you may wish to read through the general technical overview of SeaTest.
 
+<!-- markdownlint-disable MD033 MD004 -->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable -->
+<!-- TOC depthFrom:2 updateOnSave:true -->
+
+- [Features](#features)
+- [Asserts](#asserts)
+- [Seatest Hello World](#seatest-hello-world)
+- [Fixtures](#fixtures)
+- [Getting Started](#getting-started)
+- [Abort test on first test failure](#abort-test-on-first-test-failure)
+- [Meta](#meta)
+	- [Release Notes](#release-notes)
+
+<!-- /TOC -->
+<!-- markdownlint-restore -->
+<!-- Due to a bug in Markdown TOC, the table is formatted incorrectly if tab indentation is set other than 4. Due to another bug, this comment must be *after* the TOC entry. -->
+
 ## Features
 
 - xUnit style asserts
@@ -89,9 +107,9 @@ In many xUnit style testing frameworks, tests and testfixtures are automatically
 
 So Seatest requires you to explicitly register all your tests and fixtures. If you are in the habit of "red green refactor", this limitation shouldn't be too much of a problem. The main reason for this is that the framework needs to be easily used in embedded environments / compilers / IDEs. The current prime target being PICs and the MPLAB IDE. So things are kept to pretty vanilla C code.
 
-SeaTest? was built to support embedded development using a dual compiler approach. This approach involves developing the bulk of the code / tests in a Rich C development environment, like Visual Studio, and then cross compiling with the more limited embedded C compiler to check the unit tests also run on the target device.
+Seatest was built to support embedded development using a dual compiler approach. This approach involves developing the bulk of the code / tests in a rich C development environment, like Visual Studio, and then cross compiling with the more limited embedded C compiler to check the unit tests also run on the target device.
 
-One of the big factors was to make sure seatest didn't use any dynamic memory allocation (like malloc, etc). Or store a big list of tests in some sturcture. All the test fixtures and tests are created through the structure of the code itself. Making it simple, quick, and very straightforward.
+One of the big factors was to make sure Seatest didn't use any dynamic memory allocation (like malloc, etc). Or store a big list of tests in some structure. All the test fixtures and tests are created through the structure of the code itself. Making it simple, quick, and very straightforward.
 
 The general approach to fixtures generally looks like the following:
 
@@ -129,4 +147,26 @@ Note, this section is currently getting built up and might seem a bit incomplete
 
 ## Abort test on first test failure
 
-Normally Seatest will run all asserts in a test no matter whether they pass or fail. If you want the test to abort on the first failure then set the #define ABORT_TEST_IF_ASSERT_FAIL.
+Normally Seatest will run all asserts in a test no matter whether they pass or fail. If you want the test to abort on the first failure then set the #define `ABORT_TEST_IF_ASSERT_FAIL`.
+
+The compile-time variable only sets a default. You can fine tune the behavior of Seatest using two APIs.
+
+```c
+void seatest_set_fixture_default_failed_limit(int limit);
+```
+
+This function updates the default limit for failed assertions in every test fixture run after this API is called. If `limit` is `-1`, no limit is applied.
+
+```c
+void seatest_test_fixture_set_failed_limit(int limit);
+```
+
+This function sets the limit for failed assertions in the *current* test fixture. It only affects assertions that fail after this API is called, so if 5 errors have occurred already in the current fixture, and you call `seatest_test_fixture_set_failed_limit(0)`, the fixture still proceeds until the next assertion fails.
+
+## Meta
+
+### Release Notes
+
+- `v2.0.0-alpha1`: add `seatest_set_fixture_default_failed_limit()` and `seatest_test_fixture_set_failed_limit()` APIs.
+
+- `v1.1.0`: first MCCI version
