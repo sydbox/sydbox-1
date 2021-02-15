@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2020 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2020, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -1007,12 +1007,27 @@ static int event_startup(syd_process_t *current)
 	return 0;
 }
 
-static int event_clone(syd_process_t *current)
+static int event_clone(syd_process_t *current, enum pink_event event)
 {
 	assert(current);
 
-	if (!current->new_clone_flags)
-		return 0;
+	if (!current->new_clone_flags) {
+		/* No syscall-enter received before clone event. */
+		switch (event) {
+		case PINK_EVENT_FORK:
+			current->new_clone_flags = SIGCHLD;
+			break;
+		case PINK_EVENT_VFORK:
+			current->new_clone_flags = CLONE_VM|CLONE_VFORK|SIGCHLD;
+			break;
+		case PINK_EVENT_CLONE:
+			current->new_clone_flags = CLONE_THREAD;
+			break;
+		default:
+			assert_not_reached();
+		}
+		current->flags |= SYD_IN_CLONE;
+	}
 
 	int r;
 	long cpid = -1;
@@ -1309,9 +1324,9 @@ static int trace(void)
 		case PINK_EVENT_CLONE:
 #if SYDBOX_HAVE_SECCOMP
 			r = (event == PINK_EVENT_SECCOMP) ? event_seccomp(current)
-							  : event_clone(current);
+							  : event_clone(current, event);
 #else
-			r = event_clone(current);
+			r = event_clone(current, event);
 #endif
 			if (r < 0)
 				continue; /* process dead */
