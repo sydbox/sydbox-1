@@ -813,7 +813,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	if (!verbose)
 		return;
 
-	if ((r = proc_stat(pid, &info)) < 0) {
+	if (proc_stat(pid, &info) < 0) {
 		fprintf(stderr, "%sproc_stat failed (errno:%d %s)%s\n",
 			CB, errno, strerror(errno), CE);
 	} else {
