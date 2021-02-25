@@ -1,7 +1,7 @@
 /*
  * sydbox/config.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -79,7 +79,7 @@ void config_parse_file(const char *filename)
 	size_t line_count;
 	FILE *fp;
 
-	if ((r = filename_api(filename, &api)) < 0)
+	if (filename_api(filename, &api) < 0)
 		die("no API information in file name `%s', current API is %u",
 		    filename, SYDBOX_API_VERSION);
 	if (api != SYDBOX_API_VERSION)
