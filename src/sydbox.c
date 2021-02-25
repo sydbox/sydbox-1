@@ -1286,10 +1286,8 @@ static int trace(void)
 			BUG_ON(current); /* Just bizarre, no questions */
 		}
 
-		if (current->flags & SYD_STARTUP) {
-			if ((r = event_startup(current)) < 0)
+		if ((current->flags & SYD_STARTUP) && event_startup(current) < 0)
 				continue; /* process dead */
-		}
 
 		sig = WSTOPSIG(status);
 
