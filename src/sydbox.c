@@ -1221,8 +1221,18 @@ static int trace(void)
 			remove_process(pid, status);
 			continue;
 		} else if (!WIFSTOPPED(status)) {
+			/* Process entry not available here yet,
+			 * better paranoid than sorry.
+			 */
 			say("PANIC: not stopped (status:0x%04x)", status);
-			panic(current); /* FIXME: current not available here.*/
+			say("Killing process %u", pid);
+
+			errno = 0;
+			pink_trace_kill(pid, 0, SIGTERM);
+			if (errno != ESRCH) {
+				usleep(10000);
+				pink_trace_kill(pid, 0, SIGKILL);
+			}
 			continue;
 		}
 
