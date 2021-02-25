@@ -1,7 +1,7 @@
 /*
  * sydbox/realpath.c
  *
- * Copyright (c) 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2013, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon FreeBSD's lib/libc/stdlib/realpath.c which is:
  *   Copyright (c) 2003 Constantin S. Svintsoff <kostik@iclub.nsu.ru>
  * Released under the terms of the 3-clause BSD license
@@ -166,7 +166,7 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 				free(resolved);
 				return r;
 			}
-			if (sb.st_mode == 0 && mode == RPATH_NOLAST) {
+			if (mode == RPATH_NOLAST && sb.st_mode == 0) {
 				r = 0;
 				break;
 			}
