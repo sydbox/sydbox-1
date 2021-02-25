@@ -3,7 +3,7 @@
  *
  * save/query socket information
  *
- * Copyright (c) 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2013, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -48,6 +48,8 @@ static inline void sockmap_remove(struct sockmap **map, int fd)
 		return;
 
 	HASH_FIND_INT(*map, &fd, s);
+	if (!s)
+		return;
 	HASH_DEL(*map, s);
 	free_sockinfo(s->info);
 	free(s);
