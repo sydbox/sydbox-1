@@ -3,7 +3,7 @@
  *
  * Socket related system call handlers
  *
- * Copyright (c) 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -25,7 +25,7 @@ int sys_bind(syd_process_t *current)
 {
 	int r;
 	unsigned long fd;
-	char *unix_abspath;
+	char *unix_abspath = NULL;
 	struct pink_sockaddr *psa;
 	sysinfo_t info;
 
