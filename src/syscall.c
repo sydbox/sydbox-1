@@ -1,7 +1,7 @@
 /*
  * sydbox/syscall.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -60,6 +60,19 @@ static const sysentry_t syscall_entries[] = {
 		.name = "lstat64",
 		.enter = sys_stat,
 	},
+	{
+		.name = "newfstatat",
+		.enter = sys_fstatat,
+	},
+	/*
+	 * TODO: This requires updates in the ABI & struct stat logic in
+	 * sys_stat_common function. This system call is i386 only and is very
+	 * rarely used so we leave it out for the time being.
+	{
+		.name = "fstatat64",
+		.enter = sys_fstatat,
+	}
+	*/
 
 	{
 		.name = "access",

@@ -3,7 +3,7 @@
  *
  * Special system call handlers
  *
- * Copyright (c) 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -158,21 +158,11 @@ int sys_execve(syd_process_t *current)
 	return r;
 }
 
-int sys_stat(syd_process_t *current)
+static int sys_stat_common(syd_process_t *current, const char *path,
+			   unsigned int buf_index)
 {
 	int r;
 	long addr;
-	char path[SYDBOX_PATH_MAX];
-
-	if (P_BOX(current)->magic_lock == LOCK_SET) {
-		/* No magic allowed! */
-		return 0;
-	}
-
-	if ((r = syd_read_argument(current, 0, &addr)) < 0)
-		return r;
-	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
-		return errno == EFAULT ? 0 : -errno;
 
 	r = magic_cast_string(current, path, 1);
 	if (r == MAGIC_RET_NOOP) {
@@ -255,7 +245,7 @@ int sys_stat(syd_process_t *current)
 			bufsize = sizeof(struct stat);
 		}
 
-		if (pink_read_argument(current->pid, current->regset, 1, &addr) == 0)
+		if (pink_read_argument(current->pid, current->regset, buf_index, &addr) == 0)
 			pink_write_vm_data(current->pid, current->regset, addr, bufaddr, bufsize);
 #if !PINK_ARCH_X86_64
 skip_write:
@@ -275,6 +265,52 @@ skip_write:
 	 * - -ESRCH
 	 */
 	return r;
+}
+
+int sys_stat(syd_process_t *current)
+{
+	int r;
+	long addr;
+	char path[SYDBOX_PATH_MAX];
+
+	if (P_BOX(current)->magic_lock == LOCK_SET) {
+		/* No magic allowed! */
+		return 0;
+	}
+
+	if ((r = syd_read_argument(current, 0, &addr)) < 0)
+		return r;
+	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
+		return errno == EFAULT ? 0 : -errno;
+
+	return sys_stat_common(current, path, 1);
+}
+
+int sys_fstatat(syd_process_t *current)
+{
+	int r;
+	long addr;
+	char path[SYDBOX_PATH_MAX];
+
+	if (P_BOX(current)->magic_lock == LOCK_SET) {
+		/* No magic allowed! */
+		return 0;
+	}
+
+	/* We intentionally disregard the first argument, aka `dirfd' here
+	 * because the added complexity is not worth adding support for a
+	 * usecase that's almost never possible, ie:
+	 * cd /dev; fstatat(AT_FDCWD, sydbox/..., 0);
+	 * does not work, however
+	 * fstatat(AT_FDCWD, /dev/sydbox/..., 0);
+	 * does.
+	 */
+	if ((r = syd_read_argument(current, 1, &addr)) < 0)
+		return r;
+	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
+		return errno == EFAULT ? 0 : -errno;
+
+	return sys_stat_common(current, path, 2);
 }
 
 int sys_dup(syd_process_t *current)
