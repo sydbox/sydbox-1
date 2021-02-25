@@ -26,7 +26,7 @@ int sys_bind(syd_process_t *current)
 	int r;
 	unsigned long fd;
 	char *unix_abspath = NULL;
-	struct pink_sockaddr *psa;
+	struct pink_sockaddr *psa = NULL;
 	sysinfo_t info;
 
 	if (sandbox_off_network(current))
@@ -51,7 +51,7 @@ int sys_bind(syd_process_t *current)
 	r = box_check_socket(current, &info);
 	if (r < 0)
 		goto out;
-	if (sydbox->config.whitelist_successful_bind &&
+	if (sydbox->config.whitelist_successful_bind && psa &&
 	    (psa->family == AF_UNIX || psa->family == AF_INET
 #if SYDBOX_HAVE_IPV6
 	     || psa->family == AF_INET6
