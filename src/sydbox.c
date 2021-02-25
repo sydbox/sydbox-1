@@ -1485,8 +1485,8 @@ static void startup_child(char **argv)
 			kill_save_errno(pid, SIGKILL);
 			die_errno("Unexpected wait status %x", status);
 		}
-		if ((r = pink_trace_seize(pid, sydbox->trace_options)) < 0 ||
-		    (r = pink_trace_interrupt(pid)) < 0) {
+		if (pink_trace_seize(pid, sydbox->trace_options) < 0 ||
+		    pink_trace_interrupt(pid) < 0) {
 			kill_save_errno(pid, SIGKILL);
 			die_errno("Can't attach to %u", pid);
 		}
