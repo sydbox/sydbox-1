@@ -383,7 +383,10 @@ int syd_proc_fd_path(pid_t pid, int fd, char **dst)
 		/* Careful here, readlinkat(2) does not append '\0' */
 		s = (len - 1) * sizeof(char);
 		n = readlinkat(pfd, sfd, path, s);
-		if (n < s) {
+		if (n < 0) {
+			close(pfd);
+			return -errno;
+		} else if (n < s) {
 			path[n] = '\0';
 			*dst = path;
 			close(pfd);
