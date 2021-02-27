@@ -356,8 +356,9 @@ int box_check_path(syd_process_t *current, sysinfo_t *info)
 			goto out;
 		}
 	} else { /* r == 0 */
-		/* Careful, we may both have a bad fd and the path may be NULL! */
-		if (badfd && (!path || !path_is_absolute(path))) {
+		/* Careful, we may both have a bad fd and the path may be either
+		 * NULL or empty string! */
+		if (badfd && (!path || !*path || !path_is_absolute(path))) {
 			/* Bad directory for non-absolute path! */
 			r = deny(current, EBADF);
 			if (sydbox->config.violation_raise_fail)

@@ -144,8 +144,9 @@ static int do_execve(syd_process_t *current, bool at_func)
 			return r;
 		}
 	} else { /* r == 0 */
-		/* Careful, we may both have a bad fd and the path may be NULL! */
-		if (badfd && (!path || !path_is_absolute(path))) {
+		/* Careful, we may both have a bad fd and the path may be either
+		 * NULL or empty string! */
+		if (badfd && (!path || !*path || !path_is_absolute(path))) {
 			/* Bad directory for non-absolute path! */
 			r = deny(current, EBADF);
 			if (sydbox->config.violation_raise_fail)
