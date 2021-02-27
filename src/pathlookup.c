@@ -29,6 +29,8 @@ int path_lookup(const char *filename, char **buf)
 	struct stat statbuf;
 	char pathname[SYDBOX_PATH_MAX];
 
+	pathname[0] = '\0';
+
 	if (strchr(filename, '/')) {
 		if (strlen(filename) > sizeof(pathname) - 1)
 			return -ENAMETOOLONG;
