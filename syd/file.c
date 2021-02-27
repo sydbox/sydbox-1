@@ -3,7 +3,7 @@
  *
  * file and path utilities
  *
- * Copyright (c) 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the GNU General Public License v3 (or later)
  */
 
@@ -281,6 +281,8 @@ int syd_prepath_at(int fd, const char *path, char **buf, int mode)
 		r = 0;
 		break;
 	}
+
+	return r;
 }
 
 #if 0
