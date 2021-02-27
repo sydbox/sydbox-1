@@ -3,7 +3,7 @@
  *
  * /proc related utilities
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright (C) 2010 Lennart Poettering
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
@@ -241,6 +241,7 @@ out:
 	closedir(dir);
 	return r;
 }
+#endif
 
 /* read Tgid: and PPid: from /proc/$pid/status */
 int proc_parents(pid_t pid, pid_t *tgid, pid_t *ppid)
@@ -282,7 +283,6 @@ int proc_parents(pid_t pid, pid_t *tgid, pid_t *ppid)
 	*ppid = ret_ppid;
 	return 0;
 }
-#endif
 
 /*
  * read /proc/$pid/stat

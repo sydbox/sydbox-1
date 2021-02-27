@@ -3,7 +3,7 @@
  *
  * /proc related utilities
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright (C) 2010 Lennart Poettering
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
@@ -29,6 +29,7 @@ struct proc_statinfo {
 };
 
 int proc_cwd(pid_t pid, bool use_toolong_hack, char **buf);
+int proc_parents(pid_t pid, pid_t *tgid, pid_t *ppid);
 int proc_stat(pid_t pid, struct proc_statinfo *info);
 
 #if 0
