@@ -3,7 +3,7 @@
  *
  * File related utilities
  *
- * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is
  *   Copyright 2010 Lennart Poettering
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
@@ -98,8 +98,14 @@ ssize_t readlink_copy(const char *path, char *dest, size_t len)
 	ssize_t n;
 
 	n = readlink(path, dest, len - 1);
-	if (n < 0)
-		return -errno;
+	if (n < 0 || n >= (ssize_t)(len - 1)) {
+		if (n < 0)
+			return -errno;
+		else if (n == 0)
+			return -ENOENT;
+		else
+			return -ENAMETOOLONG;
+	}
 	dest[n] = 0;
 	return n;
 }

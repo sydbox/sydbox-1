@@ -83,10 +83,11 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 {
 	struct stat sb;
 	struct stat_mode sm;
-	char *p, *q, *s;
-	size_t left_len, resolved_len;
+	char *p, *q;
+	size_t left_len, resolved_len, next_token_len;
 	unsigned symlinks;
-	int r, slen = 0;
+	int r;
+	ssize_t slen;
 	char left[SYDBOX_PATH_MAX], next_token[SYDBOX_PATH_MAX];
 	char symlink[SYDBOX_PATH_MAX];
 
@@ -132,16 +133,18 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 		 * and its length.
 		 */
 		p = strchr(left, '/');
-		s = p ? p : left + left_len;
-		if ((size_t)(s - left) >= sizeof(next_token)) {
-			free(resolved);
-			return -ENAMETOOLONG;
+		next_token_len = p != NULL ? (size_t)(p - left) : left_len;
+		memcpy(next_token, left, next_token_len);
+		next_token[next_token_len] = '\0';
+
+		if (p != NULL) {
+			left_len -= next_token_len;
+			memmove(left, p + 1, left_len + 1);
+		} else {
+			left[0] = '\0';
+			left_len = 0;
 		}
-		memcpy(next_token, left, s - left);
-		next_token[s - left] = '\0';
-		left_len -= s - left;
-		if (p != NULL)
-			memmove(left, s + 1, left_len + 1);
+
 		if (resolved[resolved_len - 1] != '/') {
 			if (resolved_len + 1 >= SYDBOX_PATH_MAX) {
 				free(resolved);
@@ -227,37 +230,34 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 				if (symlink[0] == '/') {
 					resolved[1] = 0;
 					resolved_len = 1;
-				} else if (resolved_len > 1) {
+				} else {
 					/* Strip the last path component. */
-					resolved[resolved_len - 1] = '\0';
 					q = strrchr(resolved, '/') + 1;
 					*q = '\0';
 					resolved_len = q - resolved;
 				}
-			}
-
-			/*
-			 * If there are any path components left, then
-			 * append them to symlink. The result is placed
-			 * in `left'.
-			 */
-			if (p != NULL) {
-				if (symlink[slen - 1] != '/') {
-					if ((size_t)(slen + 1) >= sizeof(symlink)) {
+				/*
+				 * If there are any path components left, then
+				 * append them to symlink. The result is placed
+				 * in `left'.
+				 */
+				if (p != NULL) {
+					if (symlink[slen - 1] != '/') {
+						if ((size_t)(slen + 1) >= sizeof(symlink)) {
+							free(resolved);
+							return -ENAMETOOLONG;
+						}
+						symlink[slen] = '/';
+						symlink[slen + 1] = 0;
+					}
+					left_len = strlcat(symlink, left, sizeof(symlink));
+					if (left_len >= sizeof(symlink)) {
 						free(resolved);
 						return -ENAMETOOLONG;
 					}
-					symlink[slen] = '/';
-					symlink[slen + 1] = 0;
 				}
-				left_len = strlcat(symlink, left, sizeof(symlink));
-				if (left_len >= sizeof(left)) {
-					free(resolved);
-					return -ENAMETOOLONG;
-				}
-			}
-			left_len = strlcpy(left, symlink, sizeof(left));
-			if (nofollow && p == NULL) {
+				left_len = strlcpy(left, symlink, sizeof(left));
+			} else if (p == NULL) {
 				r = 0;
 				resolved_len = strlcat(resolved, left, SYDBOX_PATH_MAX);
 				break;
