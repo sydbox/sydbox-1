@@ -1,7 +1,7 @@
 /*
  * sydbox/pathlookup.c
  *
- * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -41,7 +41,7 @@ int path_lookup(const char *filename, char **buf)
 	 * security geeks a panic attack.
 	 */
 	else if (stat(filename, &statbuf) == 0)
-		strcpy(*pathname, filename);
+		strcpy(pathname, filename);
 #endif /* SYDBOX_USE_DEBUGGING_EXEC */
 	else {
 		const char *path;
