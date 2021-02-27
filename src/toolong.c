@@ -3,7 +3,7 @@
  *
  * Path (longer than PATH_MAX) handling
  *
- * Copyright (c) 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2013, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon zsh/Src/compat.c which is:
  *	 Copyright (c) 1992-1997 Paul Falstad
  * All rights reserved.
@@ -167,7 +167,10 @@ char *getcwd_long(void)
 			if (dev != pdev || (ino_t) de->d_ino == ino) {
 				/* Maybe found directory, need to check device & inode */
 				strncpy(nbuf + 3, fn, PATH_MAX);
-				lstat(nbuf, &sbuf);
+				if (lstat(nbuf, &sbuf) < 0) {
+					free(buf);
+					return NULL;
+				}
 				if (sbuf.st_dev == dev && sbuf.st_ino == ino)
 					break;
 			}
