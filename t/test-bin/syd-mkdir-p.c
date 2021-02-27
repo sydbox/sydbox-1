@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 		/* fprintf(stderr, "next_dir: %s\n", x); */
 
 		errno = 0;
-		mkdir(x, 0700);
+		(void)mkdir(x, 0700);
 		if (errno != expect_errno) {
 			/* fprintf(stderr, "mkdir: expected %d, got %d\n", expect_errno, errno); */
 			return errno;
@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 		/* fprintf(stderr, "mkdir: OK\n"); */
 
 		errno = 0;
-		chdir(x);
+		(void)chdir(x);
 		if (errno != 0) {
 			/* fprintf(stderr, "mkdir: expected %d, got %d\n", 0, errno); */
 			return errno;
