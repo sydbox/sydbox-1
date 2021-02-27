@@ -3,7 +3,7 @@
  *
  * /proc utilities
  *
- * Copyright (c) 2014, 2015, 2016 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2014, 2015, 2016, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the GNU General Public License v3 (or later)
  */
 
@@ -18,6 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <ctype.h>
 #ifndef O_PATH /* hello glibc, I hate you. */
 #define O_PATH 010000000
 #endif
@@ -429,7 +430,15 @@ int syd_proc_environ(pid_t pid)
 
 	int i = 0, r = 0;
 	while ((c = fgetc(f)) != EOF) {
-		s[i] = c;
+		if (c == '\0' || isprint(c)) {
+			s[i] = c;
+		} else {
+			/* Let's be paranoid and not allow non-printable
+			 * characters here.
+			 */
+			r = -EINVAL;
+			break;
+		}
 
 		if (c == '\0') { /* end of unit */
 			if (putenv(s) != 0) {
