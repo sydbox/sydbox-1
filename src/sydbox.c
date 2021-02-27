@@ -61,6 +61,7 @@ sydbox_t *sydbox;
 static unsigned os_release;
 static volatile sig_atomic_t interrupted;
 static sigset_t empty_set, blocked_set;
+static struct sigaction child_sa;
 
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
@@ -1478,6 +1479,13 @@ static void startup_child(char **argv)
 			}
 		}
 
+		if (child_sa.sa_handler != SIG_DFL &&
+				sigaction(SIGCHLD, &child_sa, NULL) < 0) {
+			fprintf(stderr, "sigaction failed (errno:%d %s)\n",
+					errno, strerror(errno));
+			_exit(EXIT_FAILURE);
+		}
+
 		kill(pid, SIGSTOP);
 
 		execv(pathname, argv);
@@ -1561,12 +1569,9 @@ int main(int argc, char **argv)
 	/* early initialisations */
 	init_early();
 
-	/* Make sure SIGCHLD has the default action so that waitpid
-	   definitely works without losing track of children.  The user
-	   should not have given us a bogus state to inherit, but he might
-	   have.  Arguably we should detect SIG_IGN here and pass it on
-	   to children, but probably noone really needs that.  */
-	signal(SIGCHLD, SIG_DFL);
+	const struct sigaction sa = { .sa_handler = SIG_DFL };
+	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
+		die_errno("sigaction");
 
 	while ((opt = getopt_long(argc, argv, "hvc:m:E:", long_options, &options_index)) != EOF) {
 		switch (opt) {
