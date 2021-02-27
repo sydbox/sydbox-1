@@ -892,7 +892,7 @@ int sys_rename(syd_process_t *current)
 int sys_renameat(syd_process_t *current)
 {
 	int r;
-	struct stat statbuf;
+	struct stat statbuf = { .st_mode = 0 };
 	sysinfo_t info;
 
 	if (sandbox_off_write(current))
