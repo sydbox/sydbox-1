@@ -251,12 +251,7 @@ static int sys_stat_common(syd_process_t *current, const char *path,
 skip_write:
 #endif
 		/* magic command accepted */
-		if (r < 0)
-			errno = -r;
-		else if (r == MAGIC_RET_FALSE)
-			errno = ENOENT;
-		else
-			errno = 0;
+		errno = (r == MAGIC_RET_FALSE) ? ENOENT : 0;
 		r = deny(current, errno);
 	}
 
