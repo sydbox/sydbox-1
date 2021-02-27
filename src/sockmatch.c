@@ -3,7 +3,7 @@
  *
  * Match socket information
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -284,18 +284,17 @@ static int sockmatch_parse_ip(int family, const char *src,
 	}
 
 	errno = 0;
+#if SYDBOX_HAVE_IPV6
 	if (family == AF_INET) {
+#endif
 		if (inet_pton(AF_INET, ip, &addr) != 1)
 			r = errno ? -errno : -EINVAL;
-	}
 #if SYDBOX_HAVE_IPV6
-	else if (family == AF_INET6) {
+	} else /* if (family == AF_INET6) */ {
 		if (inet_pton(AF_INET6, ip, &addr6) != 1)
 			r = errno ? -errno : -EINVAL;
 	}
 #endif
-	else
-		r = -EINVAL;
 out:
 	free(ip);
 
@@ -307,14 +306,14 @@ out:
 
 		match->addr.sa_in.netmask = netmask;
 
+#if SYDBOX_HAVE_IPV6
 		if (family == AF_INET)
+#endif
 			match->addr.sa_in.addr = addr;
 #if SYDBOX_HAVE_IPV6
-		else if (family == AF_INET6)
+		else /* if (family == AF_INET6) */
 			match->addr.sa6.addr = addr6;
 #endif
-		else
-			return -EINVAL;
 	}
 
 	return r;
