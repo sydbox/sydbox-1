@@ -1,7 +1,7 @@
 /*
  * sydbox/pathdecode.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -70,8 +70,9 @@ int path_prefix(syd_process_t *current, unsigned arg_index, char **buf)
 		r = -EBADF;
 	} else {
 		if ((r = syd_proc_fd_path(current->pid, fd, &prefix)) < 0) {
-			say("readlink /proc/%u/fd/%d failed (errno:%d %s)",
-			    current->pid, fd, -r, strerror(-r));
+			if (fd > STDERR_FILENO)
+				say("readlink /proc/%u/fd/%d failed (errno:%d %s)",
+				    current->pid, fd, -r, strerror(-r));
 			if (r == -ENOENT)
 				r = -EBADF; /* correct errno */
 		} else {
