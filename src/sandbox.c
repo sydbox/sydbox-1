@@ -3,7 +3,7 @@
  *
  * Sandboxing utilities
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -347,12 +347,12 @@ int box_check_path(syd_process_t *current, sysinfo_t *info)
 		 * For some `at' suffixed functions, NULL as path
 		 * argument may be OK.
 		 */
-		if (!(r == -EFAULT && info->at_func && info->null_ok)) {
+		if (r == -ESRCH) {
+			goto out;
+		} else if (!(r == -EFAULT && info->at_func && info->null_ok)) {
 			r = deny(current, -r);
 			if (sydbox->config.violation_raise_fail)
 				violation(current, "%s()", current->sysname);
-			goto out;
-		} else if (r == -ESRCH) {
 			goto out;
 		}
 	} else { /* r == 0 */
