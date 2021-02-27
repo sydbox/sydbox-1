@@ -271,6 +271,12 @@ static const sysentry_t syscall_entries[] = {
 		.name = "clone",
 		.enter = sys_clone,
 	},
+	/* TODO
+	{
+		.name = "clone3",
+		.enter = sys_clone3,
+	},
+	*/
 
 	{
 		.name = "execve",
