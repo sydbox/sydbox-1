@@ -79,8 +79,8 @@ test_expect_success 'realpath non-directory with trailing slash yields NULL' '
     realpath_mode-1 ENOTDIR "$HOMER/non-directory-slash/" "existing" NULL
 '
 
-test_expect_success 'realpath missing directory yields NULL' '
-    realpath_mode-1 ENOENT "$HOMER/missing-directory/.." "existing" NULL
+test_expect_success 'realpath recovers from missing parent directory' '
+    realpath_mode-1 0 "$HOMER/missing-directory/.." "existing" "$HOMER"
 '
 
 test_expect_success SYMLINKS 'symlinks not resolved with RPATH_NOFOLLOW' '
@@ -114,10 +114,10 @@ test_expect_success SYMLINKS 'non-directory symlink with a trailing slash yields
     realpath_mode-1 ENOTDIR "$HOMER/resolve-to-this-non-dir/" existing NULL
 '
 
-test_expect_success SYMLINKS 'missing directory via symlink yields NULL' '
+test_expect_success SYMLINKS 'recovers from missing directory via symlink' '
     rm -fr resolve-to-no-such-dir-in-the-sky
     ln -sf resolve-to-no-such-dir-in-the-sky resolve-from-this-link-to-no-such-dir-in-the-sky
-    realpath_mode-1 ENOENT "$HOMER/resolve-from-this-link-to-no-such-dir-in-the-sky/.." existing NULL
+    realpath_mode-1 0 "$HOMER/resolve-from-this-link-to-no-such-dir-in-the-sky/.." existing "$HOMER"
 '
 
 test_expect_success 'alternate modes can resolve basenames' '
@@ -135,7 +135,7 @@ test_expect_success SYMLINKS 'alternate modes can resolve symlink basenames' '
 
 test_expect_success 'alternate modes can handle missing dirnames' '
     rm -fr dir-dont-exist
-    realpath_mode-1 ENOENT "$HOMER/dir-dont-exist/nofile" nolast NULL
+    realpath_mode-1 0 "$HOMER/dir-dont-exist/nofile" nolast "$HOMER"/dir-dont-exist/nofile
 '
 
 test_expect_success SYMLINKS 'possible loop bug' '

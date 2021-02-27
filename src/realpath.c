@@ -212,8 +212,26 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 		else
 			sm.last_node = false;
 		if ((r = stat_mode(resolved, &sm, &sb)) < 0) {
-			free(resolved);
-			return r;
+			if (!sm.last_node && (r == -EACCES || r == -ENOENT)) {
+				/* Two cases:
+				 * 1. Keep going despite permission denied.
+				 * This is here so that the following snippet
+				 * works under sydbox:
+				 * mkdir -p sub1/d && cd sub1/d &&
+				 * chmod a-r . && chmod a-rx .. &&
+				 * mkdir rel
+				 * 2. Keep going despite no such file or dir.
+				 * This is here so that the following snippet
+				 * works under sydbox:
+				 * mkdir d && cd d && rmdir ../d &&
+				 * echo hello > ../out
+				 */
+				r = 0;
+				sb.st_mode = 0;
+			} else {
+				free(resolved);
+				return r;
+			}
 		}
 		if (S_ISLNK(sb.st_mode)) {
 			if (symlinks++ > SYDBOX_MAXSYMLINKS) {
