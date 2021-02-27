@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <sched.h>
 #include "pink.h"
+#include "path.h"
 #include "pathdecode.h"
 #include "proc.h"
 #include "bsd-compat.h"
@@ -88,10 +89,11 @@ int sysx_chdir(syd_process_t *current)
 	return 0;
 }
 
-int sys_execve(syd_process_t *current)
+static int do_execve(syd_process_t *current, bool at_func)
 {
-	int r;
-	char *path = NULL, *abspath = NULL;
+	int r, flags;
+	bool badfd;
+	char *path = NULL, *abspath = NULL, *prefix = NULL;
 
 	if (sandbox_off_exec(current) &&
 	    ACLQ_EMPTY(&sydbox->config.exec_kill_if_match) &&
@@ -99,22 +101,83 @@ int sys_execve(syd_process_t *current)
 		return 0;
 	}
 
-	r = path_decode(current, 0, &path);
-	if (r == -ESRCH)
-		return r;
-	else if (r < 0)
-		return deny(current, errno);
+	/* TODO: Avoid duplication with box_check_path */
+	badfd = false;
+	if (at_func) {
+		r = path_prefix(current, 0, &prefix);
+		if (r == -ESRCH) {
+			return -ESRCH;
+		} else if (r == -EBADF) {
+			/* Using a bad directory for absolute paths is fine!
+			 * System call will be denied after path_decode()
+			 */
+			badfd = true;
+		} else if (r < 0) {
+			r = deny(current, -r);
+			if (sydbox->config.violation_raise_fail)
+				violation(current, "%s()", current->sysname);
+			return r;
+		}
 
-	r = box_resolve_path(path, P_CWD(current), current->pid, RPATH_EXIST, &abspath);
+		if ((r = syd_read_argument_int(current, 4, &flags)) < 0) {
+			if (prefix)
+				free(prefix);
+			return r;
+		}
+	}
+
+	if ((r = path_decode(current, at_func ? 1 : 0, &path)) < 0) {
+		/*
+		 * For EFAULT we assume path argument is NULL.
+		 * If the flag AT_EMPTY_PATH is set, we assume this is fine.
+		 */
+		if (r == -ESRCH) {
+			if (prefix)
+				free(prefix);
+			return r;
+		} else if (!(r == -EFAULT && (flags & AT_EMPTY_PATH))) {
+			r = deny(current, errno);
+			if (sydbox->config.violation_raise_fail)
+				violation(current, "%s()", current->sysname);
+			if (prefix)
+				free(prefix);
+			return r;
+		}
+	} else { /* r == 0 */
+		/* Careful, we may both have a bad fd and the path may be NULL! */
+		if (badfd && (!path || !path_is_absolute(path))) {
+			/* Bad directory for non-absolute path! */
+			r = deny(current, EBADF);
+			if (sydbox->config.violation_raise_fail)
+				violation(current, "%s()", current->sysname);
+			if (prefix)
+				free(prefix);
+			if (path)
+				free(path);
+			return r;
+		}
+	}
+
+	r = box_resolve_path(path,
+			     prefix ? prefix : P_CWD(current),
+			     current->pid,
+			     (at_func && (flags & AT_SYMLINK_NOFOLLOW) ?
+			      RPATH_NOFOLLOW :
+			      0) | RPATH_EXIST,
+			     &abspath);
+	if (prefix)
+		free(prefix);
 	if (r < 0) {
 		/* resolve_path failed, deny */
 		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s(`%s')", current->sysname, path);
-		free(path);
+		if (path)
+			free(path);
 		return r;
 	}
-	free(path);
+	if (path)
+		free(path);
 
 	/*
 	 * Handling exec.kill_if_match and exec.resume_if_match:
@@ -158,8 +221,18 @@ int sys_execve(syd_process_t *current)
 	return r;
 }
 
-static int sys_stat_common(syd_process_t *current, const char *path,
-			   unsigned int buf_index)
+int sys_execve(syd_process_t *current)
+{
+	return do_execve(current, false);
+}
+
+int sys_execveat(syd_process_t *current)
+{
+	return do_execve(current, true);
+}
+
+static int do_stat(syd_process_t *current, const char *path,
+		   unsigned int buf_index)
 {
 	int r;
 	long addr;
@@ -278,7 +351,7 @@ int sys_stat(syd_process_t *current)
 	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
 		return errno == EFAULT ? 0 : -errno;
 
-	return sys_stat_common(current, path, 1);
+	return do_stat(current, path, 1);
 }
 
 int sys_fstatat(syd_process_t *current)
@@ -305,7 +378,7 @@ int sys_fstatat(syd_process_t *current)
 	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
 		return errno == EFAULT ? 0 : -errno;
 
-	return sys_stat_common(current, path, 2);
+	return do_stat(current, path, 2);
 }
 
 int sys_dup(syd_process_t *current)

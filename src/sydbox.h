@@ -924,6 +924,7 @@ int sys_fork(syd_process_t *current);
 int sys_vfork(syd_process_t *current);
 int sys_clone(syd_process_t *current);
 int sys_execve(syd_process_t *current);
+int sys_execveat(syd_process_t *current);
 int sys_stat(syd_process_t *current);
 int sys_fstatat(syd_process_t *current);
 
