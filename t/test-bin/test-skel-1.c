@@ -119,6 +119,8 @@ dev_t sscanf_dev_t(const char *str_dev)
 #define V_DIRFD "AT_FDCWD | fd # | path[:<flags>[:<mode>]]"
 int at_get_fd(const char *str_dirfd)
 {
+	int r;
+
 	/* work some magic ... expected format:
 	 *	- AT_FDCWD
 	 *	- number
@@ -130,16 +132,23 @@ int at_get_fd(const char *str_dirfd)
 	char *str = strdup(str_dirfd);
 	char *str_path, *str_flags, *str_mode;
 
+	if (!str)
+		return -1;
+
 	str_path = strtok(str, ":");
 	str_flags = strtok(NULL, ":");
 	if (str_flags == NULL) {
 		unsigned long dirfd;
-		if (_strtoul(str_dirfd, &dirfd))
+		if (_strtoul(str_dirfd, &dirfd)) {
+			free(str);
 			return dirfd;
+		}
 	}
 	str_mode = strtok(NULL, ":");
 
-	return open(str_path, f_get_flags(str_flags), sscanf_mode_t(str_mode));
+	r = open(str_path, f_get_flags(str_flags), sscanf_mode_t(str_mode));
+	free(str);
+	return r;
 }
 
 #define V_ACCESS_MODE "r | w | x | f"
