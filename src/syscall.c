@@ -276,6 +276,10 @@ static const sysentry_t syscall_entries[] = {
 		.name = "execve",
 		.enter = sys_execve,
 	},
+	{
+		.name = "execve#64",
+		.enter = sys_execve,
+	},
 
 	{
 		.name = "socketcall",
