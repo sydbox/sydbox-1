@@ -178,40 +178,6 @@ out:
 	return r;
 }
 
-int syd_prepath_at(int fd, const char *path, char **buf, int mode)
-{
-	int r, save_fd = -ENOENT;
-	char *left = NULL, *rpath = NULL;
-
-	/* Handle (very) quick cases */
-	if (path && path[0] == '\0')
-		return -ENOENT;
-
-	/* Validate arguments */
-	if (buf == NULL)
-		return -EINVAL;
-	if (fd < 0 && fd != AT_FDCWD)
-		return -EINVAL;
-
-	/* Handle quick cases */
-	r = syd_path_root_check(path);
-	switch (r) {
-	case -ENOENT:
-		return -ENOENT;
-	case 0: /* This is == '/' */
-		return syd_path_root_alloc(buf);
-	case -EINVAL:
-		r = 0;
-		break;
-	default: /* >0 absolute path */
-		path += r;
-		r = 0;
-		break;
-	}
-
-	return r;
-}
-
 #if 0
 int syd_realpath_at(int fd, const char *path, char **buf, int mode)
 {
