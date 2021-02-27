@@ -22,7 +22,10 @@ static bool _strtoul(const char *sul, unsigned long *ul)
 static int _get_flags(const char *str_flags, const value_pair flags[])
 {
 	const char *delim = "|";
-	char *tok = strtok(strdup(str_flags), delim);
+	char *str = strdup(str_flags);
+	if (!str)
+		return -1;
+	char *tok = strtok(str, delim);
 	int ret = 0;
 	while (tok) {
 		bool found;
@@ -34,6 +37,7 @@ static int _get_flags(const char *str_flags, const value_pair flags[])
 		}
 		tok = strtok(NULL, delim);
 	}
+	free(str);
 	return ret;
 }
 
