@@ -374,9 +374,12 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent)
 static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
 {
 	syd_process_t *child;
+	bool new_child;
 
 	child = lookup_process(cpid);
-	if (child == NULL)
+	new_child = (child == NULL);
+
+	if (new_child)
 		child = new_thread_or_kill(cpid, post_attach_sigstop);
 	if (p->new_clone_flags & CLONE_THREAD) {
 		child->ppid = p->ppid;
@@ -385,7 +388,9 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
 		child->ppid = p->pid;
 		child->tgid = child->pid;
 	}
-	init_process_data(child, p);
+
+	if (new_child)
+		init_process_data(child, p);
 
 	/* clone OK: p->pid <-> cpid */
 	p->new_clone_flags = 0;
