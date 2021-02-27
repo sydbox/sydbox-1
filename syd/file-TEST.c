@@ -3,7 +3,7 @@
  *
  * file and path utility tests
  *
- * Copyright (c) 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the GNU General Public License v3 (or later)
  */
 
@@ -160,44 +160,6 @@ static void test_syd_path_root_check_01(void)
 	assert_int_equal(6, syd_path_root_check("/../../root"));
 	assert_int_equal(8, syd_path_root_check("/../.././root"));
 	assert_int_equal(9, syd_path_root_check("/../../../root"));
-}
-
-static void test_syd_path_stat_01(void)
-{
-	struct stat sb;
-
-	assert_int_equal(-EINVAL, syd_path_stat(NULL, 0, false, &sb));
-	assert_int_equal(-EINVAL, syd_path_stat("/root", 0, false, NULL));
-	assert_int_equal(-EINVAL, syd_path_stat("root", 0, false, &sb));
-
-	assert_int_equal(0, syd_path_stat(tmp_file, 0, false, &sb));
-	assert_true(S_ISREG(sb.st_mode));
-
-	assert_int_equal(-ENOENT, syd_path_stat(tmp_void_file, 0, false, &sb));
-	assert_int_equal(-ENOENT, syd_path_stat(tmp_void_file, SYD_REALPATH_NOLAST, false, &sb));
-
-	assert_int_equal(0, syd_path_stat(tmp_void_file, SYD_REALPATH_NOLAST, true, &sb));
-	assert_true(sb.st_mode == 0);
-
-	assert_int_equal(0, syd_path_stat(tmp_link, 0, false, &sb));
-	assert_true(S_ISREG(sb.st_mode));
-
-	assert_int_equal(0, syd_path_stat(tmp_link, SYD_REALPATH_NOFOLLOW, false, &sb));
-	assert_true(S_ISLNK(sb.st_mode));
-
-	assert_int_equal(-ENOENT, syd_path_stat(tmp_dang_link, 0, false, &sb));
-
-	assert_int_equal(0, syd_path_stat(tmp_dang_link, SYD_REALPATH_NOFOLLOW, false, &sb));
-	assert_true(S_ISLNK(sb.st_mode));
-
-	assert_int_equal(0, syd_path_stat(tmp_dang_link, SYD_REALPATH_NOFOLLOW, true, &sb));
-	assert_true(S_ISLNK(sb.st_mode));
-
-	assert_int_equal(-ELOOP, syd_path_stat(tmp_loop_link, 0, false, &sb));
-	assert_int_equal(-ELOOP, syd_path_stat(tmp_loop_link, SYD_REALPATH_NOLAST, false, &sb));
-
-	assert_int_equal(0, syd_path_stat(tmp_loop_link, SYD_REALPATH_NOLAST, true, &sb));
-	assert_true(sb.st_mode == 0);
 }
 
 #if 0
@@ -378,11 +340,10 @@ static void test_fixture_file(void)
 	run_test(test_syd_readlink_alloc_01);
 	run_test(test_syd_readlink_alloc_02);
 	run_test(test_syd_path_root_check_01);
-	run_test(test_syd_path_stat_01);
 #if 0
 	run_test(test_syd_realpath_at_01);
 	run_test(test_syd_realpath_at_02);
-	//run_test(test_syd_realpath_at_03);
+	run_test(test_syd_realpath_at_03);
 #endif
 
 	test_fixture_end();
