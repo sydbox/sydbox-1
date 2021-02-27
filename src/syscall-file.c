@@ -112,7 +112,7 @@ int sys_access(syd_process_t *current)
 	return check_access(current, &info, mode);
 }
 
-int sys_faccessat(syd_process_t *current)
+static int do_faccessat(syd_process_t *current, bool has_flags)
 {
 	int r;
 	long mode, flags;
@@ -126,7 +126,7 @@ int sys_faccessat(syd_process_t *current)
 		return r;
 	if (!check_access_mode(current, mode))
 		return 0;
-	if ((r = syd_read_argument(current, 3, &flags)) < 0)
+	if (has_flags && (r = syd_read_argument(current, 3, &flags)) < 0)
 		return r;
 
 	init_sysinfo(&info);
@@ -134,10 +134,20 @@ int sys_faccessat(syd_process_t *current)
 	info.arg_index = 1;
 	info.safe = true;
 	info.deny_errno = EACCES;
-	if (flags & AT_SYMLINK_NOFOLLOW)
+	if (has_flags && (flags & AT_SYMLINK_NOFOLLOW))
 		info.rmode |= RPATH_NOFOLLOW;
 
 	return check_access(current, &info, mode);
+}
+
+int sys_faccessat(syd_process_t *current)
+{
+	return do_faccessat(current, false);
+}
+
+int sys_faccessat2(syd_process_t *current)
+{
+	return do_faccessat(current, true);
 }
 
 /* TODO: Do we need to care about O_PATH? */
