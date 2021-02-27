@@ -105,6 +105,7 @@ char *getcwd_long(void)
 	dev_t pdev;
 	struct dirent *de;
 	DIR *dir;
+	int dirfd;
 	dev_t dev;
 	ino_t ino;
 	int len;
@@ -129,8 +130,15 @@ char *getcwd_long(void)
 	pdev = sbuf.st_dev;
 
 	for (;;) {
-		if (0 > stat("..", &sbuf))
+		dirfd = open("..", O_RDONLY|O_DIRECTORY);
+		if (0 > dirfd)
 			break;
+		if (0 > fstat(dirfd, &sbuf)) {
+			save_errno = errno;
+			close(dirfd);
+			errno = save_errno;
+			break;
+		}
 
 		/* Inode and device of current directory */
 		ino = pino;
@@ -144,15 +152,17 @@ char *getcwd_long(void)
 			if (!buf[pos])
 				buf[--pos] = '/';
 			char *s = strdup(buf + pos);
+			close(dirfd);
 			free(buf);
 			chdir_long(s);
 			return s;
 		}
 
 		/* Search the parent for the current directory. */
-		dir = opendir("..");
+		dir = fdopendir(dirfd);
 		if (NULL == dir) {
 			save_errno = errno;
+			close(dirfd);
 			errno = save_errno;
 			break;
 		}
@@ -201,9 +211,8 @@ char *getcwd_long(void)
 			break;
 	}
 
-	if (*buf) {
+	if (*buf)
 		chdir_long(buf + pos + 1);
-	}
 	free(buf);
 	return NULL;
 }
