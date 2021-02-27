@@ -190,6 +190,7 @@ AC_CHECK_HEADERS_ONCE(m4_flatten([
 	sys/wait.h
 	asm/ptrace.h
 	linux/ptrace.h
+	linux/openat2.h
 ]))
 
 dnl check for types
@@ -203,6 +204,7 @@ AC_CHECK_TYPES([ptrdiff_t])
 AC_CHECK_TYPES([struct pt_all_user_regs, struct ia64_fpreg, struct ptrace_peeksiginfo_args],,,[#include <sys/ptrace.h>])
 AC_CHECK_TYPES([sig_atomic_t], [], AC_MSG_ERROR([I need sigatomic_t]), [#include <signal.h>])
 AC_CHECK_TYPES([sighandler_t, sig_t, __sighandler_t],,,[#include <signal.h>])
+AC_CHECK_TYPES([struct open_how],,,[#include <linux/openat2.h>])
 
 save_CPPFLAGS=$CPPFLAGS
 CPPFLAGS="-I$srcdir/t $CPPFLAGS"

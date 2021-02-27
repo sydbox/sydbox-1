@@ -875,6 +875,7 @@ int sys_fallback_mmap(syd_process_t *current);
 
 int sys_access(syd_process_t *current);
 int sys_faccessat(syd_process_t *current);
+int sys_faccessat2(syd_process_t *current);
 
 int sys_chmod(syd_process_t *current);
 int sys_fchmodat(syd_process_t *current);
@@ -883,6 +884,7 @@ int sys_lchown(syd_process_t *current);
 int sys_fchownat(syd_process_t *current);
 int sys_open(syd_process_t *current);
 int sys_openat(syd_process_t *current);
+int sys_openat2(syd_process_t *current);
 int sys_creat(syd_process_t *current);
 int sys_close(syd_process_t *current);
 int sysx_close(syd_process_t *current);

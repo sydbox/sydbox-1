@@ -20,6 +20,19 @@
 #include "bsd-compat.h"
 #include "sockmap.h"
 
+#if defined(HAVE_LINUX_OPENAT2_H) && defined(HAVE_STRUCT_OPEN_HOW)
+# include <linux/openat2.h>
+#else
+struct open_how {
+	unsigned long flags;
+	unsigned long mode;
+	unsigned long resolve;
+};
+#define RESOLVE_NO_MAGICLINKS	0x02
+#define RESOLVE_NO_SYMLINKS	0x04
+#define RESOLVE_BENEATH		0x08
+#endif
+
 struct open_info {
 	bool may_read;
 	bool may_write;
@@ -151,14 +164,16 @@ int sys_faccessat2(syd_process_t *current)
 }
 
 /* TODO: Do we need to care about O_PATH? */
-static void init_open_info(syd_process_t *current, int flags, struct open_info *info)
+static void init_open_info(syd_process_t *current,
+			   const struct open_how *how,
+			   struct open_info *info)
 {
 	assert(current);
 	assert(info);
 
-	info->rmode = flags & O_CREAT ? RPATH_NOLAST : RPATH_EXIST;
+	info->rmode = how->flags & O_CREAT ? RPATH_NOLAST : RPATH_EXIST;
 	info->syd_mode = 0;
-	if (flags & O_EXCL) {
+	if (how->flags & O_EXCL) {
 		if (info->rmode == RPATH_EXIST) {
 			/* Quoting open(2):
 			 * In general, the behavior of O_EXCL is undefined if
@@ -182,20 +197,29 @@ static void init_open_info(syd_process_t *current, int flags, struct open_info *
 		}
 	}
 
-	if (flags & O_DIRECTORY)
+	if (how->flags & O_DIRECTORY)
 		info->syd_mode |= SYD_STAT_ISDIR;
-	if (flags & O_NOFOLLOW)
+	if (how->flags & O_NOFOLLOW)
 		info->syd_mode |= SYD_STAT_NOFOLLOW;
+	/*
+	 * TODO: We treat these three flags as identical for simplicity, however
+	 * this is not exactly compliant with the way the syscall functions.
+	 */
+	if ((how->resolve & RESOLVE_BENEATH) ||
+	    (how->resolve & RESOLVE_NO_SYMLINKS) ||
+	    (how->resolve & RESOLVE_NO_MAGICLINKS))
+		info->rmode |= RPATH_NOFOLLOW;
+	/* TODO: Do we want to support RESOLVE_NO_XDEV and RESOLVE_IN_ROOT? */
 
 	/* `unsafe' flag combinations:
 	 * - O_RDONLY | O_CREAT
 	 * - O_WRONLY
 	 * - O_RDWR
 	 */
-	switch (flags & O_ACCMODE) {
+	switch (how->flags & O_ACCMODE) {
 	case O_RDONLY:
 		info->may_read = true;
-		if (flags & O_CREAT) {
+		if (how->flags & O_CREAT) {
 			/* file creation is `write' */
 			info->may_write = true;
 		} else {
@@ -253,7 +277,7 @@ out:
 	return r;
 }
 
-static int restrict_open_flags(syd_process_t *current, int flags)
+static int restrict_open_flags(syd_process_t *current, unsigned long flags)
 {
 	if (!sydbox->config.use_seccomp &&
 	    sydbox->config.restrict_file_control &&
@@ -265,7 +289,8 @@ static int restrict_open_flags(syd_process_t *current, int flags)
 int sys_open(syd_process_t *current)
 {
 	bool strict;
-	int r, flags;
+	int r;
+	struct open_how how;
 	sysinfo_t info;
 	struct open_info open_info;
 
@@ -276,15 +301,17 @@ int sys_open(syd_process_t *current)
 		return 0;
 
 	/* check flags first */
-	if ((r = syd_read_argument_int(current, 1, &flags)) < 0)
+	if ((r = syd_read_argument(current, 1, (long *)&how.flags)) < 0)
 		return r;
-	if ((r = restrict_open_flags(current, flags)) < 0)
+	if ((r = restrict_open_flags(current, how.flags)) < 0)
 		return r;
 
 	if (sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
 
-	init_open_info(current, flags, &open_info);
+	how.mode = 0;
+	how.resolve = 0;
+	init_open_info(current, &how, &open_info);
 	init_sysinfo(&info);
 	info.rmode = open_info.rmode;
 	info.syd_mode = open_info.syd_mode;
@@ -295,7 +322,8 @@ int sys_open(syd_process_t *current)
 int sys_openat(syd_process_t *current)
 {
 	bool strict;
-	int r, flags;
+	int r;
+	struct open_how how;
 	sysinfo_t info;
 	struct open_info open_info;
 
@@ -306,15 +334,17 @@ int sys_openat(syd_process_t *current)
 		return 0;
 
 	/* check flags first */
-	if ((r = syd_read_argument_int(current, 2, &flags)) < 0)
+	if ((r = syd_read_argument(current, 2, (long *)&how.flags)) < 0)
 		return r;
-	if ((r = restrict_open_flags(current, flags)) < 0)
+	if ((r = restrict_open_flags(current, how.flags)) < 0)
 		return r;
 
 	if (sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
 
-	init_open_info(current, flags, &open_info);
+	how.mode = 0;
+	how.resolve = 0;
+	init_open_info(current, &how, &open_info);
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 1;
@@ -323,6 +353,64 @@ int sys_openat(syd_process_t *current)
 
 	return check_open(current, &info, &open_info);
 }
+
+#if defined(HAVE_LINUX_OPENAT2_H) && defined(HAVE_STRUCT_OPEN_HOW)
+int sys_openat2(syd_process_t *current)
+{
+	bool strict;
+	int r;
+	sysinfo_t info;
+	struct open_info open_info;
+
+	strict = !sydbox->config.use_seccomp &&
+		 sydbox->config.restrict_file_control;
+
+	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
+		return 0;
+
+	enum { OPEN_HOW_MIN_SIZE = 24 };
+	struct open_how how;
+	long addr, size;
+
+	if ((r = syd_read_argument(current, 2, &addr)) < 0 ||
+	    (r = syd_read_argument(current, 3, &size)) < 0)
+		return r;
+
+	if (size < OPEN_HOW_MIN_SIZE) {
+		how.flags = 0;
+		how.mode = 0;
+		how.resolve = 0;
+	} else if ((r = pink_read_vm_data(current->pid, current->regset,
+					  addr, (char *)&how, size)) < 0) {
+			return r;
+	} else if ((r = restrict_open_flags(current, how.flags)) < 0) {
+			return r;
+	}
+
+	if (sandbox_off_read(current) && sandbox_off_write(current))
+		return 0;
+
+	init_open_info(current, &how, &open_info);
+	init_sysinfo(&info);
+	info.at_func = true;
+	info.arg_index = 1;
+	info.rmode = open_info.rmode;
+	info.syd_mode = open_info.syd_mode;
+
+	return check_open(current, &info, &open_info);
+}
+#else
+int sys_openat2(syd_process_t *current)
+{
+	/*
+	 * This can happen if buildhost did not have support for openat2.
+	 */
+#warning "No support for openat2(), sydbox will deny the system call unconditionally."
+#warning "This won't be an issue unless you run sydbox on a system running a Linux kernel 5.6 or newer."
+#warning "If this is the case, please update your kernel and kernel headers as necessary and rebuild sydbox."
+	return deny(current, ENOTSUP);
+}
+#endif
 
 int sys_chmod(syd_process_t *current)
 {

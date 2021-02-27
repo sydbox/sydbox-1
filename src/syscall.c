@@ -94,6 +94,11 @@ static const sysentry_t syscall_entries[] = {
 		.enter = sys_openat,
 	},
 	{
+		.name = "openat2",
+		.enter = sys_openat2,
+	},
+
+	{
 		.name = "creat",
 		.enter = sys_creat,
 	},
