@@ -28,14 +28,15 @@ int path_lookup(const char *filename, char **buf)
 {
 	struct stat statbuf;
 	char pathname[SYDBOX_PATH_MAX];
+	size_t filename_len;
 
 	pathname[0] = '\0';
+	filename_len = strlen(filename);
 
-	if (strchr(filename, '/')) {
-		if (strlen(filename) > sizeof(pathname) - 1)
-			return -ENAMETOOLONG;
+	if (filename_len > sizeof(pathname) - 1)
+		return -ENAMETOOLONG;
+	if (strchr(filename, '/'))
 		strcpy(pathname, filename);
-	}
 #ifdef SYDBOX_USE_DEBUGGING_EXEC
 	/*
 	 * Debuggers customarily check the current directory
@@ -47,7 +48,7 @@ int path_lookup(const char *filename, char **buf)
 #endif /* SYDBOX_USE_DEBUGGING_EXEC */
 	else {
 		const char *path;
-		int m, n, len;
+		size_t m, n, len;
 
 		for (path = getenv("PATH"); path && *path; path += m) {
 			const char *colon = strchr(path, ':');
@@ -61,15 +62,16 @@ int path_lookup(const char *filename, char **buf)
 				if (!getcwd(pathname, SYDBOX_PATH_MAX))
 					continue;
 				len = strlen(pathname);
-			}
-			else if ((size_t)n > sizeof pathname - 1)
+			} else if (n > sizeof(pathname) - 1) {
 				continue;
-			else {
+			} else {
 				strncpy(pathname, path, n);
 				len = n;
 			}
 			if (len && pathname[len - 1] != '/')
 				pathname[len++] = '/';
+			if (filename_len + len > sizeof(pathname) - 1)
+				continue;
 			strcpy(pathname + len, filename);
 			if (stat(pathname, &statbuf) == 0 &&
 			    /* Accept only regular files
@@ -79,6 +81,8 @@ int path_lookup(const char *filename, char **buf)
 			    (statbuf.st_mode & 0111))
 				break;
 		}
+		if (!path && !*path)
+			pathname[0] = '\0';
 	}
 	if (stat(pathname, &statbuf) < 0) {
 		return -errno;
