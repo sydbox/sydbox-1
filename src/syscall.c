@@ -240,6 +240,10 @@ static const sysentry_t syscall_entries[] = {
 		.name = "renameat",
 		.enter = sys_renameat,
 	},
+	{
+		.name = "renameat2",
+		.enter = sys_renameat,
+	},
 
 	{
 		.name = "symlink",

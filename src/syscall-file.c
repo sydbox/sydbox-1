@@ -3,7 +3,7 @@
  *
  * File system related system call handlers
  *
- * Copyright (c) 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -785,6 +785,12 @@ int sys_rename(syd_process_t *current)
 	return r;
 }
 
+/*
+ * This handles both renameat and renameat2.
+ * We do not take into account the flags argument of renameat2 as none of the
+ * currently supported flags (RENAME_EXCHANGE, RENAME_NOREPLACE,
+ * RENAME_WHITEOUT) are relevant for sandboxing.
+ */
 int sys_renameat(syd_process_t *current)
 {
 	int r;
