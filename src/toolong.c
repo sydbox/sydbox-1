@@ -168,6 +168,7 @@ char *getcwd_long(void)
 				/* Maybe found directory, need to check device & inode */
 				strncpy(nbuf + 3, fn, PATH_MAX);
 				if (lstat(nbuf, &sbuf) < 0) {
+					closedir(dir);
 					free(buf);
 					return NULL;
 				}
