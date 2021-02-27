@@ -757,7 +757,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	fprintf(stderr, "\t%sFlags: ", CN);
 	r = 0;
 	if (current->flags & SYD_STARTUP) {
-		fprintf(stderr, "%sSTARTUP", (r == 1) ? "|" : "");
+		fputs("STARTUP", stderr);
 		r = 1;
 	}
 	if (current->flags & SYD_IGNORE_ONE_SIGSTOP) {
