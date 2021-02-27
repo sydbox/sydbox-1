@@ -121,6 +121,7 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 		free(resolved);
 		return -ENAMETOOLONG;
 	}
+	symlink[0] = '\0';
 
 	/*
 	 * Iterate over path components in `left'.
