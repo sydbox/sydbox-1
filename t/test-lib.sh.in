@@ -722,3 +722,6 @@ test -w / || test_set_prereq SANITY
 # Support for certain ptrace() options
 test x"@PTRACE_SEIZE@" = x"0" || test_set_prereq PTRACE_SEIZE
 test x"@PTRACE_SECCOMP@" = x"0" || test_set_prereq PTRACE_SECCOMP
+
+# Support for IPv6
+test x"@PINK_HAVE_IPV6@" = x"0" || test_set_prereq HAVE_IPV6

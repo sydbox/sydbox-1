@@ -4,6 +4,8 @@
  * Match socket information
  *
  * Copyright (c) 2010, 2011, 2012, 2013, 2015, 2021 Ali Polatel <alip@exherbo.org>
+ * Based in part upon dovecot/src/lib/net.c which is:
+ *     Copyright (c) 1999-2018 Dovecot authors
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -365,9 +367,8 @@ fail:
 
 int sockmatch(const struct sockmatch *haystack, const struct pink_sockaddr *needle)
 {
-	int n, mask;
-	unsigned pmin, pmax, port;
-	const unsigned char *b, *ptr;
+	const uint32_t *ip1, *ip2;
+	unsigned bits, pmin, pmax, port;
 
 	assert(haystack);
 	assert(needle);
@@ -387,18 +388,18 @@ int sockmatch(const struct sockmatch *haystack, const struct pink_sockaddr *need
 		 */
 		return 0;
 	case AF_INET:
-		n = haystack->addr.sa_in.netmask;
-		ptr = (const unsigned char *)&needle->u.sa_in.sin_addr;
-		b = (const unsigned char *)&haystack->addr.sa_in.addr;
+		bits = haystack->addr.sa_in.netmask;
+		ip1 = &needle->u.sa_in.sin_addr.s_addr;
+		ip2 = &haystack->addr.sa_in.addr.s_addr;
 		pmin = haystack->addr.sa_in.port[0];
 		pmax = haystack->addr.sa_in.port[1];
 		port = ntohs(needle->u.sa_in.sin_port);
 		break;
 #if PINK_HAVE_IPV6
 	case AF_INET6:
-		n = haystack->addr.sa6.netmask;
-		ptr = (const unsigned char *)&needle->u.sa6.sin6_addr;
-		b = (const unsigned char *)&haystack->addr.sa6.addr;
+		bits = haystack->addr.sa6.netmask;
+		ip1 = (const void *)&needle->u.sa6.sin6_addr;
+		ip2 = (const void *)&haystack->addr.sa6.addr;
 		pmin = haystack->addr.sa6.port[0];
 		pmax = haystack->addr.sa6.port[1];
 		port = ntohs(needle->u.sa6.sin6_port);
@@ -408,19 +409,26 @@ int sockmatch(const struct sockmatch *haystack, const struct pink_sockaddr *need
 		return 0;
 	}
 
-	while (n >= 8) {
-		if (*ptr != *b)
-			return 0;
-		++ptr;
-		++b;
-		n -= 8;
-	}
+	unsigned pos, i;
+	uint32_t i1, i2, mask;
 
-	if (n != 0) {
-		mask = ((~0) << (8 - n)) & 255;
-		if ((*ptr ^ *b) & mask)
+	/* check first the full 32bit ints */
+	for (pos = 0, i = 0; pos + 32 <= bits; pos += 32, i++)
+		if (ip1[i] != ip2[i])
 			return 0;
-	}
+	i1 = htonl(ip1[i]);
+	i2 = htonl(ip2[i]);
+
+	/* check the last full bytes */
+	for (mask = 0xff000000; pos + 8 <= bits; pos += 8, mask >>= 8)
+		if ((i1 & mask) != (i2 & mask))
+			return 0;
+
+	/* check the last bits, they're reversed in bytes */
+	bits -= pos;
+	for (mask = 0x80000000 >> (pos % 32); bits > 0; bits--, mask >>= 1)
+		if ((i1 & mask) != (i2 & mask))
+			return 0;
 
 	return pmin <= port && port <= pmax;
 }

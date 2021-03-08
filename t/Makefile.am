@@ -22,6 +22,7 @@ test-lib.sh: test-lib.sh.in
 		-e "s:@TOP_BUILDDIR@:$(abs_top_builddir):g" \
 		-e "s:@PTRACE_SEIZE@:$(PINKTRACE_HAVE_SEIZE):g" \
 		-e "s:@PTRACE_SECCOMP@:$(SYDBOX_HAVE_SECCOMP):g" \
+		-e "s:@PINK_HAVE_IPV6@:$(PINK_HAVE_IPV6):g" \
 		$< > $@
 CLEANFILES+= test-lib.sh
 EXTRA_DIST+= test-lib.sh.in
