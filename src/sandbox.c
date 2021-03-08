@@ -100,7 +100,7 @@ static void box_report_violation_sock(syd_process_t *current,
 			  info->ret_fd ? *info->ret_fd : -1,
 			  ip, ntohs(paddr->u.sa_in.sin_port));
 		break;
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 	case AF_INET6:
 		inet_ntop(AF_INET6, &paddr->u.sa6.sin6_addr, ip, sizeof(ip));
 		violation(current, "%s(%d, inet6:%s@%d)", name,
@@ -483,7 +483,7 @@ int box_check_socket(syd_process_t *current, sysinfo_t *info)
 	switch (psa->family) {
 	case AF_UNIX:
 	case AF_INET:
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 	case AF_INET6:
 #endif
 		break;

@@ -57,7 +57,7 @@ struct sockmatch *sockmatch_xdup(const struct sockmatch *src)
 		memcpy(&match->addr.sa_in.addr, &src->addr.sa_in.addr,
 		       sizeof(struct in_addr));
 		break;
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 	case AF_INET6:
 		match->addr.sa6.netmask = src->addr.sa6.netmask;
 		match->addr.sa6.port[0] = src->addr.sa6.port[0];
@@ -158,7 +158,7 @@ struct sockmatch *sockmatch_new(const struct sockinfo *src)
 		memcpy(&match->addr.sa_in.addr, &src->addr->u.sa_in.sin_addr,
 		       sizeof(struct in_addr));
 		break;
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 	case AF_INET6:
 		port = ntohs(src->addr->u.sa6.sin6_port);
 		match->addr.sa6.port[0] = port;
@@ -216,7 +216,7 @@ static int sockmatch_parse_ip(int family, const char *src,
 	char *ip, *range, *delim, *slash;
 	struct sockmatch *match;
 	struct in_addr addr;
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 	struct in6_addr addr6;
 #endif
 
@@ -226,7 +226,7 @@ static int sockmatch_parse_ip(int family, const char *src,
 	case AF_INET:
 		p = src + STRLEN_LITERAL(MATCH_INET);
 		break;
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 	case AF_INET6:
 		p = src + STRLEN_LITERAL(MATCH_INET6);
 		break;
@@ -284,12 +284,12 @@ static int sockmatch_parse_ip(int family, const char *src,
 	}
 
 	errno = 0;
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 	if (family == AF_INET) {
 #endif
 		if (inet_pton(AF_INET, ip, &addr) != 1)
 			r = errno ? -errno : -EINVAL;
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 	} else /* if (family == AF_INET6) */ {
 		if (inet_pton(AF_INET6, ip, &addr6) != 1)
 			r = errno ? -errno : -EINVAL;
@@ -306,11 +306,11 @@ out:
 
 		match->addr.sa_in.netmask = netmask;
 
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 		if (family == AF_INET)
 #endif
 			match->addr.sa_in.addr = addr;
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 		else /* if (family == AF_INET6) */
 			match->addr.sa6.addr = addr6;
 #endif
@@ -341,7 +341,7 @@ int sockmatch_parse(const char *src, struct sockmatch **buf)
 		if (r < 0)
 			goto fail;
 	} else if (startswith(src, MATCH_INET6)) {
-#if !SYDBOX_HAVE_IPV6
+#if !PINK_HAVE_IPV6
 		errno = EAFNOSUPPORT;
 		r = 0;
 		goto fail;
@@ -394,7 +394,7 @@ int sockmatch(const struct sockmatch *haystack, const struct pink_sockaddr *need
 		pmax = haystack->addr.sa_in.port[1];
 		port = ntohs(needle->u.sa_in.sin_port);
 		break;
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 	case AF_INET6:
 		n = haystack->addr.sa6.netmask;
 		ptr = (const unsigned char *)&needle->u.sa6.sin6_addr;

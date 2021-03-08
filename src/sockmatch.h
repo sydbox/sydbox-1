@@ -3,7 +3,7 @@
  *
  * match socket information
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -51,7 +51,7 @@ struct sockmatch {
 			struct in_addr addr;
 		} sa_in;
 
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 		struct {
 			unsigned netmask;
 			unsigned port[2];

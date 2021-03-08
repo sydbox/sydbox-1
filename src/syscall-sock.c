@@ -53,7 +53,7 @@ int sys_bind(syd_process_t *current)
 		goto out;
 	if (sydbox->config.whitelist_successful_bind && psa &&
 	    (psa->family == AF_UNIX || psa->family == AF_INET
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 	     || psa->family == AF_INET6
 #endif
 	    )) {
@@ -108,7 +108,7 @@ int sysx_bind(syd_process_t *current)
 	if (P_SAVEBIND(current)->addr->family == AF_INET &&
 	    P_SAVEBIND(current)->addr->u.sa_in.sin_port == 0)
 		goto zero;
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 	if (P_SAVEBIND(current)->addr->family == AF_INET6 &&
 	    P_SAVEBIND(current)->addr->u.sa6.sin6_port == 0)
 		goto zero;
@@ -230,7 +230,7 @@ int sysx_getsockname(syd_process_t *current)
 		/* assert(port); */
 		match->addr.sa_in.port[0] = match->addr.sa_in.port[1] = port;
 		break;
-#if SYDBOX_HAVE_IPV6
+#if PINK_HAVE_IPV6
 	case AF_INET6:
 		port = ntohs(psa.u.sa6.sin6_port);
 		/* assert(port); */
