@@ -36,7 +36,8 @@ TESTS= \
        t0001-path-wildmatch.sh \
        t0002-path-realpath.sh \
        t0003-core-basic.sh \
-       t0004-core-chdir.sh
+       t0004-core-chdir.sh \
+       t0005-sock-match.sh
 check_SCRIPTS+= $(TESTS)
 
 syddir=$(libexecdir)/$(PACKAGE)/t
