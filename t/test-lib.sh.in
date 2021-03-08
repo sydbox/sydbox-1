@@ -725,3 +725,7 @@ test x"@PTRACE_SECCOMP@" = x"0" || test_set_prereq PTRACE_SECCOMP
 
 # Support for IPv6
 test x"@PINK_HAVE_IPV6@" = x"0" || test_set_prereq HAVE_IPV6
+
+# Some tests won't fail with permission denied as expected when running as the
+# root user. Let's set a prereq to catch such cases and skip tests as necessary.
+test x"`id -u`" = x"0" || test_set_prereq NOT_ROOT

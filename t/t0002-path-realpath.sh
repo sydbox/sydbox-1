@@ -19,13 +19,13 @@ test_expect_success 'empty path -> ENOENT' '
     realpath_mode-1 ENOENT "" existing NULL
 '
 
-test_expect_success 'permission was denied for a component of path prefix -> EACCES' '
+test_expect_success NOT_ROOT 'permission was denied for a component of path prefix -> EACCES' '
     mkdir -p -m 700 foo/bar/baz &&
     test_when_finished "chmod 700 foo/bar" && chmod 000 foo/bar &&
     realpath_mode-1 EACCES "${HOMER}"/foo/bar/baz existing NULL
 '
 
-test_expect_success SYMLINKS 'permission was denied for a symlink component of path prefix -> EACCES' '
+test_expect_success SYMLINKS,NOT_ROOT 'permission was denied for a symlink component of path prefix -> EACCES' '
     mkdir -p -m 700 foo/bar/baz &&
     ln -s bar foo/bal &&
     test_when_finished "chmod 700 foo/bar" && chmod 000 foo/bar &&
