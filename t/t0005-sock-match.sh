@@ -15,15 +15,15 @@ test_expect_success 'invalid sockmatch' '
     test_expect_code 22 sockmatchtest inet:127.0.0.0/8@53 unix:/run/nscd/socket
 '
 
-test_expect_success 'unix: relative path is not supported' '
+test_expect_success TODO 'unix: relative path is not supported' '
     test_expect_code 97 sockmatchtest unix:/foo unix:../bar
 '
 
-test_expect_success 'unix: identical path matches' '
+test_expect_success TODO 'unix: identical path matches' '
     sockmatchtest unix:/foo unix:/foo
 '
 
-test_expect_success 'unix: non-identical path does not match' '
+test_expect_success TODO 'unix: non-identical path does not match' '
     test_expect_code 2 sockmatchtest unix:/foo unix:/bar
 '
 
