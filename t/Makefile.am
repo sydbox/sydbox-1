@@ -23,6 +23,7 @@ test-lib.sh: test-lib.sh.in
 		-e "s:@PTRACE_SEIZE@:$(PINKTRACE_HAVE_SEIZE):g" \
 		-e "s:@PTRACE_SECCOMP@:$(SYDBOX_HAVE_SECCOMP):g" \
 		-e "s:@PINK_HAVE_IPV6@:$(PINK_HAVE_IPV6):g" \
+		-e "s:@SYDBOX_HAVE_NEWFSTATAT@:$(HAVE_NEWFSTATAT):g" \
 		$< > $@
 CLEANFILES+= test-lib.sh
 EXTRA_DIST+= test-lib.sh.in

@@ -2,6 +2,9 @@
 
 int main(int argc, char *argv[])
 {
+#if !HAVE_NEWFSTATAT
+	return ENOSYS;
+#else
 	int dirfd;
 	const char *path;
 	struct stat buf;
@@ -19,4 +22,5 @@ int main(int argc, char *argv[])
 	errno = 0;
 	syscall(SYS_newfstatat, dirfd, path, &buf, 0);
 	return errno;
+#endif
 }

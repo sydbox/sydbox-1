@@ -39,5 +39,4 @@ syd_PROGRAMS= wildtest realpath_mode-1 sockmatchtest \
 	      syd-abort syd-abort-static syd-abort-fork syd-abort-fork-static \
 	      syd-abort-pthread syd-abort-pthread-static syd-fstatat syd-mkdir-p
 
-
 check_PROGRAMS= $(syd_PROGRAMS)
