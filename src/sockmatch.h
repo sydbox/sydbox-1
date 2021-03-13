@@ -34,11 +34,6 @@ struct sockinfo {
 };
 
 struct sockmatch {
-	/* The actual pattern, useful for removals */
-	char *str;
-
-	int family;
-
 	union {
 		struct {
 			char *path;
@@ -59,6 +54,11 @@ struct sockmatch {
 		} sa6;
 #endif
 	} addr;
+
+	/* The actual pattern, useful for removals */
+	char *str;
+
+	int family;
 };
 
 struct sockinfo *sockinfo_xdup(const struct sockinfo *src);
