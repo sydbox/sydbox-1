@@ -41,8 +41,8 @@ struct sockmatch {
 
 	union {
 		struct {
-			bool abstract;
 			char *path;
+			bool abstract;
 		} sa_un;
 
 		struct {
