@@ -3,7 +3,7 @@
  *
  * ACL queue for sydbox based on TAILQ from <sys/queue.h>
  *
- * Copyright (c) 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2013, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -34,9 +34,9 @@ static const char *const acl_action_table[] = {
 DEFINE_STRING_TABLE_LOOKUP(acl_action, int)
 
 struct acl_node {
-	enum acl_action action;
-	void *match;
 	TAILQ_ENTRY(acl_node) link;
+	void *match;
+	enum acl_action action;
 };
 TAILQ_HEAD(acl_queue, acl_node);
 typedef struct acl_queue aclq_t;
