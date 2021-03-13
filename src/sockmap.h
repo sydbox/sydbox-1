@@ -16,9 +16,9 @@
 #include "sydhash.h"
 
 struct sockmap {
-	int fd;
-	struct sockinfo *info;
 	UT_hash_handle hh;
+	struct sockinfo *info;
+	int fd;
 };
 
 static inline void sockmap_add(struct sockmap **map, int fd, struct sockinfo *info)
