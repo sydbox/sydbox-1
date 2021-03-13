@@ -267,29 +267,14 @@ typedef struct syd_process {
 	/* Thread group ID */
 	pid_t tgid;
 
-	/* Process registry set */
-	struct pink_regset *regset;
-
 	/* System call ABI */
 	short abi;
 
 	/* SYD_* flags */
 	short flags;
 
-	/* Stepping method */
-	enum syd_step trace_step;
-
 	/* Last system call */
 	unsigned long sysnum;
-
-	/* Last system call name */
-	const char *sysname;
-
-	/* Arguments of last system call */
-	long args[PINK_MAX_ARGS];
-
-	/* Resolved path argument for specially treated system calls like execve() */
-	char *abspath;
 
 	/* Last (socket) subcall */
 	long subcall;
@@ -302,6 +287,18 @@ typedef struct syd_process {
 
 	/* Last clone(2) flags (used to spawn a *new* thread) */
 	unsigned long new_clone_flags;
+
+	/* Last system call name */
+	const char *sysname;
+
+	/* Resolved path argument for specially treated system calls like execve() */
+	char *abspath;
+
+	/* Process registry set */
+	struct pink_regset *regset;
+
+	/* Arguments of last system call */
+	long args[PINK_MAX_ARGS];
 
 	/* Per-thread shared data */
 	struct syd_process_shared {
@@ -394,6 +391,9 @@ typedef struct syd_process {
 
 	/* Process hash table via sydbox->proctab */
 	UT_hash_handle hh;
+
+	/* Stepping method */
+	enum syd_step trace_step;
 } syd_process_t;
 
 #if 0
