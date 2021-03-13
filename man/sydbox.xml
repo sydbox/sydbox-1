@@ -6,7 +6,7 @@
 ]>
 
 <!--
-   Copyright (c) 2011, 2012, 2013, 2015, 2018, 2020 Ali Polatel <alip@exherbo.org>
+   Copyright (c) 2011, 2012, 2013, 2015, 2018, 2020, 2021 Ali Polatel <alip@exherbo.org>
    Distributed under the terms of the 3-clause BSD license.
 -->
 
@@ -155,16 +155,20 @@
           which enables read sandboxing for a shell running under Sydbox. It is also possible to
           query certain values using the return value of the magic <function>stat</function><manvolnum>2</manvolnum>:
           <programlisting>
-            test -e '/dev/sydbox/core/sandbox/read?' &amp;&amp; echo "read sandboxing on" || echo "read sandboxing off"
+            test -e '/dev/sydbox/core/sandbox/read?' &amp;&amp;\
+              echo "read sandboxing on" ||\
+              echo "read sandboxing off"
           </programlisting>
 
           <note>
             <para>
               Some of these shell builtins may actually call
-              <citerefentry><refentrytitle>lstat</refentrytitle><manvolnum>2</manvolnum></citerefentry> system call instead
-              of <citerefentry><refentrytitle>stat</refentrytitle><manvolnum>2</manvolnum></citerefentry> thus
-              Sydbox makes sure to check <function>lstat()</function> system calls for magic commands
-              as well.
+              <citerefentry><refentrytitle>lstat</refentrytitle><manvolnum>2</manvolnum></citerefentry> or
+              <citerefentry><refentrytitle>newfstatat</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+              system calls instead of
+              <citerefentry><refentrytitle>stat</refentrytitle><manvolnum>2</manvolnum></citerefentry> thus
+              Sydbox makes sure to check <function>lstat()</function> and <function>newfstatat()</function>
+              system calls for magic commands as well.
             </para>
           </note>
         </para>
@@ -964,6 +968,7 @@
       <para>List of observed system calls are:
       <function>access</function><manvolnum>2</manvolnum>,
       <function>faccessat</function><manvolnum>2</manvolnum>,
+      <function>faccessat2</function><manvolnum>2</manvolnum>,
       <function>chmod</function><manvolnum>2</manvolnum>,
       <function>fchmodat</function><manvolnum>2</manvolnum>,
       <function>chown</function><manvolnum>2</manvolnum>,
@@ -973,6 +978,7 @@
       <function>fchownat</function><manvolnum>2</manvolnum>,
       <function>open</function><manvolnum>2</manvolnum>,
       <function>openat</function><manvolnum>2</manvolnum>,
+      <function>openat2</function><manvolnum>2</manvolnum>,
       <function>creat</function><manvolnum>2</manvolnum>,
       <function>mkdir</function><manvolnum>2</manvolnum>,
       <function>mkdirat</function><manvolnum>2</manvolnum>,
@@ -994,6 +1000,7 @@
       <function>linkat</function><manvolnum>2</manvolnum>,
       <function>rename</function><manvolnum>2</manvolnum>,
       <function>renameat</function><manvolnum>2</manvolnum>,
+      <function>renameat2</function><manvolnum>2</manvolnum>,
       <function>symlink</function><manvolnum>2</manvolnum>,
       <function>symlinkat</function><manvolnum>2</manvolnum>,
       <function>setxattr</function><manvolnum>2</manvolnum>,
@@ -1013,8 +1020,10 @@
       <para>List of observed system calls are:
       <function>access</function><manvolnum>2</manvolnum>,
       <function>faccessat</function><manvolnum>2</manvolnum>,
+      <function>faccessat2</function><manvolnum>2</manvolnum>,
       <function>open</function><manvolnum>2</manvolnum>,
       <function>openat</function><manvolnum>2</manvolnum>,
+      <function>openat2</function><manvolnum>2</manvolnum>,
       <function>listxattr</function><manvolnum>2</manvolnum>, and
       <function>llistxattr</function><manvolnum>2</manvolnum>.
       </para>
@@ -1023,11 +1032,12 @@
     <refsect2 id="execve-sandboxing">
       <title>execve(2) Sandboxing</title>
 
-      <para>This sandboxing denies <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry>
-      calls in case the path argument does not match one of the whitelisted patterns. Note, all
-      <citerefentry><refentrytitle>exec</refentrytitle><manvolnum>3</manvolnum></citerefentry> family functions are sandboxed
-      because these functions are just wrappers of the
-      <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry> system call.</para>
+        <para>This sandboxing denies <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry>, and
+        <citerefentry><refentrytitle>execveat</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+        calls in case the path argument does not match one of the whitelisted patterns. Note, all
+        <citerefentry><refentrytitle>exec</refentrytitle><manvolnum>3</manvolnum></citerefentry> family functions are sandboxed
+        because these functions are just wrappers of either one of <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+        or <citerefentry><refentrytitle>execveat</refentrytitle><manvolnum>2</manvolnum></citerefentry> system calls.</para>
     </refsect2>
 
     <refsect2 id="network-sandboxing">
@@ -1305,7 +1315,7 @@
   <refsect1 id="copyright">
     <title>COPYRIGHT</title>
 
-    <para>Copyright &#169; 2010, 2011, 2012, 2013, 2014, 2015, 2018, 2020 Ali Polatel <email>alip@exherbo.org</email></para>
+    <para>Copyright &#169; 2010, 2011, 2012, 2013, 2014, 2015, 2018, 2020, 2021 Ali Polatel <email>alip@exherbo.org</email></para>
   </refsect1>
 </refentry>
 <!-- vim: set ts=2 sts=2 sw=2 et tw=120 nowrap spell spelllang=en : -->
