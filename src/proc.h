@@ -17,8 +17,6 @@
 
 struct proc_statinfo {
 	int pid;
-	char comm[32];
-	char state;
 	int ppid;
 	int pgrp;
 	int session;
@@ -26,6 +24,8 @@ struct proc_statinfo {
 	int tpgid;
 	long nice;
 	long num_threads;
+	char state;
+	char comm[32];
 };
 
 int proc_cwd(pid_t pid, bool use_toolong_hack, char **buf);
