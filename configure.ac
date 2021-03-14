@@ -7,8 +7,8 @@ dnl minor: Major changes without UI breakage
 dnl micro: Every other change increases micro version
 dnl suffix: For prerelease, alpha, beta versions
 m4_define([sydbox_version_major],  [1])
-m4_define([sydbox_version_minor],  [0])
-m4_define([sydbox_version_micro],  [9])
+m4_define([sydbox_version_minor],  [1])
+m4_define([sydbox_version_micro],  [0])
 m4_define([sydbox_version_suffix], [])
 m4_define([sydbox_version_full],   [sydbox_version_major.sydbox_version_minor.sydbox_version_micro[]sydbox_version_suffix])
 m4_define([sydbox_version],        [sydbox_version_full])
