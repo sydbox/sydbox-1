@@ -70,6 +70,10 @@ whitelist/network/connect+unix:/var/run/nscd/socket
 whitelist/network/connect+unix:/run/nscd/socket
 whitelist/network/connect+unix:/var/lib/sss/pipes/nss
 
+# Allow getaddrinfo() with AI_ADDRCONFIG on musl systems.
+whitelist/network/connect+LOOPBACK@65535
+whitelist/network/connect+LOOPBACK6@65535
+
 #blacklist/exec+
 #blacklist/read+
 #blacklist/write+
