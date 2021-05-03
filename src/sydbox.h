@@ -242,18 +242,19 @@ enum syd_step {
 };
 
 typedef struct {
+	aclq_t acl_exec;
+	aclq_t acl_read;
+	aclq_t acl_write;
+
 	enum sandbox_mode sandbox_exec;
 	enum sandbox_mode sandbox_read;
 	enum sandbox_mode sandbox_write;
 	enum sandbox_mode sandbox_network;
 
-	enum lock_state magic_lock;
-
-	aclq_t acl_exec;
-	aclq_t acl_read;
-	aclq_t acl_write;
 	aclq_t acl_network_bind;
 	aclq_t acl_network_connect;
+	enum lock_state magic_lock;
+
 } sandbox_t;
 
 /* process information */
