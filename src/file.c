@@ -37,14 +37,14 @@
 
 bool empty_line(const char *s)
 {
-	assert(s);
+	assert(s != NULL);
 
 	return !!(strcspn(s, NEWLINE) == 0);
 }
 
 char *truncate_nl(char *s)
 {
-	assert(s);
+	assert(s != NULL);
 
 	s[strcspn(s, NEWLINE)] = 0;
 	return s;
