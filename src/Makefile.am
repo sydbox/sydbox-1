@@ -195,3 +195,11 @@ cppcheck:
 		$(DEFS) -I$(top_builddir) -I$(top_srcdir) \
 		--std=c99 --std=posix --enable=all
 .PHONY: cppcheck
+
+splint:
+	splint +posixlib -D__x86_64__ \
+		$(DEFS) \
+		-I$(top_builddir) -I$(top_builddir)/syd \
+		-I$(top_srcdir) -I$(top_srcdir)/syd \
+		$(pinktrace_CFLAGS) \
+		$(sydbox_SOURCES)
