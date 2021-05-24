@@ -240,10 +240,11 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 			}
 			if (!nofollow) {
 				slen = readlink_copy(resolved, symlink, SYDBOX_PATH_MAX);
+				int save_errno = errno;
 				utime_reset(resolved, &sb);
 				if (slen < 0) {
 					free(resolved);
-					return slen; /* negated errno */
+					return -save_errno;
 				}
 				if (symlink[0] == '/') {
 					resolved[1] = 0;

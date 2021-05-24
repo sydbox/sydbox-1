@@ -84,12 +84,15 @@ ssize_t readlink_copy(const char *path, char *dest, size_t len)
 
 	n = readlink(path, dest, len - 1);
 	if (n < 0 || n >= (ssize_t)(len - 1)) {
-		if (n < 0)
-			return -errno;
-		else if (n == 0)
-			return -ENOENT;
-		else
-			return -ENAMETOOLONG;
+		if (n < 0) {
+			return -1;
+		} else if (n == 0) {
+			errno = ENOENT;
+			return -1;
+		} else {
+			errno = ENAMETOOLONG;
+			return -1;
+		}
 	}
 	dest[n] = 0;
 	return n;
@@ -108,14 +111,17 @@ ssize_t readlink_alloc(const char *path, char **buf)
 		ssize_t n;
 
 		c = malloc(l * sizeof(char));
-		if (!c)
-			return -ENOMEM;
+		if (!c) {
+			errno = ENOMEM;
+			return -1;
+		}
 
 		n = readlink(path, c, l - 1);
 		if (n < 0) {
-			int ret = -errno;
+			int save_errno = errno;
 			free(c);
-			return ret;
+			errno = save_errno;
+			return -1;
 		}
 
 		if ((size_t)n < l - 1) {
