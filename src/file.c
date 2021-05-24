@@ -77,7 +77,7 @@ int basename_alloc(const char *path, char **buf)
 {
 	char *c, *bname, *retbuf;
 
-	assert(buf);
+	assert(buf != NULL);
 
 	c = strdup(path);
 	if (!c)
