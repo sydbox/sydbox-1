@@ -47,7 +47,7 @@ char *path_kill_slashes(char *path)
 	 * ///foo///bar/ becomes /foo/bar
 	 */
 
-	for (f = path, t = path; *f; f++) {
+	for (f = path, t = path; *f != '\0'; f++) {
 
 		if (*f == '/') {
 			slash = true;
@@ -68,6 +68,6 @@ char *path_kill_slashes(char *path)
 	if (t == path && slash)
 		*(t++) = '/';
 
-	*t = 0;
+	*t = '\0';
 	return path;
 }
