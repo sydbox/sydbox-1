@@ -3,7 +3,7 @@
  *
  * Path related utilities
  *
- * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright (C) 2010-2012 Lennart Poettering
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
@@ -25,7 +25,7 @@
  * the prefix, if specified and necessary */
 char *path_make_absolute(const char *p, const char *prefix)
 {
-	char *r;
+	char *r = NULL;
 
 	if (path_is_absolute(p) || !prefix)
 		return strdup(p);
