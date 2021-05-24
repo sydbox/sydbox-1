@@ -153,13 +153,13 @@ int read_one_line_file(const char *fn, char **line)
 		goto out;
 	}
 
-	truncate_nl(c);
+	(void)truncate_nl(c);
 
 	*line = c;
 	r = 0;
 
 out:
-	fclose(f);
+	(void)fclose(f);
 	return r;
 }
 
