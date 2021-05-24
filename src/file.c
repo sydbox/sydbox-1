@@ -58,21 +58,6 @@ const char *filename_ext(const char *s)
 	return ext ? ext + 1 : NULL;
 }
 
-int basename_copy(const char *path, char *dest, size_t len)
-{
-	char *c, *bname;
-
-	c = strdup(path);
-	if (!c)
-		return -ENOMEM;
-
-	bname = basename(c);
-	strlcpy(dest, bname, len);
-	free(c);
-
-	return 0;
-}
-
 int basename_alloc(const char *path, char **buf)
 {
 	char *c, *bname, *retbuf;
