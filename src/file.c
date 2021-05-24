@@ -46,7 +46,7 @@ char *truncate_nl(char *s)
 {
 	assert(s != NULL);
 
-	s[strcspn(s, NEWLINE)] = 0;
+	s[strcspn(s, NEWLINE)] = '\0';
 	return s;
 }
 
