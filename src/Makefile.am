@@ -197,9 +197,17 @@ cppcheck:
 .PHONY: cppcheck
 
 splint:
-	splint +posixlib -D__x86_64__ \
-		$(DEFS) \
-		-I$(top_builddir) -I$(top_builddir)/syd \
-		-I$(top_srcdir) -I$(top_srcdir)/syd \
-		$(pinktrace_CFLAGS) \
-		$(sydbox_SOURCES)
+	for path in $(sydbox_SOURCES); do \
+		echo "SPLINT $$path"; \
+		splint +posixlib -D__x86_64__ \
+			$(DEFS) \
+			-D_GNU_SOURCE \
+			-D__signed__=signed \
+			-DLINE_MAX=2048 \
+			-nullret \
+			-I$(top_builddir) -I$(top_builddir)/syd \
+			-I$(top_srcdir) -I$(top_srcdir)/syd \
+			$(pinktrace_CFLAGS) \
+			$$path; \
+	done 2>&1 |\
+	tee sydbox-splint.log
