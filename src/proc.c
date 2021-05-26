@@ -71,9 +71,8 @@ int proc_cwd(pid_t pid, bool use_toolong_hack, char **buf)
 	if (asprintf(&linkcwd, "/proc/%u/cwd", pid) < 0)
 		return -ENOMEM;
 
-	errno = 0;
 	r = readlink_alloc(linkcwd, &cwd);
-	if (use_toolong_hack && r < 0 && errno == ENAMETOOLONG) {
+	if (use_toolong_hack && r == -ENAMETOOLONG) {
 		if ((r = chdir(linkcwd)) < 0) {
 			r = -errno;
 			goto out;
