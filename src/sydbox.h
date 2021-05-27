@@ -475,7 +475,7 @@ typedef struct {
 typedef int (*sysfunc_t) (syd_process_t *current);
 typedef int (*sysfilter_t) (int arch, uint32_t sysnum);
 
-typedef struct {
+struct sysentry {
 	const char *name;
 	long no; /* Used only if `name' is NULL.
 		  * May be used to implement virtual system calls.
@@ -490,7 +490,8 @@ typedef struct {
 	 * support is not available or do they have to be called anyway?
 	 */
 	bool ptrace_fallback;
-} sysentry_t;
+};
+typedef struct sysentry sysentry_t;
 
 typedef struct {
 	/* Argument index */
