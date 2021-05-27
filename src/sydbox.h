@@ -493,7 +493,7 @@ struct sysentry {
 };
 typedef struct sysentry sysentry_t;
 
-typedef struct {
+struct sysinfo {
 	/* Argument index */
 	unsigned arg_index;
 
@@ -502,21 +502,20 @@ typedef struct {
 
 	/* NULL argument does not cause -EFAULT (only valid for `at_func') */
 	bool null_ok;
+	/* Safe system call, deny silently (w/o raising access violation) */
+	bool safe;
+	/* Decode socketcall() into subcall */
+	bool decode_socketcall;
 	/* Mode for realpath_mode() */
 	unsigned rmode;
 	/* Stat mode */
 	enum syd_stat syd_mode;
+	/* Access control mode (whitelist, blacklist) */
+	enum sys_access_mode access_mode;
 
-	/* Decode socketcall() into subcall */
-	bool decode_socketcall;
-
-	/* Safe system call, deny silently (w/o raising access violation) */
-	bool safe;
 	/* Deny errno */
 	int deny_errno;
 
-	/* Access control mode (whitelist, blacklist) */
-	enum sys_access_mode access_mode;
 	/* Access control lists (per-process, global) */
 	aclq_t *access_list;
 	aclq_t *access_list_global;
@@ -532,7 +531,8 @@ typedef struct {
 	/* Cached data (to be reused by another sandboxing (read,write etc.) */
 	const char *cache_abspath;
 	const struct stat *cache_statbuf;
-} sysinfo_t;
+};
+typedef struct sysinfo sysinfo_t;
 
 /* Global variables */
 extern sydbox_t *sydbox;
