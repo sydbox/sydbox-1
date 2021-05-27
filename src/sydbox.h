@@ -408,21 +408,28 @@ typedef struct syd_process syd_process_t;
 		} \
 	} while (0)
 
-typedef struct {
+struct config {
 	/* magic access to core.*  */
 	bool magic_core_allow;
-
-	/* Per-process sandboxing data */
-	sandbox_t box_static;
-
-	/* Non-inherited, "global" configuration data */
-	bool restrict_file_control;
-	bool restrict_shared_memory_writable;
 
 	bool whitelist_per_process_directories;
 	bool whitelist_successful_bind;
 	bool whitelist_unsupported_socket_families;
 
+	/* restrict knobs are not inherited, they're global config */
+	bool restrict_file_control;
+	bool restrict_shared_memory_writable;
+
+	/* same for these, not inherited: global */
+	bool use_seize;
+	bool use_toolong_hack;
+
+	/* Per-process sandboxing data */
+	sandbox_t box_static;
+
+	/***
+	 * Non-inherited, "global" configuration data
+	 ***/
 	enum violation_decision violation_decision;
 	int violation_exit_code;
 	bool violation_raise_fail;
@@ -431,8 +438,6 @@ typedef struct {
 	bool follow_fork;
 	bool exit_kill;
 	bool use_seccomp;
-	bool use_seize;
-	bool use_toolong_hack;
 
 	aclq_t exec_kill_if_match;
 	aclq_t exec_resume_if_match;
@@ -444,7 +449,8 @@ typedef struct {
 
 	proc_pid_t *hh_proc_pid_auto;
 	aclq_t acl_network_connect_auto;
-} config_t;
+};
+typedef struct config config_t;
 
 typedef struct {
 	syd_process_t *proctab;
