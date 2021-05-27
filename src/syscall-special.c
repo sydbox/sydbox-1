@@ -281,7 +281,7 @@ static int do_stat(syd_process_t *current, const char *path,
 #define FAKE_RDEV 259 /* /dev/null */
 #define FAKE_ATIME 505958400
 #define FAKE_MTIME -842745600
-#define FAKE_CTIME 558748800
+#define FAKE_CTIME -2036448000
 #if PINK_ARCH_X86_64
 		struct stat32 buf32;
 
