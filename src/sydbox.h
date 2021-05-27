@@ -367,6 +367,9 @@ struct syd_process {
 	/* SYD_* flags */
 	int flags;
 
+	/* Stepping method */
+	enum syd_step trace_step;
+
 	/* Last system call */
 	unsigned long sysnum;
 
@@ -399,9 +402,6 @@ struct syd_process {
 
 	/* Process hash table via sydbox->proctab */
 	UT_hash_handle hh;
-
-	/* Stepping method */
-	enum syd_step trace_step;
 };
 typedef struct syd_process syd_process_t;
 
