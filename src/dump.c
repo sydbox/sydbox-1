@@ -650,13 +650,13 @@ static void dump_pink(const char *name, int retval, int save_errno, pid_t pid, v
 				break;
 			case AF_INET:
 				inet_ntop(AF_INET, &paddr->u.sa_in.sin_addr, ip, sizeof(ip));
-				fprintf(fp, ","J(saddr)"\"inet:%s:%d\"",
+				fprintf(fp, ","J(saddr)"\"inet:%s@%d\"",
 					ip, ntohs(paddr->u.sa_in.sin_port));
 				break;
 #if PINK_HAVE_IPV6
 			case AF_INET6:
 				inet_ntop(AF_INET6, &paddr->u.sa6.sin6_addr, ip, sizeof(ip));
-				fprintf(fp, ","J(saddr)"\"inet6:%s:%d\"",
+				fprintf(fp, ","J(saddr)"\"inet6:%s@%d\"",
 					ip, ntohs(paddr->u.sa6.sin6_port));
 				break;
 #endif
