@@ -47,7 +47,7 @@ static int stat_mode(const char *path, const struct stat_mode *mode,
 
 		r = stat(path, &sb_r);
 		save_errno = errno;
-		utime_reset(path, &sb);
+		(void)utime_reset(path, &sb);
 
 		if (r < 0) {
 			if (mode->rmode == RPATH_NOLAST) {
