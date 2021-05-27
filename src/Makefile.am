@@ -204,6 +204,7 @@ splint:
 			-D_GNU_SOURCE \
 			-D__signed__=signed \
 			-DLINE_MAX=2048 \
+			-boolops \
 			-nullret \
 			-I$(top_builddir) -I$(top_builddir)/syd \
 			-I$(top_srcdir) -I$(top_srcdir)/syd \
