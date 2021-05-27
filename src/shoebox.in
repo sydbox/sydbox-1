@@ -420,7 +420,7 @@ def whitelist_open(flags):
 
     if mode == os.O_RDONLY:
         return (flags & os.O_CREAT) and 'write' or 'read'
-    elif mode == os.O_RDONLY or mode == os.O_RDWR:
+    elif mode == os.O_WRONLY or mode == os.O_RDWR:
         return 'write'
     else: # Invalid mode
         return None
