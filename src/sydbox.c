@@ -1476,7 +1476,7 @@ static void startup_child(char **argv)
 #endif
 		pid = getpid();
 		if (!syd_use_seize) {
-			if ((r = pink_trace_me() < 0)) {
+			if ((r = pink_trace_me()) < 0) {
 				fprintf(stderr,
 					"ptrace(PTRACE_TRACEME) failed (errno:%d %s)\n",
 					-r, strerror(-r));
