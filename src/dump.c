@@ -3,7 +3,7 @@
  *
  * Event dumper using JSON lines
  *
- * Copyright (c) 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2014, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -608,10 +608,10 @@ static void dump_sandbox(const sandbox_t *box)
 		J(network)"%s,"
 		J(magic_lock)"%u,"
 		J(magic_lock_name)"\"%s\"",
-		J_BOOL(box->sandbox_exec),
-		J_BOOL(box->sandbox_read),
-		J_BOOL(box->sandbox_write),
-		J_BOOL(box->sandbox_network),
+		J_BOOL(box->mode.sandbox_exec),
+		J_BOOL(box->mode.sandbox_read),
+		J_BOOL(box->mode.sandbox_write),
+		J_BOOL(box->mode.sandbox_network),
 		box->magic_lock,
 		lock_state_to_string(box->magic_lock));
 

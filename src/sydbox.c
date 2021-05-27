@@ -852,10 +852,10 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 
 	fprintf(stderr, "\t%sSandbox: {exec:%s read:%s write:%s sock:%s}%s\n",
 		CN,
-		sandbox_mode_to_string(P_BOX(current)->sandbox_exec),
-		sandbox_mode_to_string(P_BOX(current)->sandbox_read),
-		sandbox_mode_to_string(P_BOX(current)->sandbox_write),
-		sandbox_mode_to_string(P_BOX(current)->sandbox_network),
+		sandbox_mode_to_string(P_BOX(current)->mode.sandbox_exec),
+		sandbox_mode_to_string(P_BOX(current)->mode.sandbox_read),
+		sandbox_mode_to_string(P_BOX(current)->mode.sandbox_write),
+		sandbox_mode_to_string(P_BOX(current)->mode.sandbox_network),
 		CE);
 	fprintf(stderr, "\t%sMagic Lock: %s%s\n", CN, lock_state_to_string(P_BOX(current)->magic_lock), CE);
 	fprintf(stderr, "\t%sExec Whitelist:%s\n", CI, CE);

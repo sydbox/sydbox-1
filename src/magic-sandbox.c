@@ -1,7 +1,7 @@
 /*
  * sydbox/magic-sandbox.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -28,16 +28,16 @@ static int magic_query_sandbox(enum sandbox_type t, syd_process_t *current)
 	box = box_current(current);
 	switch (t) {
 	case SANDBOX_EXEC:
-		mode = box->sandbox_exec;
+		mode = box->mode.sandbox_exec;
 		break;
 	case SANDBOX_READ:
-		mode = box->sandbox_read;
+		mode = box->mode.sandbox_read;
 		break;
 	case SANDBOX_WRITE:
-		mode = box->sandbox_write;
+		mode = box->mode.sandbox_write;
 		break;
 	case SANDBOX_NETWORK:
-		mode = box->sandbox_network;
+		mode = box->mode.sandbox_network;
 		break;
 	default:
 		assert_not_reached();
@@ -58,16 +58,16 @@ static int magic_set_sandbox(enum sandbox_type t, const char *str, syd_process_t
 	box = box_current(current);
 	switch (t) {
 	case SANDBOX_EXEC:
-		box->sandbox_exec = r;
+		box->mode.sandbox_exec = r;
 		break;
 	case SANDBOX_READ:
-		box->sandbox_read = r;
+		box->mode.sandbox_read = r;
 		break;
 	case SANDBOX_WRITE:
-		box->sandbox_write = r;
+		box->mode.sandbox_write = r;
 		break;
 	case SANDBOX_NETWORK:
-		box->sandbox_network = r;
+		box->mode.sandbox_network = r;
 		break;
 	default:
 		assert_not_reached();

@@ -192,7 +192,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 		free(current->abspath);
 	current->abspath = abspath;
 
-	switch (P_BOX(current)->sandbox_exec) {
+	switch (P_BOX(current)->mode.sandbox_exec) {
 	case SANDBOX_OFF:
 		return 0;
 	case SANDBOX_DENY:

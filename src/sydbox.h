@@ -241,21 +241,25 @@ enum syd_step {
 	SYD_STEP_RESUME,	/**< Step with pink_trace_resume() */
 };
 
-typedef struct {
+struct sandbox_mode_struct {
+	enum sandbox_mode sandbox_exec:2;
+	enum sandbox_mode sandbox_read:2;
+	enum sandbox_mode sandbox_write:2;
+	enum sandbox_mode sandbox_network:2;
+};
+
+struct sandbox {
+	struct sandbox_mode_struct mode;
+	enum lock_state magic_lock:2;
+
 	aclq_t acl_exec;
 	aclq_t acl_read;
 	aclq_t acl_write;
 
-	enum sandbox_mode sandbox_exec;
-	enum sandbox_mode sandbox_read;
-	enum sandbox_mode sandbox_write;
-	enum sandbox_mode sandbox_network;
-
 	aclq_t acl_network_bind;
 	aclq_t acl_network_connect;
-	enum lock_state magic_lock;
-
-} sandbox_t;
+};
+typedef struct sandbox sandbox_t;
 
 struct syd_process_shared_clone_thread {
 	/* Per-process sandbox */
@@ -542,9 +546,9 @@ extern sydbox_t *sydbox;
 #define sysdeny(p) ((p)->retval)
 #define hasparent(p) ((p)->ppid >= 0)
 
-#define sandbox_allow(p, box) (!!(P_BOX(p)->sandbox_ ## box == SANDBOX_ALLOW))
-#define sandbox_deny(p, box) (!!(P_BOX(p)->sandbox_ ## box == SANDBOX_DENY))
-#define sandbox_off(p, box) (!!(P_BOX(p)->sandbox_ ## box == SANDBOX_OFF))
+#define sandbox_allow(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_ALLOW))
+#define sandbox_deny(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_DENY))
+#define sandbox_off(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_OFF))
 
 #define sandbox_allow_exec(p) (sandbox_allow((p), exec))
 #define sandbox_allow_read(p) (sandbox_allow((p), read))
@@ -633,10 +637,10 @@ static inline sandbox_t *box_current(syd_process_t *current)
 
 static inline void init_sandbox(sandbox_t *box)
 {
-	box->sandbox_exec = SANDBOX_OFF;
-	box->sandbox_read = SANDBOX_OFF;
-	box->sandbox_write = SANDBOX_OFF;
-	box->sandbox_network = SANDBOX_OFF;
+	box->mode.sandbox_exec = SANDBOX_OFF;
+	box->mode.sandbox_read = SANDBOX_OFF;
+	box->mode.sandbox_write = SANDBOX_OFF;
+	box->mode.sandbox_network = SANDBOX_OFF;
 
 	box->magic_lock = LOCK_UNSET;
 
@@ -656,10 +660,10 @@ static inline void copy_sandbox(sandbox_t *box_dest, sandbox_t *box_src)
 
 	assert(box_dest);
 
-	box_dest->sandbox_exec = box_src->sandbox_exec;
-	box_dest->sandbox_read = box_src->sandbox_read;
-	box_dest->sandbox_write = box_src->sandbox_write;
-	box_dest->sandbox_network = box_src->sandbox_network;
+	box_dest->mode.sandbox_exec = box_src->mode.sandbox_exec;
+	box_dest->mode.sandbox_read = box_src->mode.sandbox_read;
+	box_dest->mode.sandbox_write = box_src->mode.sandbox_write;
+	box_dest->mode.sandbox_network = box_src->mode.sandbox_network;
 
 	box_dest->magic_lock = box_src->magic_lock;
 
