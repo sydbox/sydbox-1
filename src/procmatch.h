@@ -3,7 +3,7 @@
  *
  * match proc/ whitelists efficiently
  *
- * Copyright (c) 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2014, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -12,11 +12,12 @@
 
 #include "sydhash.h"
 
-typedef struct {
+struct proc_pid {
 	pid_t pid;
-	char path[sizeof("/proc/%u/***") + sizeof(int)*3 + /*paranoia:*/16];
+	char path[sizeof("/proc/%u/***") + sizeof(int)*3 + /*paranoia:*/11];
 	UT_hash_handle hh;
-} proc_pid_t;
+};
+typedef struct proc_pid proc_pid_t;
 
 int procadd(proc_pid_t **pp, pid_t pid);
 int procdrop(proc_pid_t **pp, pid_t pid);
