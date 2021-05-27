@@ -425,6 +425,18 @@ def whitelist_open(flags):
     else: # Invalid mode
         return None
 
+def magic_key(magic):
+    if "whitelist/read" in magic:
+        return 100
+    elif "whitelist/exec" in magic:
+        return 100
+    elif "whitelist/write" in magic:
+        return 5
+    elif "whitelist/network" in magic:
+        return 10
+    else:
+        return 100
+
 def command_magic(args):
     call_graph = dict()
     sys_call   = None
@@ -459,13 +471,16 @@ def command_magic(args):
                 if mode & os.W_OK:
                     prefix = 'whitelist/write+'
                 else:
-                    prefix = 'whitelist/read+'
+                    prefix = '# whitelist/read+'
                 magic.add(prefix + sys_call[1])
             elif sys_call[0] in ('open', 'openat'):
                 off = sys_call[0][-2:] == 'at' and 1 or 0
                 wlist = whitelist_open(sys_call[off + 2])
                 if wlist is not None:
-                    magic.add('whitelist/%s+%s' % (wlist, sys_call[off + 1]))
+                    rule = 'whitelist/%s+%s' % (wlist, sys_call[off + 1])
+                    if wlist == 'read':
+                        rule = '# ' + rule
+                    magic.add(rule)
 #            elif sys_call[0] in ('stat',):
 
             elif sys_call[0] == 'connect':
@@ -479,7 +494,7 @@ def command_magic(args):
                 sys.stderr.write("%d\t%s\n" % (pid, call))
 
     print(MAGIC_HEADER)
-    for spell in sorted(magic):
+    for spell in sorted(magic, key=lambda m: (magic_key(m), m)):
         print(spell)
 
 def main():
