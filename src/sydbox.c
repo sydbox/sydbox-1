@@ -1461,14 +1461,14 @@ static void startup_child(char **argv)
 		if (sydbox->config.use_seccomp) {
 			if ((r = seccomp_init()) < 0) {
 				fprintf(stderr,
-					"seccomp_init failed (errno:%d %s)\n",
+					PACKAGE": seccomp_init failed (errno:%d %s)\n",
 					-r, strerror(-r));
 				_exit(EXIT_FAILURE);
 			}
 
 			if ((r = sysinit_seccomp()) < 0) {
 				fprintf(stderr,
-					"seccomp_apply failed (errno:%d %s)\n",
+					PACKAGE": seccomp_apply failed (errno:%d %s)\n",
 					-r, strerror(-r));
 				_exit(EXIT_FAILURE);
 			}
@@ -1478,7 +1478,7 @@ static void startup_child(char **argv)
 		if (!syd_use_seize) {
 			if ((r = pink_trace_me()) < 0) {
 				fprintf(stderr,
-					"ptrace(PTRACE_TRACEME) failed (errno:%d %s)\n",
+					PACKAGE": ptrace(PTRACE_TRACEME) failed (errno:%d %s)\n",
 					-r, strerror(-r));
 				_exit(EXIT_FAILURE);
 			}
@@ -1486,18 +1486,19 @@ static void startup_child(char **argv)
 
 		if (child_sa.sa_handler != SIG_DFL &&
 				sigaction(SIGCHLD, &child_sa, NULL) < 0) {
-			fprintf(stderr, "sigaction failed (errno:%d %s)\n",
+			fprintf(stderr, PACKAGE": sigaction failed (errno:%d %s)\n",
 					errno, strerror(errno));
 			_exit(EXIT_FAILURE);
 		}
 
 		if (kill(pid, SIGSTOP) < 0) {
-			fprintf(stderr, "self-stop pid:%d failed (errno:%d %s)\n",
+			fprintf(stderr, PACKAGE": self-stop pid:%d failed (errno:%d %s)\n",
 				pid, errno, strerror(errno));
 		}
 
 		execv(pathname, argv);
-		fprintf(stderr, "execv failed (errno:%d %s)\n", errno, strerror(errno));
+		fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
+			pathname, errno, strerror(errno));
 		_exit(EXIT_FAILURE);
 	}
 
