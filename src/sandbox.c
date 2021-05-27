@@ -505,7 +505,7 @@ int box_check_socket(syd_process_t *current, sysinfo_t *info)
 			/* allow unsupported socket family */
 			goto out;
 		}
-		r = deny(current, EAFNOSUPPORT);
+		r = sandbox_dry_network(current) ? 0 : deny(current, EAFNOSUPPORT);
 		goto report;
 	}
 
@@ -542,7 +542,7 @@ int box_check_socket(syd_process_t *current, sysinfo_t *info)
 		/* access denied */
 	}
 
-	r = deny(current, info->deny_errno);
+	r = sandbox_dry_network(current) ? 0 : deny(current, info->deny_errno);
 
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */

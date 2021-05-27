@@ -133,7 +133,7 @@ int deny(syd_process_t *current, int err_no)
 {
 	int r;
 
-	if (sandbox_dry_file(current))
+	if (sandbox_dry_file(current) || sandbox_dry_network(current))
 		return 0; /* dry-run, no intervention. */
 	current->retval = errno2retval(err_no);
 
