@@ -829,6 +829,10 @@ static int dump_init(void)
 		die_errno("fdopen_dump");
 	nodump = 1;
 
+	if (sydbox->config.violation_decision == VIOLATION_NOOP) {
+		say("dumping core `%s' for inspection.", pathdump);
+	}
+
 	dump_format();
 	dump_cycle();
 	atexit(dump_close);
