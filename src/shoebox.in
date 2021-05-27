@@ -449,7 +449,7 @@ def command_magic(args):
                     call += ', '.join(map(lambda x: x is None and '?' or str(x), sys_call[1:]))
                 call += ')'
 
-                sys.stdout.write("%d\t%s\n" % (pid, call))
+                sys.stderr.write("%d\t%s\n" % (pid, call))
 
     for spell in sorted(magic):
         print(spell)
