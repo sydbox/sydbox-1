@@ -1491,7 +1491,10 @@ static void startup_child(char **argv)
 			_exit(EXIT_FAILURE);
 		}
 
-		kill(pid, SIGSTOP);
+		if (kill(pid, SIGSTOP) < 0) {
+			fprintf(stderr, "self-stop pid:%d failed (errno:%d %s)\n",
+				pid, errno, strerror(errno));
+		}
 
 		execv(pathname, argv);
 		fprintf(stderr, "execv failed (errno:%d %s)\n", errno, strerror(errno));
