@@ -260,50 +260,18 @@ typedef struct {
 struct syd_process_shared_clone_thread {
 	/* Per-process sandbox */
 	sandbox_t *box;
-#define P_BOX(p) ((p)->shm.clone_thread->box)
 
 	/* Reference count */
 	unsigned refcnt;
-#define P_CLONE_THREAD_REFCNT(p) ((p)->shm.clone_thread->refcnt)
-#define P_CLONE_THREAD_RETAIN(p) ((p)->shm.clone_thread->refcnt++)
-#define P_CLONE_THREAD_RELEASE(p) \
-	do { \
-		if ((p)->shm.clone_thread != NULL) { \
-			(p)->shm.clone_thread->refcnt--; \
-			if ((p)->shm.clone_thread->refcnt == 0) { \
-				if ((p)->shm.clone_thread->box) { \
-					free_sandbox((p)->shm.clone_thread->box); \
-				} \
-				free((p)->shm.clone_thread); \
-				(p)->shm.clone_thread = NULL; \
-			} \
-		} \
-	} while (0)
 };
 
 /* Shared items when CLONE_FS is set. */
 struct syd_process_shared_clone_fs {
 	/* Current working directory */
 	char *cwd;
-#define P_CWD(p) ((p)->shm.clone_fs->cwd)
 
 	/* Reference count */
 	unsigned refcnt;
-#define P_CLONE_FS_REFCNT(p) ((p)->shm.clone_fs->refcnt)
-#define P_CLONE_FS_RETAIN(p) ((p)->shm.clone_fs->refcnt++)
-#define P_CLONE_FS_RELEASE(p) \
-	do { \
-		if ((p)->shm.clone_fs != NULL) { \
-			(p)->shm.clone_fs->refcnt--; \
-			if ((p)->shm.clone_fs->refcnt == 0) { \
-				if ((p)->shm.clone_fs->cwd) { \
-					free((p)->shm.clone_fs->cwd); \
-				} \
-				free((p)->shm.clone_fs); \
-				(p)->shm.clone_fs = NULL; \
-			} \
-		} \
-	} while (0)
 };
 
 /* Shared items when CLONE_FILES is set. */
@@ -312,35 +280,14 @@ struct syd_process_shared_clone_files {
 	 * Last bind(2) address with port argument zero
 	 */
 	struct sockinfo *savebind;
-#define P_SAVEBIND(p) ((p)->shm.clone_files->savebind)
 
 	/*
 	 * File descriptor mappings for savebind
 	 */
 	struct sockmap *sockmap;
-#define P_SOCKMAP(p) ((p)->shm.clone_files->sockmap)
 
 	/* Reference count */
 	unsigned refcnt;
-#define P_CLONE_FILES_REFCNT(p) ((p)->shm.clone_files->refcnt)
-#define P_CLONE_FILES_RETAIN(p) ((p)->shm.clone_files->refcnt++)
-#define P_CLONE_FILES_RELEASE(p) \
-	do { \
-		if ((p)->shm.clone_files != NULL) { \
-			(p)->shm.clone_files->refcnt--; \
-			if ((p)->shm.clone_files->refcnt == 0) { \
-				if ((p)->shm.clone_files->savebind) { \
-					free_sockinfo((p)->shm.clone_files->savebind); \
-				} \
-				if ((p)->shm.clone_files->sockmap) { \
-					sockmap_destroy(&(p)->shm.clone_files->sockmap); \
-					free((p)->shm.clone_files->sockmap); \
-				} \
-				free((p)->shm.clone_files); \
-				(p)->shm.clone_files = NULL; \
-			} \
-		} \
-	} while (0)
 };
 
 /* Per-thread shared data */
@@ -404,6 +351,62 @@ struct syd_process {
 	UT_hash_handle hh;
 };
 typedef struct syd_process syd_process_t;
+
+#define P_BOX(p) ((p)->shm.clone_thread->box)
+#define P_CLONE_THREAD_REFCNT(p) ((p)->shm.clone_thread->refcnt)
+#define P_CLONE_THREAD_RETAIN(p) ((p)->shm.clone_thread->refcnt++)
+#define P_CLONE_THREAD_RELEASE(p) \
+	do { \
+		if ((p)->shm.clone_thread != NULL) { \
+			(p)->shm.clone_thread->refcnt--; \
+			if ((p)->shm.clone_thread->refcnt == 0) { \
+				if ((p)->shm.clone_thread->box) { \
+					free_sandbox((p)->shm.clone_thread->box); \
+				} \
+				free((p)->shm.clone_thread); \
+				(p)->shm.clone_thread = NULL; \
+			} \
+		} \
+	} while (0)
+
+#define P_CWD(p) ((p)->shm.clone_fs->cwd)
+#define P_CLONE_FS_REFCNT(p) ((p)->shm.clone_fs->refcnt)
+#define P_CLONE_FS_RETAIN(p) ((p)->shm.clone_fs->refcnt++)
+#define P_CLONE_FS_RELEASE(p) \
+	do { \
+		if ((p)->shm.clone_fs != NULL) { \
+			(p)->shm.clone_fs->refcnt--; \
+			if ((p)->shm.clone_fs->refcnt == 0) { \
+				if ((p)->shm.clone_fs->cwd) { \
+					free((p)->shm.clone_fs->cwd); \
+				} \
+				free((p)->shm.clone_fs); \
+				(p)->shm.clone_fs = NULL; \
+			} \
+		} \
+	} while (0)
+
+#define P_SAVEBIND(p) ((p)->shm.clone_files->savebind)
+#define P_SOCKMAP(p) ((p)->shm.clone_files->sockmap)
+#define P_CLONE_FILES_REFCNT(p) ((p)->shm.clone_files->refcnt)
+#define P_CLONE_FILES_RETAIN(p) ((p)->shm.clone_files->refcnt++)
+#define P_CLONE_FILES_RELEASE(p) \
+	do { \
+		if ((p)->shm.clone_files != NULL) { \
+			(p)->shm.clone_files->refcnt--; \
+			if ((p)->shm.clone_files->refcnt == 0) { \
+				if ((p)->shm.clone_files->savebind) { \
+					free_sockinfo((p)->shm.clone_files->savebind); \
+				} \
+				if ((p)->shm.clone_files->sockmap) { \
+					sockmap_destroy(&(p)->shm.clone_files->sockmap); \
+					free((p)->shm.clone_files->sockmap); \
+				} \
+				free((p)->shm.clone_files); \
+				(p)->shm.clone_files = NULL; \
+			} \
+		} \
+	} while (0)
 
 #if 0
 typedef struct {
