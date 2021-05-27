@@ -365,7 +365,7 @@ struct syd_process {
 	short abi;
 
 	/* SYD_* flags */
-	short flags;
+	int flags;
 
 	/* Last system call */
 	unsigned long sysnum;

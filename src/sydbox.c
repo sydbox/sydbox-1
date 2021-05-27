@@ -197,7 +197,7 @@ static void new_shared_memory(struct syd_process *p)
 	new_shared_memory_clone_files(p);
 }
 
-static syd_process_t *new_thread(pid_t pid, short flags)
+static syd_process_t *new_thread(pid_t pid, int flags)
 {
 	int r;
 	syd_process_t *thread;
@@ -226,7 +226,7 @@ static syd_process_t *new_thread(pid_t pid, short flags)
 	return thread;
 }
 
-static syd_process_t *new_process(pid_t pid, short flags)
+static syd_process_t *new_process(pid_t pid, int flags)
 {
 	syd_process_t *process;
 
@@ -239,7 +239,7 @@ static syd_process_t *new_process(pid_t pid, short flags)
 	return process;
 }
 
-static syd_process_t *new_thread_or_kill(pid_t pid, short flags)
+static syd_process_t *new_thread_or_kill(pid_t pid, int flags)
 {
 	syd_process_t *thread;
 
@@ -252,7 +252,7 @@ static syd_process_t *new_thread_or_kill(pid_t pid, short flags)
 	return thread;
 }
 
-static syd_process_t *new_process_or_kill(pid_t pid, short flags)
+static syd_process_t *new_process_or_kill(pid_t pid, int flags)
 {
 	syd_process_t *process;
 
@@ -436,7 +436,7 @@ void bury_process(syd_process_t *p)
 }
 
 /* Drop leader, switch to the thread, reusing leader's tid */
-static void tweak_execve_thread(syd_process_t *execve_thread, pid_t leader_pid, short flags)
+static void tweak_execve_thread(syd_process_t *execve_thread, pid_t leader_pid, int flags)
 {
 	if (sydbox->config.whitelist_per_process_directories)
 		procdrop(&sydbox->config.hh_proc_pid_auto, execve_thread->pid);
