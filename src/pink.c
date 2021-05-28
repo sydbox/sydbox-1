@@ -3,7 +3,7 @@
  *
  * pinktrace wrapper functions
  *
- * Copyright (c) 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -133,7 +133,9 @@ int syd_regset_fill(syd_process_t *current)
 
 	r = pink_regset_fill(current->pid, current->regset);
 	if (r == 0) {
-		pink_read_abi(current->pid, current->regset, &current->abi);
+		short abi;
+		pink_read_abi(current->pid, current->regset, &abi);
+		current->abi = abi;
 		return 0;
 	}
 	return SYD_CHECK(current, r);
