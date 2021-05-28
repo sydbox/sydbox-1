@@ -58,8 +58,8 @@ struct PinkStruct {
     retval: u32,
     errno: u32,
     sysname: Option<String>,
-    arg_idx: Option<u32>,
-    arg_val: Option<u32>,
+    arg_idx: Option<usize>,
+    arg_val: Option<u64>,
     addr: Option<u64>,
     dest: Option<String>,
     len: Option<usize>,
@@ -80,18 +80,30 @@ enum Dump {
     },
     Pink {
         id: u32,
-        event: u16,
-        time: u32,
+        pid: u32,
         pink: PinkStruct,
+        /*
+         * event: u16,
+         * time: u32,
+         */
     },
     Thread {
-        event: u16,
-        event_name: String,
         id: u32,
+        event: u16,
         pid: u32,
-        time: u32,
         process: Option<ProcessStruct>,
+        /* event_name: String,
+        time: u32,
+        */
     },
+}
+
+#[derive(Clone, Debug)]
+struct SyscallStruct {
+    name: String,
+    arg_int: [Option<u64>; 6],
+    arg_str: [String; 6],
+    /* arg_sock: [SocketAddress; 6], */
 }
 
 fn command_inspect(core: &str) -> i32 {
@@ -101,15 +113,57 @@ fn command_inspect(core: &str) -> i32 {
         let serialized = match line {
             Ok(line) if line.is_empty() => {
                 return 0;
-            },
+            }
             Ok(line) => line,
             Err(error) => {
                 eprintln!("failed to read line from input: {}", error);
                 return 1;
-            },
+            }
         };
-        let dump: Dump =
-            serde_json::from_str(&serialized).expect(&format!("failed to parse `{}'", serialized));
+
+        let mut call_graph = std::collections::HashMap::<u32, SyscallStruct>::new();
+        match serde_json::from_str(&serialized).expect(&format!("failed to parse `{}'", serialized))
+        {
+            Dump::Init { id: 0, shoebox: 1 } => {
+                eprintln!("success opening core file `{}' for parsing", core);
+            }
+            Dump::Thread { event: 7, .. } => { /* thread_new */ }
+            Dump::Thread { event: 8, .. } => { /* thread_free */ }
+            Dump::Thread { event: 9, .. } => { /* startup */ }
+            Dump::Pink { pid, pink, .. } if !pink.sysname.is_none() && pink.name == "read_syscall" => {
+                insert_syscall(&mut call_graph, pid, pink.sysname);
+            }
+            Dump::Pink { pid, pink, .. }
+                if !pink.arg_idx.is_none() && pink.name == "read_argument" =>
+            {
+                let mut sys = match call_graph.get_mut(&pid) {
+                    Some(sys) => sys,
+                    None => insert_syscall(&mut call_graph, pid, None)
+                };
+                sys.arg_int[pink.arg_idx.unwrap()] = pink.arg_val;
+            }
+            Dump::Pink { pid, pink, .. }
+                if !pink.addr.is_none()
+                    && !pink.dest.is_none()
+                    && pink.name == "read_vm_data_nul" =>
+            {
+                let mut sys = match call_graph.get_mut(&pid) {
+                    Some(sys) => sys,
+                    None => insert_syscall(&mut call_graph, pid, None)
+                };
+                let addr = pink.addr.unwrap();
+                for idx in 0..6 {
+                    if sys.arg_int[idx].is_none() {
+                        continue;
+                    } else if sys.arg_int[idx].unwrap() == addr {
+                        sys.arg_str[idx] = pink.dest.unwrap();
+                        break;
+                    }
+                }
+            }
+            Dump::Pink { pink, .. } if pink.name == "read_socket_argument" => {}
+            _ => {}
+        }
     }
 
     0
@@ -175,4 +229,23 @@ fn xopen(path_or_stdin: &str) -> Box<dyn std::io::BufRead> {
             }
         })),
     }
+}
+
+fn insert_syscall(map: &mut std::collections::HashMap::<u32, SyscallStruct>,
+               pid: u32,
+               name: Option<String>) -> &mut SyscallStruct {
+    let new = SyscallStruct {
+        name: if name.is_none() { "".to_string() } else { name.unwrap() },
+        arg_int: [None; 6],
+        arg_str: [
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+        ],
+    };
+    map.insert(pid, new);
+    map.get_mut(&pid).unwrap()
 }
