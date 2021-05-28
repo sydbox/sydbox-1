@@ -1,0 +1,25 @@
+[package]
+name = "pandora"
+default-run = "pandora"
+publish = ["pandora-box"]
+version = "0.1.0"
+authors = ["Alï Polatel <alip@exherbo.org>"]
+edition = "2018"
+license = "GPL-3.0-or-later"
+homepage = "https://dev.exherbo.org/~alip/sydbox/sydbox.html"
+repository = "https://git.exherbo.org/sydbox-1.git/"
+readme = "README"
+keywords = ["security", "sandbox", "seccomp", "sydbox", "pinktrace"]
+categories = ["command-line-utilities", "config", "development-tools", "development-tools::debugging", "os::linux-apis"]
+
+[[bin]]
+name = "pandora"
+path = "src/pandora.rs"
+
+[dependencies]
+clap = "2.33"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[build-dependencies]
+built = {version = "0.4.4", features=["git2", "chrono"]}
