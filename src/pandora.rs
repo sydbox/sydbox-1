@@ -4,7 +4,7 @@ use std::iter::FromIterator;
 
 use chrono::prelude::DateTime;
 use chrono::Utc;
-use std::time::{Duration, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use clap::{App, Arg, SubCommand};
 use serde::{Deserialize, Serialize};
@@ -68,98 +68,16 @@ fn command_inspect(input_path: &str, output_path: &str) -> i32 {
             }
         };
 
-        match serde_json::from_str(&serialized).expect(&format!("failed to parse `{}'", serialized))
-        {
-            Dump::Init {
-                id: 0,
-                shoebox: 1,
-                name,
-                ..
-            } => {
-                eprintln!(
-                    "success opening input `{}' for parsing `{}' dump to write profile `{}'",
-                    input_path, name, output_path
-                );
-                program_invocation_name = String::from(name);
-            }
-            Dump::StartUp { id: 1, cmd, ts, .. } => {
-                program_command_line = String::from(cmd);
-                program_startup_time += Duration::from_secs(ts);
-            }
-            Dump::SysEnt {
-                event: 10,
-                repr,
-                sysname,
-                ..
-            } if sysname == "connect" => {
-                magic.insert(format!("whitelist/network/connect+{}", repr[1]));
-            }
-            Dump::SysEnt {
-                event: 10,
-                repr,
-                sysname,
-                ..
-            } if sysname == "execve" => {
-                magic.insert(format!("whitelist/exec+{}", repr[0]));
-            }
-            Dump::SysEnt {
-                event: 10,
-                args,
-                repr,
-                sysname,
-                ..
-            } => {
-                let may_write: bool;
-                let mut report_missing_handler = false;
-                let mut repr_idx: [usize; 6] = [0; 6];
-                if sysname.ends_with("at") {
-                    repr_idx[0] = 2;
-                } else {
-                    repr_idx[0] = 1;
-                }
-
-                may_write = if sysname == "open" {
-                    open_may_write(args[1])
-                } else if sysname == "openat" {
-                    open_may_write(args[2])
-                } else if sysname == "access" {
-                    access_may_write(args[1])
-                } else if sysname == "faccessat" {
-                    access_may_write(args[2])
-                } else if sysname == "rename" {
-                    repr_idx[1] = 2;
-                    true
-                } else if sysname == "symlink" {
-                    repr_idx[0] = 2;
-                    true
-                } else if sysname == "mkdir" || sysname == "rmdir" || sysname == "unlink" {
-                    true
-                } else {
-                    report_missing_handler = true;
-                    false
-                };
-
-                if report_missing_handler {
-                    eprintln!("SYS:{:?} {:?} {:?}", sysname, args, repr);
-                }
-
-                for idx in 0..6 {
-                    let idx = repr_idx[idx];
-                    if idx == 0 || repr[idx - 1].is_empty() {
-                        continue;
-                    }
-                    let mut entry = format!(
-                        "whitelist/{}+{}",
-                        if may_write { "write" } else { "read" },
-                        repr[idx - 1]
-                    );
-                    if !may_write {
-                        entry = format!("#? {}", entry);
-                    }
-                    magic.insert(entry);
-                }
-            }
-            _ => {}
+        let (maybe_program_invocation_name, maybe_program_command_line, maybe_program_startup_time) =
+            parse_json_line(&serialized, &mut magic);
+        if maybe_program_invocation_name.is_some() {
+            program_invocation_name = maybe_program_invocation_name.unwrap();
+        }
+        if maybe_program_command_line.is_some() {
+            program_command_line = maybe_program_command_line.unwrap();
+        }
+        if maybe_program_startup_time.is_some() {
+            program_startup_time = maybe_program_startup_time.unwrap();
         }
     }
 
@@ -294,6 +212,106 @@ Repository: {}
         )
         .exit();
     }
+}
+
+fn parse_json_line(
+    serialized: &str,
+    magic: &mut std::collections::HashSet<String>,
+) -> (Option<String>, Option<String>, Option<SystemTime>) {
+    match serde_json::from_str(&serialized).expect(&format!("failed to parse `{}'", serialized)) {
+        Dump::Init {
+            id: 0,
+            shoebox: 1,
+            name,
+            ..
+        } => {
+            eprintln!("success opening input to parse `{}' dump", name);
+            return (Some(String::from(name)), None, None);
+        }
+        Dump::StartUp { id: 1, cmd, ts, .. } => {
+            return (
+                None,
+                Some(String::from(cmd)),
+                Some(UNIX_EPOCH + Duration::from_secs(ts)),
+            );
+        }
+        Dump::SysEnt {
+            event: 10,
+            repr,
+            sysname,
+            ..
+        } if sysname == "connect" => {
+            magic.insert(format!("whitelist/network/connect+{}", repr[1]));
+        }
+        Dump::SysEnt {
+            event: 10,
+            repr,
+            sysname,
+            ..
+        } if sysname == "execve" => {
+            magic.insert(format!("whitelist/exec+{}", repr[0]));
+        }
+        Dump::SysEnt {
+            event: 10,
+            args,
+            repr,
+            sysname,
+            ..
+        } => {
+            let may_write: bool;
+            let mut report_missing_handler = false;
+            let mut repr_idx: [usize; 6] = [0; 6];
+            if sysname.ends_with("at") {
+                repr_idx[0] = 2;
+            } else {
+                repr_idx[0] = 1;
+            }
+
+            may_write = if sysname == "open" {
+                open_may_write(args[1])
+            } else if sysname == "openat" {
+                open_may_write(args[2])
+            } else if sysname == "access" {
+                access_may_write(args[1])
+            } else if sysname == "faccessat" {
+                access_may_write(args[2])
+            } else if sysname == "rename" {
+                repr_idx[1] = 2;
+                true
+            } else if sysname == "symlink" {
+                repr_idx[0] = 2;
+                true
+            } else if sysname == "mkdir" || sysname == "rmdir" || sysname == "unlink" {
+                true
+            } else {
+                report_missing_handler = true;
+                false
+            };
+
+            if report_missing_handler {
+                eprintln!("SYS:{:?} {:?} {:?}", sysname, args, repr);
+            }
+
+            for idx in 0..6 {
+                let idx = repr_idx[idx];
+                if idx == 0 || repr[idx - 1].is_empty() {
+                    continue;
+                }
+                let mut entry = format!(
+                    "whitelist/{}+{}",
+                    if may_write { "write" } else { "read" },
+                    repr[idx - 1]
+                );
+                if !may_write {
+                    entry = format!("#? {}", entry);
+                }
+                magic.insert(entry);
+            }
+        }
+        _ => {}
+    }
+
+    (None, None, None)
 }
 
 fn open_input(path_or_stdin: &str) -> Box<dyn std::io::BufRead> {
