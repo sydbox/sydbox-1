@@ -82,16 +82,24 @@ fn command_inspect(input_path: &str, output_path: &str) -> i32 {
                 );
                 program_invocation_name = String::from(name);
             }
-            Dump::StartUp {
-                id: 1, cmd, ts, ..
-            } => {
+            Dump::StartUp { id: 1, cmd, ts, .. } => {
                 program_command_line = String::from(cmd);
                 program_startup_time += Duration::from_secs(ts);
             }
-            Dump::SysEnt { event: 10, repr, sysname, .. } if sysname == "connect" => {
+            Dump::SysEnt {
+                event: 10,
+                repr,
+                sysname,
+                ..
+            } if sysname == "connect" => {
                 magic.insert(format!("whitelist/network/connect+{}", repr[1]));
             }
-            Dump::SysEnt { event: 10, repr, sysname, .. } if sysname == "execve" => {
+            Dump::SysEnt {
+                event: 10,
+                repr,
+                sysname,
+                ..
+            } if sysname == "execve" => {
                 magic.insert(format!("whitelist/exec+{}", repr[0]));
             }
             Dump::SysEnt {
@@ -150,7 +158,7 @@ fn command_inspect(input_path: &str, output_path: &str) -> i32 {
                     }
                     magic.insert(entry);
                 }
-            },
+            }
             _ => {}
         }
     }
