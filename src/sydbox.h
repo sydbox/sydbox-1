@@ -41,15 +41,7 @@
 
 #define strbool(arg)	((arg) ? "yes" : "no")
 
-/*
- * Process flags
- * Note: Care should be taken so as to make sure struct syd_process's flags
- * member does not overflow with all SYD_ flags OR'ed together.
- * SYD_FLAG_MAX is this number for clarity. It's unused.
- * This constant must be updated when adding new flags and the respective
- * struct as necessary.
- */
-#define SYD_FLAG_MAX		0x7F
+/* Process flags */
 #define SYD_STARTUP		00001 /* process attached, needs to be set up */
 #define SYD_IGNORE_ONE_SIGSTOP	00002 /* initial sigstop is to be ignored */
 #define SYD_IN_SYSCALL		00004 /* process is in system call */
@@ -314,17 +306,6 @@ struct syd_process_shared {
 
 /* process information */
 struct syd_process {
-	/* System call ABI */
-	short abi:2;
-
-	/* Stepping method */
-	enum syd_step trace_step:2;
-
-	/* SYD_* flags.
-	 * This number must be able to hold numbers in range [0..=SYD_FLAG_MAX]
-	 */
-	unsigned int flags:8;
-
 	/* Process/Thread ID */
 	pid_t pid;
 
@@ -333,6 +314,15 @@ struct syd_process {
 
 	/* Thread group ID */
 	pid_t tgid;
+
+	/* System call ABI */
+	short abi;
+
+	/* SYD_* flags */
+	int flags;
+
+	/* Stepping method */
+	enum syd_step trace_step;
 
 	/* Last system call */
 	unsigned long sysnum;

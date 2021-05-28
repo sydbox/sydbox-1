@@ -133,9 +133,7 @@ int syd_regset_fill(syd_process_t *current)
 
 	r = pink_regset_fill(current->pid, current->regset);
 	if (r == 0) {
-		short abi;
-		pink_read_abi(current->pid, current->regset, &abi);
-		current->abi = abi;
+		pink_read_abi(current->pid, current->regset, &current->abi);
 		return 0;
 	}
 	return SYD_CHECK(current, r);
