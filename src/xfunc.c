@@ -1,7 +1,7 @@
 /*
  * sydbox/xfunc.c
  *
- * Copyright (c) 2010, 2012, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2012, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -90,7 +90,9 @@ void bug_on(const char *expr, const char *func, const char *file, size_t line,
 		va_end(ap);
 		fputc('\n', stderr);
 	}
+#ifndef SYDBOX_NDUMP
 	dump(DUMP_CLOSE);
+#endif
 	pause();
 	assert_(expr, func, file, line);
 }
@@ -115,7 +117,9 @@ void assert_warn_(const char *expr, const char *func, const char *file, size_t l
 	fprintf(stderr, PACKAGE": Assertion '%s' failed at %s:%zu, function %s()\n",
 		expr, file, line, func);
 
+#ifndef SYDBOX_NDUMP
 	dump(DUMP_ASSERT, expr, file, line, func);
+#endif
 }
 
 void assert_(const char *expr, const char *func, const char *file, size_t line)
