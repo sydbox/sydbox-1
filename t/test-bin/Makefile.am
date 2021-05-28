@@ -31,6 +31,7 @@ sockmatchtest_SOURCES= sockmatchtest.c \
 		       $(top_srcdir)/src/util.c \
 		       $(top_srcdir)/src/wildmatch.c \
 		       $(top_srcdir)/src/xfunc.c
+sockmatchtest_CFLAGS= $(AM_CFLAGS) -DSYDBOX_NDUMP
 
 syddir=$(libexecdir)/$(PACKAGE)/t/test-bin
 syd_PROGRAMS= wildtest realpath_mode-1 sockmatchtest \
