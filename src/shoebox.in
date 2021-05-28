@@ -467,9 +467,8 @@ def command_magic(args):
                 call_graph[pid] = []
         elif 'process' in event:
             pid = event['pid']
-            pid_cwd = event['process']['syd']['cwd']
-            if pid_cwd != 'null':
-                cwd[pid] = pid_cwd
+            if 'cwd' in event['process']['syd']:
+                cwd[pid] = event['process']['syd']['cwd']
             continue
 
         if name == 'read_syscall': # syscall-entry-point

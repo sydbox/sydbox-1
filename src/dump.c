@@ -542,7 +542,7 @@ static void dump_pink(const char *name, int retval, int save_errno, pid_t pid, v
 {
 	fprintf(fp, "{"
 		J(name)"\"%s\","
-		J(return)"%d,"
+		J(retval)"%d,"
 		J(errno)"%d,"
 		J(pid)"%d",
 		name, retval, save_errno, pid);
@@ -765,10 +765,8 @@ static void dump_process(pid_t pid)
 		J(ref_CLONE_FILES)"%d,"
 		J(ppid)"%d,"
 		J(tgid)"%d,"
-		J(cwd)"\"%s\"," /*"J(FIXME)"quote */
 		J(syscall_no)"%lu,"
-		J(syscall_abi)"%d,"
-		J(syscall_name)"\"%s\"",
+		J(syscall_abi)"%d",
 		J_BOOL(p->flags & SYD_STARTUP),
 		J_BOOL(p->flags & SYD_IGNORE_ONE_SIGSTOP),
 		J_BOOL(p->flags & SYD_IN_SYSCALL),
@@ -781,10 +779,12 @@ static void dump_process(pid_t pid)
 		p->shm.clone_files ? p->shm.clone_files->refcnt : 0,
 		p->ppid,
 		p->tgid,
-		p->shm.clone_fs ? p->shm.clone_fs->cwd : "null",
 		p->sysnum,
-		p->abi,
-		p->sysname);
+		p->abi);
+	if (p->sysname)
+		fprintf(fp, ","J(syscall_name)"\"%s\"", p->sysname);
+	if (p->shm.clone_fs && p->shm.clone_fs->cwd)
+		fprintf(fp, ","J(cwd)"\"%s\"", p->shm.clone_fs->cwd);
 
 	fprintf(fp, ","J(clone_flags));
 	dump_clone_flags(p->clone_flags);
