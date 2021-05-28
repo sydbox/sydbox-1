@@ -877,7 +877,7 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
-			J(time)"%llu,"
+			J(ts)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\"",
 			id++, (unsigned long long)now,
@@ -895,7 +895,7 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
-			J(time)"%llu,"
+			J(ts)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
 			J(signal)"%d",
@@ -917,7 +917,7 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
-			J(time)"%llu,"
+			J(ts)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
 			J(pid)"%d,"
@@ -956,7 +956,7 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
-			J(time)"%llu,"
+			J(ts)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
 			J(pid)"%d",
@@ -977,7 +977,7 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
-			J(time)"%llu,"
+			J(ts)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
 			J(pid)"%d",
@@ -1083,7 +1083,7 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
-			J(time)"%llu,"
+			J(ts)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
 			J(pid)"%d",
@@ -1101,7 +1101,7 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
-			J(time)"%llu,"
+			J(ts)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
 			J(pid)"%d,"
@@ -1117,13 +1117,12 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
-			J(time)"%llu,"
+			J(ts)"%llu,"
 			J(event)"%u,"
-			J(event_name)"\"%s\","
 			J(pid)"%d,"
 			J(exit_code)"%d",
 			id++, (unsigned long long)now,
-			what, "exit", sydbox->execve_pid, code);
+			what, sydbox->execve_pid, code);
 		fprintf(fp, ","J(process));
 		dump_process(sydbox->execve_pid);
 		fprintf(fp, "}");
@@ -1132,19 +1131,14 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
-			J(time)"%llu,"
+			J(ts)"%llu,"
 			J(event)"%u,"
-			J(event_name)"\"%s\","
-			J(pid)"%d,"
-			J(ppid)"%d,"
-			J(tgid)"%d,"
 			J(sysname)"\"%s\","
 			J(args)"[%ld,%ld,%ld,%ld,%ld,%ld],"
 			J(repr)"[\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"]}",
 			id++, (unsigned long long)now,
-			what, "sysent",
-			current->pid, current->ppid,
-			current->tgid, current->sysname,
+			what,
+			current->sysname,
 			current->args[0],
 			current->args[1],
 			current->args[2],

@@ -12,9 +12,6 @@ use serde::{Deserialize, Serialize};
 use pandora::built_info;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-struct SydStruct {}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
 struct ProcessStruct {
     // pid: u32,
 // stat: StatStruct,
@@ -31,18 +28,20 @@ enum Dump {
     },
     StartUp {
         id: u32,
-        time: u64,
+        ts: u64,
         cmd: String,
         process: ProcessStruct,
     },
     SysEnt {
         id: u32,
-        time: u64,
+        ts: u64,
         event: u16,
+        /*
         event_name: String,
         pid: u32,
         ppid: u32,
         tgid: u32,
+        */
         sysname: String,
         args: [u64; 6],
         repr: [String; 6],
@@ -84,34 +83,74 @@ fn command_inspect(input_path: &str, output_path: &str) -> i32 {
                 program_invocation_name = String::from(name);
             }
             Dump::StartUp {
-                id: 1, cmd, time, ..
+                id: 1, cmd, ts, ..
             } => {
                 program_command_line = String::from(cmd);
-                program_startup_time += Duration::from_secs(time);
+                program_startup_time += Duration::from_secs(ts);
             }
-            Dump::SysEnt { repr, sysname, .. } if sysname == "connect" => {
+            Dump::SysEnt { event: 10, repr, sysname, .. } if sysname == "connect" => {
                 magic.insert(format!("whitelist/network/connect+{}", repr[1]));
             }
-            Dump::SysEnt { repr, sysname, .. } if sysname == "execve" => {
+            Dump::SysEnt { event: 10, repr, sysname, .. } if sysname == "execve" => {
                 magic.insert(format!("whitelist/exec+{}", repr[0]));
             }
             Dump::SysEnt {
+                event: 10,
                 args,
                 repr,
                 sysname,
                 ..
-            } if sysname == "openat" => {
-                let may_write = open_may_write(args[2]);
-                let mut entry = format!(
-                    "whitelist/{}+{}",
-                    if may_write { "write" } else { "read" },
-                    repr[1]
-                );
-                if !may_write {
-                    entry = format!("#? {}", entry);
+            } => {
+                let may_write: bool;
+                let mut report_missing_handler = false;
+                let mut repr_idx: [usize; 6] = [0; 6];
+                if sysname.ends_with("at") {
+                    repr_idx[0] = 2;
+                } else {
+                    repr_idx[0] = 1;
                 }
-                magic.insert(entry);
-            }
+
+                may_write = if sysname == "open" {
+                    open_may_write(args[1])
+                } else if sysname == "openat" {
+                    open_may_write(args[2])
+                } else if sysname == "access" {
+                    access_may_write(args[1])
+                } else if sysname == "faccessat" {
+                    access_may_write(args[2])
+                } else if sysname == "rename" {
+                    repr_idx[1] = 2;
+                    true
+                } else if sysname == "symlink" {
+                    repr_idx[0] = 2;
+                    true
+                } else if sysname == "mkdir" || sysname == "rmdir" || sysname == "unlink" {
+                    true
+                } else {
+                    report_missing_handler = true;
+                    false
+                };
+
+                if report_missing_handler {
+                    eprintln!("SYS:{:?} {:?} {:?}", sysname, args, repr);
+                }
+
+                for idx in 0..6 {
+                    let idx = repr_idx[idx];
+                    if idx == 0 || repr[idx - 1].is_empty() {
+                        continue;
+                    }
+                    let mut entry = format!(
+                        "whitelist/{}+{}",
+                        if may_write { "write" } else { "read" },
+                        repr[idx - 1]
+                    );
+                    if !may_write {
+                        entry = format!("#? {}", entry);
+                    }
+                    magic.insert(entry);
+                }
+            },
             _ => {}
         }
     }
@@ -267,14 +306,20 @@ fn open_input(path_or_stdin: &str) -> Box<dyn std::io::BufRead> {
 fn open_output(path_or_stdout: &str) -> Box<dyn std::io::Write> {
     match path_or_stdout {
         "-" => Box::new(std::io::BufWriter::new(std::io::stdout())),
-        path => Box::new(std::io::BufWriter::new(match OpenOptions::new().write(true).create_new(true).open(path) {
-            Ok(file) => file,
-            Err(error) => {
-                eprintln!("failed to open file `{}': {}", path, error);
-                std::process::exit(1);
-            }
-        })),
+        path => Box::new(std::io::BufWriter::new(
+            match OpenOptions::new().write(true).create_new(true).open(path) {
+                Ok(file) => file,
+                Err(error) => {
+                    eprintln!("failed to open file `{}': {}", path, error);
+                    std::process::exit(1);
+                }
+            },
+        )),
     }
+}
+
+fn access_may_write(mode: u64) -> bool {
+    (mode as i32) & libc::W_OK != 0
 }
 
 fn open_may_write(flags: u64) -> bool {
