@@ -142,8 +142,10 @@ static int sys_connect_or_sendto(syd_process_t *current, unsigned arg_index)
 		return 0;
 
 	init_sysinfo(&info);
-	info.access_mode = sandbox_deny_network(current) ? ACCESS_WHITELIST
-							 : ACCESS_BLACKLIST;
+	if (sandbox_deny_network(current) || sandbox_dry_network(current))
+		info.access_mode = ACCESS_WHITELIST;
+	else
+		info.access_mode = ACCESS_BLACKLIST;
 	info.access_list = &P_BOX(current)->acl_network_connect;
 	info.access_list_global = &sydbox->config.acl_network_connect_auto;
 	info.access_filter = &sydbox->config.filter_network;

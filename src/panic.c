@@ -133,7 +133,10 @@ int deny(syd_process_t *current, int err_no)
 {
 	int r;
 
-	if (sandbox_dry_file(current) || sandbox_dry_network(current))
+	if (sandbox_dry_file(current) ||
+	    sandbox_dry_write(current) ||
+	    sandbox_dry_exec(current) ||
+	    sandbox_dry_network(current))
 		return 0; /* dry-run, no intervention. */
 	current->retval = errno2retval(err_no);
 
@@ -155,9 +158,11 @@ int restore(syd_process_t *current)
 	}
 #endif
 
-	if (sandbox_dry_file(current))
+	if (sandbox_dry_file(current) ||
+	    sandbox_dry_write(current) ||
+	    sandbox_dry_exec(current) ||
+	    sandbox_dry_network(current))
 		return 0; /* dry-run, no intervention. */
-
 
 	/* return the saved return value */
 	if (current->retval < 0) { /* failure */

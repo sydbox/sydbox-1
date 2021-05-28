@@ -1119,6 +1119,36 @@ void dump(enum dump what, ...)
 		fprintf(fp, ","J(process));
 		dump_process(sydbox->execve_pid);
 		fprintf(fp, "}");
+	} else if (what == DUMP_SYSENT) {
+		struct syd_process *current = va_arg(ap, struct syd_process *);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(time)"%llu,"
+			J(event)"%u,"
+			J(event_name)"\"%s\","
+			J(pid)"%d,"
+			J(ppid)"%d,"
+			J(tgid)"%d,"
+			J(sysname)"\"%s\","
+			J(args)"[%ld,%ld,%ld,%ld,%ld,%ld],"
+			J(repr)"[\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"]}",
+			id++, (unsigned long long)now,
+			what, "sysent",
+			current->pid, current->ppid,
+			current->tgid, current->sysname,
+			current->args[0],
+			current->args[1],
+			current->args[2],
+			current->args[3],
+			current->args[4],
+			current->args[5],
+			current->repr[0] ? current->repr[0] : "",
+			current->repr[1] ? current->repr[1] : "",
+			current->repr[2] ? current->repr[2] : "",
+			current->repr[3] ? current->repr[3] : "",
+			current->repr[4] ? current->repr[4] : "",
+			current->repr[5] ? current->repr[5] : "");
 	} else {
 		abort();
 	}
