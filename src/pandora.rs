@@ -106,7 +106,7 @@ fn command_inspect(core: &str) -> i32 {
                     repr[1]
                 );
                 if !may_write {
-                    entry = format!("#< {}", entry);
+                    entry = format!("#? {}", entry);
                 }
                 magic.insert(entry);
             }
