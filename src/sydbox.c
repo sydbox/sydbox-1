@@ -278,10 +278,17 @@ void reset_process(syd_process_t *p)
 
 	p->sysnum = 0;
 	p->sysname = NULL;
-	memset(p->args, 0, sizeof(p->args));
 	p->subcall = 0;
 	p->retval = 0;
 	p->flags &= ~SYD_STOP_AT_SYSEXIT;
+
+	memset(p->args, 0, sizeof(p->args));
+	for (unsigned short i = 0; i < PINK_MAX_ARGS; i++) {
+		if (p->repr[i]) {
+			free(p->repr[i]);
+			p->repr[i] = NULL;
+		}
+	}
 
 	if (P_SAVEBIND(p)) {
 		free_sockinfo(P_SAVEBIND(p));
@@ -426,6 +433,12 @@ void bury_process(syd_process_t *p)
 	if (p->regset) {
 		pink_regset_free(p->regset);
 		p->regset = NULL;
+	}
+	for (unsigned short i = 0; i < PINK_MAX_ARGS; i++) {
+		if (p->repr[i]) {
+			free(p->repr[i]);
+			p->repr[i] = NULL;
+		}
 	}
 
 	process_remove(p);

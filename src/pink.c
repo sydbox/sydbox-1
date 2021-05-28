@@ -169,7 +169,9 @@ int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval)
 	SYD_RETURN_IF_KILLED(current);
 	BUG_ON(argval);
 
-	r = pink_read_argument(current->pid, current->regset, arg_index, argval);
+	r = pink_read_argument(current->pid, current->regset, arg_index, &current->args[arg_index]);
+	if (!r) /* success */
+		*argval = current->args[arg_index];
 
 	return SYD_CHECK(current, r);
 }

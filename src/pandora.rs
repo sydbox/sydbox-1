@@ -1,118 +1,42 @@
 use std::io::BufRead;
+use std::iter::FromIterator;
 
 use clap::{App, Arg, SubCommand};
 use serde::{Deserialize, Serialize};
 
 use pandora::built_info;
 
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug)]
-struct SydStruct {
-    flag_STARTUP: bool,
-    flag_IGNORE_ONE_SIGSTOP: bool,
-    flag_IN_SYSCALL: bool,
-    flag_STOP_AT_SYSEXIT: bool,
-    flag_IN_CLONE: bool,
-    flag_IN_EXECVE: bool,
-    flag_KILLED: bool,
-    ref_CLONE_THREAD: u32,
-    ref_CLONE_FS: u32,
-    cwd: Option<String>,
-    ppid: u32,
-    tgid: u32,
-    syscall_abi: u8,
-    syscall_name: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct StatStruct {
-    pid: Option<u32>,
-    ppid: Option<u32>,
-    tpgid: Option<u32>,
-    pgrp: Option<u32>,
-    errno: Option<u32>,
-    errno_name: Option<String>,
-    /*
-    comm: Option<String>,
-    state: Option<String>,
-    session: Option<u32>,
-    tty_nr: Option<u32>,
-    nice: Option<u32>,
-    num_threads: Option<u32>,
-    */
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ProcessStruct {
-    pid: u32,
-    syd: Option<SydStruct>,
-    stat: Option<StatStruct>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct SignalStruct {}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct PinkStruct {
-    name: String,
-    retval: u32,
-    errno: u32,
-    sysname: Option<String>,
-    arg_idx: Option<usize>,
-    arg_val: Option<u64>,
-    addr: Option<u64>,
-    dest: Option<String>,
-    len: Option<usize>,
-    saddr: Option<String>,
-    /*
-    signal: Option<SignalStruct>,
-    eventmsg: Option<u64>,
-    sysnum: Option<u64>,
-    */
-}
-
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(untagged)]
 enum Dump {
     Init {
         id: u32,
         shoebox: u32,
     },
-    Pink {
+    SysEnt {
         id: u32,
-        pid: u32,
-        pink: PinkStruct,
         /*
+         * time: u64,
          * event: u16,
-         * time: u32,
+         * event_name: String,
          */
-    },
-    Thread {
-        id: u32,
-        event: u16,
         pid: u32,
-        process: Option<ProcessStruct>,
-        /* event_name: String,
-        time: u32,
-        */
+        ppid: u32,
+        tgid: u32,
+        sysname: String,
+        args: [u64; 6],
+        repr: [String; 6],
     },
-}
-
-#[derive(Clone, Debug)]
-struct SyscallStruct {
-    name: String,
-    arg_int: [Option<u64>; 6],
-    arg_str: [String; 6],
-    /* arg_sock: [SocketAddress; 6], */
 }
 
 fn command_inspect(core: &str) -> i32 {
     let input = xopen(core);
+    let mut magic = std::collections::HashSet::<String>::new();
 
     for line in input.lines() {
         let serialized = match line {
             Ok(line) if line.is_empty() => {
-                return 0;
+                break; /* EOF */
             }
             Ok(line) => line,
             Err(error) => {
@@ -121,49 +45,69 @@ fn command_inspect(core: &str) -> i32 {
             }
         };
 
-        let mut call_graph = std::collections::HashMap::<u32, SyscallStruct>::new();
         match serde_json::from_str(&serialized).expect(&format!("failed to parse `{}'", serialized))
         {
             Dump::Init { id: 0, shoebox: 1 } => {
                 eprintln!("success opening core file `{}' for parsing", core);
             }
-            Dump::Thread { event: 7, .. } => { /* thread_new */ }
-            Dump::Thread { event: 8, .. } => { /* thread_free */ }
-            Dump::Thread { event: 9, .. } => { /* startup */ }
-            Dump::Pink { pid, pink, .. } if !pink.sysname.is_none() && pink.name == "read_syscall" => {
-                insert_syscall(&mut call_graph, pid, pink.sysname);
+            Dump::SysEnt { repr, sysname, .. } if sysname == "connect" => {
+                magic.insert(format!("whitelist/network/connect+{}", repr[1]));
             }
-            Dump::Pink { pid, pink, .. }
-                if !pink.arg_idx.is_none() && pink.name == "read_argument" =>
-            {
-                let mut sys = match call_graph.get_mut(&pid) {
-                    Some(sys) => sys,
-                    None => insert_syscall(&mut call_graph, pid, None)
-                };
-                sys.arg_int[pink.arg_idx.unwrap()] = pink.arg_val;
-            }
-            Dump::Pink { pid, pink, .. }
-                if !pink.addr.is_none()
-                    && !pink.dest.is_none()
-                    && pink.name == "read_vm_data_nul" =>
-            {
-                let mut sys = match call_graph.get_mut(&pid) {
-                    Some(sys) => sys,
-                    None => insert_syscall(&mut call_graph, pid, None)
-                };
-                let addr = pink.addr.unwrap();
-                for idx in 0..6 {
-                    if sys.arg_int[idx].is_none() {
-                        continue;
-                    } else if sys.arg_int[idx].unwrap() == addr {
-                        sys.arg_str[idx] = pink.dest.unwrap();
-                        break;
-                    }
+            Dump::SysEnt {
+                args,
+                repr,
+                sysname,
+                ..
+            } if sysname == "openat" => {
+                let may_write = open_may_write(args[2]);
+                let mut entry = format!(
+                    "whitelist/{}+{}",
+                    if may_write { "write" } else { "read" },
+                    repr[1]
+                );
+                if !may_write {
+                    entry = format!("#< {}", entry);
                 }
+                magic.insert(entry);
             }
-            Dump::Pink { pink, .. } if pink.name == "read_socket_argument" => {}
             _ => {}
         }
+    }
+
+    /* Step 1: Print out the magic header. */
+    println!("#
+# sydbox profile generated by pandora-{}
+#
+core/sandbox/exec:off
+core/sandbox/read:off
+core/sandbox/write:deny
+core/sandbox/network:deny
+
+core/whitelist/per_process_directories:true
+core/whitelist/successful_bind:true
+core/whitelist/unsupported_socket_families:true
+
+core/violation/decision:deny
+core/violation/exit_code:-1
+core/violation/raise_fail:false
+core/violation/raise_safe:false
+
+core/trace/follow_fork:true
+core/trace/magic_lock:off
+core/trace/use_seccomp:true
+core/trace/use_seize:true
+core/trace/use_toolong_hack:true
+
+core/match/case_sensitive:true
+core/match/no_wildcard:prefix
+", built_info::PKG_VERSION);
+
+    /* Step 2: Print out magic entries */
+    let mut list = Vec::from_iter(magic);
+    list.sort(); /* secondary alphabetical sort. */
+    list.sort_by_cached_key(|entry| magic_key(entry));
+    for entry in list {
+        println!("{}", entry);
     }
 
     0
@@ -231,21 +175,25 @@ fn xopen(path_or_stdin: &str) -> Box<dyn std::io::BufRead> {
     }
 }
 
-fn insert_syscall(map: &mut std::collections::HashMap::<u32, SyscallStruct>,
-               pid: u32,
-               name: Option<String>) -> &mut SyscallStruct {
-    let new = SyscallStruct {
-        name: if name.is_none() { "".to_string() } else { name.unwrap() },
-        arg_int: [None; 6],
-        arg_str: [
-            "".to_string(),
-            "".to_string(),
-            "".to_string(),
-            "".to_string(),
-            "".to_string(),
-            "".to_string(),
-        ],
-    };
-    map.insert(pid, new);
-    map.get_mut(&pid).unwrap()
+fn open_may_write(flags: u64) -> bool {
+    let flags: i32 = flags as i32;
+    match flags & libc::O_ACCMODE {
+        libc::O_WRONLY | libc::O_RDWR => true,
+        libc::O_RDONLY => flags & libc::O_CREAT != 0,
+        _ => false,
+    }
+}
+
+fn magic_key(magic: &str) -> u32 {
+    if magic.contains("whitelist/read") {
+        100
+    } else if magic.contains("whitelist/exec") {
+        95
+    } else if magic.contains("whitelist/write") {
+        5
+    } else if magic.contains("whitelist/network") {
+        0
+    } else {
+        100
+    }
 }

@@ -351,6 +351,9 @@ struct syd_process {
 	/* Arguments of last system call */
 	long args[PINK_MAX_ARGS];
 
+	/* String representation of arguments, used by dump. */
+	char *repr[PINK_MAX_ARGS];
+
 	/* Per-thread shared data */
 	struct syd_process_shared shm;
 

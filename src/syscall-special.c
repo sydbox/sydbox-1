@@ -196,7 +196,13 @@ static int do_execve(syd_process_t *current, bool at_func)
 	case SANDBOX_OFF:
 		return 0;
 	case SANDBOX_DUMP:
-		;
+		if (current->repr[0]) {
+			free(current->repr[0]);
+			current->repr[0] = NULL;
+		}
+		if (abspath)
+			current->repr[0] = xstrdup(abspath);
+		break;
 	case SANDBOX_DENY:
 		if (acl_match_path(ACL_ACTION_WHITELIST,
 				   &P_BOX(current)->acl_exec,
@@ -213,7 +219,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 		assert_not_reached();
 	}
 
-	r = sandbox_dry_exec(current) ? 0 : deny(current, EACCES);
+	r = deny(current, EACCES);
 
 	if (!acl_match_path(ACL_ACTION_NONE, &sydbox->config.filter_exec, abspath, NULL))
 		violation(current, "%s(`%s')", current->sysname, abspath);

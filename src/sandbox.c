@@ -75,37 +75,70 @@ static void box_report_violation_path_at(syd_process_t *current,
 	}
 }
 
-static void box_report_violation_sock(syd_process_t *current,
-				      const sysinfo_t *info,
-				      const struct pink_sockaddr *paddr)
+static char *box_name_violation_sock(syd_process_t *current,
+				     const sysinfo_t *info,
+				     const struct pink_sockaddr *paddr,
+				     const char *unix_abspath)
 {
-	char ip[64];
-	const char *f;
 	bool abstract;
-	const char *name = current->sysname;
+	char ip[64];
+	char *repr;
 
 	switch (paddr->family) {
 	case AF_UNIX:
 		abstract = path_abstract(paddr->u.sa_un.sun_path);
-		violation(current, "%s(%d, %s:%s)",
-			  name,
-			  info->ret_fd ? *info->ret_fd : -1,
+		if (asprintf(&repr, "%s:%s",
 			  abstract ? "unix-abstract" : "unix",
 			  abstract ? paddr->u.sa_un.sun_path + 1
-				   : paddr->u.sa_un.sun_path);
+				   : (unix_abspath ? unix_abspath : paddr->u.sa_un.sun_path)) < 0)
+			repr = NULL;
 		break;
 	case AF_INET:
 		inet_ntop(AF_INET, &paddr->u.sa_in.sin_addr, ip, sizeof(ip));
-		violation(current, "%s(%d, inet:%s@%d)", name,
-			  info->ret_fd ? *info->ret_fd : -1,
-			  ip, ntohs(paddr->u.sa_in.sin_port));
+		if (asprintf(&repr, "inet:%s@%d",
+			     ip, ntohs(paddr->u.sa_in.sin_port)) < 0)
+			repr = NULL;
 		break;
 #if PINK_HAVE_IPV6
 	case AF_INET6:
 		inet_ntop(AF_INET6, &paddr->u.sa6.sin6_addr, ip, sizeof(ip));
-		violation(current, "%s(%d, inet6:%s@%d)", name,
+		if (asprintf(&repr, "inet6:%s@%d",
+			     ip, ntohs(paddr->u.sa6.sin6_port)) < 0)
+			repr = NULL;
+		break;
+#endif
+	default:
+		repr = NULL;
+		break;
+	}
+
+	return repr;
+}
+
+static void box_report_violation_sock(syd_process_t *current,
+				      const sysinfo_t *info,
+				      const struct pink_sockaddr *paddr)
+{
+	const char *f;
+	const char *name = current->sysname;
+
+	switch (paddr->family) {
+	case AF_UNIX:
+		violation(current, "%s(%d, %s)",
+			  name,
 			  info->ret_fd ? *info->ret_fd : -1,
-			  ip, ntohs(paddr->u.sa6.sin6_port));
+			  current->repr[info->arg_index]);
+		break;
+	case AF_INET:
+		violation(current, "%s(%d, %s)", name,
+			  info->ret_fd ? *info->ret_fd : -1,
+			  current->repr[info->arg_index]);
+		break;
+#if PINK_HAVE_IPV6
+	case AF_INET6:
+		violation(current, "%s(%d, %s)", name,
+			  info->ret_fd ? *info->ret_fd : -1,
+			  current->repr[info->arg_index]);
 		break;
 #endif
 	default:
@@ -376,7 +409,13 @@ int box_check_path(syd_process_t *current, sysinfo_t *info)
 		goto out;
 	}
 
-	/* Step 4: Check for access */
+	/* Step 4: Record absolute path for dump. */
+	if (current->repr[info->arg_index])
+		free(current->repr[info->arg_index]);
+	current->repr[info->arg_index] = strdup(abspath);
+	dump(DUMP_SYSENT, current);
+
+	/* Step 5: Check for access */
 	enum sys_access_mode access_mode;
 	const aclq_t *access_lists[2];
 	const aclq_t *access_filter;
@@ -407,7 +446,7 @@ check_access:
 	}
 
 	/*
-	 * Step 5: stat() if required (unless already cached)
+	 * Step 6: stat() if required (unless already cached)
 	 * Note to security geeks: we ignore TOCTOU issues at various points,
 	 * mostly because this is a debugging tool and there isn't a simple
 	 * practical solution with ptrace(). This caching case is no exception.
@@ -505,7 +544,7 @@ int box_check_socket(syd_process_t *current, sysinfo_t *info)
 			/* allow unsupported socket family */
 			goto out;
 		}
-		r = sandbox_dry_network(current) ? 0 : deny(current, EAFNOSUPPORT);
+		r = deny(current, EAFNOSUPPORT);
 		goto report;
 	}
 
@@ -542,7 +581,12 @@ int box_check_socket(syd_process_t *current, sysinfo_t *info)
 		/* access denied */
 	}
 
-	r = sandbox_dry_network(current) ? 0 : deny(current, info->deny_errno);
+	if (current->repr[info->arg_index])
+		free(current->repr[info->arg_index]);
+	current->repr[info->arg_index] = box_name_violation_sock(current, info, psa, abspath);
+	dump(DUMP_SYSENT, current);
+
+	r = deny(current, info->deny_errno);
 
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */
