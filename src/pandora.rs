@@ -82,7 +82,10 @@ fn command_inspect(core: &str) -> i32 {
             },
             Dump::SysEnt { repr, sysname, .. } if sysname == "connect" => {
                 magic.insert(format!("whitelist/network/connect+{}", repr[1]));
-            }
+            },
+            Dump::SysEnt { repr, sysname, .. } if sysname == "execve" => {
+                magic.insert(format!("whitelist/exec+{}", repr[0]));
+            },
             Dump::SysEnt {
                 args,
                 repr,
@@ -113,9 +116,9 @@ fn command_inspect(core: &str) -> i32 {
 ###
 # Global Defaults
 ###
-core/sandbox/exec:off
 core/sandbox/read:off
 core/sandbox/write:deny
+core/sandbox/exec:deny
 core/sandbox/network:deny
 
 core/whitelist/per_process_directories:true
@@ -128,7 +131,6 @@ core/violation/raise_fail:false
 core/violation/raise_safe:false
 
 core/trace/follow_fork:true
-core/trace/magic_lock:off
 core/trace/use_seccomp:true
 core/trace/use_seize:true
 core/trace/use_toolong_hack:true

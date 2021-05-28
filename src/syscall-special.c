@@ -202,6 +202,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 		}
 		if (abspath)
 			current->repr[0] = xstrdup(abspath);
+		dump(DUMP_SYSENT, current);
 		break;
 	case SANDBOX_DENY:
 		if (acl_match_path(ACL_ACTION_WHITELIST,
