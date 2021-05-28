@@ -412,7 +412,7 @@ def generate_events(args):
 def generate_pink_events(args):
     with ShoeBox(dump_path(args)) as sb:
         for event in sb.read_events():
-            if 'pink' in event:
+            if 'pink' in event or 'process' in event:
                 yield event
 
 def command_tree(args):
@@ -446,20 +446,27 @@ def magic_key(magic):
     elif "whitelist/write" in magic:
         return 5
     elif "whitelist/network" in magic:
-        return 10
+        return 0
     else:
         return 100
 
 def command_magic(args):
     call_graph = dict()
     sys_call   = None
+    cwd        = dict()
     for event in generate_pink_events(args):
-        pink = event['pink']
-        pid = pink['pid']
-        name = pink['name']
-
-        if pid not in call_graph:
-            call_graph[pid] = []
+        if 'pink' in event:
+            pink = event['pink']
+            pid = pink['pid']
+            name = pink['name']
+            if pid not in call_graph:
+                call_graph[pid] = []
+        elif 'process' in event:
+            pid = event['pid']
+            pid_cwd = event['process']['syd']['cwd']
+            if pid_cwd != 'null':
+                cwd[pid] = pid_cwd
+            continue
 
         if name == 'read_syscall': # syscall-entry-point
             sys_call = [pink['sysname'], None, None, None, None, None]
@@ -470,8 +477,19 @@ def command_magic(args):
                 val = 'AT_FDCWD'
             sys_call[pink['arg_idx'] + 1] = val
         elif name == 'read_vm_data_nul':
-            idx = sys_call.index(pink['addr'])
-            sys_call[idx] = pink['dest']
+            if pink['addr'] in sys_call:
+                idx = sys_call.index(pink['addr'])
+                dst = pink['dest']
+                if dst.strip("/") not in ('', '.', '..'):
+                    if dst[0] != '/':
+                        my_cwd = None
+                        if pid in cwd:
+                            my_cwd = cwd[pid]
+                        elif cwd:
+                            my_cwd = cwd[sorted(cwd.keys(), key=lambda p: abs(pid - p))[0]]
+                        if my_cwd is not None:
+                            dst = '%s/%s' % (my_cwd, dst)
+                    sys_call[idx] = dst
         elif name == 'read_socket_address':
             sys_call[pink['arg_idx'] + 1] = pink['saddr']
 
@@ -479,21 +497,24 @@ def command_magic(args):
     for pid in call_graph:
         for sys_call in call_graph[pid]:
             if sys_call[0] == 'access':
+                path = sys_call[1]
                 mode = sys_call[2]
                 if mode & os.W_OK:
                     prefix = 'whitelist/write+'
                 else:
                     prefix = '#< whitelist/read+'
-                magic.add(prefix + sys_call[1])
+                if type(path) == str:
+                    magic.add(prefix + path)
             elif sys_call[0] in ('open', 'openat'):
                 off = sys_call[0][-2:] == 'at' and 1 or 0
+                dst = sys_call[off + 1]
                 wlist = whitelist_open(sys_call[off + 2])
-                if wlist is not None:
-                    rule = 'whitelist/%s+%s' % (wlist, sys_call[off + 1])
+                if wlist is not None and type(dst) == str:
+                    rule = 'whitelist/%s+%s' % (wlist, dst)
                     if wlist == 'read':
                         rule = '#< ' + rule
-                    magic.add(rule)
-#            elif sys_call[0] in ('stat',):
+                    #magic.add(rule)
+            # elif sys_call[0] in ('stat', 'lstat'):
 
             elif sys_call[0] == 'execve':
                 magic.add('#! whitelist/exec+%s' % sys_call[1])
@@ -501,13 +522,13 @@ def command_magic(args):
                 magic.add('whitelist/network/bind+%s' % sys_call[2])
             elif sys_call[0] == 'connect' and address_ok(sys_call[2]):
                 magic.add('whitelist/network/connect+%s' % sys_call[2])
-            else:
-                call = sys_call[0] + '('
-                if any(sys_call[1:]):
-                    call += ', '.join(map(lambda x: x is None and '?' or str(x), sys_call[1:]))
-                call += ')'
-
-                sys.stderr.write("%d\t%s\n" % (pid, call))
+            #else:
+            #    call = sys_call[0] + '('
+            #    if any(sys_call[1:]):
+            #        call += ', '.join(map(lambda x: x is None and '?' or str(x), sys_call[1:]))
+            #    call += ')'
+            #
+            #    sys.stderr.write("%d\t%s\n" % (pid, call))
 
     print(MAGIC_HEADER)
     for spell in sorted(magic, key=lambda m: (magic_key(m), m)):
