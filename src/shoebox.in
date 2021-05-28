@@ -31,6 +31,13 @@ core/match/case_sensitive:true
 core/match/no_wildcard:prefix
 """
 
+ADDR_IGNORE = ('NETLINK', 'UNSPEC')
+def address_ok(name):
+    for ignore in ADDR_IGNORE:
+        if ignore in name:
+            return False
+    return True
+
 def dump_path(args):
     path = getattr(args, 'core', None)
     if path is not None:
@@ -490,9 +497,9 @@ def command_magic(args):
 
             elif sys_call[0] == 'execve':
                 magic.add('#! whitelist/exec+%s' % sys_call[1])
-            elif sys_call[0] == 'bind' and 'NETLINK' not in sys_call[2]:
+            elif sys_call[0] == 'bind' and address_ok(sys_call[2]):
                 magic.add('whitelist/network/bind+%s' % sys_call[2])
-            elif sys_call[0] == 'connect' and 'NETLINK' not in sys_call[2]:
+            elif sys_call[0] == 'connect' and address_ok(sys_call[2]):
                 magic.add('whitelist/network/connect+%s' % sys_call[2])
             else:
                 call = sys_call[0] + '('
