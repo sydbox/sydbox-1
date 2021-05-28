@@ -521,7 +521,10 @@ static void dump_format(void)
 {
 	fprintf(fp, "{"
 		J(id)"%llu,"
-		J(shoebox)"%u}", id++, DUMP_FMT);
+		J(shoebox)"%u,"
+		J(name)"\"%s\"}",
+		id++, DUMP_FMT,
+		sydbox->program_invocation_name);
 }
 
 static void dump_proc_statinfo(const struct proc_statinfo *info)
@@ -1093,14 +1096,19 @@ void dump(enum dump what, ...)
 	} else if (what == DUMP_STARTUP) {
 		pid_t pid = va_arg(ap, pid_t);
 
+		char cmdline[256];
+		bool cmd = syd_proc_cmdline(pid, cmdline, sizeof(cmdline)) == 0;
+
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(time)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
-			J(pid)"%d",
+			J(pid)"%d,"
+			J(cmd)"\"%s\"",
 			id++, (unsigned long long)now,
-			what, "startup", pid);
+			what, "startup", pid,
+			cmd ? cmdline : "");
 		fprintf(fp, ","J(process));
 		dump_process(pid);
 		fprintf(fp, "}");

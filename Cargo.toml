@@ -19,6 +19,7 @@ path = "src/pandora.rs"
 [dependencies]
 libc = "0.2"
 nix = "0.20"
+chrono = "0.4"
 clap = "2.33"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
