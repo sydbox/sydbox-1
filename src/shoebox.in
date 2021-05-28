@@ -402,6 +402,12 @@ def generate_events(args):
         for event in events:
             yield event
 
+def generate_pink_events(args):
+    with ShoeBox(dump_path(args)) as sb:
+        for event in sb.read_events():
+            if 'pink' in event:
+                yield event
+
 def command_tree(args):
     if args.pattern is None:
         pattern = None
@@ -429,7 +435,7 @@ def magic_key(magic):
     if "whitelist/read" in magic:
         return 100
     elif "whitelist/exec" in magic:
-        return 100
+        return 95
     elif "whitelist/write" in magic:
         return 5
     elif "whitelist/network" in magic:
@@ -440,28 +446,27 @@ def magic_key(magic):
 def command_magic(args):
     call_graph = dict()
     sys_call   = None
-    for event in generate_events(args):
-        if 'pink' in event:
-            pink = event['pink']
-            pid = pink['pid']
-            name = pink['name']
+    for event in generate_pink_events(args):
+        pink = event['pink']
+        pid = pink['pid']
+        name = pink['name']
 
-            if pid not in call_graph:
-                call_graph[pid] = []
+        if pid not in call_graph:
+            call_graph[pid] = []
 
-            if name == 'read_syscall': # syscall-entry-point
-                sys_call = [pink['sysname'], None, None, None, None, None]
-                call_graph[pid].append(sys_call)
-            elif name == 'read_argument':
-                val = pink['arg_val']
-                if val == -100 and sys_call[0].endswith('at'):
-                    val = 'AT_FDCWD'
-                sys_call[pink['arg_idx'] + 1] = val
-            elif name == 'read_vm_data_nul':
-                idx = sys_call.index(pink['addr'])
-                sys_call[idx] = pink['dest']
-            elif name == 'read_socket_address':
-                sys_call[pink['arg_idx'] + 1] = pink['saddr']
+        if name == 'read_syscall': # syscall-entry-point
+            sys_call = [pink['sysname'], None, None, None, None, None]
+            call_graph[pid].append(sys_call)
+        elif name == 'read_argument':
+            val = pink['arg_val']
+            if val == -100 and sys_call[0].endswith('at'):
+                val = 'AT_FDCWD'
+            sys_call[pink['arg_idx'] + 1] = val
+        elif name == 'read_vm_data_nul':
+            idx = sys_call.index(pink['addr'])
+            sys_call[idx] = pink['dest']
+        elif name == 'read_socket_address':
+            sys_call[pink['arg_idx'] + 1] = pink['saddr']
 
     magic = set()
     for pid in call_graph:
@@ -471,7 +476,7 @@ def command_magic(args):
                 if mode & os.W_OK:
                     prefix = 'whitelist/write+'
                 else:
-                    prefix = '# whitelist/read+'
+                    prefix = '#< whitelist/read+'
                 magic.add(prefix + sys_call[1])
             elif sys_call[0] in ('open', 'openat'):
                 off = sys_call[0][-2:] == 'at' and 1 or 0
@@ -479,10 +484,12 @@ def command_magic(args):
                 if wlist is not None:
                     rule = 'whitelist/%s+%s' % (wlist, sys_call[off + 1])
                     if wlist == 'read':
-                        rule = '# ' + rule
+                        rule = '#< ' + rule
                     magic.add(rule)
 #            elif sys_call[0] in ('stat',):
 
+            elif sys_call[0].startswith('execve'):
+                magic.add('#! whitelist/exec+%s' % sys_call[1])
             elif sys_call[0] == 'bind' and 'NETLINK' not in sys_call[2]:
                 magic.add('whitelist/network/bind+%s' % sys_call[2])
             elif sys_call[0] == 'connect':
