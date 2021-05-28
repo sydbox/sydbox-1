@@ -14,6 +14,8 @@
 # include "config.h"
 #endif
 
+#include "syd/syd.h"
+
 #if SYDBOX_DUMP || SYDBOX_HAVE_DUMP_BUILTIN
 
 #include <errno.h>
@@ -56,7 +58,7 @@ enum dump {
 #define INSPECT_PINK_READ  (1ULL << (DUMP_EXIT + 2))
 
 #if SYDBOX_HAVE_DUMP_BUILTIN
-#define INSPECT_DEFAULT INSPECT_DUMP_SYSENT
+#define INSPECT_DEFAULT (INSPECT_DUMP_STARTUP|INSPECT_DUMP_SYSENT)
 #else
 #define INSPECT_DEFAULT INSPECT_DUMP_ALL
 #endif

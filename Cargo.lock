@@ -237,6 +237,7 @@ name = "pandora"
 version = "0.1.0"
 dependencies = [
  "built",
+ "chrono",
  "clap",
  "libc",
  "nix",
