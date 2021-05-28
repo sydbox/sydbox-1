@@ -23,3 +23,17 @@ serde_json = "1.0"
 
 [build-dependencies]
 built = {version = "0.4.4", features=["git2", "chrono"]}
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+# Includes debug information in release builds. Necessary for profiling. Does not
+# slow down the executable.
+debug = true
+
+# The default optimization level is 3 for release mode builds.
+# 0 means disable optimization and is the default for debug mode buids.
+# (Setting opt-level=1 for debug builds is a good way of speeding them up a bit.)
+# "s" means optimize for size, "z" reduces size even more.
+opt-level = 3
