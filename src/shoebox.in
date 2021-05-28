@@ -492,7 +492,7 @@ def command_magic(args):
                 magic.add('#! whitelist/exec+%s' % sys_call[1])
             elif sys_call[0] == 'bind' and 'NETLINK' not in sys_call[2]:
                 magic.add('whitelist/network/bind+%s' % sys_call[2])
-            elif sys_call[0] == 'connect':
+            elif sys_call[0] == 'connect' and 'NETLINK' not in sys_call[2]:
                 magic.add('whitelist/network/connect+%s' % sys_call[2])
             else:
                 call = sys_call[0] + '('
