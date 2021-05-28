@@ -31,6 +31,10 @@ core/match/case_sensitive:true
 core/match/no_wildcard:prefix
 """
 
+PROC_PID = re.compile('/+proc/+\d+/?', re.U)
+def path_ok(path):
+    type(path) == str # and PROC_PID.match(path) is None
+
 ADDR_IGNORE = ('NETLINK', 'UNSPEC')
 def address_ok(name):
     for ignore in ADDR_IGNORE:
@@ -497,23 +501,24 @@ def command_magic(args):
     for pid in call_graph:
         for sys_call in call_graph[pid]:
             if sys_call[0] == 'access':
-                path = sys_call[1]
                 mode = sys_call[2]
                 if mode & os.W_OK:
-                    prefix = 'whitelist/write+'
-                else:
-                    prefix = '#< whitelist/read+'
-                if type(path) == str:
-                    magic.add(prefix + path)
+                    magic.add('whitelist/write+%s' % sys_call[1])
             elif sys_call[0] in ('open', 'openat'):
                 off = sys_call[0][-2:] == 'at' and 1 or 0
                 dst = sys_call[off + 1]
                 wlist = whitelist_open(sys_call[off + 2])
                 if wlist is not None and type(dst) == str:
-                    rule = 'whitelist/%s+%s' % (wlist, dst)
+                    rule = None
                     if wlist == 'read':
-                        rule = '#< ' + rule
-                    #magic.add(rule)
+                        if os.path.exists(dst):
+                            rule = '#< whitelist/read+%s' % dst
+                        else:
+                            rule = '#? whitelist/read+%s' % dst
+                    else:
+                        rule = 'whitelist/write+%s' % dst
+                    if rule is not None:
+                        magic.add(rule)
             # elif sys_call[0] in ('stat', 'lstat'):
 
             elif sys_call[0] == 'execve':
