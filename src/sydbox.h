@@ -456,25 +456,29 @@ struct config {
 };
 typedef struct config config_t;
 
-typedef struct {
-	syd_process_t *proctab;
-
-	int trace_options;
-	enum syd_step trace_step;
-
-	bool execve_wait;
-	pid_t execve_pid;
-	int exit_code;
-
+struct sydbox {
 	/* This is true if an access violation has occured, false otherwise. */
 	bool violation;
+
+	bool execve_wait;
+
+	enum syd_step trace_step:2;
+
+	int trace_options;
+
+	int exit_code;
+
+	pid_t execve_pid;
 
 	/* Program invocation name (for the child) */
 	char *program_invocation_name;
 
+	syd_process_t *proctab;
+
 	/* Global configuration */
 	config_t config;
-} sydbox_t;
+};
+typedef struct sydbox sydbox_t;
 
 typedef int (*sysfunc_t) (syd_process_t *current);
 typedef int (*sysfilter_t) (int arch, uint32_t sysnum);
