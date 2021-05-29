@@ -105,7 +105,7 @@ fn command_box<'a>(bin: &'a str,
     }
 }
 
-fn command_inspect(input_path: &str, output_path: &str) -> i32 {
+fn command_inspect(input_path: &str, output_path: &str, path_limit: u8) -> i32 {
     let input = open_input(input_path);
     let mut output = open_output(output_path);
     let mut magic = std::collections::HashSet::<(Sandbox,String)>::new();
@@ -126,7 +126,7 @@ fn command_inspect(input_path: &str, output_path: &str) -> i32 {
         };
 
         let (maybe_program_invocation_name, maybe_program_command_line, maybe_program_startup_time) =
-            parse_json_line(&serialized, &mut magic);
+            parse_json_line(&serialized, &mut magic, path_limit);
         if let Some(name) = maybe_program_invocation_name {
             program_invocation_name = name;
         }
@@ -286,7 +286,15 @@ Repository: {}
                         .long("output")
                         .short("o")
                         .env("SHOEBOX_OUT"),
-                ),
+                )
+                .arg(
+                    Arg::with_name("limit")
+                        .default_value("7")
+                        .required(false)
+                        .help("Maximum number of path members before trim, 0 to disable")
+                        .long("limit")
+                        .short("l")
+                )
         )
         .get_matches();
 
@@ -297,9 +305,19 @@ Repository: {}
         let magic: Option<Vec::<&str>> = matches.values_of("magic").map(|values| values.collect());
         std::process::exit(command_box(bin, &mut cmd, &config, &magic));
     } else if let Some(ref matches) = matches.subcommand_matches("inspect") {
+        let value = matches.value_of("limit").unwrap();
+        let limit = match value.parse::<u8>() {
+            Ok(value) => value,
+            Err(error) => {
+                clap::Error::with_description(
+                    &format!("Invalid value `{}' for --limit: {}", value, error),
+                    clap::ErrorKind::InvalidValue).exit();
+            }
+        };
         std::process::exit(command_inspect(
             matches.value_of("input").unwrap(),
             matches.value_of("output").unwrap(),
+            limit,
         ));
     } else {
         clap::Error::with_description(
@@ -313,6 +331,7 @@ Repository: {}
 fn parse_json_line(
     serialized: &str,
     magic: &mut std::collections::HashSet<(Sandbox,String)>,
+    path_limit: u8,
 ) -> (Option<String>, Option<String>, Option<SystemTime>) {
     match serde_json::from_str(&serialized).unwrap_or_else(|_| panic!("failed to parse `{}'", serialized)) {
         Dump::Init {
@@ -393,7 +412,10 @@ fn parse_json_line(
                     continue;
                 }
                 let sandbox = if may_write { Sandbox::Write } else { Sandbox::Read };
-                magic.insert((sandbox, repr[idx - 1].clone()));
+                let argument = trim_path(&filter_proc(&repr[idx - 1]), path_limit);
+                if argument != "" {
+                    magic.insert((sandbox, argument));
+                }
             }
         }
         _ => {}
@@ -430,6 +452,32 @@ fn open_output(path_or_stdout: &str) -> Box<dyn std::io::Write> {
             },
         )),
     }
+}
+
+fn trim_path(path: &str, limit: u8) -> String {
+    if limit == 0 || path == "/" {
+        path.to_string()
+    } else {
+        let members: Vec<&str> = path.split("/").collect();
+        let limit = limit as usize;
+        if limit > 0 && limit <= members.len() {
+            members[0..limit].join("/")
+        } else {
+            members.join("/")
+        }
+    }
+}
+
+fn filter_proc(path: &str) -> String {
+    if path.starts_with("/proc/") {
+        if let Some(c) = path.chars().nth(7) {
+            if c.is_numeric() {
+                return "".to_string();
+            }
+        }
+    }
+
+    path.to_string()
 }
 
 fn access_may_write(mode: u64) -> bool {
