@@ -1,3 +1,4 @@
+use std::ffi::CString;
 use std::fs::OpenOptions;
 use std::io::BufRead;
 use std::iter::FromIterator;
@@ -46,6 +47,40 @@ enum Dump {
         args: [u64; 6],
         repr: [String; 6],
     },
+}
+
+fn command_box<'a>(bin: &'a str,
+               cmd: &mut Vec::<&'a str>,
+               config: &Option<Vec::<&'a str>>,
+               magic: &Option<Vec::<&'a str>>) -> i32 {
+    cmd.insert(0, "--");
+    if let Some(ref magic) = magic {
+        for item in magic.into_iter() {
+            cmd.insert(0, item);
+            cmd.insert(0, "-m");
+        }
+    }
+    if let Some(ref config) = config {
+        for item in config.into_iter() {
+            cmd.insert(0, item);
+            cmd.insert(0, "-c");
+        }
+    }
+    cmd.insert(0, bin);
+    // eprintln!("executing `{:?}'", cmd);
+    let cmdline: Vec::<CString> = cmd.into_iter().map(|c| CString::new(c.as_bytes()).unwrap()).collect();
+
+    match nix::unistd::execvp(&cmdline[0], &cmdline) {
+        Ok(_) => 0,
+        Err(nix::Error::Sys(errno)) => {
+            eprintln!("error executing `{:?}': {}", cmdline, errno);
+            1
+        },
+        Err(error) => {
+            eprintln!("error executing `{:?}': {:?}", cmdline, error);
+            1
+        },
+    }
 }
 
 fn command_inspect(input_path: &str, output_path: &str) -> i32 {
@@ -177,6 +212,40 @@ Repository: {}
             built_info::PKG_REPOSITORY
         ))
         .subcommand(
+            SubCommand::with_name("box")
+                .about("Execute the given command under sydbox")
+                .arg(
+                    Arg::with_name("bin")
+                        .default_value("sydbox")
+                        .required(true)
+                        .help("Path to sydbox binary")
+                        .long("bin")
+                        .short("b")
+                        .env("SYDBOX_BIN"),
+                )
+                .arg(
+                    Arg::with_name("config")
+                        .required(false)
+                        .help("path spec to the configuration file, may be repeated")
+                        .short("c")
+                        .multiple(true)
+                        .number_of_values(1)
+                )
+                .arg(
+                    Arg::with_name("magic")
+                        .required(false)
+                        .help("run a magic command during init, may be repeated")
+                        .short("m")
+                        .multiple(true)
+                        .number_of_values(1)
+                )
+                .arg(
+                    Arg::with_name("cmd")
+                        .required(true)
+                        .multiple(true)
+                )
+        )
+        .subcommand(
             SubCommand::with_name("inspect")
                 .about("Read a sydbox core dump and write a sydbox profile")
                 .arg(
@@ -200,7 +269,19 @@ Repository: {}
         )
         .get_matches();
 
-    if let Some(ref matches) = matches.subcommand_matches("inspect") {
+    if let Some(ref matches) = matches.subcommand_matches("box") {
+        let bin = matches.value_of("bin").unwrap();
+        let mut cmd: Vec::<&str> = matches.values_of("cmd").unwrap().collect();
+        let config: Option<Vec::<&str>> = match matches.values_of("config") {
+            None => None,
+            Some(values) => Some(values.collect())
+        };
+        let magic: Option<Vec::<&str>> = match matches.values_of("magic") {
+            None => None,
+            Some(values) => Some(values.collect())
+        };
+        std::process::exit(command_box(bin, &mut cmd, &config, &magic));
+    } else if let Some(ref matches) = matches.subcommand_matches("inspect") {
         std::process::exit(command_inspect(
             matches.value_of("input").unwrap(),
             matches.value_of("output").unwrap(),
