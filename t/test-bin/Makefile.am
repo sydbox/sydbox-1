@@ -18,11 +18,13 @@ wildtest_CFLAGS= \
 		 --include=$(top_srcdir)/src/wildmatch.c
 
 realpath_mode_1_SOURCES= realpath_mode-1.c \
-			 ../../src/realpath.c \
-			 ../../src/strlcat.c \
-			 ../../src/strlcpy.c \
-			 ../../src/file.c \
-			 ../../src/util.c
+			 $(top_srcdir)/src/realpath.c \
+			 $(top_srcdir)/src/strlcat.c \
+			 $(top_srcdir)/src/strlcpy.c \
+			 $(top_srcdir)/src/file.c \
+			 $(top_srcdir)/src/util.c \
+			 $(top_srcdir)/src/xfunc.c
+realpath_mode_1_CFLAGS= $(AM_CFLAGS) -DSYDBOX_NDUMP
 
 sockmatchtest_SOURCES= sockmatchtest.c \
 		       $(top_srcdir)/src/path.c \
