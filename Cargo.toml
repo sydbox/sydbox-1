@@ -1,7 +1,6 @@
 [package]
 name = "pandora"
 default-run = "pandora"
-publish = ["pandora-box"]
 version = "0.1.0"
 authors = ["Alï Polatel <alip@exherbo.org>"]
 edition = "2018"
