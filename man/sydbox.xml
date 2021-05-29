@@ -366,7 +366,7 @@
           <term><option id="core-sandbox-read">core/sandbox/read</option></term>
           <listitem>
             <para>type: <type>string</type></para>
-            <para>default: <varname>false</varname></para>
+            <para>default: <varname>off</varname></para>
             <para>query: <varname>yes</varname></para>
             <para>
               A string specifying how read sandboxing should be done.
@@ -378,7 +378,7 @@
           <term><option id="core-sandbox-write">core/sandbox/write</option></term>
           <listitem>
             <para>type: <type>string</type></para>
-            <para>default: <varname>false</varname></para>
+            <para>default: <varname>deny</varname></para>
             <para>query: <varname>yes</varname></para>
             <para>
               A string specifying how write sandboxing should be done.
@@ -390,7 +390,7 @@
           <term><option id="core-sandbox-network">core/sandbox/network</option></term>
           <listitem>
             <para>type: <type>string</type></para>
-            <para>default: <varname>false</varname></para>
+            <para>default: <varname>deny</varname></para>
             <para>query: <varname>yes</varname></para>
             <para>
               A string specifying how network sandboxing should be done.

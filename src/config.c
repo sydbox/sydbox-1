@@ -51,6 +51,7 @@ void config_init(void)
 	sydbox->config.whitelist_unsupported_socket_families = true;
 	sydbox->config.violation_decision = VIOLATION_DENY;
 	sydbox->config.violation_exit_code = -1;
+	sydbox->config.box_static.mode.sandbox_read = SANDBOX_OFF;
 	sydbox->config.box_static.magic_lock = LOCK_UNSET;
 
 	/* initialize access control lists */

@@ -63,9 +63,9 @@
 
 /* Type declarations */
 enum sandbox_mode {
-	SANDBOX_OFF,
-	SANDBOX_ALLOW,
 	SANDBOX_DENY,
+	SANDBOX_ALLOW,
+	SANDBOX_OFF,
 };
 static const char *const sandbox_mode_table[] = {
 	[SANDBOX_OFF] = "off",
