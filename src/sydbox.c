@@ -949,6 +949,7 @@ static void init_early(void)
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	sydbox->dump_fd = -1;
 #endif
+	sydbox->permissive = false;
 	config_init();
 	dump(DUMP_INIT);
 	syd_abort_func(kill_all);
@@ -1594,9 +1595,10 @@ int main(int argc, char **argv)
 	char *profile_name;
 	struct option long_options[] = {
 		{"help",	no_argument,		NULL,	'h'},
-		{"dry-run",	optional_argument,	NULL,	'd'},
 		{"version",	no_argument,		NULL,	'v'},
 		{"profile",	required_argument,	NULL,	0},
+		{"dry-run",	no_argument,		NULL,	0},
+		{"dump",	optional_argument,	NULL,	'd'},
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -1607,10 +1609,13 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "hdvc:m:E:", long_options, &options_index)) != EOF) {
+	while ((opt = getopt_long(argc, argv, "hvdc:m:E:", long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
-			if (streq(long_options[options_index].name, "profile")) {
+			if (streq(long_options[options_index].name, "dry-run")) {
+				sydbox->permissive = true;
+				break;
+			} else if (streq(long_options[options_index].name, "profile")) {
 				/* special case for backwards compatibility */
 				profile_name = xmalloc(sizeof(char) * (strlen(optarg) + 2));
 				profile_name[0] = SYDBOX_PROFILE_CHAR;
