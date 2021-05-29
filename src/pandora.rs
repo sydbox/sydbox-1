@@ -355,8 +355,24 @@ fn parse_json_line(
             repr,
             sysname,
             ..
+        } if sysname == "bind" => {
+            magic.insert((crate::Sandbox::Bind, repr[1].clone()));
+        }
+        Dump::SysEnt {
+            event: 10,
+            repr,
+            sysname,
+            ..
         } if sysname == "connect" => {
             magic.insert((crate::Sandbox::Connect, repr[1].clone()));
+        }
+        Dump::SysEnt {
+            event: 10,
+            repr,
+            sysname,
+            ..
+        } if sysname == "sendto" => {
+            magic.insert((crate::Sandbox::Connect, repr[4].clone()));
         }
         Dump::SysEnt {
             event: 10,
