@@ -3,7 +3,7 @@
  *
  * Simple seccomp based system call filters
  *
- * Copyright (c) 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2013, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -31,7 +31,7 @@ static int filter_open_index(int arch, uint32_t sysnum, unsigned flag_index)
 		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
 		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_nr),
 		/* check for O_ASYNC|O_DIRECT|O_SYNC */
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 3),
+		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 3/*jump to allow*/),
 		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(flag_index)),
 		BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, ~(O_ASYNC|O_DIRECT|O_SYNC), 1, 0),
 		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EINVAL & SECCOMP_RET_DATA)),

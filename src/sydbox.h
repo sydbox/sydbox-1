@@ -498,6 +498,12 @@ struct sysentry {
 	 * support is not available or do they have to be called anyway?
 	 */
 	bool ptrace_fallback;
+
+	/*
+	 * If this is >0 this system call is an open*() system call with
+	 * `open_flag' member below pointing to the index of the flags argument.
+	 */
+	int open_flag;
 };
 typedef struct sysentry sysentry_t;
 

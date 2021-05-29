@@ -87,11 +87,13 @@ static const sysentry_t syscall_entries[] = {
 		.name = "open",
 		.filter = filter_open,
 		.enter = sys_open,
+		.open_flag = 1,
 	},
 	{
 		.name = "openat",
 		.filter = filter_openat,
 		.enter = sys_openat,
+		.open_flag = 2,
 	},
 	{
 		.name = "openat2",
@@ -406,32 +408,94 @@ static int apply_simple_filter(const sysentry_t *entry, int arch, int abi)
 	return 0;
 }
 
-static size_t make_seccomp_filter(int abi, uint32_t **syscalls)
+int seccomp_init(void)
 {
-	size_t i, j;
-	long sysnum;
-	uint32_t *list;
+	if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) < 0)
+		return -errno;
+	return 0;
+}
 
-	list = xmalloc(sizeof(uint32_t) * ELEMENTSOF(syscall_entries));
-	for (i = 0, j = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		if (syscall_entries[i].name)
-			sysnum = pink_lookup_syscall(syscall_entries[i].name,
-						    abi);
-		else
-			sysnum = syscall_entries[i].no;
-		if (sysnum != -1)
-			list[j++] = (uint32_t)sysnum;
+int seccomp_apply(int abi)
+{
+	unsigned arch;
+	switch (abi) {
+	case PINK_ABI_X86_64:
+		arch = AUDIT_ARCH_X86_64;
+		break;
+	case PINK_ABI_I386:
+		arch = AUDIT_ARCH_I386;
+		break;
+	default:
+		errno = EINVAL;
+		return -EINVAL;
 	}
 
-	*syscalls = list;
-	return j;
+	const struct sock_filter header[] = {
+		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, arch_nr),
+		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, arch, 1, 0),
+		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
+		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_nr),
+	};
+	const struct sock_filter footer[] = {
+		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW)
+	};
+
+	unsigned n = ELEMENTSOF(header);
+	size_t idx = n;
+	struct sock_fprog prog;
+
+	/*
+	 * We avoid malloc here because it's tedious but this means we have to
+	 * do a bit of bookkeeping:
+	 * i386: sydbox: seccomp filter count: 127, no open filter count: 123
+	 * x86_64: sydbox: seccomp filter count: 141, no open filter count: 137
+	 * struct sock_filter f = xmalloc(sizeof(struct sock_filter) * n);
+         */
+#define SYDBOX_SECCOMP_MAX 200 /* which is a reasonably large number */
+	struct sock_filter f[SYDBOX_SECCOMP_MAX];
+	memcpy(f, header, sizeof(header));
+
+	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
+		long sysnum;
+		if (syscall_entries[i].name) {
+			sysnum = pink_lookup_syscall(syscall_entries[i].name,
+						    abi);
+		} else {
+			sysnum = syscall_entries[i].no;
+		}
+		if (sysnum == -1)
+			continue;
+		n += 2;
+		struct sock_filter item[] = {
+			BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 1),
+			BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_TRACE|(sysnum & SECCOMP_RET_DATA))
+		};
+		f[idx++] = item[0];
+		f[idx++] = item[1];
+	}
+	n += ELEMENTSOF(footer);
+	//f = xrealloc(f, sizeof(struct sock_filter) * n);
+	memcpy(f + idx, footer, sizeof(footer));
+
+	memset(&prog, 0, sizeof(prog));
+	prog.len = n;
+	prog.filter = f;
+	if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog) < 0) {
+		// int save_errno = errno;
+		// free(f);
+		// return -save_errno;
+		return -errno;
+	}
+
+	// say("seccomp filter count: %d, no open filter count: %d", n, n - 4);
+	// free(f);
+	return 0;
 }
 
 int sysinit_seccomp(void)
 {
-	int r, count;
+	int r;
 	size_t i;
-	uint32_t *syscalls;
 
 #if defined(__i386__)
 	for (i = 0; i < ELEMENTSOF(syscall_entries); i++) {
@@ -442,10 +506,7 @@ int sysinit_seccomp(void)
 					     PINK_ABI_DEFAULT)) < 0)
 			return r;
 	}
-	count = make_seccomp_filter(PINK_ABI_DEFAULT, &syscalls);
-	r = seccomp_apply(AUDIT_ARCH_I386, syscalls, count);
-
-	free(syscalls);
+	return seccomp_apply(PINK_ABI_I386);
 #elif defined(__x86_64__)
 	for (i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		if (!syscall_entries[i].filter)
@@ -460,15 +521,10 @@ int sysinit_seccomp(void)
 			return r;
 	}
 
-	count = make_seccomp_filter(PINK_ABI_X86_64, &syscalls);
-	r = seccomp_apply(AUDIT_ARCH_X86_64, syscalls, count);
-	free(syscalls);
+	r = seccomp_apply(PINK_ABI_X86_64);
 	if (r < 0)
 		return r;
-
-	count = make_seccomp_filter(PINK_ABI_I386, &syscalls);
-	r = seccomp_apply(AUDIT_ARCH_I386, syscalls, count);
-	free(syscalls);
+	return seccomp_apply(PINK_ABI_I386);
 #else
 #error "Platform does not support seccomp filter yet"
 #endif
@@ -479,6 +535,16 @@ int sysinit_seccomp(void)
 int sysinit_seccomp(void)
 {
 	return 0;
+}
+
+int seccomp_init(void)
+{
+	return -ENOTSUP;
+}
+
+int seccomp_apply(int abi)
+{
+	return -ENOTSUP;
 }
 #endif
 

@@ -56,7 +56,6 @@ sydbox_SOURCES= \
 		 pathlookup.c \
 		 pink.c \
 		 proc.c \
-		 seccomp.c \
 		 pathdecode.c \
 		 pathmatch.c \
 		 procmatch.c \
