@@ -39,8 +39,10 @@ int sys_bind(syd_process_t *current)
 	info.deny_errno = EADDRNOTAVAIL;
 	if (current->subcall == PINK_SOCKET_SUBCALL_BIND)
 		info.decode_socketcall = true;
-	info.access_mode = sandbox_deny_network(current) ? ACCESS_WHITELIST
-							 : ACCESS_BLACKLIST;
+	if (sandbox_deny_network(current) || sandbox_dry_network(current))
+		info.access_mode = ACCESS_WHITELIST;
+	else
+		info.access_mode = ACCESS_BLACKLIST;
 	info.access_list = &P_BOX(current)->acl_network_bind;
 	info.access_filter = &sydbox->config.filter_network;
 
