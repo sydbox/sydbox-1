@@ -104,7 +104,6 @@ static void usage(FILE *outfp, int code)
 usage: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
 -h          -- Show usage and exit\n\
 -v          -- Show version and exit\n\
--d          -- Inspect only, dry run, shorthand for dump mode\n\
 -c pathspec -- path spec to the configuration file, may be repeated\n\
 -m magic    -- run a magic command during init, may be repeated\n\
 -E var=val  -- put var=val in the environment for command, may be repeated\n\
@@ -116,6 +115,9 @@ Can you help me?\n\
 \n\
 Send bug reports to \"" PACKAGE_BUGREPORT "\"\n\
 Attaching poems encourages consideration tremendously.\n");
+	/*
+-d          -- Inspect only, dry run, shorthand for dump mode\n\
+	 */
 	exit(code);
 }
 
@@ -944,6 +946,9 @@ static void init_early(void)
 	sydbox->execve_wait = false;
 	sydbox->exit_code = EXIT_SUCCESS;
 	sydbox->program_invocation_name = NULL;
+#if SYDBOX_HAVE_DUMP_BUILTIN
+	sydbox->dump_fd = -1;
+#endif
 	config_init();
 	dump(DUMP_INIT);
 	syd_abort_func(kill_all);
@@ -1589,7 +1594,7 @@ int main(int argc, char **argv)
 	char *profile_name;
 	struct option long_options[] = {
 		{"help",	no_argument,		NULL,	'h'},
-		{"dry-run",	no_argument,		NULL,	'd'},
+		{"dry-run",	optional_argument,	NULL,	'd'},
 		{"version",	no_argument,		NULL,	'v'},
 		{"profile",	required_argument,	NULL,	0},
 		{NULL,		0,		NULL,	0},
@@ -1602,7 +1607,7 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "hdvc:m:E:", long_options, &options_index)) != EOF) {
+	while ((opt = getopt_long(argc, argv, "hd:vc:m:E:", long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
 			if (streq(long_options[options_index].name, "profile")) {
@@ -1621,6 +1626,8 @@ int main(int argc, char **argv)
 		case 'd':
 			sydbox->config.violation_decision = VIOLATION_NOOP;
 			magic_set_sandbox_all("dump", NULL);
+			if (optarg)
+				sydbox->dump_fd = atoi(optarg);
 			break;
 #else
 		case 'd':

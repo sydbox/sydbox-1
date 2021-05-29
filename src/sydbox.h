@@ -476,6 +476,10 @@ struct sydbox {
 
 	pid_t execve_pid;
 
+#if SYDBOX_HAVE_DUMP_BUILTIN
+	int dump_fd;
+#endif
+
 	/* Program invocation name (for the child) */
 	char *program_invocation_name;
 
