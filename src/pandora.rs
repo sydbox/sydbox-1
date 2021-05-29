@@ -55,20 +55,20 @@ fn command_box<'a>(bin: &'a str,
                magic: &Option<Vec::<&'a str>>) -> i32 {
     cmd.insert(0, "--");
     if let Some(ref magic) = magic {
-        for item in magic.into_iter() {
+        for item in magic.iter() {
             cmd.insert(0, item);
             cmd.insert(0, "-m");
         }
     }
     if let Some(ref config) = config {
-        for item in config.into_iter() {
+        for item in config.iter() {
             cmd.insert(0, item);
             cmd.insert(0, "-c");
         }
     }
     cmd.insert(0, bin);
     // eprintln!("executing `{:?}'", cmd);
-    let cmdline: Vec::<CString> = cmd.into_iter().map(|c| CString::new(c.as_bytes()).unwrap()).collect();
+    let cmdline: Vec::<CString> = cmd.iter().map(|c| CString::new(c.as_bytes()).unwrap()).collect();
 
     match nix::unistd::execvp(&cmdline[0], &cmdline) {
         Ok(_) => 0,
@@ -105,14 +105,14 @@ fn command_inspect(input_path: &str, output_path: &str) -> i32 {
 
         let (maybe_program_invocation_name, maybe_program_command_line, maybe_program_startup_time) =
             parse_json_line(&serialized, &mut magic);
-        if maybe_program_invocation_name.is_some() {
-            program_invocation_name = maybe_program_invocation_name.unwrap();
+        if let Some(name) = maybe_program_invocation_name {
+            program_invocation_name = name;
         }
-        if maybe_program_command_line.is_some() {
-            program_command_line = maybe_program_command_line.unwrap();
+        if let Some(line) = maybe_program_command_line {
+            program_command_line = line;
         }
-        if maybe_program_startup_time.is_some() {
-            program_startup_time = maybe_program_startup_time.unwrap();
+        if let Some(time) = maybe_program_startup_time {
+            program_startup_time = time;
         }
     }
 
@@ -160,9 +160,8 @@ core/match/no_wildcard:prefix
         program_invocation_name,
         program_command_line
     )
-    .expect(&format!(
-        "failed to print header to output `{}'",
-        output_path
+    .unwrap_or_else(|_|
+        panic!("failed to print header to output `{}'", output_path
     ));
 
     /* Step 2: Print out magic entries */
@@ -170,7 +169,7 @@ core/match/no_wildcard:prefix
     list.sort(); /* secondary alphabetical sort. */
     list.sort_by_cached_key(|entry| magic_key(entry));
     for entry in list {
-        writeln!(&mut output, "{}", entry).expect(&format!(
+        writeln!(&mut output, "{}", entry).unwrap_or_else(|_| panic!(
             "failed to print entry `{}' to output `{}'",
             entry, output_path
         ));
@@ -180,7 +179,7 @@ core/match/no_wildcard:prefix
         &mut output,
         "\n# Lock configuration\ncore/trace/magic_lock:on"
     )
-    .expect(&format!(
+    .unwrap_or_else(|_| panic!(
         "failed to lock configuration for output `{}'",
         output_path
     ));
@@ -272,14 +271,8 @@ Repository: {}
     if let Some(ref matches) = matches.subcommand_matches("box") {
         let bin = matches.value_of("bin").unwrap();
         let mut cmd: Vec::<&str> = matches.values_of("cmd").unwrap().collect();
-        let config: Option<Vec::<&str>> = match matches.values_of("config") {
-            None => None,
-            Some(values) => Some(values.collect())
-        };
-        let magic: Option<Vec::<&str>> = match matches.values_of("magic") {
-            None => None,
-            Some(values) => Some(values.collect())
-        };
+        let config: Option<Vec::<&str>> = matches.values_of("config").map(|values| values.collect());
+        let magic: Option<Vec::<&str>> = matches.values_of("magic").map(|values| values.collect());
         std::process::exit(command_box(bin, &mut cmd, &config, &magic));
     } else if let Some(ref matches) = matches.subcommand_matches("inspect") {
         std::process::exit(command_inspect(
@@ -299,7 +292,7 @@ fn parse_json_line(
     serialized: &str,
     magic: &mut std::collections::HashSet<String>,
 ) -> (Option<String>, Option<String>, Option<SystemTime>) {
-    match serde_json::from_str(&serialized).expect(&format!("failed to parse `{}'", serialized)) {
+    match serde_json::from_str(&serialized).unwrap_or_else(|_| panic!("failed to parse `{}'", serialized)) {
         Dump::Init {
             id: 0,
             shoebox: 1,
@@ -307,12 +300,12 @@ fn parse_json_line(
             ..
         } => {
             eprintln!("success opening input to parse `{}' dump", name);
-            return (Some(String::from(name)), None, None);
+            return (Some(name), None, None);
         }
         Dump::StartUp { id: 1, cmd, ts, .. } => {
             return (
                 None,
-                Some(String::from(cmd)),
+                Some(cmd),
                 Some(UNIX_EPOCH + Duration::from_secs(ts)),
             );
         }
@@ -373,9 +366,8 @@ fn parse_json_line(
                 eprintln!("SYS:{:?} {:?} {:?}", sysname, args, repr);
             }
 
-            for idx in 0..6 {
-                let idx = repr_idx[idx];
-                if idx == 0 || repr[idx - 1].is_empty() {
+            for idx in &repr_idx {
+                if *idx == 0 || repr[*idx - 1].is_empty() {
                     continue;
                 }
                 let mut entry = format!(
