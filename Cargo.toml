@@ -13,6 +13,11 @@ keywords = ["security", "sandbox", "seccomp", "sydbox", "pinktrace"]
 categories = ["command-line-utilities", "config", "development-tools", "development-tools::debugging", "os::linux-apis"]
 build = "build.rs"
 default-run = "pandora"
+include = [
+	"**/*.rs",
+	"Cargo.toml",
+	"/README",
+]
 
 [[bin]]
 name = "pandora"
