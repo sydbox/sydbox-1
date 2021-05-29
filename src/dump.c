@@ -115,7 +115,8 @@ static void dump_close(void)
 	dump_cycle();
 	fclose(fp);
 	fp = NULL;
-	say("dumped core `%s' for inspection.", pathdump);
+	if (pathdump[0] != '\0')
+		say("dumped core `%s' for inspection.", pathdump);
 }
 
 static void dump_null(void)
@@ -813,28 +814,32 @@ static int dump_init(void)
 	if (nodump > 0)
 		return 0;
 
-	pathname = getenv(DUMP_ENV);
-	if (pathname) {
-		strlcpy(pathdump, pathname, sizeof(pathdump));
+	fd = sydbox->dump_fd;
+	if (fd > 0) {
+		;
 	} else {
-		char template[] = "/tmp/sydbox-XXXXXX";
-		if (!mkdtemp(template))
-			die_errno("mkdtemp_dump");
-		strlcpy(pathdump, template, sizeof(pathdump));
-		strlcat(pathdump, "/", sizeof(pathdump));
-		strlcat(pathdump, DUMP_NAME, sizeof(pathdump));
+		pathname = getenv(DUMP_ENV);
+		if (pathname) {
+			strlcpy(pathdump, pathname, sizeof(pathdump));
+		} else {
+			char template[] = "/tmp/sydbox-XXXXXX";
+			if (!mkdtemp(template))
+				die_errno("mkdtemp_dump");
+			strlcpy(pathdump, template, sizeof(pathdump));
+			strlcat(pathdump, "/", sizeof(pathdump));
+			strlcat(pathdump, DUMP_NAME, sizeof(pathdump));
+		}
+		fd = open(pathdump, O_CREAT|O_APPEND|O_WRONLY|O_NOFOLLOW, 0600);
+		if (fd < 0)
+			die_errno("open_dump(`%s')", pathdump);
+		if (sydbox->config.violation_decision == VIOLATION_NOOP) {
+			say("dumping core `%s' for inspection.", pathdump);
+		}
 	}
-	fd = open(pathdump, O_CREAT|O_APPEND|O_WRONLY|O_NOFOLLOW, 0600);
-	if (fd < 0)
-		die_errno("open_dump(`%s')", pathdump);
 	fp = fdopen(fd, "a");
 	if (!fp)
 		die_errno("fdopen_dump");
 	nodump = 1;
-
-	if (sydbox->config.violation_decision == VIOLATION_NOOP) {
-		say("dumping core `%s' for inspection.", pathdump);
-	}
 
 	dump_format();
 	dump_cycle();

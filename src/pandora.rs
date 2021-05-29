@@ -2,6 +2,8 @@ use std::ffi::CString;
 use std::fs::OpenOptions;
 use std::io::BufRead;
 use std::iter::FromIterator;
+use std::os::unix::io::FromRawFd;
+use std::process::Command;
 
 use chrono::prelude::DateTime;
 use chrono::Utc;
@@ -105,8 +107,206 @@ fn command_box<'a>(bin: &'a str,
     }
 }
 
+fn command_profile<'b>(bin: &'b str, cmd: &Vec::<&'b str>, output_path: &'b str, path_limit: u8) -> i32 {
+    let (fd_rd, fd_rw) = match nix::unistd::pipe() {
+        Ok((fd_rd, fd_rw)) => (fd_rd, fd_rw),
+        Err(error) => {
+            eprintln!("error creating pipe: {}", error);
+            return 1;
+        }
+    };
+
+    let mut child = Command::new(bin)
+                            .arg("-d")
+                            .arg(format!("{}", fd_rw))
+                            .arg("--")
+                            .args(cmd)
+                            .spawn()
+                            .expect("sydbox command failed to start");
+
+    nix::unistd::close(fd_rw).expect("failed to close write end of pipe");
+    let input = Box::new(std::io::BufReader::new(unsafe { std::fs::File::from_raw_fd(fd_rd) }));
+    let r = do_inspect(input, output_path, path_limit);
+
+    child.wait().expect("failed to wait for sydbox");
+
+    r
+}
+
 fn command_inspect(input_path: &str, output_path: &str, path_limit: u8) -> i32 {
     let input = open_input(input_path);
+    do_inspect(input, output_path, path_limit)
+}
+
+fn main() {
+    let matches = App::new(built_info::PKG_NAME)
+        .version(built_info::PKG_VERSION)
+        .author(built_info::PKG_AUTHORS)
+        .about(built_info::PKG_DESCRIPTION)
+        .after_help(&*format!(
+            "\
+Hey you, out there beyond the wall,
+Breaking bottles in the hall,
+Can you help me?
+
+Send bug reports to {}
+Attaching poems encourages consideration tremendously.
+
+License: {}
+Homepage: {}
+Repository: {}
+",
+            built_info::PKG_AUTHORS,
+            built_info::PKG_LICENSE,
+            built_info::PKG_HOMEPAGE,
+            built_info::PKG_REPOSITORY,
+        ))
+        .subcommand(
+            SubCommand::with_name("box")
+                .about("Execute the given command under sydbox")
+                .arg(
+                    Arg::with_name("bin")
+                        .default_value("sydbox")
+                        .required(true)
+                        .help("Path to sydbox binary")
+                        .long("bin")
+                        .short("b")
+                        .env("SYDBOX_BIN"),
+                )
+                .arg(
+                    Arg::with_name("config")
+                        .required(false)
+                        .help("path spec to the configuration file, may be repeated")
+                        .short("c")
+                        .multiple(true)
+                        .number_of_values(1)
+                )
+                .arg(
+                    Arg::with_name("magic")
+                        .required(false)
+                        .help("run a magic command during init, may be repeated")
+                        .short("m")
+                        .multiple(true)
+                        .number_of_values(1)
+                )
+                .arg(
+                    Arg::with_name("cmd")
+                        .required(true)
+                        .multiple(true)
+                )
+        )
+        .subcommand(
+            SubCommand::with_name("profile")
+                .about("Execute a program under inspection and write a sydbox profile")
+                .arg(
+                    Arg::with_name("bin")
+                        .default_value("sydbox")
+                        .required(true)
+                        .help("Path to sydbox binary")
+                        .long("bin")
+                        .short("b")
+                        .env("SYDBOX_BIN"),
+                )
+                .arg(
+                    Arg::with_name("output")
+                        .default_value("./out.syd-1")
+                        .required(true)
+                        .help("Path to sydbox profile output")
+                        .long("output")
+                        .short("o")
+                        .env("SHOEBOX_OUT"),
+                )
+                .arg(
+                    Arg::with_name("limit")
+                        .default_value("7")
+                        .required(false)
+                        .help("Maximum number of path members before trim, 0 to disable")
+                        .long("limit")
+                        .short("l")
+                )
+                .arg(
+                    Arg::with_name("cmd")
+                        .required(true)
+                        .multiple(true)
+                )
+        )
+        .subcommand(
+            SubCommand::with_name("inspect")
+                .about("Read a sydbox core dump and write a sydbox profile")
+                .arg(
+                    Arg::with_name("input")
+                        .default_value("./sydcore")
+                        .required(true)
+                        .help("Path to sydbox core dump")
+                        .long("input")
+                        .short("i")
+                        .env("SHOEBOX"),
+                )
+                .arg(
+                    Arg::with_name("output")
+                        .default_value("./out.syd-1")
+                        .required(true)
+                        .help("Path to sydbox profile output")
+                        .long("output")
+                        .short("o")
+                        .env("SHOEBOX_OUT"),
+                )
+                .arg(
+                    Arg::with_name("limit")
+                        .default_value("7")
+                        .required(false)
+                        .help("Maximum number of path members before trim, 0 to disable")
+                        .long("limit")
+                        .short("l")
+                )
+        )
+        .get_matches();
+
+    if let Some(ref matches) = matches.subcommand_matches("box") {
+        let bin = matches.value_of("bin").unwrap();
+        let mut cmd: Vec::<&str> = matches.values_of("cmd").unwrap().collect();
+        let config: Option<Vec::<&str>> = matches.values_of("config").map(|values| values.collect());
+        let magic: Option<Vec::<&str>> = matches.values_of("magic").map(|values| values.collect());
+        std::process::exit(command_box(bin, &mut cmd, &config, &magic));
+    } else if let Some(ref matches) = matches.subcommand_matches("profile") {
+        let bin = matches.value_of("bin").unwrap();
+        let out = matches.value_of("output").unwrap();
+        let mut cmd: Vec::<&str> = matches.values_of("cmd").unwrap().collect();
+        let value = matches.value_of("limit").unwrap();
+        let limit = match value.parse::<u8>() {
+            Ok(value) => value,
+            Err(error) => {
+                clap::Error::with_description(
+                    &format!("Invalid value `{}' for --limit: {}", value, error),
+                    clap::ErrorKind::InvalidValue).exit();
+            }
+        };
+        std::process::exit(command_profile(bin, &mut cmd, out, limit));
+    } else if let Some(ref matches) = matches.subcommand_matches("inspect") {
+        let value = matches.value_of("limit").unwrap();
+        let limit = match value.parse::<u8>() {
+            Ok(value) => value,
+            Err(error) => {
+                clap::Error::with_description(
+                    &format!("Invalid value `{}' for --limit: {}", value, error),
+                    clap::ErrorKind::InvalidValue).exit();
+            }
+        };
+        std::process::exit(command_inspect(
+            matches.value_of("input").unwrap(),
+            matches.value_of("output").unwrap(),
+            limit,
+        ));
+    } else {
+        clap::Error::with_description(
+            "No subcommand given, expected one of: inspect",
+            clap::ErrorKind::InvalidValue,
+        )
+        .exit();
+    }
+}
+
+fn do_inspect(input: Box<dyn std::io::BufRead>, output_path: &str, path_limit: u8) -> i32 {
     let mut output = open_output(output_path);
     let mut magic = std::collections::HashSet::<(Sandbox,String)>::new();
     let mut program_invocation_name = "?".to_string();
@@ -207,125 +407,6 @@ core/match/no_wildcard:prefix
     ));
 
     0
-}
-
-fn main() {
-    let matches = App::new(built_info::PKG_NAME)
-        .version(built_info::PKG_VERSION)
-        .author(built_info::PKG_AUTHORS)
-        .about(built_info::PKG_DESCRIPTION)
-        .after_help(&*format!(
-            "\
-Hey you, out there beyond the wall,
-Breaking bottles in the hall,
-Can you help me?
-
-Send bug reports to {}
-Attaching poems encourages consideration tremendously.
-
-License: {}
-Homepage: {}
-Repository: {}
-",
-            built_info::PKG_AUTHORS,
-            built_info::PKG_LICENSE,
-            built_info::PKG_HOMEPAGE,
-            built_info::PKG_REPOSITORY,
-        ))
-        .subcommand(
-            SubCommand::with_name("box")
-                .about("Execute the given command under sydbox")
-                .arg(
-                    Arg::with_name("bin")
-                        .default_value("sydbox")
-                        .required(true)
-                        .help("Path to sydbox binary")
-                        .long("bin")
-                        .short("b")
-                        .env("SYDBOX_BIN"),
-                )
-                .arg(
-                    Arg::with_name("config")
-                        .required(false)
-                        .help("path spec to the configuration file, may be repeated")
-                        .short("c")
-                        .multiple(true)
-                        .number_of_values(1)
-                )
-                .arg(
-                    Arg::with_name("magic")
-                        .required(false)
-                        .help("run a magic command during init, may be repeated")
-                        .short("m")
-                        .multiple(true)
-                        .number_of_values(1)
-                )
-                .arg(
-                    Arg::with_name("cmd")
-                        .required(true)
-                        .multiple(true)
-                )
-        )
-        .subcommand(
-            SubCommand::with_name("inspect")
-                .about("Read a sydbox core dump and write a sydbox profile")
-                .arg(
-                    Arg::with_name("input")
-                        .default_value("./sydcore")
-                        .required(true)
-                        .help("Path to sydbox core dump")
-                        .long("input")
-                        .short("i")
-                        .env("SHOEBOX"),
-                )
-                .arg(
-                    Arg::with_name("output")
-                        .default_value("./out.syd-1")
-                        .required(true)
-                        .help("Path to sydbox profile output")
-                        .long("output")
-                        .short("o")
-                        .env("SHOEBOX_OUT"),
-                )
-                .arg(
-                    Arg::with_name("limit")
-                        .default_value("7")
-                        .required(false)
-                        .help("Maximum number of path members before trim, 0 to disable")
-                        .long("limit")
-                        .short("l")
-                )
-        )
-        .get_matches();
-
-    if let Some(ref matches) = matches.subcommand_matches("box") {
-        let bin = matches.value_of("bin").unwrap();
-        let mut cmd: Vec::<&str> = matches.values_of("cmd").unwrap().collect();
-        let config: Option<Vec::<&str>> = matches.values_of("config").map(|values| values.collect());
-        let magic: Option<Vec::<&str>> = matches.values_of("magic").map(|values| values.collect());
-        std::process::exit(command_box(bin, &mut cmd, &config, &magic));
-    } else if let Some(ref matches) = matches.subcommand_matches("inspect") {
-        let value = matches.value_of("limit").unwrap();
-        let limit = match value.parse::<u8>() {
-            Ok(value) => value,
-            Err(error) => {
-                clap::Error::with_description(
-                    &format!("Invalid value `{}' for --limit: {}", value, error),
-                    clap::ErrorKind::InvalidValue).exit();
-            }
-        };
-        std::process::exit(command_inspect(
-            matches.value_of("input").unwrap(),
-            matches.value_of("output").unwrap(),
-            limit,
-        ));
-    } else {
-        clap::Error::with_description(
-            "No subcommand given, expected one of: inspect",
-            clap::ErrorKind::InvalidValue,
-        )
-        .exit();
-    }
 }
 
 fn parse_json_line(
