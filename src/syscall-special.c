@@ -192,18 +192,17 @@ static int do_execve(syd_process_t *current, bool at_func)
 		free(current->abspath);
 	current->abspath = abspath;
 
+	if (current->repr[0]) {
+		free(current->repr[0]);
+		current->repr[0] = NULL;
+	}
+	if (abspath)
+		current->repr[0] = xstrdup(abspath);
+	dump(DUMP_SYSENT, current);
+
 	switch (P_BOX(current)->mode.sandbox_exec) {
 	case SANDBOX_OFF:
 		return 0;
-	case SANDBOX_DUMP:
-		if (current->repr[0]) {
-			free(current->repr[0]);
-			current->repr[0] = NULL;
-		}
-		if (abspath)
-			current->repr[0] = xstrdup(abspath);
-		dump(DUMP_SYSENT, current);
-		break;
 	case SANDBOX_DENY:
 		if (acl_match_path(ACL_ACTION_WHITELIST,
 				   &P_BOX(current)->acl_exec,

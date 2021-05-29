@@ -39,7 +39,7 @@ int sys_bind(syd_process_t *current)
 	info.deny_errno = EADDRNOTAVAIL;
 	if (current->subcall == PINK_SOCKET_SUBCALL_BIND)
 		info.decode_socketcall = true;
-	if (sandbox_deny_network(current) || sandbox_dry_network(current))
+	if (sandbox_deny_network(current) || sydbox->permissive)
 		info.access_mode = ACCESS_WHITELIST;
 	else
 		info.access_mode = ACCESS_BLACKLIST;
@@ -144,7 +144,7 @@ static int sys_connect_or_sendto(syd_process_t *current, unsigned arg_index)
 		return 0;
 
 	init_sysinfo(&info);
-	if (sandbox_deny_network(current) || sandbox_dry_network(current))
+	if (sandbox_deny_network(current) || sydbox->permissive)
 		info.access_mode = ACCESS_WHITELIST;
 	else
 		info.access_mode = ACCESS_BLACKLIST;

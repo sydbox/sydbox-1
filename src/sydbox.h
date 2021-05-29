@@ -69,7 +69,6 @@ enum sandbox_mode {
 };
 static const char *const sandbox_mode_table[] = {
 	[SANDBOX_OFF] = "off",
-	[SANDBOX_DUMP] = "dump",
 	[SANDBOX_DENY] = "deny",
 	[SANDBOX_ALLOW] = "allow",
 };
@@ -480,6 +479,8 @@ struct sydbox {
 	int dump_fd;
 #endif
 
+	bool permissive;
+
 	/* Program invocation name (for the child) */
 	char *program_invocation_name;
 
@@ -575,7 +576,6 @@ extern sydbox_t *sydbox;
 #define sandbox_allow(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_ALLOW))
 #define sandbox_deny(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_DENY))
 #define sandbox_off(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_OFF))
-#define sandbox_dry(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_DUMP))
 
 #define sandbox_allow_exec(p) (sandbox_allow((p), exec))
 #define sandbox_allow_read(p) (sandbox_allow((p), read))
@@ -588,12 +588,6 @@ extern sydbox_t *sydbox;
 #define sandbox_off_write(p) (sandbox_off((p), write))
 #define sandbox_off_network(p) (sandbox_off((p), network))
 #define sandbox_off_file(p) (sandbox_off_exec((p)) && sandbox_off_read((p)) && sandbox_off_write((p)))
-
-#define sandbox_dry_exec(p) (sandbox_dry((p), exec))
-#define sandbox_dry_read(p) (sandbox_dry((p), read))
-#define sandbox_dry_write(p) (sandbox_dry((p), write))
-#define sandbox_dry_network(p) (sandbox_dry((p), network))
-#define sandbox_dry_file(p) (sandbox_dry_exec((p)) && sandbox_dry_read((p)) && sandbox_dry_write((p)))
 
 #define sandbox_deny_exec(p) (sandbox_deny((p), exec))
 #define sandbox_deny_read(p) (sandbox_deny((p), read))
