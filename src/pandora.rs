@@ -230,7 +230,7 @@ Repository: {}
             built_info::PKG_AUTHORS,
             built_info::PKG_LICENSE,
             built_info::PKG_HOMEPAGE,
-            built_info::PKG_REPOSITORY
+            built_info::PKG_REPOSITORY,
         ))
         .subcommand(
             SubCommand::with_name("box")
