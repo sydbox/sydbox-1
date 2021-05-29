@@ -1607,7 +1607,7 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "hd:vc:m:E:", long_options, &options_index)) != EOF) {
+	while ((opt = getopt_long(argc, argv, "hdvc:m:E:", long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
 			if (streq(long_options[options_index].name, "profile")) {
