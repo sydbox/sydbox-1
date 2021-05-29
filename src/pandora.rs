@@ -12,6 +12,28 @@ use serde::{Deserialize, Serialize};
 
 use pandora::built_info;
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
+#[repr(u8)]
+enum Sandbox {
+    Bind,
+    Connect,
+    Exec,
+    Write,
+    Read,
+}
+
+impl std::fmt::Display for Sandbox {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Bind => write!(f, "whitelist/network/bind"),
+            Self::Connect => write!(f, "whitelist/network/connect"),
+            Self::Write => write!(f, "whitelist/write"),
+            Self::Exec => write!(f, "whitelist/exec"),
+            Self::Read => write!(f, "#? whitelist/read"),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct ProcessStruct {
     // pid: u32,
@@ -86,7 +108,7 @@ fn command_box<'a>(bin: &'a str,
 fn command_inspect(input_path: &str, output_path: &str) -> i32 {
     let input = open_input(input_path);
     let mut output = open_output(output_path);
-    let mut magic = std::collections::HashSet::<String>::new();
+    let mut magic = std::collections::HashSet::<(Sandbox,String)>::new();
     let mut program_invocation_name = "?".to_string();
     let mut program_command_line = "?".to_string();
     let mut program_startup_time = UNIX_EPOCH;
@@ -166,11 +188,11 @@ core/match/no_wildcard:prefix
 
     /* Step 2: Print out magic entries */
     let mut list = Vec::from_iter(magic);
-    list.sort(); /* secondary alphabetical sort. */
-    list.sort_by_cached_key(|entry| magic_key(entry));
+    list.sort_by_key(|(_, argument)| argument.clone()); /* secondary alphabetical sort. */
+    list.sort_by_cached_key(|(sandbox, _)| sandbox.clone()); /* primary sandbox sort. */
     for entry in list {
-        writeln!(&mut output, "{}", entry).unwrap_or_else(|_| panic!(
-            "failed to print entry `{}' to output `{}'",
+        writeln!(&mut output, "{}+{}", entry.0, entry.1).unwrap_or_else(|_| panic!(
+            "failed to print entry `{:?}' to output `{}'",
             entry, output_path
         ));
     }
@@ -290,7 +312,7 @@ Repository: {}
 
 fn parse_json_line(
     serialized: &str,
-    magic: &mut std::collections::HashSet<String>,
+    magic: &mut std::collections::HashSet<(Sandbox,String)>,
 ) -> (Option<String>, Option<String>, Option<SystemTime>) {
     match serde_json::from_str(&serialized).unwrap_or_else(|_| panic!("failed to parse `{}'", serialized)) {
         Dump::Init {
@@ -315,7 +337,7 @@ fn parse_json_line(
             sysname,
             ..
         } if sysname == "connect" => {
-            magic.insert(format!("whitelist/network/connect+{}", repr[1]));
+            magic.insert((crate::Sandbox::Connect, repr[1].clone()));
         }
         Dump::SysEnt {
             event: 10,
@@ -323,7 +345,7 @@ fn parse_json_line(
             sysname,
             ..
         } if sysname == "execve" => {
-            magic.insert(format!("whitelist/exec+{}", repr[0]));
+            magic.insert((crate::Sandbox::Exec, repr[0].clone()));
         }
         Dump::SysEnt {
             event: 10,
@@ -370,15 +392,8 @@ fn parse_json_line(
                 if *idx == 0 || repr[*idx - 1].is_empty() {
                     continue;
                 }
-                let mut entry = format!(
-                    "whitelist/{}+{}",
-                    if may_write { "write" } else { "read" },
-                    repr[idx - 1]
-                );
-                if !may_write {
-                    entry = format!("#? {}", entry);
-                }
-                magic.insert(entry);
+                let sandbox = if may_write { Sandbox::Write } else { Sandbox::Read };
+                magic.insert((sandbox, repr[idx - 1].clone()));
             }
         }
         _ => {}
@@ -427,19 +442,5 @@ fn open_may_write(flags: u64) -> bool {
         libc::O_WRONLY | libc::O_RDWR => true,
         libc::O_RDONLY => flags & libc::O_CREAT != 0,
         _ => false,
-    }
-}
-
-fn magic_key(magic: &str) -> u32 {
-    if magic.contains("whitelist/read") {
-        100
-    } else if magic.contains("whitelist/exec") {
-        95
-    } else if magic.contains("whitelist/write") {
-        5
-    } else if magic.contains("whitelist/network") {
-        0
-    } else {
-        100
     }
 }
