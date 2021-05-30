@@ -1,6 +1,27 @@
 Syd's Box
 =========
-Sydbox is a [ptrace](http://man7.org/linux/man-pages/man2/ptrace.2.html) & [seccomp](http://man7.org/linux/man-pages/man2/seccomp.2.html) based sandbox for modern [Linux](https://kernel.org) machines to sandbox unwanted process access to filesystem and network resources.
+SydBox is a [ptrace](http://man7.org/linux/man-pages/man2/ptrace.2.html) & [seccomp](http://man7.org/linux/man-pages/man2/seccomp.2.html) based sandbox for modern [Linux](https://kernel.org) machines to sandbox unwanted process access to filesystem and network resources.
+
+SydBox uses autotools. To build, simply do:
+
+```
+$ ./configure --enable-seccomp
+$ make -j
+$ make -j check
+$ sudo make install
+```
+
+To use SydBox you need a recent [Linux](https://kernel.org) kernel, preferably 3.5
+or newer which has [secure computing mode](https://en.wikipedia.org/wiki/Seccomp)
+facility. Make sure you build SydBox with **--enable-seccomp**
+
+In addition, it is advised that you enable the kernel option
+`CONFIG_CROSS_MEMORY_ATTACH=y`.
+
+**NOTE:** Pandora is in its early stages of development. To be able to use pandora
+you should clone SydBox from [git](https://git.exherbo.org/git/sydbox-1.git).
+
+Browse at https://git.exherbo.org/sydbox-1.git/?h=inspect
 
 Pandora
 =======
