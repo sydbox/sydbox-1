@@ -299,4 +299,76 @@ test_expect_success PTRACE_SECCOMP 'read sandboxing for open with whitelist can 
         syd-open-static "$cdir"/readme
 '
 
+test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(path,O_ASYNC)' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    sydbox \
+        -m core/trace/use_seccomp:true \
+        -m core/restrict/file_control:false \
+        syd-open-static "$cdir"/readme async
+'
+
+test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(path,O_DIRECT)' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    sydbox \
+        -m core/trace/use_seccomp:true \
+        -m core/restrict/file_control:false \
+        syd-open-static "$cdir"/readme direct
+'
+
+test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(path,O_SYNC)' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    sydbox \
+        -m core/trace/use_seccomp:true \
+        -m core/restrict/file_control:false \
+        syd-open-static "$cdir"/readme sync
+'
+
+test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(path,O_ASYNC) with EPERM' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    test_expect_code 22 sydbox \
+        -m core/trace/use_seccomp:true \
+        -m core/restrict/file_control:true \
+        syd-open-static "$cdir"/readme async
+'
+
+test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(path,O_DIRECT) with EPERM' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    test_expect_code 22 sydbox \
+        -m core/trace/use_seccomp:true \
+        -m core/restrict/file_control:true \
+        syd-open-static "$cdir"/readme direct
+'
+
+test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(path,O_SYNC) with EPERM' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    test_expect_code 22 sydbox \
+        -m core/trace/use_seccomp:true \
+        -m core/restrict/file_control:true \
+        syd-open-static "$cdir"/readme sync
+'
+
 test_done
