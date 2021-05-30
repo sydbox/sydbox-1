@@ -126,6 +126,10 @@ fn command_profile<'b>(bin: &'b str, cmd: &Vec::<&'b str>, output_path: &'b str,
                             .arg("core/sandbox/exec:deny")
                             .arg("-m")
                             .arg("core/sandbox/network:deny")
+                            .arg("-m")
+                            .arg("core/restrict/file_control:0")
+                            .arg("-m")
+                            .arg("core/restrict/shared_memory_writable:0")
                             .arg("-d")
                             .arg(format!("{}", fd_rw))
                             .arg("--")
@@ -362,6 +366,11 @@ core/sandbox/read:off
 core/sandbox/write:deny
 core/sandbox/exec:deny
 core/sandbox/network:deny
+
+# Further restrictions for open(), fcntl() and mmap()
+# See sydbox manual page for further details
+core/restrict/file_control:false
+core/restrict/shared_memory_writable:false
 
 core/whitelist/per_process_directories:true
 core/whitelist/successful_bind:true
