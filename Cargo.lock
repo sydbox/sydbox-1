@@ -234,7 +234,7 @@ dependencies = [
 
 [[package]]
 name = "pandora_box"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "built",
  "chrono",
