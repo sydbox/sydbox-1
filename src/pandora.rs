@@ -299,7 +299,7 @@ Repository: {}
         ));
     } else {
         clap::Error::with_description(
-            "No subcommand given, expected one of: inspect",
+            "No subcommand given, expected one of: box, inspect, profile",
             clap::ErrorKind::InvalidValue,
         )
         .exit();
