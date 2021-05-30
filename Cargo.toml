@@ -1,5 +1,5 @@
 [package]
-name = "pandora"
+name = "pandora_box"
 version = "0.1.0"
 authors = ["Alï Polatel <alip@exherbo.org>"]
 edition = "2018"
