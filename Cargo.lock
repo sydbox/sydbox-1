@@ -233,7 +233,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora"
+name = "pandora_box"
 version = "0.1.0"
 dependencies = [
  "built",
