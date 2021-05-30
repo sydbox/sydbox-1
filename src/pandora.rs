@@ -20,7 +20,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use clap::{App, Arg, SubCommand};
 use serde::{Deserialize, Serialize};
 
-use pandora::built_info;
+use pandora_box::built_info;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
