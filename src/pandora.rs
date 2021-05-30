@@ -428,7 +428,12 @@ Repository: {}
             .arg(shell)
             .arg("-l")
             .spawn()
-            .expect("sydbox command failed to start");
+            .unwrap_or_else(|_| {
+                Command::new("pandora")
+                    .arg("-h")
+                    .spawn()
+                    .expect("Neither sydbox nor pandora not in PATH")
+            });
         child.wait().expect("failed to wait for shell");
     }
 }
