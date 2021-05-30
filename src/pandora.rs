@@ -409,6 +409,44 @@ core/trace/use_toolong_hack:true
 core/match/case_sensitive:true
 core/match/no_wildcard:prefix
 
+# Safe defaults for system paths
+whitelist/write+/dev/stdout
+whitelist/write+/dev/stderr
+whitelist/write+/dev/zero
+whitelist/write+/dev/null
+whitelist/write+/dev/full
+whitelist/write+/dev/console
+whitelist/write+/dev/random
+whitelist/write+/dev/urandom
+whitelist/write+/dev/ptmx
+whitelist/write+/dev/fd/***
+whitelist/write+/dev/tty*
+whitelist/write+/dev/pty*
+whitelist/write+/dev/tts
+whitelist/write+/dev/pts
+whitelist/write+/dev/pts/***
+whitelist/write+/dev/shm/***
+whitelist/write+/selinux/context/***
+whitelist/write+/proc/self/attr/***
+whitelist/write+/proc/self/fd/***
+whitelist/write+/proc/self/task/***
+whitelist/write+/tmp/***
+whitelist/write+/var/tmp/***
+
+# Safe defaults for local network
+# This allows bind to all loopback ports.
+# Each successful bind is automatically whitelisted for connect with
+# core/whitelist/successful_bind:true
+whitelist/network/bind+LOOPBACK@0
+whitelist/network/bind+LOOPBACK@1024-65535
+whitelist/network/bind+LOOPBACK6@0
+whitelist/network/bind+LOOPBACK6@1024-65535
+
+whitelist/network/connect+unix:/var/run/nscd/socket
+whitelist/network/connect+unix:/run/nscd/socket
+whitelist/network/connect+unix:/var/lib/sss/pipes/nss
+###
+
 ###
 # Magic entries generated for:
 # Program: `{}'
