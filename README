@@ -10,7 +10,12 @@ facility. Make sure you build SydBox with **--enable-seccomp** given to
 `./configure`. SydBox works fine without it but it is going to be noticably slower
 and less secure. See the [SydBox manual
 page](https://dev.exherbo.org/~alip/sydbox/sydbox.html) on more information about
-secure computing mode protections.
+secure computing mode protections. The parts which are of particular interest to
+read are:
+
+- [core/trace/use_seccomp](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-trace-use_seccomp),
+- [core/restrict/file_control](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-restrict-fcntl)
+- [core/restrict/shared_memory_writable](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-restrict-shm-wr)
 
 **NOTE**: [Secure computing mode](https://en.wikipedia.org/wiki/Seccomp) only works
 on `i386` and `x86_64` architectures.
@@ -75,7 +80,7 @@ Enable, disable additional options or turn paths into wildcards such as
 `/home/***` to allow home and everything beyond /home
 the usual glob characters, `?, *` are supported.
 
-Check [SydBox manual page](https://dev.exherbo.org/~alip/sydbox/sydbox.html) to
+Check [SydBox manual page](https://dev.exherbo.org/~alip/sydbox/sydbox.html#pattern-matching) to
 learn more on how **PATTERN MATCHING** works.
 
 Enable, disable additional network addresses unless you're using a **SOCKS5 proxy**
@@ -85,7 +90,7 @@ which does remote DNS lookups, e.g:
 
 for [Tor](https://www.torproject.org/).
 
-Check [SydBox manual page](https://dev.exherbo.org/~alip/sydbox/sydbox.html) to
+Check [SydBox manual page](https://dev.exherbo.org/~alip/sydbox/sydbox.html#address-matching) to
 learn more on how **ADDRESS MATCHING** works.
 
 ```
@@ -93,8 +98,8 @@ $ pandora box -c out.syd-1 firefox
 ```
 
 - Run the browser under secure computing with full protection.
-- Check [SydBox manual page](https://dev.exherbo.org/~alip/sydbox/sydbox.html) for a
-  list of system call protections.
+- Check [SydBox manual page for a list of system call
+  protections.](https://dev.exherbo.org/~alip/sydbox/sydbox.html#sandboxing)
 - Check the console for possible access violations over time.
 
 - *Edit the profile file as necessary and update restrictions.*
