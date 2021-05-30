@@ -73,10 +73,12 @@ enum Dump {
     },
 }
 
-fn command_box<'a>(bin: &'a str,
-               cmd: &mut Vec::<&'a str>,
-               config: &Option<Vec::<&'a str>>,
-               magic: &Option<Vec::<&'a str>>) -> i32 {
+fn command_box<'a>(
+    bin: &'a str,
+    cmd: &mut Vec<&'a str>,
+    config: &Option<Vec<&'a str>>,
+    magic: &Option<Vec<&'a str>>,
+) -> i32 {
     cmd.insert(0, "--");
     if let Some(ref magic) = magic {
         for item in magic.iter() {
@@ -92,22 +94,30 @@ fn command_box<'a>(bin: &'a str,
     }
     cmd.insert(0, bin);
     // eprintln!("executing `{:?}'", cmd);
-    let cmdline: Vec::<CString> = cmd.iter().map(|c| CString::new(c.as_bytes()).unwrap()).collect();
+    let cmdline: Vec<CString> = cmd
+        .iter()
+        .map(|c| CString::new(c.as_bytes()).unwrap())
+        .collect();
 
     match nix::unistd::execvp(&cmdline[0], &cmdline) {
         Ok(_) => 0,
         Err(nix::Error::Sys(errno)) => {
             eprintln!("error executing `{:?}': {}", cmdline, errno);
             1
-        },
+        }
         Err(error) => {
             eprintln!("error executing `{:?}': {:?}", cmdline, error);
             1
-        },
+        }
     }
 }
 
-fn command_profile<'b>(bin: &'b str, cmd: &Vec::<&'b str>, output_path: &'b str, path_limit: u8) -> i32 {
+fn command_profile<'b>(
+    bin: &'b str,
+    cmd: &Vec<&'b str>,
+    output_path: &'b str,
+    path_limit: u8,
+) -> i32 {
     let (fd_rd, fd_rw) = match nix::unistd::pipe() {
         Ok((fd_rd, fd_rw)) => (fd_rd, fd_rw),
         Err(error) => {
@@ -117,28 +127,30 @@ fn command_profile<'b>(bin: &'b str, cmd: &Vec::<&'b str>, output_path: &'b str,
     };
 
     let mut child = Command::new(bin)
-                            .arg("--dry-run")
-                            .arg("-m")
-                            .arg("core/sandbox/read:deny")
-                            .arg("-m")
-                            .arg("core/sandbox/write:deny")
-                            .arg("-m")
-                            .arg("core/sandbox/exec:deny")
-                            .arg("-m")
-                            .arg("core/sandbox/network:deny")
-                            .arg("-m")
-                            .arg("core/restrict/file_control:0")
-                            .arg("-m")
-                            .arg("core/restrict/shared_memory_writable:0")
-                            .arg("-d")
-                            .arg(format!("{}", fd_rw))
-                            .arg("--")
-                            .args(cmd)
-                            .spawn()
-                            .expect("sydbox command failed to start");
+        .arg("--dry-run")
+        .arg("-m")
+        .arg("core/sandbox/read:deny")
+        .arg("-m")
+        .arg("core/sandbox/write:deny")
+        .arg("-m")
+        .arg("core/sandbox/exec:deny")
+        .arg("-m")
+        .arg("core/sandbox/network:deny")
+        .arg("-m")
+        .arg("core/restrict/file_control:0")
+        .arg("-m")
+        .arg("core/restrict/shared_memory_writable:0")
+        .arg("-d")
+        .arg(format!("{}", fd_rw))
+        .arg("--")
+        .args(cmd)
+        .spawn()
+        .expect("sydbox command failed to start");
 
     nix::unistd::close(fd_rw).expect("failed to close write end of pipe");
-    let input = Box::new(std::io::BufReader::new(unsafe { std::fs::File::from_raw_fd(fd_rd) }));
+    let input = Box::new(std::io::BufReader::new(unsafe {
+        std::fs::File::from_raw_fd(fd_rd)
+    }));
     let r = do_inspect(input, output_path, path_limit);
 
     child.wait().expect("failed to wait for sydbox");
@@ -192,7 +204,7 @@ Repository: {}
                         .help("path spec to the configuration file, may be repeated")
                         .short("c")
                         .multiple(true)
-                        .number_of_values(1)
+                        .number_of_values(1),
                 )
                 .arg(
                     Arg::with_name("magic")
@@ -200,13 +212,9 @@ Repository: {}
                         .help("run a magic command during init, may be repeated")
                         .short("m")
                         .multiple(true)
-                        .number_of_values(1)
+                        .number_of_values(1),
                 )
-                .arg(
-                    Arg::with_name("cmd")
-                        .required(true)
-                        .multiple(true)
-                )
+                .arg(Arg::with_name("cmd").required(true).multiple(true)),
         )
         .subcommand(
             SubCommand::with_name("profile")
@@ -235,13 +243,9 @@ Repository: {}
                         .required(false)
                         .help("Maximum number of path members before trim, 0 to disable")
                         .long("limit")
-                        .short("l")
+                        .short("l"),
                 )
-                .arg(
-                    Arg::with_name("cmd")
-                        .required(true)
-                        .multiple(true)
-                )
+                .arg(Arg::with_name("cmd").required(true).multiple(true)),
         )
         .subcommand(
             SubCommand::with_name("inspect")
@@ -270,28 +274,30 @@ Repository: {}
                         .required(false)
                         .help("Maximum number of path members before trim, 0 to disable")
                         .long("limit")
-                        .short("l")
-                )
+                        .short("l"),
+                ),
         )
         .get_matches();
 
     if let Some(ref matches) = matches.subcommand_matches("box") {
         let bin = matches.value_of("bin").unwrap();
-        let mut cmd: Vec::<&str> = matches.values_of("cmd").unwrap().collect();
-        let config: Option<Vec::<&str>> = matches.values_of("config").map(|values| values.collect());
-        let magic: Option<Vec::<&str>> = matches.values_of("magic").map(|values| values.collect());
+        let mut cmd: Vec<&str> = matches.values_of("cmd").unwrap().collect();
+        let config: Option<Vec<&str>> = matches.values_of("config").map(|values| values.collect());
+        let magic: Option<Vec<&str>> = matches.values_of("magic").map(|values| values.collect());
         std::process::exit(command_box(bin, &mut cmd, &config, &magic));
     } else if let Some(ref matches) = matches.subcommand_matches("profile") {
         let bin = matches.value_of("bin").unwrap();
         let out = matches.value_of("output").unwrap();
-        let mut cmd: Vec::<&str> = matches.values_of("cmd").unwrap().collect();
+        let mut cmd: Vec<&str> = matches.values_of("cmd").unwrap().collect();
         let value = matches.value_of("limit").unwrap();
         let limit = match value.parse::<u8>() {
             Ok(value) => value,
             Err(error) => {
                 clap::Error::with_description(
                     &format!("Invalid value `{}' for --limit: {}", value, error),
-                    clap::ErrorKind::InvalidValue).exit();
+                    clap::ErrorKind::InvalidValue,
+                )
+                .exit();
             }
         };
         std::process::exit(command_profile(bin, &mut cmd, out, limit));
@@ -302,7 +308,9 @@ Repository: {}
             Err(error) => {
                 clap::Error::with_description(
                     &format!("Invalid value `{}' for --limit: {}", value, error),
-                    clap::ErrorKind::InvalidValue).exit();
+                    clap::ErrorKind::InvalidValue,
+                )
+                .exit();
             }
         };
         std::process::exit(command_inspect(
@@ -321,7 +329,7 @@ Repository: {}
 
 fn do_inspect(input: Box<dyn std::io::BufRead>, output_path: &str, path_limit: u8) -> i32 {
     let mut output = open_output(output_path);
-    let mut magic = std::collections::HashSet::<(Sandbox,String)>::new();
+    let mut magic = std::collections::HashSet::<(Sandbox, String)>::new();
     let mut program_invocation_name = "?".to_string();
     let mut program_command_line = "?".to_string();
     let mut program_startup_time = UNIX_EPOCH;
@@ -400,39 +408,38 @@ core/match/no_wildcard:prefix
         program_invocation_name,
         program_command_line
     )
-    .unwrap_or_else(|_|
-        panic!("failed to print header to output `{}'", output_path
-    ));
+    .unwrap_or_else(|_| panic!("failed to print header to output `{}'", output_path));
 
     /* Step 2: Print out magic entries */
     let mut list = Vec::from_iter(magic);
     list.sort_by_key(|(_, argument)| argument.clone()); /* secondary alphabetical sort. */
     list.sort_by_cached_key(|(sandbox, _)| sandbox.clone()); /* primary sandbox sort. */
     for entry in list {
-        writeln!(&mut output, "{}+{}", entry.0, entry.1).unwrap_or_else(|_| panic!(
-            "failed to print entry `{:?}' to output `{}'",
-            entry, output_path
-        ));
+        writeln!(&mut output, "{}+{}", entry.0, entry.1).unwrap_or_else(|_| {
+            panic!(
+                "failed to print entry `{:?}' to output `{}'",
+                entry, output_path
+            )
+        });
     }
 
     writeln!(
         &mut output,
         "\n# Lock configuration\ncore/trace/magic_lock:on"
     )
-    .unwrap_or_else(|_| panic!(
-        "failed to lock configuration for output `{}'",
-        output_path
-    ));
+    .unwrap_or_else(|_| panic!("failed to lock configuration for output `{}'", output_path));
 
     0
 }
 
 fn parse_json_line(
     serialized: &str,
-    magic: &mut std::collections::HashSet<(Sandbox,String)>,
+    magic: &mut std::collections::HashSet<(Sandbox, String)>,
     path_limit: u8,
 ) -> (Option<String>, Option<String>, Option<SystemTime>) {
-    match serde_json::from_str(&serialized).unwrap_or_else(|_| panic!("failed to parse `{}'", serialized)) {
+    match serde_json::from_str(&serialized)
+        .unwrap_or_else(|_| panic!("failed to parse `{}'", serialized))
+    {
         Dump::Init {
             id: 0,
             shoebox: 1,
@@ -443,11 +450,7 @@ fn parse_json_line(
             return (Some(name), None, None);
         }
         Dump::StartUp { id: 1, cmd, ts, .. } => {
-            return (
-                None,
-                Some(cmd),
-                Some(UNIX_EPOCH + Duration::from_secs(ts)),
-            );
+            return (None, Some(cmd), Some(UNIX_EPOCH + Duration::from_secs(ts)));
         }
         Dump::SysEnt {
             event: 10,
@@ -526,7 +529,11 @@ fn parse_json_line(
                 if *idx == 0 || repr[*idx - 1].is_empty() {
                     continue;
                 }
-                let sandbox = if may_write { Sandbox::Write } else { Sandbox::Read };
+                let sandbox = if may_write {
+                    Sandbox::Write
+                } else {
+                    Sandbox::Read
+                };
                 let argument = trim_path(&filter_proc(&repr[idx - 1]), path_limit);
                 if argument != "" {
                     magic.insert((sandbox, argument));
