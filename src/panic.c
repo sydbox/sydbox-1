@@ -185,9 +185,11 @@ int violation(syd_process_t *current, const char *fmt, ...)
 
 	sydbox->violation = true;
 
-	va_start(ap, fmt);
-	report(current, fmt, ap);
-	va_end(ap);
+	if (!sydbox->permissive) {
+		va_start(ap, fmt);
+		report(current, fmt, ap);
+		va_end(ap);
+	}
 
 	switch (sydbox->config.violation_decision) {
 	case VIOLATION_NOOP:
