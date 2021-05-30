@@ -162,6 +162,10 @@ fn command_profile<'b>(
     let r = do_inspect(input, output_path, path_limit);
 
     child.wait().expect("failed to wait for sydbox");
+    eprintln!("success writing output to `{}' dump", output_path);
+    eprintln!("Edit the file ẁith your browser as necessary.");
+    eprintln!("Then use 'pandora box -c \"{}\" <command>'", output_path);
+    eprintln!("To run the command under SydBox.");
 
     r
 }
