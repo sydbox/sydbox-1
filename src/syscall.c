@@ -482,8 +482,8 @@ int seccomp_apply(int abi)
 				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_TRACE|(sysnum & SECCOMP_RET_DATA)),
 				BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_nr),
 			};
-			for (int i = 0; i < 6; i++)
-				f[idx++] = item[i];
+			for (int j = 0; i < 6; j++)
+				f[idx++] = item[j];
 		} else {
 			struct sock_filter item[] = {
 				BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 1),
