@@ -44,7 +44,7 @@ impl std::fmt::Display for Sandbox {
     }
 }
 
-const PALUDIS: &'static str = "
+const PALUDIS: &str = "
 core/sandbox/exec:off
 core/sandbox/read:off
 core/sandbox/write:deny
@@ -403,7 +403,7 @@ Repository: {}
         };
 
         let mut paludis = Vec::new();
-        for magic in PALUDIS.split('\n').filter(|&magic| magic != "") {
+        for magic in PALUDIS.split('\n').filter(|&magic| !magic.is_empty()) {
             paludis.push("-m");
             paludis.push(magic);
         }
@@ -557,6 +557,7 @@ whitelist/network/connect+unix:/var/lib/sss/pipes/nss
     /* Step 2: Print out magic entries */
     let mut list = Vec::from_iter(magic);
     list.sort_by_key(|(_, argument)| argument.clone()); /* secondary alphabetical sort. */
+    #[allow(clippy::clone_on_copy)]
     list.sort_by_cached_key(|(sandbox, _)| sandbox.clone()); /* primary sandbox sort. */
     for entry in list {
         writeln!(&mut output, "{}+{}", entry.0, entry.1).unwrap_or_else(|_| {
