@@ -44,6 +44,66 @@ impl std::fmt::Display for Sandbox {
     }
 }
 
+const PALUDIS: &'static str = "
+core/sandbox/exec:off
+core/sandbox/read:off
+core/sandbox/write:deny
+core/sandbox/network:deny
+
+core/whitelist/per_process_directories:true
+core/whitelist/successful_bind:true
+core/whitelist/unsupported_socket_families:true
+
+core/violation/decision:deny
+core/violation/exit_code:-1
+core/violation/raise_fail:false
+core/violation/raise_safe:false
+
+core/trace/follow_fork:true
+core/trace/magic_lock:off
+core/trace/use_seccomp:true
+core/trace/use_seize:true
+core/trace/use_toolong_hack:true
+
+core/restrict/file_control:false
+core/restrict/shared_memory_writable:false
+
+core/match/case_sensitive:true
+core/match/no_wildcard:prefix
+
+whitelist/write+/dev/stdout
+whitelist/write+/dev/stderr
+whitelist/write+/dev/zero
+whitelist/write+/dev/null
+whitelist/write+/dev/full
+whitelist/write+/dev/console
+whitelist/write+/dev/random
+whitelist/write+/dev/urandom
+whitelist/write+/dev/ptmx
+whitelist/write+/dev/fd/***
+whitelist/write+/dev/tty*
+whitelist/write+/dev/pty*
+whitelist/write+/dev/tts
+whitelist/write+/dev/pts
+whitelist/write+/dev/shm/***
+whitelist/write+/selinux/context/***
+whitelist/write+/proc/self/attr/***
+whitelist/write+/proc/self/fd/***
+whitelist/write+/proc/self/task/***
+whitelist/write+/tmp/***
+whitelist/write+/var/tmp/***
+whitelist/write+/var/cache/***
+
+whitelist/network/bind+LOOPBACK@0
+whitelist/network/bind+LOOPBACK@1024-65535
+whitelist/network/bind+LOOPBACK6@0
+whitelist/network/bind+LOOPBACK6@1024-65535
+
+whitelist/network/connect+unix:/var/run/nscd/socket
+whitelist/network/connect+unix:/run/nscd/socket
+whitelist/network/connect+unix:/var/lib/sss/pipes/nss
+";
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct ProcessStruct {
     // pid: u32,
@@ -182,6 +242,17 @@ fn main() {
         .about(built_info::PKG_DESCRIPTION)
         .after_help(&*format!(
             "\
+If no subcommands are given, Pandora executes a shell with the argument `-l'.
+To figure out the shell first the SHELL environment variable is checked.
+If this is not set, the default shell is `/bin/sh'.
+
+In login shell mode, if the file `/etc/pandora.syd-1' exists,
+Pandora will tell SydBox to use this file as configuration.
+
+In login shell mode, SydBox uses the Paludis profile as the default set of configuration values.
+To see this default set of configuration values and white lists of system paths, check:
+https://git.exherbo.org/sydbox-1.git/plain/data/paludis.syd-1
+
 Hey you, out there beyond the wall,
 Breaking bottles in the hall,
 Can you help me?
@@ -336,6 +407,12 @@ Repository: {}
             Err(_) => "/bin/sh".to_string()
         };
 
+        let mut paludis = Vec::new();
+        for magic in PALUDIS.split('\n').filter(|&magic| magic != "") {
+            paludis.push("-m");
+            paludis.push(magic);
+        }
+
         let rcname = "/etc/pandora.syd-1";
         let rc = std::path::Path::new(rcname);
         let mut rcargs = Vec::new();
@@ -345,6 +422,7 @@ Repository: {}
         }
 
         let mut child = Command::new("sydbox")
+            .args(&paludis)
             .args(&rcargs)
             .arg("--")
             .arg(shell)
