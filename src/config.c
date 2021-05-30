@@ -39,7 +39,11 @@ void config_init(void)
 	/* set sane defaults for configuration */
 	sydbox->config.follow_fork = true;
 	sydbox->config.exit_kill = false;
+#if SYDBOX_HAVE_SECCOMP
+	sydbox->config.use_seccomp = true;
+#else
 	sydbox->config.use_seccomp = false;
+#endif
 	sydbox->config.use_seize = true;
 	sydbox->config.use_toolong_hack = false;
 	sydbox->config.whitelist_per_process_directories = true;

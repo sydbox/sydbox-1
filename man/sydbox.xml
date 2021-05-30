@@ -596,7 +596,7 @@
           <term><option id="core-trace-use_seccomp">core/trace/use_seccomp</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
-            <para>default: <varname>false</varname></para>
+            <para>default: <varname>true</varname> if <option>--enable-seccomp</option></para>
             <para>
               A boolean specifying whether seccomp user-mode filters should be used. This works only on Linux-3.5 or
               newer and sydbox must be compiled with the <option>--enable-seccomp</option> configure option.
