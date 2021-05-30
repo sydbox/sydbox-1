@@ -30,43 +30,59 @@ Pandora's Box: A helper for SydBox, a ptrace & seccomp based sandbox to make san
 This makes it easy for the end user to use secure computing for practical purposes.
 
 Simple Example:
+
+Step 1: Inspect and gather data about the given process.
+
+In this case, we're going to try with
+[https://www.mozilla.org/de/firefox/new/](Firefox).
+
 ```
-# Step 1: Inspect and gather data about the given process.
-# In this case, we're going to try with
-# Firefox, https://www.mozilla.org/de/firefox/new/
 $ pandora profile firefox
-# browse using firefox for a while, let pandora gather data.
-# the browser is running under a tracer so it'll run noticably slower.
-# use --bin /path/to/sydbox, if sydbox is not in PATH
-# use --output firefox.syd-1 to specify an alternative output path for profile.
-$ $EDITOR out.syd-1
-# Inspect what the browser has been doing.
-# Enable, disable additional options or turn paths into wildcards such as
-# /home/*** to allow home and everything beyond /home
-# the usual glob characters, ?, * are supported.
-# Check sydbox manual page to learn more on how pattern matching works.
-# Enable, disable additional network addresses unless you're using a SOCKS5 proxy
-# which does remote DNS lookups, e.g:
-#
-# whitelist/network/connect+inet:127.0.0.1@9050
-#
-# for Tor, https://www.torproject.org/
-# Check sydbox manual page to learn more on how address matching works.
-#
-$ pandora box -c out.syd-1 firefox
-# Run the browser under secure computing with full protection.
-# Check sydbox manual page for a list of system call protections.
-# Check the console for possible access violations over time.
-# Edit the profile file as necessary and update restrictions.
-#
-# Share your profile with other people and help others use secure computing!
-#
 ```
+
+Browse using firefox for a while, let pandora gather data. The browser is running
+under a tracer so it'll run noticably slower.
+
+- use --bin /path/to/sydbox, if sydbox is not in PATH
+- use --output firefox.syd-1 to specify an alternative output path for profile.
+
+```
+$ $EDITOR out.syd-1
+```
+
+Inspect what the browser has been doing.
+Enable, disable additional options or turn paths into wildcards such as
+`/home/***` to allow home and everything beyond /home
+the usual glob characters, `?, *` are supported.
+
+Check [SydBox manual page](https://dev.exherbo.org/~alip/sydbox/sydbox.html) to
+learn more on how **PATTERN MATCHING** works.
+
+Enable, disable additional network addresses unless you're using a **SOCKS5 proxy**
+which does remote DNS lookups, e.g:
+
+***whitelist/network/connect+inet:127.0.0.1@9050***
+
+for [Tor](https://www.torproject.org/)
+
+Check [SydBox manual page](https://dev.exherbo.org/~alip/sydbox/sydbox.html) to
+learn more on how **ADDRESS MATCHING** works.
+
+```
+$ pandora box -c out.syd-1 firefox
+```
+
+- Run the browser under secure computing with full protection.
+- Check [SydBox manual page](https://dev.exherbo.org/~alip/sydbox/sydbox.html) for a
+  list of system call protections.
+- Check the console for possible access violations over time.
+- *Edit the profile file as necessary and update restrictions.*
+- **Share your profile with other people and help others use secure computing!**
 
 Documentation
 =============
 
-Read the fine manual of [sydbox](https://dev.exherbo.org/~alip/sydbox/sydbox.html) and [sydfmt](https://dev.exherbo.org/~alip/sydbox/sydbox.html)
+Read the fine manual of [SydBox](https://dev.exherbo.org/~alip/sydbox/sydbox.html) and [SydFmt](https://dev.exherbo.org/~alip/sydbox/sydbox.html)
 
 Blog Posts
 ==========
