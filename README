@@ -19,7 +19,8 @@ In addition, it is advised that you enable the kernel option
 `CONFIG_CROSS_MEMORY_ATTACH=y`.
 
 **NOTE:** Pandora is in its early stages of development. To be able to use pandora
-you should clone SydBox from [git](https://git.exherbo.org/git/sydbox-1.git).
+you should clone SydBox from [git](https://git.exherbo.org/git/sydbox-1.git) and
+build SydBox from the **inspect** branch.
 
 Browse at https://git.exherbo.org/sydbox-1.git/?h=inspect
 
