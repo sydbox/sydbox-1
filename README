@@ -24,6 +24,19 @@ build SydBox from the **inspect** branch.
 
 Browse at https://git.exherbo.org/sydbox-1.git/?h=inspect
 
+You can check the build options using `sydbox --version`:
+
+```
+$ sydbox --version
+sydbox-1.1.0-pandora-0.0.3-1-gc96f237 (pinktrace-0.9.5 git:v0.9.5-1-ge6ac27f)
+Options: dump:yes seccomp:yes ipv6:yes netlink:yes
+```
+
+- **dump:yes** with the correct format expected by Pandora is on the **inspect** branch only.
+- **seccomp:yes** indicates **--enable-seccomp** was passed on build.
+- **ipv6:yes** **IPv6 Network Sandboxing** is enabled.
+
+
 SydBox requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/api/c/)
 
 - Git: https://git.exherbo.org/git/pinktrace-1.git
