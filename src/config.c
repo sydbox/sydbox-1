@@ -40,7 +40,7 @@ void config_init(void)
 	sydbox->config.follow_fork = true;
 	sydbox->config.exit_kill = false;
 	sydbox->config.use_seccomp = false;
-	sydbox->config.use_seize = false;
+	sydbox->config.use_seize = true;
 	sydbox->config.use_toolong_hack = false;
 	sydbox->config.whitelist_per_process_directories = true;
 	sydbox->config.whitelist_successful_bind = true;

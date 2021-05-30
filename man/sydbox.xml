@@ -608,7 +608,7 @@
           <term><option id="core-trace-use_seize">core/trace/use_seize</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
-            <para>default: <varname>false</varname></para>
+            <para>default: <varname>true</varname></para>
             <para>
               A boolean specifying whether sydbox should use the new ptrace requests <constant>PTRACE_SEIZE</constant>
               and <constant>PTRACE_INTERRUPT</constant> to trace processes.
