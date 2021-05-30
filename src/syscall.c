@@ -465,13 +465,33 @@ int seccomp_apply(int abi)
 		}
 		if (sysnum == -1)
 			continue;
-		n += 2;
-		struct sock_filter item[] = {
-			BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 1),
-			BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_TRACE|(sysnum & SECCOMP_RET_DATA))
-		};
-		f[idx++] = item[0];
-		f[idx++] = item[1];
+		sandbox_t *box = box_current(NULL);
+		bool open_filter = box->mode.sandbox_read == SANDBOX_OFF;
+		int open_flag = syscall_entries[i].open_flag;
+		if (open_filter && open_flag)
+			n += 6;
+		else
+			n += 2;
+		//f = xrealloc(f, sizeof(struct sock_filter) * n);
+		if (open_filter && open_flag) {
+			struct sock_filter item[] = {
+				BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 4),
+				BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(open_flag)),
+				BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, (O_WRONLY|O_RDWR|O_CREAT), 1, 0),
+				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
+				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_TRACE|(sysnum & SECCOMP_RET_DATA)),
+				BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_nr),
+			};
+			for (int i = 0; i < 6; i++)
+				f[idx++] = item[i];
+		} else {
+			struct sock_filter item[] = {
+				BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 1),
+				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_TRACE|(sysnum & SECCOMP_RET_DATA))
+			};
+			f[idx++] = item[0];
+			f[idx++] = item[1];
+		}
 	}
 	n += ELEMENTSOF(footer);
 	//f = xrealloc(f, sizeof(struct sock_filter) * n);
