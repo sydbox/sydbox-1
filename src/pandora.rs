@@ -117,6 +117,15 @@ fn command_profile<'b>(bin: &'b str, cmd: &Vec::<&'b str>, output_path: &'b str,
     };
 
     let mut child = Command::new(bin)
+                            .arg("--dry-run")
+                            .arg("-m")
+                            .arg("core/sandbox/read:deny")
+                            .arg("-m")
+                            .arg("core/sandbox/write:deny")
+                            .arg("-m")
+                            .arg("core/sandbox/exec:deny")
+                            .arg("-m")
+                            .arg("core/sandbox/network:deny")
                             .arg("-d")
                             .arg(format!("{}", fd_rw))
                             .arg("--")
