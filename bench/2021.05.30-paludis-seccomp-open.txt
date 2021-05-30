@@ -1,0 +1,26 @@
+# BENCHMARK
+
+~~~
+commit 8bc285f524207735ec07aa2ffe44d627f4f19b49 (origin/master, origin/HEAD)
+Author: Alï Polatel <alip@exherbo.org>
+Date:   Sun May 30 11:48:25 2021 +0200
+
+    improve seccomp for read only open calls
+~~~
+
+$ time cave resolve paludis -zx1
+
+Before:
+real    4m15.892s
+user    20m56.826s
+sys     4m34.230s
+
+After:
+real    4m12.846s
+user    20m58.021s
+sys     4m24.800s
+
+PALUDIS_DO_NOTHING_SANDBOXY=1
+real    3m13.227s
+user    18m40.328s
+sys     2m23.353s
