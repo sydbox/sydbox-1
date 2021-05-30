@@ -2,18 +2,18 @@ Syd's Box
 =========
 SydBox is a [ptrace](http://man7.org/linux/man-pages/man2/ptrace.2.html) & [seccomp](http://man7.org/linux/man-pages/man2/seccomp.2.html) based sandbox for modern [Linux](https://kernel.org) machines to sandbox unwanted process access to filesystem and network resources.
 
-SydBox uses autotools. To build, simply do:
-
-```
-$ ./configure --enable-seccomp
-$ make -j
-$ make -j check
-$ sudo make install
-```
+SydBox uses autotools. To build, simply do `./configure`, `make` and `make install`.
 
 To use SydBox you need a recent [Linux](https://kernel.org) kernel, preferably 3.5
 or newer which has [secure computing mode](https://en.wikipedia.org/wiki/Seccomp)
-facility. Make sure you build SydBox with **--enable-seccomp**
+facility. Make sure you build SydBox with **--enable-seccomp** given to
+`./configure`. SydBox works fine without it but it is going to be noticably slower
+and less secure. See the [SydBox manual
+page](https://dev.exherbo.org/~alip/sydbox/sydbox.html) on more information about
+secure computing mode protections.
+
+**NOTE**: [Secure computing mode](https://en.wikipedia.org/wiki/Seccomp) only works
+on `i386` and `x86_64` architectures.
 
 In addition, it is advised that you enable the kernel option
 `CONFIG_CROSS_MEMORY_ATTACH=y`.
@@ -23,6 +23,13 @@ you should clone SydBox from [git](https://git.exherbo.org/git/sydbox-1.git) and
 build SydBox from the **inspect** branch.
 
 Browse at https://git.exherbo.org/sydbox-1.git/?h=inspect
+
+SydBox requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/api/c/)
+
+- Git: https://git.exherbo.org/git/pinktrace-1.git
+- Lightweight [ptrace](http://linux.die.net/man/2/ptrace) wrapper library
+  providing a robust API for tracing processes.
+- An extensive API reference is available [here](http://dev.exherbo.org/~alip/pinktrace/api/c/).
 
 Pandora
 =======
