@@ -83,7 +83,7 @@ which does remote DNS lookups, e.g:
 
 ***whitelist/network/connect+inet:127.0.0.1@9050***
 
-for [Tor](https://www.torproject.org/)
+for [Tor](https://www.torproject.org/).
 
 Check [SydBox manual page](https://dev.exherbo.org/~alip/sydbox/sydbox.html) to
 learn more on how **ADDRESS MATCHING** works.
@@ -127,12 +127,14 @@ whitelist/connect/network+unix:/var/run/pulse/native
 Note, sometimes you may have to add a symbolic link rather than the file it is
 pointing to, or vice versa, or both.
 
-**Last but not least, share your profile with other people and help others use secure computing!**
+Last but not least,
+
+**Share your profile with other people and help others use secure computing!**
 
 Documentation
 =============
 
-Read the fine manual of [SydBox](https://dev.exherbo.org/~alip/sydbox/sydbox.html) and [SydFmt](https://dev.exherbo.org/~alip/sydbox/sydbox.html)
+Read the fine manual of [SydBox](https://dev.exherbo.org/~alip/sydbox/sydbox.html) and [SydFmt](https://dev.exherbo.org/~alip/sydbox/sydbox.html).
 
 Blog Posts
 ==========
