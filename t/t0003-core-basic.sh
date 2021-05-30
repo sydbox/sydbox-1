@@ -148,7 +148,7 @@ test_expect_success_foreach_option HAVE_NEWFSTATAT 'magic /dev/sydbox API is 1 u
 '
 
 test_expect_success_foreach_option 'magic /dev/sydbox boolean checking works' '
-    sydbox -- sh <<-\EOF
+    sydbox -m core/sandbox/write:off -- sh <<-\EOF
 test -e /dev/sydbox/core/sandbox/write"?"
 test $? -eq 1 && exit 0
 EOF &&
@@ -159,8 +159,10 @@ EOF
 '
 
 test_expect_success_foreach_option HAVE_NEWFSTATAT 'magic /dev/sydbox boolean checking works with -m switch' '
-    test_expect_code 2 sydbox -- syd-fstatat cwd /dev/sydbox/core/sandbox/write"?" && # ENOENT
-    sydbox -m core/sandbox/write:deny -- syd-fstatat cwd /dev/sydbox/core/sandbox/write"?"
+    test_expect_code 2 sydbox -m core/sandbox/write:off -- \
+        syd-fstatat cwd /dev/sydbox/core/sandbox/write"?" && # ENOENT
+    sydbox -m core/sandbox/write:deny -- \
+        syd-fstatat cwd /dev/sydbox/core/sandbox/write"?"
 '
 
 test_expect_success_foreach_option 'magic /dev/sydbox boolean checking works with -m switch' '
