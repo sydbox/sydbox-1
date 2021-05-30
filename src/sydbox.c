@@ -1598,7 +1598,6 @@ int main(int argc, char **argv)
 		{"version",	no_argument,		NULL,	'v'},
 		{"profile",	required_argument,	NULL,	0},
 		{"dry-run",	no_argument,		NULL,	0},
-		{"dump",	optional_argument,	NULL,	'd'},
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -1609,7 +1608,7 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "hvdc:m:E:", long_options, &options_index)) != EOF) {
+	while ((opt = getopt_long(argc, argv, "hd:vc:m:E:", long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
 			if (streq(long_options[options_index].name, "dry-run")) {
@@ -1632,7 +1631,8 @@ int main(int argc, char **argv)
 			sydbox->config.violation_decision = VIOLATION_NOOP;
 			magic_set_sandbox_all("dump", NULL);
 			if (optarg)
-				sydbox->dump_fd = atoi(optarg);
+				if (strcmp(optarg, "tmp"))
+					sydbox->dump_fd = atoi(optarg);
 			break;
 #else
 		case 'd':

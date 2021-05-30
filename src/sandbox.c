@@ -423,7 +423,7 @@ int box_check_path(syd_process_t *current, sysinfo_t *info)
 check_access:
 	if (info->access_mode != ACCESS_0)
 		access_mode = info->access_mode;
-	else if (sandbox_deny_write(current))
+	else if (sandbox_deny_write(current) || sydbox->permissive)
 		access_mode = ACCESS_WHITELIST;
 	else
 		access_mode = ACCESS_BLACKLIST;
