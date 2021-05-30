@@ -806,7 +806,7 @@ static void dump_process(pid_t pid)
 
 static int dump_init(void)
 {
-	int fd;
+	int fd = 0;
 	const char *pathname;
 
 	if (!nodump)
@@ -814,10 +814,10 @@ static int dump_init(void)
 	if (nodump > 0)
 		return 0;
 
+#if SYDBOX_HAVE_DUMP_BUILTIN
 	fd = sydbox->dump_fd;
-	if (fd > 0) {
-		;
-	} else {
+#endif
+	if (fd < 0) {
 		pathname = getenv(DUMP_ENV);
 		if (pathname) {
 			strlcpy(pathdump, pathname, sizeof(pathdump));
