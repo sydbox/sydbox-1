@@ -407,7 +407,7 @@ core/trace/use_seize:true
 core/trace/use_toolong_hack:true
 
 core/match/case_sensitive:true
-core/match/no_wildcard:prefix
+core/match/no_wildcard:literal
 
 # Safe defaults for system paths
 whitelist/write+/dev/stdout
