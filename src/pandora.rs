@@ -180,12 +180,7 @@ fn command_box<'a>(
     }
 }
 
-fn command_profile<'b>(
-    bin: &'b str,
-    cmd: &[&'b str],
-    output_path: &'b str,
-    path_limit: u8,
-) -> i32 {
+fn command_profile<'b>(bin: &'b str, cmd: &[&'b str], output_path: &'b str, path_limit: u8) -> i32 {
     let (fd_rd, fd_rw) = match nix::unistd::pipe() {
         Ok((fd_rd, fd_rw)) => (fd_rd, fd_rw),
         Err(error) => {
@@ -404,7 +399,7 @@ Repository: {}
     } else {
         let shell = match std::env::var("SHELL") {
             Ok(shell) => shell,
-            Err(_) => "/bin/sh".to_string()
+            Err(_) => "/bin/sh".to_string(),
         };
 
         let mut paludis = Vec::new();
