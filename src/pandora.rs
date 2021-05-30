@@ -331,11 +331,27 @@ Repository: {}
             limit,
         ));
     } else {
-        clap::Error::with_description(
-            "No subcommand given, expected one of: box, inspect, profile",
-            clap::ErrorKind::InvalidValue,
-        )
-        .exit();
+        let shell = match std::env::var("SHELL") {
+            Ok(shell) => shell,
+            Err(_) => "/bin/sh".to_string()
+        };
+
+        let rcname = "/etc/pandora.syd-1";
+        let rc = std::path::Path::new(rcname);
+        let mut rcargs = Vec::new();
+        if rc.exists() {
+            rcargs.push("-c");
+            rcargs.push(rcname);
+        }
+
+        let mut child = Command::new("sydbox")
+            .args(&rcargs)
+            .arg("--")
+            .arg(shell)
+            .arg("-l")
+            .spawn()
+            .expect("sydbox command failed to start");
+        child.wait().expect("failed to wait for shell");
     }
 }
 
