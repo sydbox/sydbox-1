@@ -114,7 +114,7 @@ fn command_box<'a>(
 
 fn command_profile<'b>(
     bin: &'b str,
-    cmd: &Vec<&'b str>,
+    cmd: &[&'b str],
     output_path: &'b str,
     path_limit: u8,
 ) -> i32 {
@@ -288,7 +288,7 @@ Repository: {}
     } else if let Some(ref matches) = matches.subcommand_matches("profile") {
         let bin = matches.value_of("bin").unwrap();
         let out = matches.value_of("output").unwrap();
-        let mut cmd: Vec<&str> = matches.values_of("cmd").unwrap().collect();
+        let cmd: Vec<&str> = matches.values_of("cmd").unwrap().collect();
         let value = matches.value_of("limit").unwrap();
         let limit = match value.parse::<u8>() {
             Ok(value) => value,
@@ -300,7 +300,7 @@ Repository: {}
                 .exit();
             }
         };
-        std::process::exit(command_profile(bin, &mut cmd, out, limit));
+        std::process::exit(command_profile(bin, &cmd, out, limit));
     } else if let Some(ref matches) = matches.subcommand_matches("inspect") {
         let value = matches.value_of("limit").unwrap();
         let limit = match value.parse::<u8>() {
@@ -535,7 +535,7 @@ fn parse_json_line(
                     Sandbox::Read
                 };
                 let argument = trim_path(&filter_proc(&repr[idx - 1]), path_limit);
-                if argument != "" {
+                if !argument.is_empty() {
                     magic.insert((sandbox, argument));
                 }
             }
@@ -580,7 +580,7 @@ fn trim_path(path: &str, limit: u8) -> String {
     if limit == 0 || path == "/" {
         path.to_string()
     } else {
-        let members: Vec<&str> = path.split("/").collect();
+        let members: Vec<&str> = path.split('/').collect();
         let limit = limit as usize;
         if limit > 0 && limit <= members.len() {
             members[0..limit].join("/")
