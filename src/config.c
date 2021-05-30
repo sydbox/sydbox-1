@@ -46,6 +46,8 @@ void config_init(void)
 #endif
 	sydbox->config.use_seize = true;
 	sydbox->config.use_toolong_hack = false;
+	sydbox->config.restrict_file_control = true;
+	sydbox->config.restrict_shared_memory_writable = true;
 	sydbox->config.whitelist_per_process_directories = true;
 	sydbox->config.whitelist_successful_bind = true;
 	sydbox->config.whitelist_unsupported_socket_families = true;
