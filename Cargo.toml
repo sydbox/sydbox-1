@@ -16,6 +16,7 @@ default-run = "pandora"
 include = [
 	"**/*.rs",
 	"Cargo.toml",
+	"data/*.syd-1",
 	"/README",
 ]
 
