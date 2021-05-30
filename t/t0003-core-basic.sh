@@ -249,4 +249,54 @@ test_expect_success_foreach_option 'chdir() hook with EPERM (mkdir -p) [RAISE_SA
         syd-mkdir-p "$cdir"
 '
 
+# Note, we use test_must_fail here rather than ! so we know if sydbox exits
+# abnormally, eg. segfaults.
+test_expect_success 'read sandboxing for open works' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    test_must_fail sydbox \
+        -m core/sandbox/read:deny \
+        syd-open-static "$cdir"/readme
+'
+
+test_expect_success 'read sandboxing for open works with whitelist' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    sydbox \
+        -m core/sandbox/read:deny \
+        -m "whitelist/read+/***" \
+        syd-open-static "$cdir"/readme
+'
+
+test_expect_success PTRACE_SECCOMP 'read sandboxing for open can be reenabled under seccomp' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    test_must_fail sydbox \
+        -m core/trace/use_seccomp:true \
+        -m core/sandbox/read:deny \
+        syd-open-static "$cdir"/readme
+'
+
+test_expect_success PTRACE_SECCOMP 'read sandboxing for open with whitelist can be reenabled under seccomp' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    sydbox \
+        -m core/trace/use_seccomp:true \
+        -m core/sandbox/read:deny \
+        -m "whitelist/read+/***" \
+        syd-open-static "$cdir"/readme
+'
+
 test_done
