@@ -24,10 +24,12 @@ In addition, it is advised that you enable the kernel option
 `CONFIG_CROSS_MEMORY_ATTACH=y`.
 
 **NOTE:** Pandora is in its early stages of development. To be able to use pandora
-you should clone SydBox from [git](https://git.exherbo.org/git/sydbox-1.git) and
-build SydBox from the **inspect** branch.
+you should clone SydBox from [git](https://git.exherbo.org/git/sydbox-1.git).
 
-Browse at https://git.exherbo.org/sydbox-1.git/?h=inspect
+- Browse: https://git.exherbo.org/sydbox-1.git/
+- Exheres:
+  - [sydbox.exlib](https://git.exherbo.org/arbor.git/tree/packages/sys-apps/sydbox/sydbox.exlib)
+  - [sydbox-scm.exheres-0](https://git.exherbo.org/arbor.git/tree/packages/sys-apps/sydbox/sydbox-scm.exheres-0)
 
 You can check the build options using `sydbox --version`:
 
@@ -37,13 +39,15 @@ sydbox-1.1.0-pandora-0.0.3-1-gc96f237 (pinktrace-0.9.5 git:v0.9.5-1-ge6ac27f)
 Options: dump:yes seccomp:yes ipv6:yes netlink:yes
 ```
 
-- **dump:yes** with the correct format expected by Pandora is on the **inspect** branch only.
 - **seccomp:yes** indicates **--enable-seccomp** was passed on build.
 - **ipv6:yes** **IPv6 Network Sandboxing** is enabled.
 
 
 SydBox requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/api/c/)
 
+- Exheres:
+  - [pinktrace-1.exlib](https://git.exherbo.org/arbor.git/tree/packages/dev-libs/pinktrace/pinktrace.exlib)
+  - [pinktrace-scm.exheres-0](https://git.exherbo.org/arbor.git/tree/packages/dev-libs/pinktrace/pinktrace-scm.exheres-0)
 - Git: https://git.exherbo.org/git/pinktrace-1.git
 - Lightweight [ptrace](http://linux.die.net/man/2/ptrace) wrapper library
   providing a robust API for tracing processes.
@@ -138,7 +142,7 @@ Last but not least,
 
 Here is a Firefox profile edited by yours truly:
 
-https://git.exherbo.org/sydbox-1.git/plain/data/firefox.syd-1?h=inspect
+https://git.exherbo.org/sydbox-1.git/plain/data/firefox.syd-1
 
 Documentation
 =============
