@@ -405,9 +405,9 @@ Repository: {}
         let home;
         let mut homeargs = Vec::new();
         if let Ok(s) = std::env::var("HOME") {
-                home = format!("whitelist/write+{}/***", s);
-                homeargs.push("-m");
-                homeargs.push(&home);
+            home = format!("whitelist/write+{}/***", s);
+            homeargs.push("-m");
+            homeargs.push(&home);
         }
 
         let mut paludis = Vec::new();
