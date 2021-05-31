@@ -40,7 +40,7 @@ struct open_info {
 	enum syd_stat syd_mode;
 };
 
-static inline void sysinfo_read_access(syd_process_t *current, sysinfo_t *info)
+static inline void sysinfo_read_access(syd_process_t *current, syscall_info_t *info)
 {
 	info->access_mode = sandbox_deny_read(current)
 			    ? ACCESS_WHITELIST
@@ -65,7 +65,7 @@ static bool check_access_mode(syd_process_t *current, int mode)
 	return r;
 }
 
-static int check_access(syd_process_t *current, sysinfo_t *info, int mode)
+static int check_access(syd_process_t *current, syscall_info_t *info, int mode)
 {
 	int r = 0;
 	bool rd, wr;
@@ -108,7 +108,7 @@ int sys_access(syd_process_t *current)
 {
 	int r;
 	long mode;
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_file(current))
 		return 0;
@@ -129,7 +129,7 @@ static int do_faccessat(syd_process_t *current, bool has_flags)
 {
 	int r;
 	long mode, flags;
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_file(current))
 		return 0;
@@ -238,7 +238,7 @@ static void init_open_info(syd_process_t *current,
 	}
 }
 
-static int check_open(syd_process_t *current, sysinfo_t *info,
+static int check_open(syd_process_t *current, syscall_info_t *info,
 		      const struct open_info *open_info)
 {
 	int r = 0;
@@ -291,7 +291,7 @@ int sys_open(syd_process_t *current)
 	bool strict;
 	int r;
 	struct open_how how;
-	sysinfo_t info;
+	syscall_info_t info;
 	struct open_info open_info;
 
 	strict = !sydbox->config.use_seccomp &&
@@ -324,7 +324,7 @@ int sys_openat(syd_process_t *current)
 	bool strict;
 	int r;
 	struct open_how how;
-	sysinfo_t info;
+	syscall_info_t info;
 	struct open_info open_info;
 
 	strict = !sydbox->config.use_seccomp &&
@@ -359,7 +359,7 @@ int sys_openat2(syd_process_t *current)
 {
 	bool strict;
 	int r;
-	sysinfo_t info;
+	syscall_info_t info;
 	struct open_info open_info;
 
 	strict = !sydbox->config.use_seccomp &&
@@ -414,7 +414,7 @@ int sys_openat2(syd_process_t *current)
 
 int sys_chmod(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -428,7 +428,7 @@ int sys_fchmodat(syd_process_t *current)
 {
 	int r;
 	long flags;
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -448,7 +448,7 @@ int sys_fchmodat(syd_process_t *current)
 
 int sys_chown(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -460,7 +460,7 @@ int sys_chown(syd_process_t *current)
 
 int sys_lchown(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -475,7 +475,7 @@ int sys_fchownat(syd_process_t *current)
 {
 	int r;
 	long flags;
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -495,7 +495,7 @@ int sys_fchownat(syd_process_t *current)
 
 int sys_creat(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -548,7 +548,7 @@ int sysx_close(syd_process_t *current)
 
 int sys_mkdir(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -562,7 +562,7 @@ int sys_mkdir(syd_process_t *current)
 
 int sys_mkdirat(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -578,7 +578,7 @@ int sys_mkdirat(syd_process_t *current)
 
 int sys_mknod(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -592,7 +592,7 @@ int sys_mknod(syd_process_t *current)
 
 int sys_mknodat(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -608,7 +608,7 @@ int sys_mknodat(syd_process_t *current)
 
 int sys_rmdir(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -622,7 +622,7 @@ int sys_rmdir(syd_process_t *current)
 
 int sys_truncate(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -634,7 +634,7 @@ int sys_truncate(syd_process_t *current)
 
 int sys_mount(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -647,7 +647,7 @@ int sys_mount(syd_process_t *current)
 
 int sys_umount(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -663,7 +663,7 @@ int sys_umount2(syd_process_t *current)
 	int r;
 	long flags;
 #endif
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -682,7 +682,7 @@ int sys_umount2(syd_process_t *current)
 
 int sys_utime(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -694,7 +694,7 @@ int sys_utime(syd_process_t *current)
 
 int sys_utimes(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -708,7 +708,7 @@ int sys_utimensat(syd_process_t *current)
 {
 	int r;
 	long flags;
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -729,7 +729,7 @@ int sys_utimensat(syd_process_t *current)
 
 int sys_futimesat(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -744,7 +744,7 @@ int sys_futimesat(syd_process_t *current)
 
 int sys_unlink(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -760,7 +760,7 @@ int sys_unlinkat(syd_process_t *current)
 {
 	int r;
 	long flags;
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -789,7 +789,7 @@ int sys_unlinkat(syd_process_t *current)
 int sys_link(syd_process_t *current)
 {
 	int r;
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -823,7 +823,7 @@ int sys_linkat(syd_process_t *current)
 {
 	int r;
 	long flags;
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -854,7 +854,7 @@ int sys_rename(syd_process_t *current)
 {
 	int r;
 	struct stat statbuf;
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -893,7 +893,7 @@ int sys_renameat(syd_process_t *current)
 {
 	int r;
 	struct stat statbuf = { .st_mode = 0 };
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -925,7 +925,7 @@ int sys_renameat(syd_process_t *current)
 
 int sys_symlink(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -940,7 +940,7 @@ int sys_symlink(syd_process_t *current)
 
 int sys_symlinkat(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -956,7 +956,7 @@ int sys_symlinkat(syd_process_t *current)
 
 static int check_listxattr(syd_process_t *current, bool nofollow)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_read(current))
 		return 0;
@@ -983,7 +983,7 @@ int sys_llistxattr(syd_process_t *current)
 
 int sys_setxattr(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -995,7 +995,7 @@ int sys_setxattr(syd_process_t *current)
 
 int sys_lsetxattr(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -1008,7 +1008,7 @@ int sys_lsetxattr(syd_process_t *current)
 
 int sys_removexattr(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
@@ -1020,7 +1020,7 @@ int sys_removexattr(syd_process_t *current)
 
 int sys_lremovexattr(syd_process_t *current)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;

@@ -76,7 +76,7 @@ static void box_report_violation_path_at(syd_process_t *current,
 }
 
 static char *box_name_violation_sock(syd_process_t *current,
-				     const sysinfo_t *info,
+				     const syscall_info_t *info,
 				     const struct pink_sockaddr *paddr,
 				     const char *unix_abspath)
 {
@@ -116,7 +116,7 @@ static char *box_name_violation_sock(syd_process_t *current,
 }
 
 static void box_report_violation_sock(syd_process_t *current,
-				      const sysinfo_t *info,
+				      const syscall_info_t *info,
 				      const struct pink_sockaddr *paddr)
 {
 	const char *f;
@@ -267,7 +267,7 @@ static bool box_check_access(enum sys_access_mode mode,
 	}
 }
 
-static int box_check_ftype(const char *path, sysinfo_t *info)
+static int box_check_ftype(const char *path, syscall_info_t *info)
 {
 	int deny_errno, stat_ret;
 	short rflags = info->rmode & ~RPATH_MASK;
@@ -332,7 +332,7 @@ static int box_check_ftype(const char *path, sysinfo_t *info)
 	return deny_errno;
 }
 
-int box_check_path(syd_process_t *current, sysinfo_t *info)
+int box_check_path(syd_process_t *current, syscall_info_t *info)
 {
 	bool badfd;
 	int r, deny_errno, stat_errno;
@@ -495,7 +495,7 @@ out:
 	return r;
 }
 
-int box_check_socket(syd_process_t *current, sysinfo_t *info)
+int box_check_socket(syd_process_t *current, syscall_info_t *info)
 {
 	int r;
 	char *abspath;

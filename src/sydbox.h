@@ -528,7 +528,7 @@ struct sysentry {
 };
 typedef struct sysentry sysentry_t;
 
-struct sysinfo {
+struct syscall_info {
 	/* Argument index */
 	unsigned arg_index;
 
@@ -567,7 +567,7 @@ struct sysinfo {
 	const char *cache_abspath;
 	const struct stat *cache_statbuf;
 };
-typedef struct sysinfo sysinfo_t;
+typedef struct syscall_info syscall_info_t;
 
 /* Global variables */
 extern sydbox_t *sydbox;
@@ -670,8 +670,8 @@ void callback_init(void);
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 		     unsigned rmode, char **res);
-int box_check_path(syd_process_t *current, sysinfo_t *info);
-int box_check_socket(syd_process_t *current, sysinfo_t *info);
+int box_check_path(syd_process_t *current, syscall_info_t *info);
+int box_check_socket(syd_process_t *current, syscall_info_t *info);
 
 static inline sandbox_t *box_current(syd_process_t *current)
 {
@@ -847,9 +847,9 @@ int magic_set_match_no_wildcard(const void *val, syd_process_t *current);
 
 int magic_cmd_exec(const void *val, syd_process_t *current);
 
-static inline void init_sysinfo(sysinfo_t *info)
+static inline void init_sysinfo(syscall_info_t *info)
 {
-	memset(info, 0, sizeof(sysinfo_t));
+	memset(info, 0, sizeof(syscall_info_t));
 }
 
 int filter_open(int arch, uint32_t sysnum);

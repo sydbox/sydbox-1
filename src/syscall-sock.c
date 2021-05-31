@@ -28,7 +28,7 @@ int sys_bind(syd_process_t *current)
 	unsigned long fd;
 	char *unix_abspath = NULL;
 	struct pink_sockaddr *psa = NULL;
-	sysinfo_t info;
+	syscall_info_t info;
 
 	if (sandbox_off_network(current))
 		return 0;
@@ -133,7 +133,7 @@ zero:
 
 static int sys_connect_or_sendto(syd_process_t *current, unsigned arg_index)
 {
-	sysinfo_t info;
+	syscall_info_t info;
 
 #define sub_connect(p, i)	((i) == 1 && \
 				 (p)->subcall == PINK_SOCKET_SUBCALL_CONNECT)
