@@ -1,4 +1,6 @@
 # sydbox configuration file for use with paludis
+# Copyright (c) 2021 Alï Polatel <alip@exherbo.org>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 core/sandbox/exec:off
 core/sandbox/read:off
