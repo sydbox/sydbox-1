@@ -33,6 +33,47 @@ DISTCHECK_CONFIGURE_FLAGS= \
 			   --enable-seccomp \
 			   --enable-debug
 
+BUILT_SOURCES = .version
+EXTRA_DIST+= \
+	     .version \
+	     ChangeLog
+$(srcdir)/.version:
+	$(AM_V_GEN)echo $(VERSION) > $@-t && mv $@-t $@
+
+if MAINTAINER_MODE
+
+# For v1.0.0, do:
+# gen_changelog_start_date = 2015-01-12 12:00
+# This includes all and we're fine with it.
+gen_changelog_start_date = 1999-08-17 03:02
+$(srcdir)/ChangeLog: $(srcdir)/misc/gitlog-to-changelog $(srcdir)/Makefile.in \
+		     $(srcdir)/.version
+	@rm -f $@.new
+	(cd $(srcdir); \
+	 ./misc/gitlog-to-changelog --append-dot \
+	   --since='$(gen_changelog_start_date)'; \
+	 echo; echo; echo '' \
+	) > $@.new
+	chmod 444 $@.new
+	mv -f $@.new $@
+
+$(srcdir)/CREDITS: $(srcdir)/CREDITS.in $(srcdir)/.mailmap \
+		   $(srcdir)/Makefile.in $(srcdir)/.version
+	$(AM_V_GEN)							\
+	(								\
+	  D="$(D)";							\
+	  export D;							\
+	  cd $(srcdir);							\
+	  sed '/^##/,$$d' CREDITS.in;					\
+	  sed -n '1,/^##>/d; s/   */\t/; s/^./&/p' CREDITS.in		\
+	    | maint/gen-contributors-list.sh - -e HEAD --initial	\
+	    | sed 's/\t/ /g; s/^/\t/'					\
+	) > $@-t && mv $@-t $@
+
+export TAR_OPTIONS = --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX
+
+endif
+
 TAR_FILE= $(PACKAGE)-$(VERSION).tar.bz2
 SHA1_FILE= $(TAR_FILE).sha1sum
 GPG_FILE= $(SHA1_FILE).asc
