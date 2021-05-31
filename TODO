@@ -1,6 +1,36 @@
-Do not call ptrace() from dump.c under any circumstances.
-Avoid unnecessary printf usage in dump.c
-Finish the rework on tests
-SIGUSR2 dumps sydcore
-Rework sandbox_t structure to decrease memory usage.
-Use a simpler hashtable instead of using uthash everywhere.
+# Sydbox
+
+- Do not call ptrace() from dump.c under any circumstances.
+- Avoid unnecessary printf usage in dump.c
+- Finish the rework on tests
+- SIGUSR2 dumps sydcore
+- Use a simpler hashtable instead of using uthash everywhere.
+- close the dump file descriptor after fork
+- provide a choice to avoid ptrace() altogether and use seccomp-bpf only
+- provide a list of system calls to whitelist/blacklist on startup to feed
+  to seccomp-bpf filters. A whitelisted system call will be allowed and will
+  further be subject to sandbox restrictions. A blacklisted system call will
+  be denied with ENOSYS directly by seccomp. The user may input a list of
+  regular expressions to match system calls for restrictions.
+- use allowlist/denylist rather than whitelist/blacklist list in syd-2 profiles
+- rename the master branch to main
+- no ptrace() attach should happen if all of
+  core/sandbox/{read,write,exec,network}:bpf
+
+# Pandora
+
+- box should learn to drop privileges to a different user and group.
+- box should learn to change to a different directory such as /var/empty.
+- box should learn to chroot.
+- box should learn to use namespaces.
+- box profile should learn to save a checksum of the binary in the profile.
+  (requires PATH traversal?)
+- box profile should learn to cryptographically sign the header of the profile
+- box profile should learn to upload out.syd-1 to a public location.
+- box profile should learn to check the checksum of a binary and download a
+  profile from a public location.
+- box profile should be able to cryptographically verify the signature in the
+  header of a profile downloaded from a public location.
+- box should learn to read sydbox magic configuration via TOML format
+- generate docs from pandora --help output for docs.rs if it's possible
+- add benchmarks with criterion to benchmark certain box invocations.

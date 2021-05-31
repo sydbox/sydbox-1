@@ -19,6 +19,7 @@ include = [
 	"data/*.syd-1",
 	"/README",
 	"/LICENSE",
+	"/TODO",
 ]
 
 [[bin]]
