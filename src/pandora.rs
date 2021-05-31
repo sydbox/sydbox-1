@@ -398,20 +398,17 @@ Repository: {}
         ));
     } else {
         let shell = match std::env::var("SHELL") {
-            Ok(shell) => shell,
+            Ok(s) => s,
             Err(_) => "/bin/sh".to_string(),
         };
 
         let home;
         let mut homeargs = Vec::new();
-        match std::env::var("HOME") {
-            Ok(s) => {
+        if let Ok(s) = std::env::var("HOME") {
                 home = format!("whitelist/write+{}/***", s);
                 homeargs.push("-m");
                 homeargs.push(&home);
-            }
-            Err(_) => {},
-        };
+        }
 
         let mut paludis = Vec::new();
         for magic in PALUDIS.split('\n').filter(|&magic| !magic.is_empty()) {
