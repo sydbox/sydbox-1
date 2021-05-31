@@ -19,6 +19,13 @@
 #include "seccomp.h"
 #endif
 
+static struct sock_filter footer_eperm[] = {
+	BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA))
+};
+static struct sock_filter footer_allow[] = {
+	BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW)
+};
+
 /*
  * 1. Order matters! Put more hot system calls above.
  * 2. ".filter" is for simple seccomp-only rules. If a system call entry has a
@@ -77,10 +84,12 @@ static const sysentry_t syscall_entries[] = {
 	{
 		.name = "access",
 		.enter = sys_access,
+		.sandbox_read = true,
 	},
 	{
 		.name = "faccessat",
 		.enter = sys_faccessat,
+		.sandbox_read = true,
 	},
 
 	{
@@ -88,21 +97,28 @@ static const sysentry_t syscall_entries[] = {
 		.filter = filter_open,
 		.enter = sys_open,
 		.open_flag = 1,
+		.sandbox_read = true,
+		.sandbox_write = true,
 	},
 	{
 		.name = "openat",
 		.filter = filter_openat,
 		.enter = sys_openat,
 		.open_flag = 2,
+		.sandbox_read = true,
+		.sandbox_write = true,
 	},
 	{
 		.name = "openat2",
 		.enter = sys_openat2,
+		.sandbox_read = true,
+		.sandbox_write = true,
 	},
 
 	{
 		.name = "creat",
 		.enter = sys_creat,
+		.sandbox_write = true,
 	},
 
 	{
@@ -110,12 +126,14 @@ static const sysentry_t syscall_entries[] = {
 		.filter = filter_fcntl,
 		.enter = sys_fcntl,
 		.exit = sysx_fcntl,
+		.sandbox_read = true,
 	},
 	{
 		.name = "fcntl64",
 		.filter = filter_fcntl,
 		.enter = sys_fcntl,
 		.exit = sysx_fcntl,
+		.sandbox_read = true,
 	},
 	{
 		.name = "dup",
@@ -145,120 +163,147 @@ static const sysentry_t syscall_entries[] = {
 	{
 		.name = "chmod",
 		.enter = sys_chmod,
+		.sandbox_write = true,
 	},
 	{
 		.name = "fchmodat",
 		.enter = sys_fchmodat,
+		.sandbox_write = true,
 	},
 
 	{
 		.name = "chown",
 		.enter = sys_chown,
+		.sandbox_write = true,
 	},
 	{
 		.name = "chown32",
 		.enter = sys_chown,
+		.sandbox_write = true,
 	},
 	{
 		.name = "lchown",
 		.enter = sys_lchown,
+		.sandbox_write = true,
 	},
 	{
 		.name = "lchown32",
 		.enter = sys_lchown,
+		.sandbox_write = true,
 	},
 	{
 		.name = "fchownat",
 		.enter = sys_fchownat,
+		.sandbox_write = true,
 	},
 
 	{
 		.name = "mkdir",
 		.enter = sys_mkdir,
+		.sandbox_write = true,
 	},
 	{
 		.name = "mkdirat",
 		.enter = sys_mkdirat,
+		.sandbox_write = true,
 	},
 
 	{
 		.name = "mknod",
 		.enter = sys_mknod,
+		.sandbox_write = true,
 	},
 	{
 		.name = "mknodat",
 		.enter = sys_mknodat,
+		.sandbox_write = true,
 	},
 
 	{
 		.name = "rmdir",
 		.enter = sys_rmdir,
+		.sandbox_write = true,
 	},
 
 	{
 		.name = "truncate",
 		.enter = sys_truncate,
+		.sandbox_write = true,
 	},
 	{
 		.name = "truncate64",
 		.enter = sys_truncate,
+		.sandbox_write = true,
 	},
 
 	{
 		.name = "utime",
 		.enter = sys_utime,
+		.sandbox_write = true,
 	},
 	{
 		.name = "utimes",
 		.enter = sys_utimes,
+		.sandbox_write = true,
 	},
 	{
 		.name = "utimensat",
 		.enter = sys_utimensat,
+		.sandbox_write = true,
 	},
 	{
 		.name = "futimesat",
 		.enter = sys_futimesat,
+		.sandbox_write = true,
 	},
 
 	{
 		.name = "unlink",
 		.enter = sys_unlink,
+		.sandbox_write = true,
 	},
 	{
 		.name = "unlinkat",
 		.enter = sys_unlinkat,
+		.sandbox_write = true,
 	},
 
 	{
 		.name = "link",
 		.enter = sys_link,
+		.sandbox_write = true,
 	},
 	{
 		.name = "linkat",
 		.enter = sys_linkat,
+		.sandbox_write = true,
 	},
 
 	{
 		.name = "rename",
 		.enter = sys_rename,
+		.sandbox_write = true,
 	},
 	{
 		.name = "renameat",
 		.enter = sys_renameat,
+		.sandbox_write = true,
 	},
 	{
 		.name = "renameat2",
 		.enter = sys_renameat,
+		.sandbox_write = true,
 	},
 
 	{
 		.name = "symlink",
 		.enter = sys_symlink,
+		.sandbox_write = true,
 	},
 	{
 		.name = "symlinkat",
 		.enter = sys_symlinkat,
+		.sandbox_write = true,
 	},
 
 	{
@@ -283,37 +328,45 @@ static const sysentry_t syscall_entries[] = {
 	{
 		.name = "execve",
 		.enter = sys_execve,
+		.sandbox_exec = true,
 	},
 	{
 		.name = "execve#64",
 		.enter = sys_execve,
+		.sandbox_exec = true,
 	},
 	{
 		.name = "execveat",
 		.enter = sys_execveat,
+		.sandbox_exec = true,
 	},
 	{
 		.name = "execveat#64",
 		.enter = sys_execveat,
+		.sandbox_exec = true,
 	},
 
 	{
 		.name = "socketcall",
 		.enter = sys_socketcall,
 		.exit = sysx_socketcall,
+		.sandbox_network = true,
 	},
 	{
 		.name = "bind",
 		.enter = sys_bind,
 		.exit = sysx_bind,
+		.sandbox_network = true,
 	},
 	{
 		.name = "connect",
 		.enter = sys_connect,
+		.sandbox_network = true,
 	},
 	{
 		.name = "sendto",
 		.enter = sys_sendto,
+		.sandbox_network = true,
 	},
 	{
 		.name = "getsockname",
@@ -324,39 +377,48 @@ static const sysentry_t syscall_entries[] = {
 	{
 		.name = "listxattr",
 		.enter = sys_listxattr,
+		.sandbox_read = true,
 	},
 	{
 		.name = "llistxattr",
 		.enter = sys_llistxattr,
+		.sandbox_read = true,
 	},
 	{
 		.name = "setxattr",
 		.enter = sys_setxattr,
+		.sandbox_write = true,
 	},
 	{
 		.name = "lsetxattr",
 		.enter = sys_lsetxattr,
+		.sandbox_write = true,
 	},
 	{
 		.name = "removexattr",
 		.enter = sys_removexattr,
+		.sandbox_write = true,
 	},
 	{
 		.name = "lremovexattr",
 		.enter = sys_lremovexattr,
+		.sandbox_write = true,
 	},
 
 	{
 		.name = "mount",
 		.enter = sys_mount,
+		.sandbox_write = true,
 	},
 	{
 		.name = "umount",
 		.enter = sys_umount,
+		.sandbox_write = true,
 	},
 	{
 		.name = "umount2",
 		.enter = sys_umount2,
+		.sandbox_write = true,
 	},
 };
 
@@ -465,32 +527,123 @@ int seccomp_apply(int abi)
 		}
 		if (sysnum == -1)
 			continue;
+
+		const struct sock_filter footer_trace[] = {
+			BPF_STMT(BPF_RET+BPF_K,
+				 SECCOMP_RET_TRACE|(sysnum & SECCOMP_RET_DATA))
+		};
+		const struct sock_filter syscall_check[] = {
+			BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 1)
+		};
+
 		sandbox_t *box = box_current(NULL);
-		bool open_filter = box->mode.sandbox_read == SANDBOX_OFF;
 		int open_flag = syscall_entries[i].open_flag;
-		if (open_filter && open_flag)
-			n += 6;
-		else
-			n += 2;
 		//f = xrealloc(f, sizeof(struct sock_filter) * n);
-		if (open_filter && open_flag) {
-			struct sock_filter item[] = {
-				BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 4),
-				BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(open_flag)),
-				BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, (O_WRONLY|O_RDWR|O_CREAT), 1, 0),
-				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
-				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_TRACE|(sysnum & SECCOMP_RET_DATA)),
-				BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_nr),
-			};
-			for (int j = 0; j < 6; j++)
-				f[idx++] = item[j];
-		} else {
-			struct sock_filter item[] = {
+		if (open_flag) {
+			struct sock_filter item_trace[] = {
 				BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 1),
 				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_TRACE|(sysnum & SECCOMP_RET_DATA))
 			};
-			f[idx++] = item[0];
-			f[idx++] = item[1];
+			struct sock_filter item_allow[] = {
+				BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 1),
+				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
+			};
+			struct sock_filter item_deny[] = {
+				BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 1),
+				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA)),
+			};
+			struct sock_filter item_errno_write[] = {
+				BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 4),
+				BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(open_flag)),
+				BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, (O_WRONLY|O_RDWR|O_CREAT), 0, 1),
+				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA)),
+				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
+				BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_nr),
+			};
+			struct sock_filter item_errno_read[] = {
+				BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 4),
+				BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(open_flag)),
+				BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, O_WRONLY, 1, 0),
+				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA)),
+				BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
+				BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_nr),
+			};
+
+			enum sandbox_mode mode_r = box->mode.sandbox_read;
+			enum sandbox_mode mode_w = box->mode.sandbox_write;
+			int j = 0;
+			struct sock_filter *item = NULL;
+			if (mode_r == SANDBOX_OFF && mode_w == SANDBOX_OFF) {
+				if (tracing()) {
+					item = item_trace;
+					j += 2;
+				} else {
+					item = item_allow;
+					j += 2;
+				}
+			} else if ((mode_r == SANDBOX_OFF && mode_w == SANDBOX_ALLOW) ||
+				   (mode_r == SANDBOX_ALLOW && mode_w == SANDBOX_OFF)) {
+				if (tracing()) {
+					item = item_trace;
+					j += 2;
+				} /* else no need to do anything. */
+			} else if ((mode_r == SANDBOX_OFF || mode_r == SANDBOX_ALLOW) &&
+				   mode_w == SANDBOX_DENY) {
+				if (tracing()) {
+					item = item_trace;
+					j += 2;
+				} else {
+					item = item_errno_write;
+					j += 6;
+				}
+			} else if (mode_r == SANDBOX_ALLOW && mode_w == SANDBOX_ALLOW) {
+				; /* no need to do anything */
+			} else if (mode_r == SANDBOX_DENY &&
+				   (mode_w == SANDBOX_OFF || mode_w == SANDBOX_ALLOW)) {
+				if (tracing()) {
+					item = item_trace;
+					j += 2;
+				} else {
+					item = item_errno_read;
+					j += 6;
+				}
+			} else if (mode_r == SANDBOX_DENY && mode_w == SANDBOX_DENY) {
+				if (tracing()) {
+					item = item_trace;
+					j += 2;
+				} else {
+					item = item_deny;
+					j += 2;
+				}
+			}
+
+			if (item) {
+				n += j;
+				for (int k = 0; k < j; k++)
+					f[idx++] = item[k];
+			}
+		} else {
+			int mode;
+			if (syscall_entries[i].sandbox_network)
+				mode = box->mode.sandbox_network;
+			else if (syscall_entries[i].sandbox_exec)
+				mode = box->mode.sandbox_exec;
+			else if (syscall_entries[i].sandbox_write)
+				mode = box->mode.sandbox_write;
+			else if (syscall_entries[i].sandbox_read)
+				mode = box->mode.sandbox_read;
+			else
+				mode = -1;
+
+			n += 2;
+			f[idx++] = syscall_check[0];
+			if (tracing())
+				f[idx++] = footer_trace[0];
+			else if (mode == SANDBOX_DENY)
+				f[idx++] = footer_eperm[0];
+			else /* if (mode == -1 || mode == SANDBOX_ALLOW) */
+				f[idx++] = footer_allow[0];
+
 		}
 	}
 	n += ELEMENTSOF(footer);

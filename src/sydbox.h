@@ -158,6 +158,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE_EXIT_KILL,
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
 	MAGIC_KEY_CORE_TRACE_INTERRUPT,
+	MAGIC_KEY_CORE_TRACE_USE_PTRACE,
 	MAGIC_KEY_CORE_TRACE_USE_SECCOMP,
 	MAGIC_KEY_CORE_TRACE_USE_SEIZE,
 	MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK,
@@ -446,6 +447,7 @@ struct config {
 
 	bool follow_fork;
 	bool exit_kill;
+	bool use_ptrace;
 	bool use_seccomp;
 
 	aclq_t exec_kill_if_match;
@@ -515,6 +517,14 @@ struct sysentry {
 	 * `open_flag' member below pointing to the index of the flags argument.
 	 */
 	int open_flag;
+
+	/*
+	 * The sandbox group of the given system call.
+	 */
+	bool sandbox_read:1;
+	bool sandbox_write:1;
+	bool sandbox_exec:1;
+	bool sandbox_network:1;
 };
 typedef struct sysentry sysentry_t;
 
@@ -566,6 +576,12 @@ extern sydbox_t *sydbox;
 # define inspecting() ((sydbox)->config.violation_decision == VIOLATION_NOOP)
 #else
 # define inspecting() (0)
+#endif
+
+#if SYDBOX_HAVE_SECCOMP
+# define tracing() ((sydbox)->config.use_ptrace)
+# else
+# define tracing() (1)
 #endif
 
 #define entering(p) (!((p)->flags & SYD_IN_SYSCALL))
@@ -764,6 +780,8 @@ int magic_set_trace_follow_fork(const void *val, syd_process_t *current);
 int magic_query_trace_follow_fork(syd_process_t *current);
 int magic_set_trace_exit_kill(const void *val, syd_process_t *current);
 int magic_query_trace_exit_kill(syd_process_t *current);
+int magic_set_trace_use_ptrace(const void *val, syd_process_t *current);
+int magic_query_trace_use_ptrace(syd_process_t *current);
 int magic_set_trace_use_seccomp(const void *val, syd_process_t *current);
 int magic_query_trace_use_seccomp(syd_process_t *current);
 int magic_set_trace_use_seize(const void *val, syd_process_t *current);

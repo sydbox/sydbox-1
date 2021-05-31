@@ -276,6 +276,14 @@ static const struct key key_table[] = {
 		.type   = MAGIC_TYPE_STRING,
 		.set    = magic_set_trace_magic_lock,
 	},
+	[MAGIC_KEY_CORE_TRACE_USE_PTRACE] = {
+		.name   = "use_ptrace",
+		.lname  = "core.trace.use_ptrace",
+		.parent = MAGIC_KEY_CORE_TRACE,
+		.type   = MAGIC_TYPE_BOOLEAN,
+		.set    = magic_set_trace_use_ptrace,
+		.query  = magic_query_trace_use_ptrace,
+	},
 	[MAGIC_KEY_CORE_TRACE_USE_SECCOMP] = {
 		.name   = "use_seccomp",
 		.lname  = "core.trace.use_seccomp",

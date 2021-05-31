@@ -39,6 +39,25 @@ int magic_query_trace_exit_kill(syd_process_t *current)
 	return MAGIC_BOOL(sydbox->config.exit_kill);
 }
 
+int magic_set_trace_use_ptrace(const void *val, syd_process_t *current)
+{
+#if SYDBOX_HAVE_SECCOMP
+	sydbox->config.use_ptrace = PTR_TO_BOOL(val);
+#else
+	say("seccomp support not enabled, ignoring magic");
+#endif
+	return MAGIC_RET_OK;
+}
+
+int magic_query_trace_use_ptrace(syd_process_t *current)
+{
+#if SYDBOX_HAVE_SECCOMP
+	return sydbox->config.use_ptrace;
+#else
+	return MAGIC_RET_NOT_SUPPORTED;
+#endif
+}
+
 int magic_set_trace_use_seccomp(const void *val, syd_process_t *current)
 {
 #if SYDBOX_HAVE_SECCOMP

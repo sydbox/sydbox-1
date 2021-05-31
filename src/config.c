@@ -39,6 +39,7 @@ void config_init(void)
 	/* set sane defaults for configuration */
 	sydbox->config.follow_fork = true;
 	sydbox->config.exit_kill = false;
+	sydbox->config.use_ptrace = true;
 #if SYDBOX_HAVE_SECCOMP
 	sydbox->config.use_seccomp = true;
 #else

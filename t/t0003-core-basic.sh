@@ -371,4 +371,204 @@ test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(pat
         syd-open-static "$cdir"/readme rdonly sync
 '
 
+test_expect_success PTRACE_SECCOMP 'both seccomp and ptrace can not be disabled' '
+    test_expect_code 1 sydbox \
+        -m core/trace/use_seccomp:0 \
+        -m core/trace/use_ptrace:0 \
+        true
+'
+
+test_expect_success PTRACE_SECCOMP 'disabling use_ptrace works with read sandboxing = off' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    sydbox \
+        -m core/trace/use_seccomp:1 \
+        -m core/trace/use_ptrace:0 \
+        -m core/sandbox/read:off \
+        -m core/sandbox/write:off \
+        -m core/sandbox/exec:off \
+        -m core/sandbox/network:off \
+        syd-open-static "$cdir"/readme rdonly
+'
+
+test_expect_success PTRACE_SECCOMP 'disabling use_ptrace works with read sandboxing = allow' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    sydbox \
+        -m core/trace/use_seccomp:1 \
+        -m core/trace/use_ptrace:0 \
+        -m core/sandbox/read:allow \
+        -m core/sandbox/write:off \
+        -m core/sandbox/exec:off \
+        -m core/sandbox/network:off \
+        syd-open-static "$cdir"/readme rdonly
+'
+
+test_expect_success PTRACE_SECCOMP 'disabling use_ptrace works with read sandboxing = deny' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    test_expect_code 1 sydbox \
+        -m core/trace/use_seccomp:1 \
+        -m core/trace/use_ptrace:0 \
+        -m core/sandbox/read:deny \
+        -m core/sandbox/write:off \
+        -m core/sandbox/exec:off \
+        -m core/sandbox/network:off \
+        syd-open-static "$cdir"/readme rdonly
+'
+
+test_expect_success PTRACE_SECCOMP 'disabling use_ptrace works with write sandboxing = off' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    sydbox \
+        -m core/trace/use_seccomp:1 \
+        -m core/trace/use_ptrace:0 \
+        -m core/sandbox/read:off \
+        -m core/sandbox/write:off \
+        -m core/sandbox/exec:off \
+        -m core/sandbox/network:off \
+        syd-open-static "$cdir"/readme wronly
+'
+
+test_expect_success PTRACE_SECCOMP 'disabling use_ptrace works with write sandboxing = allow' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    sydbox \
+        -m core/trace/use_seccomp:1 \
+        -m core/trace/use_ptrace:0 \
+        -m core/sandbox/read:off \
+        -m core/sandbox/write:allow \
+        -m core/sandbox/exec:off \
+        -m core/sandbox/network:off \
+        syd-open-static "$cdir"/readme wronly
+'
+
+test_expect_success PTRACE_SECCOMP 'disabling use_ptrace works with write sandboxing = deny' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    test_expect_code 1 sydbox \
+        -m core/trace/use_seccomp:1 \
+        -m core/trace/use_ptrace:0 \
+        -m core/sandbox/read:off \
+        -m core/sandbox/write:deny \
+        -m core/sandbox/exec:off \
+        -m core/sandbox/network:off \
+        syd-open-static "$cdir"/readme wronly
+'
+
+test_expect_success PTRACE_SECCOMP 'disabling use_ptrace works with exec sandboxing = off' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    sydbox \
+        -m core/trace/use_seccomp:1 \
+        -m core/trace/use_ptrace:0 \
+        -m core/sandbox/read:off \
+        -m core/sandbox/write:off \
+        -m core/sandbox/exec:off \
+        -m core/sandbox/network:off \
+        syd-open-static "$cdir"/readme wronly
+'
+
+test_expect_success PTRACE_SECCOMP 'disabling use_ptrace works with exec sandboxing = allow' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    sydbox \
+        -m core/trace/use_seccomp:1 \
+        -m core/trace/use_ptrace:0 \
+        -m core/sandbox/read:off \
+        -m core/sandbox/write:off \
+        -m core/sandbox/exec:allow \
+        -m core/sandbox/network:off \
+        syd-open-static "$cdir"/readme wronly
+'
+
+test_expect_success PTRACE_SECCOMP 'disabling use_ptrace works with exec sandboxing = deny' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    test_expect_code 1 sydbox \
+        -m core/trace/use_seccomp:1 \
+        -m core/trace/use_ptrace:0 \
+        -m core/sandbox/read:off \
+        -m core/sandbox/write:off \
+        -m core/sandbox/exec:deny \
+        -m core/sandbox/network:off \
+        syd-open-static "$cdir"/readme wronly
+'
+
+test_expect_success PTRACE_SECCOMP,DIG 'disabling use_ptrace works with network sandboxing = off' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    sydbox \
+        -m core/trace/use_seccomp:1 \
+        -m core/trace/use_ptrace:0 \
+        -m core/sandbox/read:off \
+        -m core/sandbox/write:off \
+        -m core/sandbox/exec:off \
+        -m core/sandbox/network:off \
+        dig +noall +answer dev.chessmuse.com > "$cdir"/out &&
+    test -s "$cdir"/out
+'
+
+test_expect_success PTRACE_SECCOMP,DIG 'disabling use_ptrace works with network sandboxing = allow' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    sydbox \
+        -m core/trace/use_seccomp:1 \
+        -m core/trace/use_ptrace:0 \
+        -m core/sandbox/read:off \
+        -m core/sandbox/write:off \
+        -m core/sandbox/exec:off \
+        -m core/sandbox/network:allow \
+        dig +noall +answer dev.chessmuse.com > "$cdir"/out &&
+    test -s "$cdir"/out
+'
+
+test_expect_success PTRACE_SECCOMP,DIG 'disabling use_ptrace works with network sandboxing = deny' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    test_must_fail sydbox \
+        -m core/trace/use_seccomp:1 \
+        -m core/trace/use_ptrace:0 \
+        -m core/sandbox/read:off \
+        -m core/sandbox/write:off \
+        -m core/sandbox/exec:off \
+        -m core/sandbox/network:deny \
+        dig +noall +answer dev.chessmuse.com
+'
+
 test_done

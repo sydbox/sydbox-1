@@ -34,7 +34,7 @@
 
   <refnamediv>
     <refname>sydbox</refname>
-    <refpurpose>ptrace &amp; seccomp based sandbox</refpurpose>
+    <refpurpose>ptrace &amp; seccomp-bpf based sandbox</refpurpose>
   </refnamediv>
 
   <refsynopsisdiv id="synopsis">
@@ -51,7 +51,25 @@
       <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>
       &amp;
       <citerefentry><refentrytitle>seccomp</refentrytitle><manvolnum>2</manvolnum></citerefentry>
-      based sandboxing utility for Linux.
+      based sandboxing utility for modern Linux machines to sandbox unwanted process access to
+      filesystem and network resources.
+    </para>
+
+    <para>
+      The basic idea of <command>sydbox</command> is to run a command under certain restrictions.
+      These restrictions define which system calls the command is allowed to run and which argument
+      values are allowed for the given system call. The restrictions may be applied via two ways.
+      <varname>seccomp-bpf</varname> can be used to apply simple seccomp user filters and
+      <function>ptrace()</function> may be used to do more thorough checking of system call arguments.
+    </para>
+    <para>
+      The main difference of these methods is <varname>seccomp-bpf</varname> filters
+      run on the kernel space and <function>ptrace()</function> tracing runs on user space.
+      This makes <varname>seccomp-bpf</varname> filters extremely fast and secure yet somewhat limited.
+      The limitation stems from the fact that a seccomp filter may not dereference a pointer in a system call
+      argument. This means, e.g, one may not check if a path name argument is under a certain directory tree.
+      However, one may check if a file opening call is read or write. Note, this is important from the
+      security point of view as dereferencing a pointer opens the way for <constant>TOCTOU</constant> attacks.
     </para>
   </refsect1>
 
@@ -117,6 +135,201 @@
         </listitem>
       </varlistentry>
     </variablelist>
+  </refsect1>
+
+  <refsect1 id="sandboxing">
+    <title>Sandboxing</title>
+
+    <para>There are four sandboxing types:</para>
+
+    <orderedlist>
+      <listitem><para>Read sandboxing</para></listitem>
+      <listitem><para>Write sandboxing</para></listitem>
+      <listitem><para><citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry> sandboxing</para></listitem>
+      <listitem><para>Network sandboxing</para></listitem>
+    </orderedlist>
+
+    <para>Sandboxing may have three states:</para>
+
+    <variablelist>
+      <varlistentry>
+        <term><varname>off</varname></term>
+        <listitem>
+          <para>Sandboxing is off, none of the relevant system calls are checked and all access is allowed.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>deny</varname></term>
+        <listitem>
+          <para>Sandboxing defaults to deny, whitelists can be used to allow access.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>allow</varname></term>
+        <listitem>
+          <para>Sandboxing defaults to allow, blacklists can be used to deny access.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>
+      In addition, there are filters for every sandboxing to prevent Sydbox from reporting an access violation.
+      Note, access is still denied in such cases.
+    </para>
+
+    <refsect2 id="write-sandboxing">
+      <title>Write Sandboxing</title>
+
+      <para>This sandboxing checks certain system calls for filesystem write access. If a system call tries to write,
+      modify or change attributes of a path, this attempt is reported and the system call is denied. There are two
+      ways to customize this behaviour. Sydbox may be configured to "whitelist" some path patterns. If the path
+      argument of the system call which is subject to be modified matches a pattern in the list of whitelisted path
+      patterns, this attempt is not denied. Additionally, Sydbox may be configured to "filter" some path patterns. In
+      this case a match will prevent Sydbox from reporting a warning about the access violation, the system call is
+      still denied though.</para>
+
+      <para>List of observed system calls are:
+      <function>access</function><manvolnum>2</manvolnum>,
+      <function>faccessat</function><manvolnum>2</manvolnum>,
+      <function>faccessat2</function><manvolnum>2</manvolnum>,
+      <function>chmod</function><manvolnum>2</manvolnum>,
+      <function>fchmodat</function><manvolnum>2</manvolnum>,
+      <function>chown</function><manvolnum>2</manvolnum>,
+      <function>chown32</function><manvolnum>2</manvolnum>,
+      <function>lchown</function><manvolnum>2</manvolnum>,
+      <function>lchown32</function><manvolnum>2</manvolnum>,
+      <function>fchownat</function><manvolnum>2</manvolnum>,
+      <function>open</function><manvolnum>2</manvolnum>,
+      <function>openat</function><manvolnum>2</manvolnum>,
+      <function>openat2</function><manvolnum>2</manvolnum>,
+      <function>creat</function><manvolnum>2</manvolnum>,
+      <function>mkdir</function><manvolnum>2</manvolnum>,
+      <function>mkdirat</function><manvolnum>2</manvolnum>,
+      <function>mknod</function><manvolnum>2</manvolnum>,
+      <function>mknodat</function><manvolnum>2</manvolnum>,
+      <function>rmdir</function><manvolnum>2</manvolnum>,
+      <function>truncate</function><manvolnum>2</manvolnum>,
+      <function>truncate64</function><manvolnum>2</manvolnum>,
+      <function>mount</function><manvolnum>2</manvolnum>,
+      <function>umount</function><manvolnum>2</manvolnum>,
+      <function>umount2</function><manvolnum>2</manvolnum>,
+      <function>utime</function><manvolnum>2</manvolnum>,
+      <function>utimes</function><manvolnum>2</manvolnum>,
+      <function>utimensat</function><manvolnum>2</manvolnum>,
+      <function>futimesat</function><manvolnum>2</manvolnum>,
+      <function>unlink</function><manvolnum>2</manvolnum>,
+      <function>unlinkat</function><manvolnum>2</manvolnum>,
+      <function>link</function><manvolnum>2</manvolnum>,
+      <function>linkat</function><manvolnum>2</manvolnum>,
+      <function>rename</function><manvolnum>2</manvolnum>,
+      <function>renameat</function><manvolnum>2</manvolnum>,
+      <function>renameat2</function><manvolnum>2</manvolnum>,
+      <function>symlink</function><manvolnum>2</manvolnum>,
+      <function>symlinkat</function><manvolnum>2</manvolnum>,
+      <function>setxattr</function><manvolnum>2</manvolnum>,
+      <function>lsetxattr</function><manvolnum>2</manvolnum>,
+      <function>removexattr</function><manvolnum>2</manvolnum>, and
+      <function>lremovexattr</function><manvolnum>2</manvolnum>.
+      </para>
+    </refsect2>
+
+    <refsect2 id="read-sandboxing">
+      <title>Read Sandboxing</title>
+
+      <para>This sandboxing checks certain system calls for filesystem read access. If a system call tries to read
+      a path, this attempt is reported and the system call is denied. See <xref linkend="write-sandboxing"/> for more
+      information on how to customize this behaviour.</para>
+
+      <para>List of observed system calls are:
+      <function>access</function><manvolnum>2</manvolnum>,
+      <function>faccessat</function><manvolnum>2</manvolnum>,
+      <function>faccessat2</function><manvolnum>2</manvolnum>,
+      <function>open</function><manvolnum>2</manvolnum>,
+      <function>openat</function><manvolnum>2</manvolnum>,
+      <function>openat2</function><manvolnum>2</manvolnum>,
+      <function>listxattr</function><manvolnum>2</manvolnum>, and
+      <function>llistxattr</function><manvolnum>2</manvolnum>.
+      </para>
+    </refsect2>
+
+    <refsect2 id="execve-sandboxing">
+      <title>execve(2) Sandboxing</title>
+
+        <para>This sandboxing denies <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry>, and
+        <citerefentry><refentrytitle>execveat</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+        calls in case the path argument does not match one of the whitelisted patterns. Note, all
+        <citerefentry><refentrytitle>exec</refentrytitle><manvolnum>3</manvolnum></citerefentry> family functions are sandboxed
+        because these functions are just wrappers of either one of <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+        or <citerefentry><refentrytitle>execveat</refentrytitle><manvolnum>2</manvolnum></citerefentry> system calls.</para>
+    </refsect2>
+
+    <refsect2 id="network-sandboxing">
+      <title>Network Sandboxing</title>
+
+      <para>This sandboxing exposes a way to prevent unwanted network calls. The observed system calls are:
+      <function>bind</function><manvolnum>2</manvolnum>,
+      <function>connect</function><manvolnum>2</manvolnum>, and
+      <function>sendto</function><manvolnum>2</manvolnum>. To increase usability, these system calls are
+      observed in two groups: <emphasis>bind</emphasis> and <emphasis>connect</emphasis>.
+      <function>bind</function><manvolnum>2</manvolnum> belongs to the first group, whereas the other two
+      system calls belong to the <emphasis>connect</emphasis> group.
+      </para>
+    </refsect2>
+
+    <refsect2 id="sandbox-restrictions">
+      <title>Further Restrictions</title>
+
+        <para>
+          There are other ways to further restrict access, see:
+          <itemizedlist>
+            <listitem>
+              <link linkend="core-trace-exit_kill">core/trace/exit_kill</link>
+            </listitem>
+          </itemizedlist>
+          <itemizedlist>
+            <listitem>
+          <link linkend="core-restrict-fcntl">core/restrict/file_control</link>
+            </listitem>
+          </itemizedlist>
+          <itemizedlist>
+            <listitem>
+          <link linkend="core-restrict-shm-wr">core/restrict/shared_memory_writable</link>
+            </listitem>
+          </itemizedlist>
+          <itemizedlist>
+            <listitem>
+          <link linkend="core-trace-use_ptrace">core/trace/use_ptrace</link>
+            </listitem>
+          </itemizedlist>
+          <itemizedlist>
+            <listitem>
+          <link linkend="core-trace-use_seccomp">core/trace/use_seccomp</link>
+            </listitem>
+          </itemizedlist>
+          <itemizedlist>
+            <listitem>
+          <link linkend="core-whitelist-sb">core/whitelist/successful_bind</link>
+            </listitem>
+          </itemizedlist>
+          <itemizedlist>
+            <listitem>
+          <link linkend="core-whitelist-usf">core/whitelist/unsupported_socket_families</link>
+            </listitem>
+          </itemizedlist>
+          <itemizedlist>
+            <listitem>
+          <link linkend="exec-resume_if_match">exec/resume_if_match</link>
+            </listitem>
+          </itemizedlist>
+          <itemizedlist>
+            <listitem>
+          <link linkend="exec-kill_if_match">exec/kill_if_match</link>
+            </listitem>
+          </itemizedlist>
+        </para>
+    </refsect2>
   </refsect1>
 
   <refsect1 id="configuration">
@@ -599,6 +812,30 @@
         </varlistentry>
 
         <varlistentry>
+          <term><option id="core-trace-use_ptrace">core/trace/use_ptrace</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>default: <varname>true</varname></para>
+            <para>
+              A boolean specifying whether <function>ptrace()</function>
+              tracing should be enabled. Setting this option to <varname>false</varname> on startup
+              turns sydbox into a seccomp-bpf only sandbox. In this mode, sydbox applies seccomp
+              filters based on the values of <varname>core/sandbox</varname> configuration options
+              and executes the given program without forking.
+            </para>
+
+            <note>
+              <para>
+                At least one of <varname>core/trace/use_ptrace</varname> and
+                <varname>core/trace/use_seccomp</varname>
+                must be enabled, otherwise sydbox will refuse to execute the given
+                command.
+              </para>
+            </note>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
           <term><option id="core-trace-use_seccomp">core/trace/use_seccomp</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
@@ -915,158 +1152,6 @@
           </listitem>
         </varlistentry>
       </variablelist>
-    </refsect2>
-  </refsect1>
-
-  <refsect1 id="sandboxing">
-    <title>Sandboxing</title>
-
-    <para>There are four sandboxing types:</para>
-
-    <orderedlist>
-      <listitem><para>Read sandboxing</para></listitem>
-      <listitem><para>Write sandboxing</para></listitem>
-      <listitem><para><citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry> sandboxing</para></listitem>
-      <listitem><para>Network sandboxing</para></listitem>
-    </orderedlist>
-
-    <para>Sandboxing may have four states:</para>
-
-    <variablelist>
-      <varlistentry>
-        <term><varname>off</varname></term>
-        <listitem>
-          <para>Sandboxing is off, none of the relevant system calls are checked and all access is allowed.</para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term><varname>dump</varname></term>
-        <listitem>
-          <para>Sandboxing is off, none of the relevant system calls are checked and all access is allowed.
-            In addition to the off state, inspection is written into a dump file in JSON lines for inspection
-            (with shoebox or otherwise).
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term><varname>deny</varname></term>
-        <listitem>
-          <para>Sandboxing defaults to deny, whitelists can be used to allow access.</para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term><varname>allow</varname></term>
-        <listitem>
-          <para>Sandboxing defaults to allow, blacklists can be used to deny access.</para>
-        </listitem>
-      </varlistentry>
-    </variablelist>
-
-    <para>
-      In addition, there are filters for every sandboxing to prevent Sydbox from reporting an access violation.
-      Note, access is still denied in such cases.
-    </para>
-
-    <refsect2 id="write-sandboxing">
-      <title>Write Sandboxing</title>
-
-      <para>This sandboxing checks certain system calls for filesystem write access. If a system call tries to write,
-      modify or change attributes of a path, this attempt is reported and the system call is denied. There are two
-      ways to customize this behaviour. Sydbox may be configured to "whitelist" some path patterns. If the path
-      argument of the system call which is subject to be modified matches a pattern in the list of whitelisted path
-      patterns, this attempt is not denied. Additionally, Sydbox may be configured to "filter" some path patterns. In
-      this case a match will prevent Sydbox from reporting a warning about the access violation, the system call is
-      still denied though.</para>
-
-      <para>List of observed system calls are:
-      <function>access</function><manvolnum>2</manvolnum>,
-      <function>faccessat</function><manvolnum>2</manvolnum>,
-      <function>faccessat2</function><manvolnum>2</manvolnum>,
-      <function>chmod</function><manvolnum>2</manvolnum>,
-      <function>fchmodat</function><manvolnum>2</manvolnum>,
-      <function>chown</function><manvolnum>2</manvolnum>,
-      <function>chown32</function><manvolnum>2</manvolnum>,
-      <function>lchown</function><manvolnum>2</manvolnum>,
-      <function>lchown32</function><manvolnum>2</manvolnum>,
-      <function>fchownat</function><manvolnum>2</manvolnum>,
-      <function>open</function><manvolnum>2</manvolnum>,
-      <function>openat</function><manvolnum>2</manvolnum>,
-      <function>openat2</function><manvolnum>2</manvolnum>,
-      <function>creat</function><manvolnum>2</manvolnum>,
-      <function>mkdir</function><manvolnum>2</manvolnum>,
-      <function>mkdirat</function><manvolnum>2</manvolnum>,
-      <function>mknod</function><manvolnum>2</manvolnum>,
-      <function>mknodat</function><manvolnum>2</manvolnum>,
-      <function>rmdir</function><manvolnum>2</manvolnum>,
-      <function>truncate</function><manvolnum>2</manvolnum>,
-      <function>truncate64</function><manvolnum>2</manvolnum>,
-      <function>mount</function><manvolnum>2</manvolnum>,
-      <function>umount</function><manvolnum>2</manvolnum>,
-      <function>umount2</function><manvolnum>2</manvolnum>,
-      <function>utime</function><manvolnum>2</manvolnum>,
-      <function>utimes</function><manvolnum>2</manvolnum>,
-      <function>utimensat</function><manvolnum>2</manvolnum>,
-      <function>futimesat</function><manvolnum>2</manvolnum>,
-      <function>unlink</function><manvolnum>2</manvolnum>,
-      <function>unlinkat</function><manvolnum>2</manvolnum>,
-      <function>link</function><manvolnum>2</manvolnum>,
-      <function>linkat</function><manvolnum>2</manvolnum>,
-      <function>rename</function><manvolnum>2</manvolnum>,
-      <function>renameat</function><manvolnum>2</manvolnum>,
-      <function>renameat2</function><manvolnum>2</manvolnum>,
-      <function>symlink</function><manvolnum>2</manvolnum>,
-      <function>symlinkat</function><manvolnum>2</manvolnum>,
-      <function>setxattr</function><manvolnum>2</manvolnum>,
-      <function>lsetxattr</function><manvolnum>2</manvolnum>,
-      <function>removexattr</function><manvolnum>2</manvolnum>, and
-      <function>lremovexattr</function><manvolnum>2</manvolnum>.
-      </para>
-    </refsect2>
-
-    <refsect2 id="read-sandboxing">
-      <title>Read Sandboxing</title>
-
-      <para>This sandboxing checks certain system calls for filesystem read access. If a system call tries to read
-      a path, this attempt is reported and the system call is denied. See <xref linkend="write-sandboxing"/> for more
-      information on how to customize this behaviour.</para>
-
-      <para>List of observed system calls are:
-      <function>access</function><manvolnum>2</manvolnum>,
-      <function>faccessat</function><manvolnum>2</manvolnum>,
-      <function>faccessat2</function><manvolnum>2</manvolnum>,
-      <function>open</function><manvolnum>2</manvolnum>,
-      <function>openat</function><manvolnum>2</manvolnum>,
-      <function>openat2</function><manvolnum>2</manvolnum>,
-      <function>listxattr</function><manvolnum>2</manvolnum>, and
-      <function>llistxattr</function><manvolnum>2</manvolnum>.
-      </para>
-    </refsect2>
-
-    <refsect2 id="execve-sandboxing">
-      <title>execve(2) Sandboxing</title>
-
-        <para>This sandboxing denies <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry>, and
-        <citerefentry><refentrytitle>execveat</refentrytitle><manvolnum>2</manvolnum></citerefentry>
-        calls in case the path argument does not match one of the whitelisted patterns. Note, all
-        <citerefentry><refentrytitle>exec</refentrytitle><manvolnum>3</manvolnum></citerefentry> family functions are sandboxed
-        because these functions are just wrappers of either one of <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry>
-        or <citerefentry><refentrytitle>execveat</refentrytitle><manvolnum>2</manvolnum></citerefentry> system calls.</para>
-    </refsect2>
-
-    <refsect2 id="network-sandboxing">
-      <title>Network Sandboxing</title>
-
-      <para>This sandboxing exposes a way to prevent unwanted network calls. The observed system calls are:
-      <function>bind</function><manvolnum>2</manvolnum>,
-      <function>connect</function><manvolnum>2</manvolnum>, and
-      <function>sendto</function><manvolnum>2</manvolnum>. To increase usability, these system calls are
-      observed in two groups: <emphasis>bind</emphasis> and <emphasis>connect</emphasis>.
-      <function>bind</function><manvolnum>2</manvolnum> belongs to the first group, whereas the other two
-      system calls belong to the <emphasis>connect</emphasis> group.
-      </para>
     </refsect2>
   </refsect1>
 

@@ -1465,6 +1465,31 @@ cleanup:
 	return r;
 }
 
+PINK_GCC_ATTR((noreturn))
+static void spawn_child(char **argv)
+{
+	int r;
+	char *pathname;
+
+	r = path_lookup(argv[0], &pathname);
+	if (r < 0) {
+		errno = -r;
+		die_errno("can't exec `%s'", argv[0]);
+	}
+
+#if SYDBOX_HAVE_SECCOMP
+	if ((r = seccomp_init()) < 0)
+		die_errno("seccomp_init failed");
+	if ((r = sysinit_seccomp()) < 0)
+		die_errno("seccomp_apply failed");
+#endif
+
+	execv(pathname, argv);
+	fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
+		pathname, errno, strerror(errno));
+	exit(EXIT_FAILURE);
+}
+
 static void startup_child(char **argv)
 {
 	int r;
@@ -1499,13 +1524,15 @@ static void startup_child(char **argv)
 			}
 		}
 #endif
-		pid = getpid();
-		if (!syd_use_seize) {
-			if ((r = pink_trace_me()) < 0) {
-				fprintf(stderr,
-					PACKAGE": ptrace(PTRACE_TRACEME) failed (errno:%d %s)\n",
-					-r, strerror(-r));
-				_exit(EXIT_FAILURE);
+		if (tracing()) {
+			pid = getpid();
+			if (!syd_use_seize) {
+				if ((r = pink_trace_me()) < 0) {
+					fprintf(stderr,
+						PACKAGE": ptrace(PTRACE_TRACEME) failed (errno:%d %s)\n",
+						-r, strerror(-r));
+					_exit(EXIT_FAILURE);
+				}
 			}
 		}
 
@@ -1516,7 +1543,7 @@ static void startup_child(char **argv)
 			_exit(EXIT_FAILURE);
 		}
 
-		if (kill(pid, SIGSTOP) < 0) {
+		if (tracing() && kill(pid, SIGSTOP) < 0) {
 			fprintf(stderr, PACKAGE": self-stop pid:%d failed (errno:%d %s)\n",
 				pid, errno, strerror(errno));
 		}
@@ -1528,6 +1555,13 @@ static void startup_child(char **argv)
 	}
 
 	free(pathname);
+
+	sydbox->execve_pid = pid;
+	sydbox->execve_wait = true;
+	if (!tracing()) {
+		dump(DUMP_STARTUP, pid);
+		return;
+	}
 #if PINK_HAVE_SEIZE
 	if (syd_use_seize) {
 		/* Wait until child stopped itself */
@@ -1550,8 +1584,6 @@ static void startup_child(char **argv)
 	}
 #endif
 	child = new_process_or_kill(pid, post_attach_sigstop);
-	sydbox->execve_pid = pid;
-	sydbox->execve_wait = true;
 	init_process_data(child, NULL);
 	dump(DUMP_STARTUP, pid);
 }
@@ -1666,6 +1698,19 @@ int main(int argc, char **argv)
 		config_parse_spec(env);
 
 	config_done();
+#if SYDBOX_HAVE_SECCOMP
+	if (!sydbox->config.use_seccomp && !sydbox->config.use_ptrace) {
+		say("At least one of the options "
+		    "core/trace/use_ptrace and "
+		    "core/trace/use_seccomp "
+		    "must be enabled.");
+		usage(stderr, 1);
+	}
+#else
+	if (!sydbox->config.use_ptrace)
+		die("Option `core/trace/use_ptrace' must be enabled.");
+#endif
+
 	systable_init();
 	sysinit();
 
@@ -1725,9 +1770,13 @@ int main(int argc, char **argv)
 	   installed below as they are inherited into the spawned process.
 	   Also we do not need to be protected by them as during interruption
 	   in the STARTUP_CHILD mode we kill the spawned process anyway.  */
-	startup_child(&argv[optind]);
-	init_signals();
-	r = trace();
+	if (tracing()) {
+		startup_child(&argv[optind]);
+		init_signals();
+		r = trace();
+	} else {
+		spawn_child(&argv[optind]);
+	}
 	cleanup();
 	return r;
 }
