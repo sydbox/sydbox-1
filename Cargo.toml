@@ -17,6 +17,7 @@ include = [
 	"**/*.rs",
 	"Cargo.toml",
 	"data/*.syd-1",
+	"logo/sydbox160.png",
 	"/README",
 	"/LICENSE",
 	"/TODO",
