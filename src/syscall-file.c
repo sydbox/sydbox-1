@@ -282,7 +282,7 @@ static int restrict_open_flags(syd_process_t *current, unsigned long flags)
 	if (!sydbox->config.use_seccomp &&
 	    sydbox->config.restrict_file_control &&
 	    flags & (O_ASYNC|O_DIRECT|O_SYNC))
-		return deny(current, EINVAL);
+		return deny(current, EPERM);
 	return 0;
 }
 

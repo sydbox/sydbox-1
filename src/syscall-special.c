@@ -484,7 +484,7 @@ int sys_fcntl(syd_process_t *current)
 		if ((r = syd_read_argument_int(current, 0, &arg0)) < 0)
 			return r;
 		if (arg0 & (O_ASYNC|O_DIRECT))
-			return deny(current, EINVAL);
+			return deny(current, EPERM);
 		/* fall through */
 	case F_GETFL:
 	case F_SETOWN:

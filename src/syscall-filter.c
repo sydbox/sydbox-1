@@ -34,7 +34,7 @@ static int filter_open_index(int arch, uint32_t sysnum, unsigned flag_index)
 		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 3/*jump to allow*/),
 		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(flag_index)),
 		BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, (O_ASYNC|O_DIRECT|O_SYNC), 0, 1),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EINVAL & SECCOMP_RET_DATA)),
+		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA)),
 		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW)
 	};
 	struct sock_fprog prog;
@@ -87,7 +87,7 @@ int filter_fcntl(int arch, uint32_t sysnum)
 		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA)),
 		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(2)),
 		BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, (O_ASYNC|O_DIRECT), 0, 1),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EINVAL & SECCOMP_RET_DATA)),
+		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA)),
 		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW)
 	};
 	struct sock_fprog prog;
@@ -120,7 +120,7 @@ int filter_mmap(int arch, uint32_t sysnum)
 		BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, PROT_WRITE, 0, 3),
 		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(3)), /* flags */
 		BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, MAP_SHARED, 0, 1),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EINVAL & SECCOMP_RET_DATA)),
+		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA)),
 		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW)
 	};
 	struct sock_fprog prog;
@@ -150,6 +150,6 @@ int sys_fallback_mmap(syd_process_t *current)
 
 	r = 0;
 	if (prot & PROT_WRITE && flags & MAP_SHARED)
-		r = deny(current, EINVAL);
+		r = deny(current, EPERM);
 	return r;
 }
