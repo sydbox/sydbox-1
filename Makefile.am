@@ -16,6 +16,14 @@ MAINTAINERCLEANFILES= \
 EXTRA_DIST= \
 	    autogen.sh
 
+PANDORA_EXTRA_DIST=\
+		   build.rs \
+		   Cargo.toml \
+		   Cargo.lock \
+		   src/lib.rs \
+		   src/pandora.rs
+EXTRA_DIST+= $(PANDORA_EXTRA_DIST)
+
 dist_doc_DATA= \
 	       BUGS \
 	       COPYRIGHT \
