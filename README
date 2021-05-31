@@ -174,10 +174,18 @@ Can you help me?
 - **Mastodon:** https://mastodon.online/@alip
 - **IRC:** alip at [Libera](https://libera.chat/)
 
+Git
+===
+- **Original Git**: https://git.exherbo.org/sydbox-1.git/
+- **Github Mirror**: https://github.com/sydbox/sydbox-1
+
+Github mirror is updated periodically. Feel free to submit an issue or a pull
+request there. **Attaching poems encourages consideration tremendously.**
+
 Documentation
 =============
 
-Read the fine manual of [SydBox](https://dev.exherbo.org/~alip/sydbox/sydbox.html) and [SydFmt](https://dev.exherbo.org/~alip/sydbox/sydbox.html).
+Read the fine manual of [SydBox](https://dev.exherbo.org/~alip/sydbox/sydbox.html) and [SydFmt](https://dev.exherbo.org/~alip/sydbox/sydfmt.html).
 
 Blog Posts
 ==========
