@@ -402,6 +402,17 @@ Repository: {}
             Err(_) => "/bin/sh".to_string(),
         };
 
+        let home;
+        let mut homeargs = Vec::new();
+        match std::env::var("HOME") {
+            Ok(s) => {
+                home = format!("whitelist/write+{}/***", s);
+                homeargs.push("-m");
+                homeargs.push(&home);
+            }
+            Err(_) => {},
+        };
+
         let mut paludis = Vec::new();
         for magic in PALUDIS.split('\n').filter(|&magic| !magic.is_empty()) {
             paludis.push("-m");
@@ -418,6 +429,7 @@ Repository: {}
 
         let mut child = Command::new("sydbox")
             .args(&paludis)
+            .args(&homeargs)
             .args(&rcargs)
             .arg("--")
             .arg(shell)
