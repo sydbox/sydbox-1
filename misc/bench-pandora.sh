@@ -10,6 +10,12 @@ tmp="$root"/target/tmp
 tmp=$(readlink -f "$tmp")
 tao="$tmp"/TAO
 
+bench=(
+    "for x in seq 1000000; do cat \"$tao\"; done"
+    "for x in seq 100000; do touch \"$tao\"; rm -f \"$tao\"; done"
+    'for x in seq 10000; do dig +noall +answer dev.chessmuse.com; done'
+)
+
 fortune tao >"$tao" 2>/dev/null ||\
 cat >"$tao"<<EOF
 Peace
@@ -25,33 +31,42 @@ But its benefit cannot be exhausted.
                 -- Lao Tse, "Tao Te Ching"
 EOF
 
-out="$root"/bench/hyperfine-pandora-$(date +'%Y-%m-%d')-$(git rev-parse --short).md
-if [ -e "$out" ]; then
+out="$root"/bench/hyperfine-pandora-$(date +'%Y-%m-%d')-$(git rev-parse --short HEAD)
+if [ -e "$out".json -o -e "$out".txt ]; then
     echo >&2 "Refusing to overwrite previous benchmark at \`$out'"
     exit 1
 fi
 
-# --prepare 'sync; echo 3 | sudo tee /proc/sys/vm/drop_caches' \
 hyperfine \
-    --export-markdown "$out" \
+    --export-json "$out".json \
     --ignore-failure \
-    --min-runs 100000 \
-    "cat $tao" \
-    "strace -q cat $tao" \
-    -n 'pandora box read:off seccomp:off cat TAO' \
-    "pandora box -m core/sandbox/read:off -m core/trace/use_seccomp:0 cat \"$tao\"" \
-    -n 'pandora box read:allow seccomp:on cat TAO' \
-    "pandora box -m core/sandbox/read:allow -m core/trace/use_seccomp:1 cat \"$tao\"" \
-    -n 'pandora box read:allow seccomp:off cat TAO' \
-    "pandora box -m core/sandbox/read:allow -m core/trace/use_seccomp:0 cat \"$tao\"" \
-    -n 'pandora box read:deny seccomp:on cat TAO' \
-    "pandora box -m core/sandbox/read:deny -m core/trace/use_seccomp:1 cat \"$tao\"" \
-    -n 'pandora box read:deny seccomp:off cat TAO' \
-    "pandora box -m core/sandbox/read:deny -m core/trace/use_seccomp:0 cat \"$tao\"" \
-    -n 'pandora box read:deny seccomp:on whitelist cat TAO' \
-    "pandora box -m core/sandbox/read:deny -m core/trace/use_seccomp:1 -m \"whitelist/read+$tmp\" cat \"$tao\"" \
-    -n 'pandora box read:deny seccomp:off whitelist cat TAO' \
-    "pandora box -m core/sandbox/read:deny -m core/trace/use_seccomp:0 -m \"whitelist/read+$tmp\" cat \"$tao\""
+    --prepare 'sync; echo 3 | sudo tee /proc/sys/vm/drop_caches' \
+    "/bin/sh -c '${bench[0]}'" \
+    "strace -q /bin/sh -c '${bench[0]}'" \
+    "\"$pandora\" box -m core/sandbox/read:off -m core/trace/use_seccomp:0 /bin/sh -c '${bench[0]}'" \
+    "\"$pandora\" box -m core/sandbox/read:allow -m core/trace/use_seccomp:1 /bin/sh -c  '${bench[0]}'" \
+    "\"$pandora\" box -m core/sandbox/read:allow -m core/trace/use_seccomp:0 /bin/sh -c '${bench[0]}'" \
+    "\"$pandora\" box -m core/sandbox/read:deny -m core/trace/use_seccomp:1 /bin/sh -c '${bench[0]}'" \
+    "\"$pandora\" box -m core/sandbox/read:deny -m core/trace/use_seccomp:0 /bin/sh -c '${bench[0]}'" \
+    "\"$pandora\" box -m core/sandbox/read:deny -m core/trace/use_seccomp:1 -m \"whitelist/read+$tmp\" /bin/sh -c '${bench[0]}'" \
+    "\"$pandora\" box -m core/sandbox/read:deny -m core/trace/use_seccomp:0 -m \"whitelist/read+$tmp\" /bin/sh -c '${bench[0]}'" \
+    "\"$pandora\" box -m core/sandbox/write:off -m core/trace/use_seccomp:0 /bin/sh -c '${bench[1]}'" \
+    "\"$pandora\" box -m core/sandbox/write:allow -m core/trace/use_seccomp:1 /bin/sh -c  '${bench[1]}'" \
+    "\"$pandora\" box -m core/sandbox/write:allow -m core/trace/use_seccomp:0 /bin/sh -c '${bench[1]}'" \
+    "\"$pandora\" box -m core/sandbox/write:deny -m core/trace/use_seccomp:1 /bin/sh -c '${bench[1]}'" \
+    "\"$pandora\" box -m core/sandbox/write:deny -m core/trace/use_seccomp:0 /bin/sh -c '${bench[1]}'" \
+    "\"$pandora\" box -m core/sandbox/write:deny -m core/trace/use_seccomp:1 -m \"whitelist/write+$tmp\" /bin/sh -c '${bench[1]}'" \
+    "\"$pandora\" box -m core/sandbox/write:deny -m core/trace/use_seccomp:0 -m \"whitelist/write+$tmp\" /bin/sh -c '${bench[1]}'" \
+    "\"$pandora\" box -m core/sandbox/network:deny -m core/trace/use_seccomp:0  /bin/sh -c '${bench[2]}'" \
+    "\"$pandora\" box -m core/sandbox/network:deny -m core/trace/use_seccomp:1  /bin/sh -c '${bench[2]}'" \
+    "\"$pandora\" box -m core/sandbox/network:deny -m core/trace/use_seccomp:0 -m 'whitelist/network/bind+LOOPBACK@0' -m 'whitelist/network/bind+LOOPBACK6@0' -m 'whitelist/network/bind+inet:0.0.0.0@0' /bin/sh -c '${bench[2]}'" \
+    "\"$pandora\" box -m core/sandbox/network:deny -m core/trace/use_seccomp:1 -m 'whitelist/network/bind+LOOPBACK@0' -m 'whitelist/network/bind+LOOPBACK6@0' -m 'whitelist/network/bind+inet:0.0.0.0@0' /bin/sh -c '${bench[2]}'"
 
-echo >> "$out"
-cat $tao >> "$out"
+cat>"$out".txt<<EOF
+Date: $(date -u)
+SydBox: $(sydbox --version | tr '\n' ' ')
+Pandora: $("$pandora" --version)
+HyperFine: $(hyperfine --version)
+Tao:
+$(cat "$tao")
+EOF
