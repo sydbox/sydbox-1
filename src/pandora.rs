@@ -2,7 +2,7 @@
 // pandora: Sydbox's Dump Inspector & Profile Writer
 // pandora.rs: Main entry point
 //
-// Copyright (c) 2021 Alï Polatel <alip@exherbo.org>
+// Copyright (c) 2021 Ali Polatel <alip@exherbo.org>
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
