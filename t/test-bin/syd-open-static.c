@@ -21,7 +21,10 @@ int main(int argc, char *argv[])
 
 	errno = 0;
 	int fd = open(pathname, flags);
-	if (fd < 0)
+	if (fd < 0) {
+		if (errno == EINVAL)
+			return 0;
 		return errno;
+	}
 	return 0;
 }
