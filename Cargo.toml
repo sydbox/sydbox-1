@@ -1,6 +1,6 @@
 [package]
 name = "pandora_box"
-version = "0.4.2"
+version = "0.4.3"
 authors = ["Alï Polatel <alip@exherbo.org>"]
 edition = "2018"
 description = "Pandora's Box: A helper for SydBox, a ptrace & seccomp based sandbox to make sandboxing practical"
