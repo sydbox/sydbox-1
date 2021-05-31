@@ -38,6 +38,9 @@ serde_json = "1.0"
 [build-dependencies]
 built = {version = "0.4.4", features=["git2", "chrono"]}
 
+[dev-dependencies]
+hyperfine = "1.11.0"
+
 [profile.release]
 lto = true
 codegen-units = 1
