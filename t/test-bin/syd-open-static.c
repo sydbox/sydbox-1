@@ -3,11 +3,21 @@
 int main(int argc, char *argv[])
 {
 	if (argc < 2)
-		return EINVAL;
+		return ENOSYS;
 	char *pathname = argv[1];
 	int flags = O_RDONLY;
 	if (argc > 2) {
-		for (int i = 2; i < argc; i++) {
+		if (!strcmp("rdonly", argv[2]))
+			flags = O_RDONLY;
+		else if (!strcmp("wronly", argv[2]))
+			flags = O_WRONLY;
+		else if (!strcmp("rdwr", argv[2]))
+			flags = O_RDWR;
+		else
+			return ENOSYS;
+	}
+	if (argc > 3) {
+		for (int i = 3; i < argc; i++) {
 			if (!strcmp("async", argv[i]))
 				flags |= O_ASYNC;
 			else if (!strcmp("direct", argv[i]))
@@ -15,7 +25,7 @@ int main(int argc, char *argv[])
 			else if (!strcmp("sync", argv[i]))
 				flags |= O_SYNC;
 			else
-				return EINVAL;
+				return ENOSYS;
 		}
 	}
 

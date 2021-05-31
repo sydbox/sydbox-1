@@ -259,7 +259,7 @@ test_expect_success 'read sandboxing for open works' '
     touch "$cdir"/readme &&
     test_must_fail sydbox \
         -m core/sandbox/read:deny \
-        syd-open-static "$cdir"/readme
+        syd-open-static "$cdir"/readme rdonly
 '
 
 test_expect_success 'read sandboxing for open works with whitelist' '
@@ -271,7 +271,7 @@ test_expect_success 'read sandboxing for open works with whitelist' '
     sydbox \
         -m core/sandbox/read:deny \
         -m "whitelist/read+/***" \
-        syd-open-static "$cdir"/readme
+        syd-open-static "$cdir"/readme rdonly
 '
 
 test_expect_success PTRACE_SECCOMP 'read sandboxing for open can be reenabled under seccomp' '
@@ -283,7 +283,7 @@ test_expect_success PTRACE_SECCOMP 'read sandboxing for open can be reenabled un
     test_must_fail sydbox \
         -m core/trace/use_seccomp:true \
         -m core/sandbox/read:deny \
-        syd-open-static "$cdir"/readme
+        syd-open-static "$cdir"/readme rdonly
 '
 
 test_expect_success PTRACE_SECCOMP 'read sandboxing for open with whitelist can be reenabled under seccomp' '
@@ -296,7 +296,7 @@ test_expect_success PTRACE_SECCOMP 'read sandboxing for open with whitelist can 
         -m core/trace/use_seccomp:true \
         -m core/sandbox/read:deny \
         -m "whitelist/read+/***" \
-        syd-open-static "$cdir"/readme
+        syd-open-static "$cdir"/readme rdonly
 '
 
 test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(path,O_ASYNC)' '
@@ -308,7 +308,7 @@ test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(pat
     sydbox \
         -m core/trace/use_seccomp:true \
         -m core/restrict/file_control:false \
-        syd-open-static "$cdir"/readme async
+        syd-open-static "$cdir"/readme rdonly async
 '
 
 test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(path,O_DIRECT)' '
@@ -320,7 +320,7 @@ test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(pat
     sydbox \
         -m core/trace/use_seccomp:true \
         -m core/restrict/file_control:false \
-        syd-open-static "$cdir"/readme direct
+        syd-open-static "$cdir"/readme rdonly direct
 '
 
 test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(path,O_SYNC)' '
@@ -332,7 +332,7 @@ test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(pat
     sydbox \
         -m core/trace/use_seccomp:true \
         -m core/restrict/file_control:false \
-        syd-open-static "$cdir"/readme sync
+        syd-open-static "$cdir"/readme rdonly sync
 '
 
 test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(path,O_ASYNC) with EPERM' '
@@ -341,10 +341,10 @@ test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(pat
     cdir="${pdir}/$(unique_dir)" &&
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
-    test_expect_code 22 sydbox \
+    test_expect_code 1 sydbox \
         -m core/trace/use_seccomp:true \
         -m core/restrict/file_control:true \
-        syd-open-static "$cdir"/readme async
+        syd-open-static "$cdir"/readme rdonly async
 '
 
 test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(path,O_DIRECT) with EPERM' '
@@ -353,10 +353,10 @@ test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(pat
     cdir="${pdir}/$(unique_dir)" &&
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
-    test_expect_code 22 sydbox \
+    test_expect_code 1 sydbox \
         -m core/trace/use_seccomp:true \
         -m core/restrict/file_control:true \
-        syd-open-static "$cdir"/readme direct
+        syd-open-static "$cdir"/readme rdonly direct
 '
 
 test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(path,O_SYNC) with EPERM' '
@@ -365,10 +365,10 @@ test_expect_success PTRACE_SECCOMP 'restrict file control works to deny open(pat
     cdir="${pdir}/$(unique_dir)" &&
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
-    test_expect_code 22 sydbox \
+    test_expect_code 1 sydbox \
         -m core/trace/use_seccomp:true \
         -m core/restrict/file_control:true \
-        syd-open-static "$cdir"/readme sync
+        syd-open-static "$cdir"/readme rdonly sync
 '
 
 test_done
