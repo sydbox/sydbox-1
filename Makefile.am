@@ -9,8 +9,6 @@ MAINTAINERCLEANFILES= \
 		      aclocal.m4 \
 		      config.h \
 		      config.h.in \
-		      COPYING \
-		      LICENSE \
 		      INSTALL
 
 EXTRA_DIST= \
@@ -26,7 +24,8 @@ EXTRA_DIST+= $(PANDORA_EXTRA_DIST)
 
 dist_doc_DATA= \
 	       BUGS \
-	       COPYRIGHT \
+	       COPYING \
+	       LICENSE \
 	       README \
 	       man/ptrace-ntpl.txt
 
