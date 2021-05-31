@@ -6,7 +6,7 @@
  * Copyright (c) 2010, 2011, 2012, 2013, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon dovecot/src/lib/net.c which is:
  *     Copyright (c) 1999-2018 Dovecot authors
- * Released under the terms of the 3-clause BSD license
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #include "sydconf.h"

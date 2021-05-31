@@ -3,8 +3,8 @@
  *
  * pinktrace wrapper functions
  *
- * Copyright (c) 2014 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * Copyright (c) 2014, 2021 Ali Polatel <alip@exherbo.org>
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #ifndef PINK_H

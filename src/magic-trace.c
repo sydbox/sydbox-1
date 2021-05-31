@@ -1,8 +1,8 @@
 /*
  * sydbox/magic-trace.c
  *
- * Copyright (c) 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * Copyright (c) 2012, 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #include "sydbox.h"

@@ -7,6 +7,7 @@
  * Based in part upon systemd which is
  *   Copyright 2010 Lennart Poettering
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
+ * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
 #ifndef FILE_H

@@ -6,7 +6,7 @@
  * Copyright (c) 2012, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright (C) 2010-2012 Lennart Poettering
- * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
+ * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
 #include "sydconf.h"

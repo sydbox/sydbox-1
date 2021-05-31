@@ -6,7 +6,7 @@
  *   Copyright 2010 Lennart Poettering
  * Based in part upon courier which is:
  *   Copyright 1998-2009 Double Precision, Inc
- * Distributed under the terms of the GNU General Public License v2
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #include "sydconf.h"

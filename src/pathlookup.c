@@ -7,7 +7,7 @@
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
  *   Copyright (c) 1993, 1994, 1995, 1996 Rick Sladkey <jrs@world.std.com>
  *   Copyright (c) 1996-1999 Wichert Akkerman <wichert@cistron.nl>
- * Released under the terms of the 3-clause BSD license
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "sydbox.h"

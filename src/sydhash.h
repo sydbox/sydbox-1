@@ -3,8 +3,8 @@
  *
  * Configure uthash.h for sydbox
  *
- * Copyright (c) 2013, 2015 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * Copyright (c) 2013, 2015, 2021 Ali Polatel <alip@exherbo.org>
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #ifndef SYDHASH_H

@@ -4,7 +4,7 @@
  * Socket related system call handlers
  *
  * Copyright (c) 2011, 2012, 2013, 2014, 2015, 2018, 2021 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #include "sydbox.h"

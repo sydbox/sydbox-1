@@ -1,7 +1,7 @@
 /* Syd: See Emily Play!
  * Check program for sydbox tests
  * Copyright 2009, 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #include "emily.h"

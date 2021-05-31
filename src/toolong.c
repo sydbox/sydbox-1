@@ -7,6 +7,7 @@
  * Based in part upon zsh/Src/compat.c which is:
  *	 Copyright (c) 1992-1997 Paul Falstad
  * All rights reserved.
+ * SPDX-License-Identifier: ZSH
  *
  * Permission is hereby granted, without written agreement and without
  * license or royalty fees, to use, copy, modify, and distribute this

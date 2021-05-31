@@ -2,7 +2,7 @@
  * sydbox/magic-restrict.c
  *
  * Copyright (c) 2013 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #include "sydbox.h"

@@ -4,7 +4,7 @@
  * ACL queue for sydbox based on TAILQ from <sys/queue.h>
  *
  * Copyright (c) 2013, 2021 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #ifndef ACL_QUEUE_H

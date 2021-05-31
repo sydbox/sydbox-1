@@ -1,7 +1,7 @@
 /*
  * Simple implementation of the Test Anything Protocol
  * Copyright 2012, 2013 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #ifndef TAP_H

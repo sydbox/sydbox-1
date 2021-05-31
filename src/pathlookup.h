@@ -1,8 +1,8 @@
 /*
  * sydbox/pathlookup.h
  *
- * Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * Copyright (c) 2012, 2013, 2021 Ali Polatel <alip@exherbo.org>
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #ifndef PATHLOOKUP_H

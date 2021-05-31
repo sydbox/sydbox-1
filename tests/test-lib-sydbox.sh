@@ -1,7 +1,7 @@
 #!/bin/sh
 # vim: set noet ts=8 sts=8 sw=8 tw=80 :
-# Copyright 2013 Ali Polatel <alip@exherbo.org>
-# Released under the terms of the 3-clause BSD license
+# Copyright 2013, 2021 Ali Polatel <alip@exherbo.org>
+# SPDX-License-Identifier: GPL-2.0-only
 
 #
 # Additions to test-lib-functions.sh

@@ -4,7 +4,7 @@
  * Copyright (c) 2013, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon FreeBSD's lib/libc/stdlib/realpath.c which is:
  *   Copyright (c) 2003 Constantin S. Svintsoff <kostik@iclub.nsu.ru>
- * Released under the terms of the 3-clause BSD license
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <stdbool.h>

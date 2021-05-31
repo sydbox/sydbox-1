@@ -1,6 +1,6 @@
 #!/bin/sh
 # Copyright 2013 Ali Polatel <alip@exherbo.org>
-# Released under the terms of the 3-clause BSD license
+# SPDX-License-Identifier: GPL-2.0-only
 
 test_description='test the very basics of sydbox'
 . ./test-lib.sh

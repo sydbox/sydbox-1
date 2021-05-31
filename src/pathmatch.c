@@ -4,7 +4,7 @@
  * Extends wildmatch for sydbox specific use cases.
  *
  * Copyright (c) 2012, 2013, 2015 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #include "sydconf.h"

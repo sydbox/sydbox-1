@@ -4,7 +4,7 @@
  * Simple seccomp based system call filters
  *
  * Copyright (c) 2013, 2021 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #include "sydbox.h"

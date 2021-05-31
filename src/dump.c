@@ -4,7 +4,7 @@
  * Event dumper using JSON lines
  *
  * Copyright (c) 2014, 2018, 2021 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #include "sydbox.h"
