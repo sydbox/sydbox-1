@@ -9,6 +9,8 @@ MAINTAINERCLEANFILES= \
 		      aclocal.m4 \
 		      config.h \
 		      config.h.in \
+		      COPYING \
+		      LICENSE \
 		      INSTALL
 
 EXTRA_DIST= \
