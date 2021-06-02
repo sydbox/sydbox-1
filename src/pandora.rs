@@ -20,7 +20,10 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use clap::{App, Arg, SubCommand};
 use serde::{Deserialize, Serialize};
 
-use pandora_box::built_info;
+pub mod built_info {
+    // The file has been placed there by the build script.
+    include!(concat!(env!("OUT_DIR"), "/built.rs"));
+}
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
