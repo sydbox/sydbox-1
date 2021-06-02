@@ -31,6 +31,7 @@
 				"39937510582097494459230781640628620899862803" \
 				"482534211706798214808651328230664709384"
 #define TMP_LONG_MAGIC		32
+#define TMP_RMTREE "perl -mFile::Path -e 'File::Path::rmtree(\""TMPDIR"\")'"
 static char *tmpdir;
 static char *tmp_file;
 static char *tmp_void_file;
@@ -42,7 +43,7 @@ static int test_cwd_fd;
 
 static void test_setup(void)
 {
-	assert_int_equal(0, system("rm -fr "TMPDIR));
+	assert_int_equal(0, system(TMP_RMTREE));
 	assert_int_equal(0, system("mkdir -p -m700 "TMPDIR));
 	assert_int_equal(0, system("touch "TMPDIR"/"TMP_FILE));
 	assert_int_equal(0, system("ln -s file "TMPDIR"/"TMP_LINK));
@@ -70,7 +71,7 @@ static void test_setup(void)
 static void test_teardown(void)
 {
 	assert_int_equal(0, fchdir(test_cwd_fd));
-	assert_int_equal(0, system("rm -fr ./"TMPDIR));
+	assert_int_equal(0, system(TMP_RMTREE));
 	if (tmpdir)
 		free(tmpdir);
 	if (tmp_file)

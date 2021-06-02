@@ -1,7 +1,7 @@
 /*
  * syd/check.c -- Syd's utility library checks
  *
- * Copyright (c) 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the GNU General Public License v3 (or later)
  */
 
@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-char syd_fail_message[256];
+char syd_fail_message[SYD_FAIL_MESSAGE_MAX];
 
 static void all_tests(void)
 {

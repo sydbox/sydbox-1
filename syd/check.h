@@ -1,7 +1,7 @@
 /*
  * syd/check.h -- Syd's utility library check headers
  *
- * Copyright (c) 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the GNU General Public License v3 (or later)
  */
 
@@ -20,10 +20,11 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-extern char syd_fail_message[256];
+#define SYD_FAIL_MESSAGE_MAX 1024
+extern char syd_fail_message[SYD_FAIL_MESSAGE_MAX];
 #define fail_msg(...) \
 	do { \
-		snprintf(syd_fail_message, 256, __VA_ARGS__); \
+		snprintf(syd_fail_message, SYD_FAIL_MESSAGE_MAX, __VA_ARGS__); \
 		seatest_simple_test_result(0, syd_fail_message, __func__, __LINE__); \
 	} while (0)
 #define assert_true_msg(x, fmt, ...) \
