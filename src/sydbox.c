@@ -108,6 +108,7 @@ usage: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] [-E var=val...] {command [
 -m magic    -- run a magic command during init, may be repeated\n\
 -E var=val  -- put var=val in the environment for command, may be repeated\n\
 -E var      -- remove var from the environment for command, may be repeated\n\
+-d <fd|tmp> -- dump system call information to the given file descriptor\n\
 \n\
 Hey you, out there beyond the wall,\n\
 Breaking bottles in the hall,\n\
@@ -115,9 +116,6 @@ Can you help me?\n\
 \n\
 Send bug reports to \"" PACKAGE_BUGREPORT "\"\n\
 Attaching poems encourages consideration tremendously.\n");
-	/*
--d          -- Inspect only, dry run, shorthand for dump mode\n\
-	 */
 	exit(code);
 }
 
