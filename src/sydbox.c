@@ -1676,6 +1676,7 @@ int main(int argc, char **argv)
 			break;
 #else
 		case 'd':
+			say("dump not supported, compile with --enable-dump");
 			usage(stderr, 1);
 #endif
 		case 'v':

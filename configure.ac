@@ -295,7 +295,7 @@ LIBUNWIND_REQUIRED=1.1
 
 AC_MSG_CHECKING([for debug support])
 AC_ARG_ENABLE([debug],
-	      [AS_HELP_STRING([--enable-debug], ['Enable debug support (requires: libunwind)'])],
+	      [AS_HELP_STRING([--enable-debug], [Enable debug support (requires: libunwind)])],
 	      [WANT_DEBUG="$enableval"],
 	      [WANT_DEBUG="no"])
 AC_MSG_RESULT([$WANT_DEBUG])
@@ -342,10 +342,10 @@ AM_CONDITIONAL([WANT_SECCOMP], test x"$WANT_SECCOMP" = x"yes")
 AC_DEFINE_UNQUOTED([SYDBOX_HAVE_SECCOMP], [$SYDBOX_HAVE_SECCOMP], [Enable seccomp support])
 AC_SUBST([SYDBOX_HAVE_SECCOMP])
 
-AC_MSG_CHECKING([for dry run])
-AC_ARG_WITH([dry-run],
-	AS_HELP_STRING([--without-dry-run],
-		       ["Avoid linking event dumper into sydbox binary"]),
+AC_MSG_CHECKING([for dump])
+AC_ARG_ENABLE([dump],
+	AS_HELP_STRING([--disable-dump],
+		       [Avoid linking event dumper into sydbox binary, required for sydbox -d option]),
 	[WANT_DUMP_BUILTIN="$withval"],
 	[WANT_DUMP_BUILTIN=yes])
 if test x"$WANT_DUMP_BUILTIN" = x"yes"; then
