@@ -206,6 +206,7 @@ AC_CHECK_TYPES([struct pt_all_user_regs, struct ia64_fpreg, struct ptrace_peeksi
 AC_CHECK_TYPES([sig_atomic_t], [], AC_MSG_ERROR([I need sigatomic_t]), [#include <signal.h>])
 AC_CHECK_TYPES([sighandler_t, sig_t, __sighandler_t],,,[#include <signal.h>])
 AC_CHECK_TYPES([struct open_how],,,[#include <linux/openat2.h>])
+AC_CHECK_TYPES([struct statx],,,[#include <sys/stat.h>])
 
 HAVE_NEWFSTATAT=
 AC_CHECK_DECL([SYS_newfstatat],
@@ -341,6 +342,14 @@ AC_MSG_RESULT([$WANT_SECCOMP])
 AM_CONDITIONAL([WANT_SECCOMP], test x"$WANT_SECCOMP" = x"yes")
 AC_DEFINE_UNQUOTED([SYDBOX_HAVE_SECCOMP], [$SYDBOX_HAVE_SECCOMP], [Enable seccomp support])
 AC_SUBST([SYDBOX_HAVE_SECCOMP])
+
+case "$host_cpu" in
+aarch64*|arm*)
+	if test x"$SYDBOX_HAVE_SECCOMP" = x"0"; then
+		AC_MSG_ERROR([seccomp must be enabled on Arm and AArch64 architectures"])
+	fi
+	;;
+esac
 
 AC_MSG_CHECKING([for dump])
 AC_ARG_ENABLE([dump],

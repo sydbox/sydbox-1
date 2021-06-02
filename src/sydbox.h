@@ -912,6 +912,17 @@ int sys_execve(syd_process_t *current);
 int sys_execveat(syd_process_t *current);
 int sys_stat(syd_process_t *current);
 int sys_fstatat(syd_process_t *current);
+int sys_statx(syd_process_t *current);
+#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
+# define WRITE_STAT_ON_ENTRY 0
+# define WRITE_RETVAL_ON_ENTRY 0
+int sysx_stat(syd_process_t *current);
+int sysx_statx(syd_process_t *current);
+int sysx_fstatat(syd_process_t *current);
+#else
+# define WRITE_STAT_ON_ENTRY 1
+# define WRITE_RETVAL_ON_ENTRY 1
+#endif
 
 int sys_socketcall(syd_process_t *current);
 int sys_bind(syd_process_t *current);

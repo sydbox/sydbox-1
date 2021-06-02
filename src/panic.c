@@ -131,29 +131,23 @@ static void report(syd_process_t *current, const char *fmt, va_list ap)
 
 int deny(syd_process_t *current, int err_no)
 {
-	int r;
-
 	if (sydbox->permissive)
 		return 0; /* dry-run, no intervention. */
 	current->retval = errno2retval(err_no);
-
+#if WRITE_RETVAL_ON_ENTRY
 	/* Restore syscall */
+	int r;
 	if ((r = restore(current)) < 0)
 		return r;
+#else
+	current->flags |= SYD_STOP_AT_SYSEXIT;
+#endif
 	return syd_write_syscall(current, -1);
 }
 
 int restore(syd_process_t *current)
 {
 	int retval, error;
-
-#if 0
-	/* restore system call number */
-	if (os_release <= KERNEL_VERSION(4,8,0)) {
-		if ((r = syd_write_syscall(current, current->sysnum)) < 0)
-			return r;
-	}
-#endif
 
 	if (sydbox->permissive)
 		return 0; /* dry-run, no intervention. */

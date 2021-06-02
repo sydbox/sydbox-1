@@ -33,6 +33,9 @@
 #else
 # define AUDIT_ARCH_I386	(3|0x40000000)
 # define AUDIT_ARCH_X86_64	(62|0x80000000|0x40000000)
+# define AUDIT_ARCH_AARCH64	(183|0x80000000|0x40000000)
+# define AUDIT_ARCH_ARM		(0|0x40000028)
+# define AUDIT_ARCH_ARMEB	(40)
 #endif
 
 int seccomp_init(void);

@@ -60,7 +60,9 @@ int magic_query_trace_use_ptrace(syd_process_t *current)
 
 int magic_set_trace_use_seccomp(const void *val, syd_process_t *current)
 {
-#if SYDBOX_HAVE_SECCOMP
+#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
+	return MAGIC_RET_OK;
+#elif SYDBOX_HAVE_SECCOMP
 	sydbox->config.use_seccomp = PTR_TO_BOOL(val);
 #else
 	say("seccomp support not enabled, ignoring magic");

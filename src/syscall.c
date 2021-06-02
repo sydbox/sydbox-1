@@ -54,22 +54,44 @@ static const sysentry_t syscall_entries[] = {
 	{
 		.name = "stat",
 		.enter = sys_stat,
+#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
+		.exit = sysx_stat,
+#endif
 	},
 	{
 		.name = "lstat",
 		.enter = sys_stat,
+#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
+		.exit = sysx_stat,
+#endif
+	},
+	{
+		.name = "statx",
+		.enter = sys_statx,
+#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
+		.exit = sysx_statx,
+#endif
 	},
 	{
 		.name = "stat64",
 		.enter = sys_stat,
+#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
+		.exit = sysx_stat,
+#endif
 	},
 	{
 		.name = "lstat64",
 		.enter = sys_stat,
+#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
+		.exit = sysx_stat,
+#endif
 	},
 	{
 		.name = "newfstatat",
 		.enter = sys_fstatat,
+#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
+		.exit = sysx_fstatat,
+#endif
 	},
 	/*
 	 * TODO: This requires updates in the ABI & struct stat logic in
@@ -481,12 +503,27 @@ int seccomp_apply(int abi)
 {
 	unsigned arch;
 	switch (abi) {
+#if PINK_ARCH_X86_64
 	case PINK_ABI_X86_64:
 		arch = AUDIT_ARCH_X86_64;
 		break;
+#endif
+#if PINK_ARCH_X86_64 || PINK_ARCH_I386
 	case PINK_ABI_I386:
 		arch = AUDIT_ARCH_I386;
 		break;
+#endif
+#if PINK_ARCH_AARCH64
+	case PINK_ABI_AARCH64:
+		arch = AUDIT_ARCH_AARCH64;
+		break;
+#endif
+#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
+	case PINK_ABI_ARM:
+		arch = AUDIT_ARCH_ARM;
+		break;
+#endif
+	/* TODO: We do not support AUDIT_ARCH_ARMEB yet. */
 	default:
 		errno = EINVAL;
 		return -EINVAL;
@@ -668,41 +705,36 @@ int seccomp_apply(int abi)
 int sysinit_seccomp(void)
 {
 	int r;
-	size_t i;
-
-#if defined(__i386__)
-	for (i = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		if (!syscall_entries[i].filter)
-			continue;
-		if ((r = apply_simple_filter(&syscall_entries[i],
-					     AUDIT_ARCH_I386,
-					     PINK_ABI_DEFAULT)) < 0)
-			return r;
-	}
-	return seccomp_apply(PINK_ABI_I386);
+#if defined(__arm64__) || defined(__aarch64__)
+	int abi[2] = { PINK_ABI_AARCH64, PINK_ABI_ARM };
+	int arch[2] = { AUDIT_ARCH_AARCH64, AUDIT_ARCH_ARM };
+#elif defined(__arm__)
+	int abi[2] = { PINK_ABI_DEFAULT, -1};
+	int arch[2] = { AUDIT_ARCH_ARM, -1};
 #elif defined(__x86_64__)
-	for (i = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		if (!syscall_entries[i].filter)
-			continue;
-		if ((r = apply_simple_filter(&syscall_entries[i],
-					     AUDIT_ARCH_X86_64,
-					     PINK_ABI_X86_64)) < 0)
-			return r;
-		if ((r = apply_simple_filter(&syscall_entries[i],
-					     AUDIT_ARCH_I386,
-					     PINK_ABI_I386)) < 0)
-			return r;
-	}
-
-	r = seccomp_apply(PINK_ABI_X86_64);
-	if (r < 0)
-		return r;
-	return seccomp_apply(PINK_ABI_I386);
+	int abi[2] = { PINK_ABI_X86_64, PINK_ABI_I386 };
+	int arch[2] = { AUDIT_ARCH_X86_64, AUDIT_ARCH_I386 };
+#elif defined(__i386__)
+	int abi[2] = { PINK_ABI_DEFAULT, -1};
+	int arch[2] = { AUDIT_ARCH_I386, -1};
 #else
 #error "Platform does not support seccomp filter yet"
 #endif
 
-	return r;
+	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
+		if (!syscall_entries[i].filter)
+			continue;
+		for (size_t j = 0; j < 2 && abi[j] != -1; j++)
+			if ((r = apply_simple_filter(&syscall_entries[i],
+						     arch[j], abi[j])) < 0)
+				return r;
+	}
+
+	for (size_t j = 0; j < 2 && abi[j] != -1; j++)
+		if ((r = seccomp_apply(abi[j])) < 0)
+			return r;
+
+	return 0;
 }
 #else
 int sysinit_seccomp(void)
@@ -760,6 +792,12 @@ int sysexit(syd_process_t *current)
 	const sysentry_t *entry;
 
 	assert(current);
+
+#if !WRITE_RETVAL_ON_ENTRY
+	if ((r = restore(current)) < 0)
+		say("error writing syscall return value: %d (%s)",
+		    -r, strerror(-r));
+#endif
 
 	entry = systable_lookup(current->sysnum, current->abi);
 	r = (entry && entry->exit) ? entry->exit(current) : 0;

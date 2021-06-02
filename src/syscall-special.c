@@ -58,7 +58,7 @@ struct stat32 { /* for 32bit emulation */
 	unsigned int st_mtime;
 	unsigned int st_ctime;
 };
-#elif PINK_ABIS_SUPPORTED > 1
+#elif !PINK_ARCH_AARCH64 && PINK_ABIS_SUPPORTED > 1
 # warning do not know the size of stat buffer for non-default ABIs
 #endif
 
@@ -240,13 +240,117 @@ int sys_execveat(syd_process_t *current)
 	return do_execve(current, true);
 }
 
-static int do_stat(syd_process_t *current, const char *path,
-		   unsigned int buf_index)
-{
-	int r;
-	long addr;
+#define FAKE_MODE (S_IFCHR|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
+/* /dev/null */
+#define FAKE_RDEV_MAJOR 1
+#define FAKE_RDEV_MINOR 3
+#define FAKE_RDEV 259
+#define FAKE_ATIME 505958400
+#define FAKE_MTIME -842745600
+#define FAKE_CTIME -2036448000
 
-	r = magic_cast_string(current, path, 1);
+/* Write stat buffer */
+static int write_stat(syd_process_t *current, unsigned int buf_index, bool extended)
+{
+	const char *bufaddr = NULL;
+	size_t bufsize;
+	struct stat buf;
+#ifdef HAVE_STRUCT_STATX
+	struct statx bufx;
+#endif
+
+#if PINK_ARCH_X86_64
+	struct stat32 buf32;
+	if (current->abi == PINK_ABI_I386) {
+		if (extended) { /* TODO */
+			say("statx system call for i386 abi, can not encode!");
+			say("skipped stat() buffer write");
+			return false;
+		}
+		memset(&buf32, 0, sizeof(struct stat32));
+		buf32.st_mode = FAKE_MODE;
+		buf32.st_rdev = FAKE_RDEV;
+		buf32.st_atime = FAKE_ATIME;
+		buf32.st_mtime = FAKE_MTIME;
+		buf32.st_ctime = FAKE_CTIME;
+		bufaddr = (char *)&buf32;
+		bufsize = sizeof(struct stat32);
+	}
+#elif !defined(HAVE_STRUCT_STATX)
+	if (extended) {
+		say("struct statx undefined at build time, can not encode!");
+		say("skipped statx() buffer write");
+		return false;
+	}
+#elif PINK_ARCH_I386
+	if (extended) { /* TODO */
+		say("statx system call on i386 abi, can not encode!");
+		say("skipped statx() buffer write");
+		return false;
+	}
+#elif PINK_ARCH_ARM
+	if (extended) { /* TODO */
+		say("statx system call on arm abi, can not encode!");
+		say("skipped statx() buffer write");
+		return false;
+	}
+#else
+	if (current->abi != PINK_ABI_DEFAULT) {
+		say("don't know the size of stat buffer for ABI %d", current->abi);
+		say("skipped stat() buffer write");
+		return false;
+	}
+#endif
+
+	if (!bufaddr) {
+		if (extended) {
+#ifdef HAVE_STRUCT_STATX
+			memset(&bufx, 0, sizeof(struct statx));
+			bufx.stx_mode = FAKE_MODE;
+			bufx.stx_rdev_major = FAKE_RDEV_MAJOR;
+			bufx.stx_rdev_minor = FAKE_RDEV_MINOR;
+			bufx.stx_atime.tv_sec = FAKE_ATIME;
+			bufx.stx_mtime.tv_sec = FAKE_MTIME;
+			bufx.stx_ctime.tv_sec = FAKE_CTIME;
+			bufaddr = (char *)&bufx;
+			bufsize = sizeof(struct statx);
+#else
+			say("struct statx undefined at build time, can not encode!");
+			say("skipped statx() buffer write");
+			return 0;
+#endif
+		} else {
+			memset(&buf, 0, sizeof(struct stat));
+			buf.st_mode = FAKE_MODE;
+			buf.st_rdev = FAKE_RDEV;
+#ifdef st_atime_was_a_macro
+# define st_atime st_atim.tv_sec
+#endif
+#ifdef st_mtime_was_a_macro
+# define st_mtime st_mtim.tv_sec
+#endif
+#ifdef st_ctime_was_a_macro
+# define st_ctime st_ctim.tv_sec
+#endif
+			buf.st_atime = FAKE_ATIME;
+			buf.st_mtime = FAKE_MTIME;
+			buf.st_ctime = FAKE_CTIME;
+			bufaddr = (char *)&buf;
+			bufsize = sizeof(struct stat);
+		}
+	}
+
+	long addr;
+	if (pink_read_argument(current->pid, current->regset, buf_index, &addr) == 0)
+		pink_write_vm_data(current->pid, current->regset, addr, bufaddr, bufsize);
+
+	return true;
+}
+
+static int do_stat(syd_process_t *current, const char *path,
+		   unsigned int buf_index, bool extended)
+{
+	int r = magic_cast_string(current, path, 1);
 	if (r == MAGIC_RET_NOOP) {
 		/* no magic */
 		return 0;
@@ -278,61 +382,12 @@ static int do_stat(syd_process_t *current, const char *path,
 			r = deny(current, errno);
 		}
 	} else if (r != MAGIC_RET_NOOP) {
-		/* Write stat buffer */
-		const char *bufaddr = NULL;
-		size_t bufsize;
-		enum violation_decision violation_decision;
-		struct stat buf;
-#define FAKE_MODE (S_IFCHR|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
-#define FAKE_RDEV 259 /* /dev/null */
-#define FAKE_ATIME 505958400
-#define FAKE_MTIME -842745600
-#define FAKE_CTIME -2036448000
-#if PINK_ARCH_X86_64
-		struct stat32 buf32;
-
-		if (current->abi == PINK_ABI_I386) {
-			memset(&buf32, 0, sizeof(struct stat32));
-			buf32.st_mode = FAKE_MODE;
-			buf32.st_rdev = FAKE_RDEV;
-			buf32.st_atime = FAKE_ATIME;
-			buf32.st_mtime = FAKE_MTIME;
-			buf32.st_ctime = FAKE_CTIME;
-			bufaddr = (char *)&buf32;
-			bufsize = sizeof(struct stat32);
-		}
+#if WRITE_STAT_ON_ENTRY
+		write_stat(current, buf_index, extended);
 #else
-		if (current->abi != PINK_ABI_DEFAULT) {
-			say("don't know the size of stat buffer for ABI %d", current->abi);
-			say("skipped stat() buffer write");
-			goto skip_write;
-		}
+		current->flags |= SYD_STOP_AT_SYSEXIT;
 #endif
-		if (!bufaddr) {
-			memset(&buf, 0, sizeof(struct stat));
-			buf.st_mode = FAKE_MODE;
-			buf.st_rdev = FAKE_RDEV;
-#ifdef st_atime_was_a_macro
-# define st_atime st_atim.tv_sec
-#endif
-#ifdef st_mtime_was_a_macro
-# define st_mtime st_mtim.tv_sec
-#endif
-#ifdef st_ctime_was_a_macro
-# define st_ctime st_ctim.tv_sec
-#endif
-			buf.st_atime = FAKE_ATIME;
-			buf.st_mtime = FAKE_MTIME;
-			buf.st_ctime = FAKE_CTIME;
-			bufaddr = (char *)&buf;
-			bufsize = sizeof(struct stat);
-		}
 
-		if (pink_read_argument(current->pid, current->regset, buf_index, &addr) == 0)
-			pink_write_vm_data(current->pid, current->regset, addr, bufaddr, bufsize);
-#if !PINK_ARCH_X86_64
-skip_write:
-#endif
 		/* magic command accepted */
 		if (r < 0)
 			errno = -r;
@@ -341,6 +396,7 @@ skip_write:
 		else
 			errno = 0;
 
+		enum violation_decision violation_decision;
 		violation_decision = sydbox->config.violation_decision;
 		if (violation_decision == VIOLATION_NOOP) {
 			/* Special case for dry-run: intervention is OK for magic. */
@@ -378,8 +434,28 @@ int sys_stat(syd_process_t *current)
 	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
 		return errno == EFAULT ? 0 : -errno;
 
-	return do_stat(current, path, 1);
+	return do_stat(current, path, 1, false);
 }
+
+#if !WRITE_STAT_ON_ENTRY
+int sysx_stat(syd_process_t *current)
+{
+	write_stat(current, 1, false);
+	return 0;
+}
+
+int sysx_statx(syd_process_t *current)
+{
+	write_stat(current, 4, true);
+	return 0;
+}
+
+int sysx_fstatat(syd_process_t *current)
+{
+	write_stat(current, 2, false);
+	return 0;
+}
+#endif
 
 int sys_fstatat(syd_process_t *current)
 {
@@ -405,7 +481,27 @@ int sys_fstatat(syd_process_t *current)
 	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
 		return errno == EFAULT ? 0 : -errno;
 
-	return do_stat(current, path, 2);
+	return do_stat(current, path, 2, false);
+}
+
+int sys_statx(syd_process_t *current)
+{
+	int r;
+	long addr;
+	char path[SYDBOX_PATH_MAX];
+
+	if (P_BOX(current)->magic_lock == LOCK_SET) {
+		/* No magic allowed! */
+		return 0;
+	}
+
+	/* See the note in sys_fstatat() on why we ignore AT_FDCWD. */
+	if ((r = syd_read_argument(current, 1, &addr)) < 0)
+		return r;
+	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
+		return errno == EFAULT ? 0 : -errno;
+
+	return do_stat(current, path, 4, true);
 }
 
 int sys_dup(syd_process_t *current)
