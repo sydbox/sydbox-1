@@ -36,7 +36,9 @@ DISTCHECK_CONFIGURE_FLAGS= \
 BUILT_SOURCES = .version
 EXTRA_DIST+= \
 	     .version \
-	     ChangeLog
+	     ChangeLog \
+	     CREDITS.in \
+	     maint/gitlog-to-changelog
 $(srcdir)/.version:
 	$(AM_V_GEN)echo $(VERSION) > $@-t && mv $@-t $@
 
@@ -46,11 +48,11 @@ if MAINTAINER_MODE
 # gen_changelog_start_date = 2015-01-12 12:00
 # This includes all and we're fine with it.
 gen_changelog_start_date = 1999-08-17 03:02
-$(srcdir)/ChangeLog: $(srcdir)/misc/gitlog-to-changelog $(srcdir)/Makefile.in \
+$(srcdir)/ChangeLog: $(srcdir)/maint/gitlog-to-changelog $(srcdir)/Makefile.in \
 		     $(srcdir)/.version
 	@rm -f $@.new
 	(cd $(srcdir); \
-	 ./misc/gitlog-to-changelog --append-dot \
+	 ./maint/gitlog-to-changelog --append-dot \
 	   --since='$(gen_changelog_start_date)'; \
 	 echo; echo; echo '' \
 	) > $@.new
@@ -101,6 +103,6 @@ upload-release: upload $(SHA1_FILE) $(GPG_FILE)
 
 .PHONY: jenkins
 jenkins:
-	misc/jenkins-build.sh
+	maint/jenkins-build.sh
 
 SUBDIRS= syd src data man t .
