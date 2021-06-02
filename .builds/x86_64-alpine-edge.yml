@@ -1,0 +1,75 @@
+image: alpine/edge
+arch: x86_64
+packages:
+- linux-headers
+- libxslt
+- docbook-xsl
+- bind-tools
+- libtool
+- m4
+- autoconf
+- automake
+- pkgconf
+- bzip2
+- perl
+- tmux
+- cgdb
+- bash
+- vim
+sources:
+- https://git.sr.ht/~alip/pinktrace
+- https://git.sr.ht/~alip/sydbox
+tasks:
+- init: |
+    grep CONFIG_CROSS_MEMORY_ATTACH /proc/config || true
+    zgrep CONFIG_CROSS_MEMORY_ATTACH /proc/config.gz || true
+    uname -a
+    gcc --version
+    bash --version
+    perl --version
+    libtoolize --version
+    autoconf --version
+    automake --version
+    m4 --version
+    pkg-config --version
+    bzip2 --version || true
+    xsltproc --version
+    dig -v
+- pinktrace_conf: |
+    mkdir root
+    cd pinktrace
+    ./autogen.sh
+    ./configure --prefix=$(readlink -f ../root) --enable-ipv6 --disable-python
+- pinktrace_make: |
+    cd pinktrace
+    make -j V=1
+- pinktrace_inst: |
+    cd pinktrace
+    make -j install
+- conf_seccomp: |
+    cd sydbox
+    ./autogen.sh
+    PKG_CONFIG_PATH=$(readlink -f ../root/lib/pkgconfig) ./configure --enable-seccomp
+- make_seccomp: |
+    cd sydbox
+    make -j V=1
+- check_seccomp: |
+    cd sydbox
+    make -j V=1 check && touch .check_ok
+    cat {syd,t}/test-suite.log || true
+    test -e .check_ok
+- clean: |
+    cd sydbox
+    make clean
+    rm -f .check_ok
+- conf: |
+    cd sydbox
+    PKG_CONFIG_PATH=$(readlink -f ../root/lib/pkgconfig) ./configure --disable-seccomp
+- make: |
+    cd sydbox
+    make -j V=1
+- check: |
+    cd sydbox
+    make -j V=1 check && touch .check_ok
+    cat {syd,t}/test-suite.log || true
+    test -e .check_ok

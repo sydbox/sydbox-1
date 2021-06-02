@@ -33,6 +33,9 @@ vgcore*
 !.gitreview
 !.mailmap
 
+# Build manifest directory
+!/.builds
+
 # stgit generated dirs
 patches-*
 
