@@ -1507,6 +1507,14 @@ static void startup_child(char **argv)
 	if (pid < 0)
 		die_errno("can't fork");
 	else if (pid == 0) {
+#if SYDBOX_HAVE_DUMP_BUILTIN
+		if (sydbox->dump_fd > STDERR_FILENO && close(sydbox->dump_fd)) {
+			fprintf(stderr,
+				PACKAGE": failed to close dump fd (errno:%d %s)\n",
+				errno, strerror(errno));
+
+		}
+#endif
 #if SYDBOX_HAVE_SECCOMP
 		if (sydbox->config.use_seccomp) {
 			if ((r = seccomp_init()) < 0) {
