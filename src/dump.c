@@ -748,14 +748,17 @@ static void dump_process(pid_t pid)
 		dump_null();
 	}
 
-	fprintf(fp, ","J(syd));
+	fprintf(fp, ","J(cwd));
 	p = lookup_process(pid);
 	if (!p) {
 		dump_null();
 		fprintf(fp, "}");
 		return;
 	}
+	if (p->shm.clone_fs && p->shm.clone_fs->cwd)
+		fprintf(fp, "\"%s\"", p->shm.clone_fs->cwd);
 
+#if 0
 	fprintf(fp, "{"
 		J(flag_STARTUP)"%s,"
 		J(flag_IGNORE_ONE_SIGSTOP)"%s,"
@@ -768,7 +771,7 @@ static void dump_process(pid_t pid)
 		J(ref_CLONE_FS)"%d,"
 		J(ref_CLONE_FILES)"%d,"
 		J(ppid)"%d,"
-		J(tgid)"%d,"
+		J(tgid)"%d,",
 		J(syscall_no)"%lu,"
 		J(syscall_abi)"%d",
 		J_BOOL(p->flags & SYD_STARTUP),
@@ -782,14 +785,14 @@ static void dump_process(pid_t pid)
 		p->shm.clone_fs ? p->shm.clone_fs->refcnt : 0,
 		p->shm.clone_files ? p->shm.clone_files->refcnt : 0,
 		p->ppid,
-		p->tgid,
+		p->tgid);
 		p->sysnum,
 		p->abi);
 	if (p->sysname)
 		fprintf(fp, ","J(syscall_name)"\"%s\"", p->sysname);
-	if (p->shm.clone_fs && p->shm.clone_fs->cwd)
-		fprintf(fp, ","J(cwd)"\"%s\"", p->shm.clone_fs->cwd);
+#endif
 
+	/*
 	fprintf(fp, ","J(clone_flags));
 	dump_clone_flags(p->clone_flags);
 	fprintf(fp, ","J(new_clone_flags));
@@ -800,6 +803,7 @@ static void dump_process(pid_t pid)
 		dump_null();
 	else
 		dump_sandbox(p->shm.clone_thread->box);
+	*/
 
 	fprintf(fp, "}}");
 }
