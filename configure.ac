@@ -312,7 +312,7 @@ AC_SUBST([SYDBOX_DEBUG])
 
 dnl check for seccomp support
 AC_ARG_ENABLE([seccomp],
-	      [AS_HELP_STRING([--disable-seccomp], [enable seccomp support])],
+	      [AS_HELP_STRING([--disable-seccomp], [disable seccomp support])],
 	      [WANT_SECCOMP="$enableval"],
 	      [WANT_SECCOMP="yes"])
 if test x"$WANT_SECCOMP" = x"yes" ; then
