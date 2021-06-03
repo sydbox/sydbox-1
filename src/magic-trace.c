@@ -15,7 +15,14 @@
 
 int magic_set_trace_follow_fork(const void *val, syd_process_t *current)
 {
-	sydbox->config.follow_fork = PTR_TO_BOOL(val);
+	bool v = PTR_TO_BOOL(val);
+#if SYDBOX_HAVE_SECCOMP
+	if (!v && sydbox->config.use_seccomp) {
+		say("can not disable follow_fork with use_seccomp enabled!");
+		return MAGIC_RET_OK;
+	}
+#endif
+	sydbox->config.follow_fork = v;
 	return MAGIC_RET_OK;
 }
 
@@ -63,7 +70,10 @@ int magic_set_trace_use_seccomp(const void *val, syd_process_t *current)
 #if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
 	return MAGIC_RET_OK;
 #elif SYDBOX_HAVE_SECCOMP
+	bool v = PTR_TO_BOOL(val);
 	sydbox->config.use_seccomp = PTR_TO_BOOL(val);
+	if (v)
+		sydbox->config.follow_fork = true;
 #else
 	say("seccomp support not enabled, ignoring magic");
 #endif

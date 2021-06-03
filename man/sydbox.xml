@@ -778,6 +778,13 @@
             <para>
               A boolean specifying whether Sydbox should follow forks, vforks and clones.
             </para>
+            <note>
+              <para>
+                This option can not be disabled if the option
+                <link linkend="core-trace-exit_kill">core/trace/use_seccomp</link>
+                is enabled.
+              </para>
+            </note>
           </listitem>
         </varlistentry>
 
