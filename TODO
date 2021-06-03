@@ -5,8 +5,6 @@
 - Finish the rework on tests
 - SIGUSR2 dumps sydcore
 - Use a simpler hashtable instead of using uthash everywhere.
-- close the dump file descriptor after fork
-- provide a choice to avoid ptrace() altogether and use seccomp-bpf only
 - provide a list of system calls to whitelist/blacklist on startup to feed
   to seccomp-bpf filters. A whitelisted system call will be allowed and will
   further be subject to sandbox restrictions. A blacklisted system call will

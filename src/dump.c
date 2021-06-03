@@ -112,7 +112,7 @@ static void dump_close(void)
 	if (!fp)
 		return;
 
-	dump_cycle();
+	dump_flush();
 	fclose(fp);
 	fp = NULL;
 	if (pathdump[0] != '\0')
@@ -805,7 +805,7 @@ static void dump_process(pid_t pid)
 		dump_sandbox(p->shm.clone_thread->box);
 	*/
 
-	fprintf(fp, "}}");
+	fprintf(fp, "}");
 }
 
 static int dump_init(void)
