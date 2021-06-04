@@ -17,7 +17,6 @@
 #include "proc.h"
 #if SYDBOX_HAVE_SECCOMP
 #include "seccomp.h"
-#endif
 
 static struct sock_filter footer_eperm[] = {
 	BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA))
@@ -25,6 +24,7 @@ static struct sock_filter footer_eperm[] = {
 static struct sock_filter footer_allow[] = {
 	BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW)
 };
+#endif
 
 /*
  * 1. Order matters! Put more hot system calls above.
