@@ -30,11 +30,11 @@ and [process_vm_writev](https://man7.org/linux/man-pages/man2/process_vm_readv.2
 These system calls are available in Linux since 3.2.
 
 **NOTE:** Pandora is in its early stages of development. To be able to use Pandora
-you need **Sydbox-1.2.0** or later.
+you need **Sydbox-1.2.1** or later.
 
-- Tar: https://dev.exherbo.org/~alip/sydbox/sydbox-1.2.0.tar.bz2
-- SHA: https://dev.exherbo.org/~alip/sydbox/sydbox-1.2.0.tar.bz2.sha1sum
-- GPG: https://dev.exherbo.org/~alip/sydbox/sydbox-1.2.0.tar.bz2.sha1sum.asc
+- Tar: https://dev.exherbo.org/~alip/sydbox/sydbox-1.2.1.tar.bz2
+- SHA: https://dev.exherbo.org/~alip/sydbox/sydbox-1.2.1.tar.bz2.sha1sum
+- GPG: https://dev.exherbo.org/~alip/sydbox/sydbox-1.2.1.tar.bz2.sha1sum.asc
 - Git: https://git.exherbo.org/git/sydbox-1.git
 
 - Browse: https://git.exherbo.org/sydbox-1.git/
