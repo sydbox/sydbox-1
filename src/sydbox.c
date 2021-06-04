@@ -108,6 +108,9 @@ usage: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] [-E var=val...] {command [
 -E var=val  -- put var=val in the environment for command, may be repeated\n\
 -E var      -- remove var from the environment for command, may be repeated\n\
 -d <fd|tmp> -- dump system call information to the given file descriptor\n\
+-a <arch>   -- native,x86_64,x86,x86,x32,arm,aarch64,mips,mips64,ppc,ppc64\n\
+                      ppc64le,s390,s390x,parisc,parisc64,riscv64\n\
+               default: native, may be repeated\n\
 \n\
 Hey you, out there beyond the wall,\n\
 Breaking bottles in the hall,\n\
@@ -1604,7 +1607,7 @@ static void startup_child(char **argv)
 		pid = getpid();
 		parent_write(pid, sizeof(int));
 		pause();
-		_exit(0);
+		_exit(exit_code);
 	}
 
 	/* write end of the pipe is not used. */
@@ -1687,6 +1690,7 @@ int main(int argc, char **argv)
 		{"version",	no_argument,		NULL,	'v'},
 		{"profile",	required_argument,	NULL,	0},
 		{"dry-run",	no_argument,		NULL,	0},
+		{"arch",	required-argument	NULL,	'a'},
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -1697,7 +1701,14 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "hd:vc:m:E:", long_options, &options_index)) != EOF) {
+	if (!(sydbox->ctx = seccomp_init(SCMP_ACT_ALLOW)))
+		die_errno("seccomp_init");
+
+	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
+		say("can't optimize seccomp filter (%d %s), continuing...",
+		    -r, strerror(-r));
+
+	while ((opt = getopt_long(argc, argv, "a:hd:vc:m:E:", long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
 			if (streq(long_options[options_index].name, "dry-run")) {
@@ -1713,6 +1724,13 @@ int main(int argc, char **argv)
 				break;
 			}
 			usage(stderr, 1);
+		case 'a';
+			r = seccomp_arch_add(sydbox->ctx, (uint32_t)arch_mode_from_string(optarg));
+			if (r == -EINVAL) {
+				say("architecture %: ok, continuing..");
+				say("system calls in arch %s will be killed!");
+			}
+			break;
 		case 'h':
 			usage(stdout, 0);
 #if SYDBOX_HAVE_DUMP_BUILTIN

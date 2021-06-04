@@ -595,33 +595,6 @@ int sysinit_seccomp(void)
 {
 	int r;
 
-	if (!(sydbox->ctx = seccomp_init(SCMP_ACT_ALLOW)))
-		die_errno("seccomp_init");
-
-	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
-		say("can't optimize seccomp filter (%d %s), continuing...",
-		    -r, strerror(-r));
-
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_X86_64);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_X86);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_X32);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_ARM);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_AARCH64);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPS);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPS64);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPS64N32);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPSEL);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPSEL64);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPSEL64N32);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PPC);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PPC64);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PPC64LE);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_S390);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_S390X);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PARISC);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PARISC64);
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_RISCV64);
-
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		if (!syscall_entries[i].filter)
 			continue;

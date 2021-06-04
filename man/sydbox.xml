@@ -134,6 +134,16 @@
           </simpara>
         </listitem>
       </varlistentry>
+
+      <varlistentry>
+        <term><option>-d</option> <varname>fd[0-9]+|tmp</varname></term>
+        <listitem>
+          <simpara>
+            dump system call information to the given file descriptor
+          </simpara>
+        </listitem>
+      </varlistentry>
+
     </variablelist>
   </refsect1>
 
