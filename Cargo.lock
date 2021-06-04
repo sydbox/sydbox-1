@@ -461,7 +461,7 @@ checksum = "17b02fc0ff9a9e4b35b3342880f48e896ebf69f2967921fe8646bf5b7125956a"
 
 [[package]]
 name = "pandora_box"
-version = "0.4.7"
+version = "0.4.8"
 dependencies = [
  "built",
  "chrono",
