@@ -5,6 +5,8 @@ Syd's Box
 
 SydBox is a [ptrace](http://man7.org/linux/man-pages/man2/ptrace.2.html) & [seccomp](http://man7.org/linux/man-pages/man2/seccomp.2.html) based sandbox for modern [Linux](https://kernel.org) machines to sandbox unwanted process access to filesystem and network resources.
 
+See: https://sydbox.exherbo.org
+
 SydBox uses autotools. To build, simply do `./configure`, `make` and `sudo make install`.
 
 To use SydBox you need a recent [Linux](https://kernel.org) kernel, preferably 3.5
@@ -56,6 +58,8 @@ Options: dump:yes seccomp:yes ipv6:yes netlink:yes
 
 SydBox requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/api/c/)
 
+See: https://pinktrace.exherbo.org
+
 - Exheres:
   - [pinktrace-1.exlib](https://git.exherbo.org/arbor.git/tree/packages/dev-libs/pinktrace/pinktrace.exlib)
   - [pinktrace-scm.exheres-0](https://git.exherbo.org/arbor.git/tree/packages/dev-libs/pinktrace/pinktrace-scm.exheres-0)
@@ -68,6 +72,9 @@ SydBox requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/
 
 Pandora
 =======
+
+https://pandora.exherbo.org
+
 Pandora's Box: A helper for SydBox, a ptrace & seccomp based sandbox to make sandboxing practical.
 This makes it easy for the end user to use secure computing for practical purposes.
 
