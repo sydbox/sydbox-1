@@ -598,9 +598,8 @@ static void dump_pink(const char *name, int retval, int save_errno, pid_t pid, v
 		fprintf(fp, ","J(sysnum)"%ld", sysnum);
 		fprintf(fp, ","J(sysname));
 		if (p) {
-			sysname = pink_name_syscall(sysnum, p->abi);
-			if (sysname)
-				fprintf(fp, "\"%s\"", sysname);
+			if (p->sysname)
+				fprintf(fp, "\"%s\"", p->sysname);
 			else
 				dump_null();
 		} else {

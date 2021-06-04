@@ -25,6 +25,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <sched.h>
+#include <seccomp.h>
 #include "pink.h"
 #include "acl-queue.h"
 #include "procmatch.h"
@@ -100,6 +101,26 @@ static const char *const violation_decision_table[] = {
 };
 DEFINE_STRING_TABLE_LOOKUP(violation_decision, int)
 
+enum syd_action {
+	SYD_ACTION_KILL_PROCESS,
+	SYD_ACTION_KILL_THREAD,
+	SYD_ACTION_FAULT,
+	SYD_ACTION_TRAP,
+	SYD_ACTION_LOG,
+	SYD_ACTION_ALLOW,
+	SYD_ACTION_USER,
+};
+static const char *const syd_action_table[] = {
+	[SYD_ACTION_KILL_PROCESS] = "kill_process",
+	[SYD_ACTION_KILL_THREAD] = "kill_thread",
+	[SYD_ACTION_FAULT] = "fault",
+	[SYD_ACTION_TRAP] = "trap",
+	[SYD_ACTION_LOG] = "log",
+	[SYD_ACTION_ALLOW] = "allow",
+	[SYD_ACTION_USER] = "user",
+};
+DEFINE_STRING_TABLE_LOOKUP(syd_action, int)
+
 enum magic_op {
 	MAGIC_OP_SET,
 	MAGIC_OP_APPEND,
@@ -160,6 +181,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE_INTERRUPT,
 	MAGIC_KEY_CORE_TRACE_USE_PTRACE,
 	MAGIC_KEY_CORE_TRACE_USE_SECCOMP,
+	MAGIC_KEY_CORE_TRACE_USE_NOTIFY,
 	MAGIC_KEY_CORE_TRACE_USE_SEIZE,
 	MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK,
 
@@ -316,7 +338,7 @@ struct syd_process {
 	pid_t tgid;
 
 	/* System call ABI */
-	short abi;
+	uint32_t arch;
 
 	/* SYD_* flags */
 	int flags;
@@ -418,6 +440,23 @@ typedef struct syd_process syd_process_t;
 		} \
 	} while (0)
 
+struct filter {
+	enum syd_action action:3;
+
+	int fd; /* seccomp notify fd */
+
+	int num;
+	uint32_t arch;
+
+	int sig;
+
+	bool ok; /* if true use ret or use ret */
+	union {
+		int err;
+		int ret;
+	} u;
+};
+
 struct config {
 	/* magic access to core.*  */
 	bool magic_core_allow;
@@ -449,6 +488,7 @@ struct config {
 	bool exit_kill;
 	bool use_ptrace;
 	bool use_seccomp;
+	bool use_notify;
 
 	aclq_t exec_kill_if_match;
 	aclq_t exec_resume_if_match;
@@ -481,6 +521,15 @@ struct sydbox {
 	int dump_fd;
 #endif
 
+	/* seccomp filters */
+	int seccomp_fd;
+	int notify_fd;
+	bool seccomp_user_notify;
+	scmp_filter_ctx ctx;
+	struct filter *filter;
+	struct seccomp_notif *request;
+	struct seccomp_notif_resp *response;
+
 	bool permissive;
 
 	/* Program invocation name (for the child) */
@@ -494,7 +543,7 @@ struct sydbox {
 typedef struct sydbox sydbox_t;
 
 typedef int (*sysfunc_t) (syd_process_t *current);
-typedef int (*sysfilter_t) (int arch, uint32_t sysnum);
+typedef int (*sysfilter_t) (void);
 
 struct sysentry {
 	const char *name;
@@ -503,6 +552,9 @@ struct sysentry {
 		  */
 	sysfunc_t enter;
 	sysfunc_t exit;
+
+	/* XXX: Debug */
+	bool user_notif:1;
 
 	/* Apply a simple seccomp filter (bpf-only, no ptrace) */
 	sysfilter_t filter;
@@ -578,11 +630,8 @@ extern sydbox_t *sydbox;
 # define inspecting() (0)
 #endif
 
-#if SYDBOX_HAVE_SECCOMP
-# define tracing() ((sydbox)->config.use_ptrace)
-# else
-# define tracing() (1)
-#endif
+#define tracing() (0)
+#define use_notify() ((sydbox)->config.use_notify)
 
 #define entering(p) (!((p)->flags & SYD_IN_SYSCALL))
 #define exiting(p) ((p)->flags & SYD_IN_SYSCALL)
@@ -653,6 +702,8 @@ static inline syd_process_t *lookup_process(pid_t pid)
 
 void cleanup(void);
 
+int parent_write(int64_t message, ssize_t size);
+
 void kill_all(int fatal_sig);
 int kill_one(syd_process_t *current, int fatal_sig);
 int deny(syd_process_t *current, int err_no);
@@ -660,6 +711,10 @@ int restore(syd_process_t *current);
 int panic(syd_process_t *current);
 int violation(syd_process_t *current, const char *fmt, ...)
 	PINK_GCC_ATTR((format (printf, 2, 3)));
+
+int filter_init(void);
+int filter_free(void);
+int filter_push(struct filter filter);
 
 void config_init(void);
 void config_done(void);
@@ -757,6 +812,7 @@ const sysentry_t *systable_lookup(long no, short abi);
 size_t syscall_entries_max(void);
 void sysinit(void);
 int sysinit_seccomp(void);
+int sysinit_seccomp_load(void);
 int sysenter(syd_process_t *current);
 int sysexit(syd_process_t *current);
 
@@ -784,6 +840,8 @@ int magic_set_trace_use_ptrace(const void *val, syd_process_t *current);
 int magic_query_trace_use_ptrace(syd_process_t *current);
 int magic_set_trace_use_seccomp(const void *val, syd_process_t *current);
 int magic_query_trace_use_seccomp(syd_process_t *current);
+int magic_set_trace_use_notify(const void *val, syd_process_t *current);
+int magic_query_trace_use_notify(syd_process_t *current);
 int magic_set_trace_use_seize(const void *val, syd_process_t *current);
 int magic_query_trace_use_seize(syd_process_t *current);
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current);
@@ -852,10 +910,10 @@ static inline void init_sysinfo(syscall_info_t *info)
 	memset(info, 0, sizeof(syscall_info_t));
 }
 
-int filter_open(int arch, uint32_t sysnum);
-int filter_openat(int arch, uint32_t sysnum);
-int filter_fcntl(int arch, uint32_t sysnum);
-int filter_mmap(int arch, uint32_t sysnum);
+int filter_open(void);
+int filter_openat(void);
+int filter_fcntl(void);
+int filter_mmap(void);
 int sys_fallback_mmap(syd_process_t *current);
 
 int sys_access(syd_process_t *current);

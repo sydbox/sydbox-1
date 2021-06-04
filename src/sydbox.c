@@ -22,20 +22,19 @@
 #include <signal.h>
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
 #include <getopt.h>
+#include <seccomp.h>
 #include "asyd.h"
 #include "macro.h"
 #include "file.h"
 #include "pathlookup.h"
 #include "proc.h"
 #include "util.h"
-#if SYDBOX_HAVE_SECCOMP
-#include "seccomp.h"
-#endif
 
 #include <syd.h>
 #if SYDBOX_DEBUG
@@ -203,9 +202,8 @@ static void new_shared_memory(struct syd_process *p)
 	new_shared_memory_clone_files(p);
 }
 
-static syd_process_t *new_thread(pid_t pid, int flags)
+static syd_process_t *new_thread(pid_t pid)
 {
-	int r;
 	syd_process_t *thread;
 
 	thread = calloc(1, sizeof(syd_process_t));
@@ -216,27 +214,17 @@ static syd_process_t *new_thread(pid_t pid, int flags)
 	thread->ppid = SYD_PPID_NONE;
 	thread->tgid = SYD_TGID_NONE;
 
-	if ((r = pink_regset_alloc(&thread->regset)) < 0) {
-		free(thread);
-		errno = -r;
-		return NULL;
-	}
-
-	thread->abi = PINK_ABI_DEFAULT;
-	thread->flags = SYD_STARTUP | flags;
-	thread->trace_step = SYD_STEP_NOT_SET;
-
 	process_add(thread);
 
 	dump(DUMP_THREAD_NEW, pid);
 	return thread;
 }
 
-static syd_process_t *new_process(pid_t pid, int flags)
+static syd_process_t *new_process(pid_t pid)
 {
 	syd_process_t *process;
 
-	process = new_thread(pid, flags);
+	process = new_thread(pid);
 	if (!process)
 		return NULL;
 	process->tgid = process->pid;
@@ -245,11 +233,11 @@ static syd_process_t *new_process(pid_t pid, int flags)
 	return process;
 }
 
-static syd_process_t *new_thread_or_kill(pid_t pid, int flags)
+static syd_process_t *new_thread_or_kill(pid_t pid)
 {
 	syd_process_t *thread;
 
-	thread = new_thread(pid, flags);
+	thread = new_thread(pid);
 	if (!thread) {
 		kill_save_errno(pid, SIGKILL);
 		die_errno("malloc() failed, killed %u", pid);
@@ -258,11 +246,11 @@ static syd_process_t *new_thread_or_kill(pid_t pid, int flags)
 	return thread;
 }
 
-static syd_process_t *new_process_or_kill(pid_t pid, int flags)
+static syd_process_t *new_process_or_kill(pid_t pid)
 {
 	syd_process_t *process;
 
-	process = new_process(pid, flags);
+	process = new_process(pid);
 	if (!process) {
 		kill_save_errno(pid, SIGKILL);
 		die_errno("malloc() failed, killed %u", pid);
@@ -393,7 +381,7 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
 	new_child = (child == NULL);
 
 	if (new_child)
-		child = new_thread_or_kill(cpid, post_attach_sigstop);
+		child = new_thread_or_kill(cpid);
 	if (p->new_clone_flags & CLONE_THREAD) {
 		child->ppid = p->ppid;
 		child->tgid = p->tgid;
@@ -753,7 +741,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	struct proc_statinfo info;
 
 	pid_t pid = current->pid;
-	short abi = current->abi;
+	uint32_t arch = current->arch;
 	pid_t ppid = current->ppid;
 	pid_t tgid = current->tgid;
 	struct acl_node *node;
@@ -783,8 +771,8 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 		fprintf(stderr, "\t%sComm: `?'%s\n", CN, CE);
 	if (current->shm.clone_fs)
 		fprintf(stderr, "\t%sCwd: `%s'%s\n", CN, P_CWD(current), CE);
-	fprintf(stderr, "\t%sSyscall: {no:%lu abi:%d name:%s}%s\n", CN,
-			current->sysnum, abi, current->sysname, CE);
+	fprintf(stderr, "\t%sSyscall: {no:%lu arch:%d name:%s}%s\n", CN,
+			current->sysnum, arch, current->sysname, CE);
 	fprintf(stderr, "\t%sFlags: ", CN);
 	r = 0;
 	if (current->flags & SYD_STARTUP) {
@@ -933,6 +921,37 @@ static void sig_usr(int sig)
 	fprintf(stderr, "Tracing %u process%s\n", count, count > 1 ? "es" : "");
 }
 
+static int wait_for_child_fd(void)
+{
+	fd_set readfds;
+
+	FD_ZERO(&readfds);
+	FD_SET(sydbox->notify_fd, &readfds);
+	FD_SET(sydbox->seccomp_fd, &readfds);
+
+	if (select(2, &readfds, NULL, NULL, NULL) < 0) {
+		int r = errno;
+		perror("sydbox: select()");
+		return -r;
+	} else if (!FD_ISSET(sydbox->seccomp_fd, &readfds)) {
+		return 1;
+	}
+
+	errno = 0;
+	int exit_code;
+	ssize_t count = atomic_read(sydbox->seccomp_fd, &exit_code, sizeof(int));
+	if (!count && count != sizeof(int)) { /* count=0 is EOF */
+		if (!errno)
+			errno = EINVAL;
+		say("failed to read exit code from pipe: %zu != %zu",
+		    count, sizeof(int));
+		sydbox->exit_code = -errno;
+	}
+	sydbox->exit_code = exit_code;
+
+	return 0;
+}
+
 static void init_early(void)
 {
 	assert(!sydbox);
@@ -949,6 +968,7 @@ static void init_early(void)
 #endif
 	sydbox->permissive = false;
 	config_init();
+	filter_init();
 	dump(DUMP_INIT);
 	syd_abort_func(kill_all);
 }
@@ -1025,21 +1045,6 @@ static int check_interrupt(void)
 	sigprocmask(SIG_BLOCK, &blocked_set, NULL);
 
 	return r;
-}
-
-static int event_startup(syd_process_t *current)
-{
-	int r;
-
-	if (!(current->flags & SYD_STARTUP))
-		return 0;
-
-	if ((r = syd_trace_setup(current)) < 0)
-		return r;
-
-	current->flags &= ~SYD_STARTUP;
-
-	return 0;
 }
 
 static int event_clone(syd_process_t *current, enum pink_event event)
@@ -1161,8 +1166,8 @@ static int event_syscall(syd_process_t *current)
 			return 0;
 		}
 #endif
-		if ((r = syd_regset_fill(current)) < 0)
-			return r; /* process dead */
+		//if ((r = syd_regset_fill(current)) < 0)
+		//	return r; /* process dead */
 		r = sysenter(current);
 #if SYDBOX_HAVE_SECCOMP
 		if (sydbox->config.use_seccomp &&
@@ -1174,8 +1179,8 @@ static int event_syscall(syd_process_t *current)
 #endif
 		current->flags |= SYD_IN_SYSCALL;
 	} else {
-		if ((r = syd_regset_fill(current)) < 0)
-			return r; /* process dead */
+		//if ((r = syd_regset_fill(current)) < 0)
+		//	return r; /* process dead */
 		r = sysexit(current);
 		current->flags &= ~SYD_IN_SYSCALL;
 	}
@@ -1208,16 +1213,92 @@ static int event_seccomp(syd_process_t *current)
 }
 #endif
 
-static int trace(void)
+static int notify_loop(void)
 {
-	int pid, wait_errno;
-	bool stopped;
-	int r;
-	int status, sig;
-	unsigned event;
+	int pid, r, sig;
 	syd_process_t *current;
-	int syscall_trap_sig;
 
+	if ((r = seccomp_notify_alloc(&sydbox->request,
+				      &sydbox->response)) < 0) {
+		errno = -r;
+		die_errno("seccomp_notify_alloc");
+	}
+
+	bool child_exited = false;
+	for (sydbox->notify_fd = 0;;) {
+		char *name = NULL;
+
+		if (!child_exited && sydbox->notify_fd && wait_for_child_fd())
+			child_exited = true;
+
+		if ((r = seccomp_notify_receive(sydbox->notify_fd,
+						sydbox->request)) < 0) {
+			/* TODO use:
+			 * __NR_pidfd_send_signal to kill the process
+			 * on abnormal exit.
+			 */
+			die_errno("seccomp_notify_receive");
+		}
+
+		sydbox->response->id = sydbox->request->id;
+		sydbox->response->error = 0;
+		sydbox->response->val = 0;
+
+		pid = sydbox->request->pid;
+		current = lookup_process(pid);
+		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
+							sydbox->request->data.nr);
+
+		if (!current) {
+			syd_process_t *parent;
+
+			parent = parent_process(pid, current);
+
+			YELL_ON(parent, "pid %u, syscall %s("
+				"%llu,%llu,%llu,%llu,%llu,%llu)",
+				pid, name,
+				sydbox->request->data.args[0],
+				sydbox->request->data.args[1],
+				sydbox->request->data.args[2],
+				sydbox->request->data.args[3],
+				sydbox->request->data.args[4],
+				sydbox->request->data.args[5]);
+			current = clone_process(parent, pid);
+			BUG_ON(current); /* Just bizarre, no questions */
+		}
+
+		/* We handled quick cases, we are permitted to interrupt now.
+		 * FIXME: Do we really want this while the child is stopped?
+		if ((r = check_interrupt()) != 0)
+			return r;
+		*/
+
+		current->sysnum = sydbox->request->data.nr;
+		current->sysname = name;
+		for (unsigned short i = 0; i < 6; i++)
+			current->args[i] = sydbox->request->data.args[i];
+
+		r = event_syscall(current);
+
+		sig = 0; /* TODO */
+		if (sig && current->pid == sydbox->execve_pid)
+			save_exit_signal(term_sig(sig));
+
+		if (name)
+			free(name);
+	}
+
+	r = sydbox->exit_code;
+	if (sydbox->violation) {
+		if (sydbox->config.violation_exit_code > 0)
+			r = sydbox->config.violation_exit_code;
+		else if (sydbox->config.violation_exit_code == 0)
+			r = 128 + sydbox->exit_code;
+	}
+
+	return r;
+
+#if 0
 	syscall_trap_sig = sydbox->trace_options & PINK_TRACE_OPTION_SYSGOOD
 			   ? SIGTRAP | 0x80
 			   : SIGTRAP;
@@ -1461,36 +1542,12 @@ cleanup:
 	}
 
 	return r;
-}
-
-PINK_GCC_ATTR((noreturn))
-static void spawn_child(char **argv)
-{
-	int r;
-	char *pathname;
-
-	r = path_lookup(argv[0], &pathname);
-	if (r < 0) {
-		errno = -r;
-		die_errno("can't exec `%s'", argv[0]);
-	}
-
-#if SYDBOX_HAVE_SECCOMP
-	if ((r = seccomp_init()) < 0)
-		die_errno("seccomp_init failed");
-	if ((r = sysinit_seccomp()) < 0)
-		die_errno("seccomp_apply failed");
 #endif
-
-	execv(pathname, argv);
-	fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
-		pathname, errno, strerror(errno));
-	exit(EXIT_FAILURE);
 }
 
 static void startup_child(char **argv)
 {
-	int r;
+	int r, pfd[2];
 	char *pathname;
 	pid_t pid = 0;
 	syd_process_t *child;
@@ -1501,10 +1558,15 @@ static void startup_child(char **argv)
 		die_errno("can't exec `%s'", argv[0]);
 	}
 
+	if (pipe2(pfd, O_CLOEXEC|O_DIRECT) < 0)
+		die_errno("can't pipe");
+
 	pid = fork();
 	if (pid < 0)
 		die_errno("can't fork");
 	else if (pid == 0) {
+		close(pfd[0]); /* read end of the pipe is unused. */
+		sydbox->seccomp_fd = pfd[1];
 #if SYDBOX_HAVE_DUMP_BUILTIN
 		if (sydbox->dump_fd > STDERR_FILENO && close(sydbox->dump_fd)) {
 			fprintf(stderr,
@@ -1513,83 +1575,71 @@ static void startup_child(char **argv)
 
 		}
 #endif
-#if SYDBOX_HAVE_SECCOMP
-		if (sydbox->config.use_seccomp) {
-			if ((r = seccomp_init()) < 0) {
-				fprintf(stderr,
-					PACKAGE": seccomp_init failed (errno:%d %s)\n",
-					-r, strerror(-r));
-				_exit(EXIT_FAILURE);
-			}
 
+		pid_t cpid = fork();
+		if (cpid < 0) {
+			die_errno("can't double fork");
+		} else if (cpid == 0) {
 			if ((r = sysinit_seccomp()) < 0) {
-				fprintf(stderr,
-					PACKAGE": seccomp_apply failed (errno:%d %s)\n",
-					-r, strerror(-r));
-				_exit(EXIT_FAILURE);
+				errno = -r;
+				die_errno("seccomp load failed");
 			}
-		}
-#endif
-		if (tracing()) {
-			pid = getpid();
-			if (!syd_use_seize) {
-				if ((r = pink_trace_me()) < 0) {
-					fprintf(stderr,
-						PACKAGE": ptrace(PTRACE_TRACEME) failed (errno:%d %s)\n",
-						-r, strerror(-r));
-					_exit(EXIT_FAILURE);
-				}
-			}
-		}
-
-		if (child_sa.sa_handler != SIG_DFL &&
-				sigaction(SIGCHLD, &child_sa, NULL) < 0) {
-			fprintf(stderr, PACKAGE": sigaction failed (errno:%d %s)\n",
-					errno, strerror(errno));
+			execv(pathname, argv);
+			fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
+				pathname, errno, strerror(errno));
 			_exit(EXIT_FAILURE);
 		}
 
-		if (tracing() && kill(pid, SIGSTOP) < 0) {
-			fprintf(stderr, PACKAGE": self-stop pid:%d failed (errno:%d %s)\n",
-				pid, errno, strerror(errno));
-		}
+		int wstatus, exit_code;
+		if (wait(&wstatus) < 0)
+			exit_code = 128;
+		else if (WIFEXITED(wstatus))
+			exit_code = WEXITSTATUS(wstatus);
+		else if (WIFSIGNALED(wstatus))
+			exit_code = 128 + WTERMSIG(wstatus);
+		else
+			exit_code = 128;
 
-		execv(pathname, argv);
-		fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
-			pathname, errno, strerror(errno));
-		_exit(EXIT_FAILURE);
+		parent_write(exit_code, sizeof(int));
+		pid = getpid();
+		parent_write(pid, sizeof(int));
+		pause();
+		_exit(0);
 	}
+
+	/* write end of the pipe is not used. */
+	close(pfd[1]);
 
 	free(pathname);
 
 	sydbox->execve_pid = pid;
 	sydbox->execve_wait = true;
-	if (!tracing()) {
-		dump(DUMP_STARTUP, pid);
-		return;
+
+	errno = 0;
+	int fd[2];
+	for (unsigned short i = 0; i < 2; i++) {
+		ssize_t count = atomic_read(pfd[0], &fd[i], sizeof(int));
+		if (!count && count != sizeof(int)) { /* count=0 is EOF */
+			if (!errno)
+				errno = EINVAL;
+			die_errno("failed to read int from pipe: %zu != %zu",
+				  count, sizeof(int));
+		}
 	}
-#if PINK_HAVE_SEIZE
-	if (syd_use_seize) {
-		/* Wait until child stopped itself */
-		int status;
-		while (waitpid(pid, &status, WSTOPPED) < 0) {
-			if (errno == EINTR)
-				continue;
-			die_errno("waitpid");
-		}
-		if (!WIFSTOPPED(status) || WSTOPSIG(status) != SIGSTOP) {
-			kill_save_errno(pid, SIGKILL);
-			die_errno("Unexpected wait status %x", status);
-		}
-		if (pink_trace_seize(pid, sydbox->trace_options) < 0 ||
-		    pink_trace_interrupt(pid) < 0) {
-			kill_save_errno(pid, SIGKILL);
-			die_errno("Can't attach to %u", pid);
-		}
-		kill(pid, SIGCONT);
-	}
-#endif
-	child = new_process_or_kill(pid, post_attach_sigstop);
+	say("pid:%d", pid);
+	pid = fd[1]; /* Second int is the process id of the double fork. */
+	kill(pid,SIGCONT);
+	sydbox->seccomp_fd = pfd[0]; /* Expecting the exit code... */
+
+	say("pid:%d", pid);
+	if ((sydbox->notify_fd = syscall(__NR_pidfd_open, pid, 0)) < 0)
+		die_errno("failed to open pidfd for pid:%d", pid);
+	if ((fd[0] = syscall(__NR_pidfd_getfd, sydbox->notify_fd, fd[0], 0)) < 0)
+		die_errno("failed to obtain seccomp user notify fd");
+	// close(sydbox->notify_fd);
+	sydbox->notify_fd = fd[0];
+
+	child = new_process_or_kill(pid);
 	init_process_data(child, NULL);
 	dump(DUMP_STARTUP, pid);
 }
@@ -1600,6 +1650,7 @@ void cleanup(void)
 
 	assert(sydbox);
 
+	filter_free();
 	reset_sandbox(&sydbox->config.box_static);
 
 	ACLQ_FREE(node, &sydbox->config.exec_kill_if_match, free);
@@ -1705,18 +1756,13 @@ int main(int argc, char **argv)
 		config_parse_spec(env);
 
 	config_done();
-#if SYDBOX_HAVE_SECCOMP
-	if (!sydbox->config.use_seccomp && !sydbox->config.use_ptrace) {
-		say("At least one of the options "
-		    "core/trace/use_ptrace and "
-		    "core/trace/use_seccomp "
-		    "must be enabled.");
-		usage(stderr, 1);
+
+	/* TODO: Find the library interface, this is an internal function!
+	if ((r = sys_chk_seccomp_flag(SECCOMP_FILTER_FLAG_NEW_LISTENER)) <= 0) {
+		errno = r ? -r : ENOSYS;
+		die_errno("System does not support SECCOMP_FILTER_FLAG_NEW_LISTENER");
 	}
-#else
-	if (!sydbox->config.use_ptrace)
-		die("Option `core/trace/use_ptrace' must be enabled.");
-#endif
+	*/
 
 	systable_init();
 	sysinit();
@@ -1777,12 +1823,10 @@ int main(int argc, char **argv)
 	   installed below as they are inherited into the spawned process.
 	   Also we do not need to be protected by them as during interruption
 	   in the STARTUP_CHILD mode we kill the spawned process anyway.  */
-	if (tracing()) {
-		startup_child(&argv[optind]);
+	startup_child(&argv[optind]);
+	if (use_notify()) {
 		init_signals();
-		r = trace();
-	} else {
-		spawn_child(&argv[optind]);
+		r = notify_loop();
 	}
 	cleanup();
 	return r;

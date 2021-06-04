@@ -1,7 +1,7 @@
 /*
  * sydbox/util.h
  *
- * Copyright (c) 2010, 2011, 2012, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2014, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  * Based in part upon courier which is:
@@ -40,6 +40,11 @@ extern int parse_pid(const char *s, pid_t *ret_pid);
 extern int parse_port(const char *s, unsigned *ret_port);
 extern int parse_netmask_ip(const char *addr, unsigned *ret_netmask);
 extern int parse_netmask_ipv6(const char *addr, unsigned *ret_netmask);
+
+ssize_t atomic_read(int fd, void *buf, size_t count);
+ssize_t atomic_write(int fd, const void *buf, size_t count);
+
+int send_fd(int sock, int fd);
 
 extern int waitpid_nointr(pid_t pid, int *status, int options);
 extern int term_sig(int signum);

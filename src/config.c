@@ -39,12 +39,11 @@ void config_init(void)
 	/* set sane defaults for configuration */
 	sydbox->config.follow_fork = true;
 	sydbox->config.exit_kill = false;
-	sydbox->config.use_ptrace = true;
-#if SYDBOX_HAVE_SECCOMP
+	/* TODO: Remove use_ptrace and use_seccomp */
+	/* TODO: Make seccomp_notify work! */
+	sydbox->config.use_ptrace = false;
 	sydbox->config.use_seccomp = true;
-#else
-	sydbox->config.use_seccomp = false;
-#endif
+	sydbox->config.use_notify = true;
 	sydbox->config.use_seize = true;
 	sydbox->config.use_toolong_hack = false;
 	sydbox->config.restrict_shared_memory_writable = true;

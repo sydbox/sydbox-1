@@ -12,8 +12,117 @@
   regular expressions to match system calls for restrictions.
 - use allowlist/denylist rather than whitelist/blacklist list in syd-2 profiles
 - rename the master branch to main
-- no ptrace() attach should happen if all of
-  core/sandbox/{read,write,exec,network}:bpf
+- Currently, the allow sandbox mode uses blacklists and the deny sandbox mode use
+whitelists. However it's better if both modes use both lists and the first matching
+pattern wins.
+- Add a UNIX socket interface to receive runtime configuration.
+- Abstract Paludis sandboxing system call hooks away from the core loop.
+
+# Sydbox (next major)
+- Evaluate using seccomp user notifications rather than ptrace.
+- Add an intuitive, simple interface to configure basic sandboxing via
+configuration and allow calling internal functions or dynamic SO libraries to
+use for seccomp-bpf and system call entry/exit hooks. The simple cases can be
+handled through configuration however if a system call is traced (e.g: via
+SECCOMP_RET_TRACE), it's much more powerful for the user to be able to write a
+dynamic library with the functions such as seccomp_init, sys_enter_open,
+sys_exit_open and so on. Loading the modules is done via configuration whilst
+configuring seccomp filters such as:
+  - sys/kill_process+syscall_set[:arg_expr...]
+  - sys/kill_thread+syscall_set[:arg_expr...]
+  - sys/fault+syscall_set:[:arg_expr...]:error=errno
+  - sys/trap+syscall_set[:arg_expr...][:error=errno|:retval=value]
+  - sys/log+syscall_set[:arg_expr...]
+  - sys/allow+syscall_set[:arg_expr...]
+  - sys/user+syscall_set[:arg_expr...][:log=syslog-or-fd][:command=regex][:cmdline=regex][
+	:kill_process=signal		|
+	:kill_thread=signal		|
+	:detach_process=signal		|
+	:detach_thread=signal		|
+	:fault=errno			|
+	:allow				|
+	:load=/path/to/profile.so[:profile-options...]
+    ]
+
+syscall_set is borrowed from strace see strace(1) with the addition of two sets:
+	- %file_rd for read only system calls
+	- %file_wr for write only and read/write system calls
+	- %exec for execve() and execveat()
+arg_expr is [:arg0..5<cmp_operator><argval_expr>]
+The special character _ may be used rather than 0..5 to infer the argument number
+from the system call number. This only works for string and network address
+arguments.
+
+cmp_operator, ie the comparison operator must be exactly one of:
+	Arithmetic values:
+		=, !=, >, >=, <, <=,
+		&, !& Bitwise AND and Bitwise NOT AND
+	String matching: =, =~, !~, =*, !*
+	Network address matching: @~, @!
+
+Only arithmetic values can be used with seccomp-bpf rules, string and network
+address matching is trace only.
+
+argval_expr must be exactly one of:
+	- A simple integer
+	- A simple identifier such as O_RDONLY
+	- An arithmetic expression including integers and identifiers,
+		to be parsed by expr: https://github.com/zserge/expr
+		Such as: O_WRONLY|O_RDWR|O_CREAT
+		Note, to be able to use identifiers we need to append the list
+		of all identifiers to the expression evaluator everytime,
+		such as:
+		const char *expr_def = "O_WRONLY=1,O_RDWR=2,O_CREAT=64,..., ";
+		const char *expr_usr = "O_WRONLY|O_RDWR|O_CREAT";
+	- A double quoted string literal, no longer than PATH_MAX
+	- A double quoted network address pattern such as inet://127.0.0.0/8 or LOOPBACK for short
+
+If sydbox finds no trace rules in the configuration, it'll act as a seccomp-bpf only sandbox.
+
+Some sample filter rules with this new format:
+- Kill processes attempting to set uid to root and log to syslog
+	sys/log+/setuid(32?):arg0=0
+	sys/kill_process+/setuid(32?):arg0=0
+- Allow open and openat system calls which are not write:
+	sys/allow+/open(64)?:arg1!&O_WRONLY|O_RDWR|O_CREAT
+	sys/allow+/openat:arg2!&O_WRONLY|O_RDWR|O_CREAT
+- Deny access to ~/.netrc and ~/.gnupg* and allow access to the rest of $HOME
+	sys/trace+%file:arg_=~"/home/[^/]+/\.(gnupg|netrc).*":fault=EPERM
+	sys/trace+%file:arg_=*"/home/[^/]+/***":fault=EPERM
+- Deny bind to non loopback addresses
+	sys/trace+bind:arg_@!"LOOPBACK":fault=EPERM
+- Deny external DNS requests and log them to standard error
+	sys/trace+%network:arg_@!"inet://0.0.0.0/0@53":log=2:fault=EPERM
+	sys/trace+%network:arg_@!"inet6://::/0@53":log=2:fault=EPERM
+- Only allow connections through the Tor proxy
+	sys/trace+%network:arg_@!"inet://127.0.0.1@9050":fault=EPERM
+- Detach from the gpg binary under /usr/bin, seccomp-bpf filters remain valid.
+	sys/trace+%exec:arg_="/usr/bin/gpg":detach_process=0
+- Load the magic stat internal module for runtime configuration.
+  Limit runtime configuration to the initial child only.
+  Make sure you do not directly call exec there or it's insecure.
+  Consider using the option readonly=true if you only need to read configuration.
+  The idea of this is to use with Paludis during package builds with exhereses
+  (package compilation definition scripts) to add additional rules before starting
+  package builds.
+  	sys/trace+%stat:arg_@~"/dev/sydbox/?.*":load=magic_stat:readonly=0:initonly=1
+- Mimic Paludis profile
+	sys/trace+%file_wr:allow:arg_=~"/dev/(stdout|stderr|zero|(f|n)ull|console|u?random|ptmx)$"
+	sys/trace+%file_wr:allow:arg_=~"/dev/(fd|pts|shm)/.*"
+	sys/trace+%file_wr:allow:arg_=*"/dev/tty*"
+	sys/trace+%file_wr:allow:arg_=*"/selinux/context/***"
+	sys/trace+%file_wr:allow:arg_=~"/proc/self/(attr|fd|task)/.*"
+	sys/trace+%file_wr:allow:arg_=~"/(tmp|var/tmp|var/cache)/.*"
+	sys/trace+%file_wr:fault=EPERM:log=2
+	sys/trace+bind:allow:arg_@~"LOOPBACK@0"
+	sys/trace+bind:allow:arg_@~"LOOPBACK@1024-65535"
+	sys/trace+bind:allow:arg_@~"LOOPBACK6@0"
+	sys/trace+bind:allow:arg_@~"LOOPBACK6@1024-65535"
+	sys/trace+bind:fault=EPERM:log=2
+	sys/trace+connect:allow:arg_@~"unix:/var/run/nscd/socket"
+	sys/trace+connect:allow:arg_@~"unix:/run/nscd/socket"
+	sys/trace+connect:allow:arg_@~"unix:/var/lib/sss/pipes/nss"
+	sys/trace+connect:fault=EPERM:log=2
 
 # Pandora
 

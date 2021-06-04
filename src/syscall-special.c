@@ -259,9 +259,9 @@ static int write_stat(syd_process_t *current, unsigned int buf_index, bool exten
 	struct statx bufx;
 #endif
 
-#if PINK_ARCH_X86_64
+#if defined(__x86_64__)
 	struct stat32 buf32;
-	if (current->abi == PINK_ABI_I386) {
+	if (current->arch == SCMP_ARCH_X86) {
 		if (extended) { /* TODO */
 			say("statx system call for i386 abi, can not encode!");
 			say("skipped stat() buffer write");

@@ -1,7 +1,7 @@
 /*
  * sydbox/util.c
  *
- * Copyright (c) 2010, 2011, 2012, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  * Based in part upon courier which is:
@@ -14,9 +14,11 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/wait.h>
 #include <ctype.h>
 #include <arpa/inet.h>
@@ -239,6 +241,82 @@ bool startswith(const char *s, const char *prefix)
 		return false;
 
 	return memcmp(s, prefix, pl) == 0;
+}
+
+/*
+ * Reading or writing pipe data is atomic if the size of data written is not
+ * greater than PIPE_BUF.
+ */
+
+ssize_t atomic_read(int fd, void *buf, size_t count)
+{
+	ssize_t total = 0;
+
+	while (count > 0) {
+		ssize_t retval;
+
+		retval = read(fd, buf, count);
+		if (retval < 0)
+			return (total > 0) ? total : -1;
+		else if (retval == 0)
+			return total;
+
+		total += retval;
+		buf = (char *)buf + retval;
+		count -= retval;
+	}
+
+	return total;
+}
+
+ssize_t atomic_write(int fd, const void *buf, size_t count)
+{
+	ssize_t total = 0;
+
+	while (count > 0) {
+		ssize_t retval;
+
+		retval = write(fd, buf, count);
+		if (retval < 0)
+			return (total > 0) ? total : -1;
+		else if (retval == 0)
+			return total;
+
+		total += retval;
+		buf = (const char *)buf + retval;
+		count -= retval;
+	}
+
+	return total;
+}
+
+int send_fd(int sock, int fd)
+{
+	struct msghdr msg;
+	struct cmsghdr *cmsg;
+	char buf[CMSG_SPACE(sizeof(int))] = {0}, c = 'c';
+	struct iovec io = {
+		.iov_base = &c,
+		.iov_len = 1,
+	};
+
+	msg.msg_iov = &io;
+	msg.msg_iovlen = 1;
+	msg.msg_control = buf;
+	msg.msg_controllen = sizeof(buf);
+	cmsg = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = SOL_SOCKET;
+	cmsg->cmsg_type = SCM_RIGHTS;
+	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+	*((int *)CMSG_DATA(cmsg)) = fd;
+	msg.msg_controllen = cmsg->cmsg_len;
+
+	if (sendmsg(sock, &msg, 0) < 0) {
+		perror("sydbox: sendmsg");
+		return -1;
+	}
+
+	return 0;
 }
 
 int waitpid_nointr(pid_t pid, int *status, int options)

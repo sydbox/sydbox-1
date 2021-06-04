@@ -292,6 +292,14 @@ static const struct key key_table[] = {
 		.set    = magic_set_trace_use_seccomp,
 		.query  = magic_query_trace_use_seccomp,
 	},
+	[MAGIC_KEY_CORE_TRACE_USE_NOTIFY] = {
+		.name   = "use_notify",
+		.lname  = "core.trace.use_notify",
+		.parent = MAGIC_KEY_CORE_TRACE,
+		.type   = MAGIC_TYPE_BOOLEAN,
+		.set    = magic_set_trace_use_notify,
+		.query  = magic_query_trace_use_notify,
+	},
 	[MAGIC_KEY_CORE_TRACE_USE_SEIZE] = {
 		.name   = "use_seize",
 		.lname  = "core.trace.use_seize",

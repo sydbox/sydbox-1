@@ -15,124 +15,115 @@
 #include <sys/mman.h>
 
 #if SYDBOX_HAVE_SECCOMP
-# include "seccomp.h"
+# include "seccomp_old.h"
 #endif
 
-static int filter_open_index(int arch, uint32_t sysnum, unsigned flag_index)
+int filter_open(void)
 {
-#if SYDBOX_HAVE_SECCOMP
+	int r;
+
 	if (!sydbox->config.restrict_file_control)
 		return 0;
 
-	struct sock_filter open_filter[] = {
-		/* check for arch & syscall_nr */
-		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, arch_nr),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, arch, 1, 0),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
-		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_nr),
-		/* check for O_ASYNC|O_DIRECT|O_SYNC */
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 3/*jump to allow*/),
-		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(flag_index)),
-		BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, (O_ASYNC|O_DIRECT|O_SYNC), 0, 1),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA)),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW)
-	};
-	struct sock_fprog prog;
+	/* O_ASYNC */
+	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open),
+			     1,
+			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_ASYNC, O_ASYNC ));
+	if (r < 0)
+		return r;
 
-	memset(&prog, 0, sizeof(prog));
-	prog.filter = open_filter;
-	prog.len = ELEMENTSOF(open_filter);
+	/* O_DIRECT */
+	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open),
+			     1,
+			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_DIRECT, O_DIRECT ));
+	if (r < 0)
+		return r;
 
-	if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog) < 0)
-		return -errno;
-#endif
+	/* O_SYNC */
+	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open),
+			     1,
+			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_SYNC, O_SYNC ));
+	if (r < 0)
+		return r;
+
 	return 0;
 }
 
-int filter_open(int arch, uint32_t sysnum)
+int filter_openat(void)
 {
-	return filter_open_index(arch, sysnum, 1);
-}
+	int r;
 
-int filter_openat(int arch, uint32_t sysnum)
-{
-	return filter_open_index(arch, sysnum, 2);
-}
-
-int filter_fcntl(int arch, uint32_t sysnum)
-{
-#if SYDBOX_HAVE_SECCOMP
 	if (!sydbox->config.restrict_file_control)
 		return 0;
 
-	struct sock_filter fcntl_filter[] = {
-		/* check for arch & syscall_nr */
-		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, arch_nr),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, arch, 1, 0),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
-		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_nr),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 16),
-		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(1)), /* cmd */
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, F_GETFL, 13, 0),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, F_SETFL, 12, 0), /* check arg0 */
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, F_SETOWN, 11, 0),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, F_SETLK, 10, 0),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, F_SETLKW, 9, 0),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, F_SETLK64, 8, 0),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, F_SETLKW64, 7, 0),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, F_GETFD, 6, 0),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, F_SETFD, 5, 0),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, F_DUPFD, 4, 0),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, F_DUPFD_CLOEXEC, 3, 0),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA)),
-		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(2)),
-		BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, (O_ASYNC|O_DIRECT), 0, 1),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA)),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW)
-	};
-	struct sock_fprog prog;
+	/* O_ASYNC */
+	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(openat),
+			     1,
+			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_ASYNC, O_ASYNC ));
+	if (r < 0)
+		return r;
 
-	memset(&prog, 0, sizeof(prog));
-	prog.filter = fcntl_filter;
-	prog.len = ELEMENTSOF(fcntl_filter);
+	/* O_DIRECT */
+	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(openat),
+			     1,
+			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_DIRECT, O_DIRECT ));
+	if (r < 0)
+		return r;
 
-	if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog) < 0)
-		return -errno;
-#endif
+	/* O_SYNC */
+	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(openat),
+			     1,
+			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_SYNC, O_SYNC ));
+	if (r < 0)
+		return r;
+
 	return 0;
 }
 
-int filter_mmap(int arch, uint32_t sysnum)
+int filter_fcntl(void)
 {
-#if SYDBOX_HAVE_SECCOMP
+	int r;
+
+	if (!sydbox->config.restrict_file_control)
+		return 0;
+
+	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fcntl),
+			     2,
+			     SCMP_A1( SCMP_CMP_EQ, F_SETFL ),
+			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_ASYNC, O_ASYNC));
+	if (r < 0)
+		return r;
+	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fcntl),
+			     2,
+			     SCMP_A1( SCMP_CMP_EQ, F_SETFL ),
+			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_DIRECT, O_DIRECT));
+	if (r < 0)
+		return r;
+
+#define FCNTL_OK_MAX 11
+	int ok[FCNTL_OK_MAX] = { F_GETFL, F_SETFL, F_SETOWN, F_SETLK, F_SETLKW,
+		F_SETLK64, F_SETLKW64, F_GETFD, F_SETFD, F_DUPFD, F_DUPFD_CLOEXEC };
+	for (unsigned short i = 0; i < FCNTL_OK_MAX; i++) {
+		r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, SCMP_SYS(fcntl),
+				     1,
+				     SCMP_A1( SCMP_CMP_EQ, ok[i] ));
+		if (r < 0)
+			return r;
+	}
+	return 0;
+}
+
+int filter_mmap(void)
+{
 	if (!sydbox->config.restrict_shared_memory_writable)
 		return 0;
 
-	struct sock_filter mmap_filter[] = {
-		/* check for arch & syscall_nr */
-		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, arch_nr),
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, arch, 1, 0),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
-		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_nr),
-		/* check for PROT_WRITE & MAP_SHARED */
-		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, sysnum, 0, 5),
-		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(2)), /* prot */
-		BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, PROT_WRITE, 0, 3),
-		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_arg(3)), /* flags */
-		BPF_JUMP(BPF_JMP+BPF_JSET+BPF_K, MAP_SHARED, 0, 1),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ERRNO|(EPERM & SECCOMP_RET_DATA)),
-		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW)
-	};
-	struct sock_fprog prog;
-
-	memset(&prog, 0, sizeof(prog));
-	prog.filter = mmap_filter;
-	prog.len = ELEMENTSOF(mmap_filter);
-
-	if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog) < 0)
-		return -errno;
-#endif
-	return 0;
+	return seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(mmap),
+				2,
+				SCMP_A2( SCMP_CMP_MASKED_EQ,
+					 PROT_WRITE, PROT_WRITE ),
+				SCMP_A3( SCMP_CMP_MASKED_EQ,
+					 MAP_SHARED, MAP_SHARED ));
 }
 
 int sys_fallback_mmap(syd_process_t *current)

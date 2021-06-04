@@ -274,10 +274,17 @@ AC_CHECK_FUNCS_ONCE(m4_flatten([
 dnl check for large file support
 AC_SYS_LARGEFILE
 
+dnl check for pkg-config
+PKG_PROG_PKG_CONFIG([0.20.0])
+
+dnl check for libseccomp
+LIBSECCOMP_REQUIRED=2.4.3
+PKG_CHECK_MODULES([libseccomp], [libseccomp >= $LIBSECCOMP_REQUIRED],,
+		  AC_MSG_ERROR([sydbox requires libseccomp-$LIBSECCOMP_REQUIRED or newer]))
+
 dnl check for pinktrace
 PINKTRACE_REQUIRED=0.9
 
-PKG_PROG_PKG_CONFIG([0.20.0])
 PKG_CHECK_MODULES([pinktrace], [pinktrace >= $PINKTRACE_REQUIRED],,
 		  AC_MSG_ERROR([sydbox requires pinktrace-$PINKTRACE_REQUIRED or newer]))
 
@@ -311,45 +318,18 @@ AM_CONDITIONAL([WANT_DEBUG], test x"$WANT_DEBUG" = x"yes")
 AC_DEFINE_UNQUOTED([SYDBOX_DEBUG], [$SYDBOX_DEBUG], ['Enable debug support (requires: libunwind)'])
 AC_SUBST([SYDBOX_DEBUG])
 
-dnl check for seccomp support
-AC_ARG_ENABLE([seccomp],
-	      [AS_HELP_STRING([--disable-seccomp], [disable seccomp support])],
-	      [WANT_SECCOMP="$enableval"],
-	      [WANT_SECCOMP="yes"])
-if test x"$WANT_SECCOMP" = x"yes" ; then
-	AC_CHECK_HEADER([sys/prctl.h],       [], [AC_MSG_ERROR([I need sys/prctl.h for seccomp support!])])
-	AC_CHECK_HEADERS([linux/audit.h linux/seccomp.h])
-	m4_define([include_seccomp_headers],
-		  [#include <stdint.h>
-		   #include <sys/prctl.h>
-		   #ifdef HAVE_LINUX_AUDIT_H
-		   #include <linux/audit.h>
-		   #endif
-		   #ifdef HAVE_LINUX_SECCOMP_H
-		   #include <linux/seccomp.h>
-		   #endif
-		  ])
-	AC_CHECK_DECL([SECCOMP_MODE_FILTER], [], [AC_MSG_WARN([SECCOMP_MODE_FILTER not declared! (seccomp may not work!)])],
-		      [include_seccomp_headers])
-	AC_CHECK_DECL([SECCOMP_RET_TRACE],   [], [AC_MSG_WARN([SECCOMP_RET_TRACE not declared! (seccomp may not work!)])],
-		      [include_seccomp_headers])
-	SYDBOX_HAVE_SECCOMP=1
-else
-	SYDBOX_HAVE_SECCOMP=0
-fi
-AC_MSG_CHECKING([for seccomp support])
-AC_MSG_RESULT([$WANT_SECCOMP])
-AM_CONDITIONAL([WANT_SECCOMP], test x"$WANT_SECCOMP" = x"yes")
-AC_DEFINE_UNQUOTED([SYDBOX_HAVE_SECCOMP], [$SYDBOX_HAVE_SECCOMP], [Enable seccomp support])
-AC_SUBST([SYDBOX_HAVE_SECCOMP])
-
-case "$host_cpu" in
-aarch64*|arm*)
-	if test x"$SYDBOX_HAVE_SECCOMP" = x"0"; then
-		AC_MSG_ERROR([seccomp must be enabled on Arm and AArch64 architectures"])
-	fi
-	;;
-esac
+dnl check for pidfd_open and pidfd_getfd.
+m4_define([include_pidfd_headers], [
+	   #include <asm/unistd.h>
+])
+AC_CHECK_HEADER([asm/unistd.h],   [],
+		[AC_MSG_ERROR([The header <asm/unistd.h> is required to build sydbox])])
+AC_CHECK_DECL([__NR_pidfd_open],  [],
+	      [AC_MSG_ERROR([__NR_pidfd_open not declared! pidfd is required to build sydbox])],
+	      [include_pidfd_headers])
+AC_CHECK_DECL([__NR_pidfd_getfd], [],
+	      [AC_MSG_ERROR([__NR_pidfd_getfd not declared! pidfd is required to build sydbox])],
+	      [include_pidfd_headers])
 
 AC_MSG_CHECKING([for dump])
 AC_ARG_ENABLE([dump],

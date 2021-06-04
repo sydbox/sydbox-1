@@ -21,6 +21,7 @@ AM_CFLAGS= \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
 	   $(pinktrace_CFLAGS) \
+	   $(libseccomp_CFLAGS) \
 	   @SYDBOX_CFLAGS@
 if WANT_DEBUG
 AM_CFLAGS+= $(libunwind_CFLAGS)
@@ -39,7 +40,6 @@ noinst_HEADERS+= \
 		 pathlookup.h \
 		 pink.h \
 		 proc.h \
-		 seccomp.h \
 		 pathdecode.h \
 		 pathmatch.h \
 		 procmatch.h \
@@ -51,7 +51,9 @@ noinst_HEADERS+= \
 		 sydconf.h \
 		 sydbox.h
 sydbox_SOURCES= \
+		 $(noinst_HEADERS) \
 		 file.c \
+		 filter.c \
 		 path.c \
 		 pathlookup.c \
 		 pink.c \
@@ -114,7 +116,7 @@ noinst_HEADERS+= \
 		 sys-queue.h
 
 sydbox_LDFLAGS= -lsyd_@LIBSYD_PC_SLOT@
-sydbox_LDADD= -L$(top_builddir)/syd/.libs -lsyd_@LIBSYD_PC_SLOT@ $(pinktrace_LIBS)
+sydbox_LDADD= -L$(top_builddir)/syd/.libs -lsyd_@LIBSYD_PC_SLOT@ $(pinktrace_LIBS) $(libseccomp_LIBS)
 if WANT_DEBUG
 sydbox_LDADD+= $(libunwind_LIBS)
 endif
@@ -230,6 +232,7 @@ splint:
 			-I$(top_builddir) -I$(top_builddir)/syd \
 			-I$(top_srcdir) -I$(top_srcdir)/syd \
 			$(pinktrace_CFLAGS) \
+			$(libseccomp_CFLAGS) \
 			$$path; \
 	done 2>&1 |\
 	tee sydbox-splint.log

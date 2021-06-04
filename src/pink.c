@@ -125,6 +125,7 @@ int syd_trace_geteventmsg(syd_process_t *current, unsigned long *data)
 	return SYD_CHECK(current, r);
 }
 
+#if 0
 int syd_regset_fill(syd_process_t *current)
 {
 	int r;
@@ -138,6 +139,7 @@ int syd_regset_fill(syd_process_t *current)
 	}
 	return SYD_CHECK(current, r);
 }
+#endif
 
 int syd_read_syscall(syd_process_t *current, long *sysnum)
 {
