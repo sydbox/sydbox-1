@@ -9,8 +9,8 @@ SydBox uses autotools. To build, simply do `./configure`, `make` and `sudo make 
 
 To use SydBox you need a recent [Linux](https://kernel.org) kernel, preferably 3.5
 or newer which has [secure computing mode](https://en.wikipedia.org/wiki/Seccomp)
-facility. Make sure you build SydBox with **--enable-seccomp** given to
-`./configure`. SydBox works fine without it but it is going to be noticably slower
+facility. Make sure you build SydBox without **--disable-seccomp**.
+SydBox works fine without SecComp but it is going to be noticably slower
 and less secure. See the [SydBox manual
 page](https://dev.exherbo.org/~alip/sydbox/sydbox.html) on more information about
 [secure computing mode](https://en.wikipedia.org/wiki/Seccomp) protections. The

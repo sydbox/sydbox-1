@@ -312,9 +312,9 @@ AC_SUBST([SYDBOX_DEBUG])
 
 dnl check for seccomp support
 AC_ARG_ENABLE([seccomp],
-	      [AS_HELP_STRING([--enable-seccomp], [enable seccomp support])],
+	      [AS_HELP_STRING([--disable-seccomp], [enable seccomp support])],
 	      [WANT_SECCOMP="$enableval"],
-	      [WANT_SECCOMP="no"])
+	      [WANT_SECCOMP="yes"])
 if test x"$WANT_SECCOMP" = x"yes" ; then
 	AC_CHECK_HEADER([sys/prctl.h],       [], [AC_MSG_ERROR([I need sys/prctl.h for seccomp support!])])
 	AC_CHECK_HEADERS([linux/audit.h linux/seccomp.h])
