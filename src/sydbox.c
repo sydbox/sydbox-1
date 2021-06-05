@@ -1690,7 +1690,7 @@ int main(int argc, char **argv)
 		{"version",	no_argument,		NULL,	'v'},
 		{"profile",	required_argument,	NULL,	0},
 		{"dry-run",	no_argument,		NULL,	0},
-		{"arch",	required-argument	NULL,	'a'},
+		{"arch",	required_argument,	NULL,	'a'},
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -1724,11 +1724,13 @@ int main(int argc, char **argv)
 				break;
 			}
 			usage(stderr, 1);
-		case 'a';
-			r = seccomp_arch_add(sydbox->ctx, (uint32_t)arch_mode_from_string(optarg));
+		case 'a':
+			r = seccomp_arch_add(sydbox->ctx, (uint32_t)arch_from_string(optarg));
 			if (r == -EINVAL) {
-				say("architecture %: ok, continuing..");
-				say("system calls in arch %s will be killed!");
+				say("architecture %s: not ok, continuing..",
+				    optarg);
+				say("system calls in arch %s will be killed!",
+				    optarg);
 			}
 			break;
 		case 'h':

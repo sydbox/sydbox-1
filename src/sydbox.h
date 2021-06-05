@@ -655,7 +655,7 @@ extern sydbox_t *sydbox;
 #endif
 
 #define tracing() (0)
-#define use_notify() ((sydbox)->config.use_notify)
+#define use_notify() (0) //((sydbox)->config.use_notify)
 
 #define entering(p) (!((p)->flags & SYD_IN_SYSCALL))
 #define exiting(p) ((p)->flags & SYD_IN_SYSCALL)
