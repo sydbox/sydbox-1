@@ -135,7 +135,7 @@ int deny(syd_process_t *current, int err_no)
 		return 0; /* dry-run, no intervention. */
 	current->retval = errno2retval(err_no);
 	sydbox->response->val = 0;
-	sydbox->response->error = err_no;
+	sydbox->response->error = -err_no;
 	sydbox->response->flags = 0; /* drop SECCOMP_USER_NOTIF_FLAG_CONTINUE */
 
 	return 0;

@@ -1972,6 +1972,7 @@ int main(int argc, char **argv)
 	pid_t pid = startup_child(&argv[optind]);
 	if (use_notify()) {
 		syd_process_t *current = new_process(pid);
+		init_process_data(current, NULL);
 		init_signals();
 		r = notify_loop(current);
 	}

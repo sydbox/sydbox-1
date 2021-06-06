@@ -27,12 +27,7 @@ static ssize_t _pink_process_vm_readv(pid_t pid,
 				      unsigned long flags)
 {
 	ssize_t r;
-# if defined(HAVE_PROCESS_VM_READV)
-	r = process_vm_readv(pid,
-			     local_iov, liovcnt,
-			     remote_iov, riovcnt,
-			     flags);
-# elif defined(__NR_process_vm_readv)
+# if defined(__NR_process_vm_readv)
 	r = syscall(__NR_process_vm_readv, (long)pid,
 		    local_iov, liovcnt,
 		    remote_iov, riovcnt, flags);
@@ -58,12 +53,7 @@ static ssize_t _pink_process_vm_writev(pid_t pid,
 				       unsigned long flags)
 {
 	ssize_t r;
-# if defined(HAVE_PROCESS_VM_WRITEV)
-	r = process_vm_writev(pid,
-			      local_iov, liovcnt,
-			      remote_iov, riovcnt,
-			      flags);
-# elif defined(__NR_process_vm_writev)
+# if defined(__NR_process_vm_writev)
 	r = syscall(__NR_process_vm_writev, (long)pid,
 		    local_iov, liovcnt,
 		    remote_iov, riovcnt,
@@ -79,8 +69,6 @@ static ssize_t _pink_process_vm_writev(pid_t pid,
 #else
 # define process_vm_writev(...) (errno = ENOSYS, -1)
 #endif
-
-
 
 static inline int abi_wordsize(const syd_process_t *current)
 {
@@ -183,7 +171,7 @@ inline int syd_read_argument(syd_process_t *current, unsigned arg_index, long *a
 {
 	SYD_RETURN_IF_DETACHED(current);
 	BUG_ON(argval);
-	BUG_ON(arg_index >= 6);
+	BUG_ON(arg_index < 6);
 
 	*argval = current->args[arg_index];
 
@@ -194,7 +182,7 @@ int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argva
 {
 	SYD_RETURN_IF_DETACHED(current);
 	BUG_ON(argval);
-	BUG_ON(arg_index >= 6);
+	BUG_ON(arg_index < 6);
 
 	*argval = (int)current->args[arg_index];
 
