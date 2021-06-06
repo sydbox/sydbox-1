@@ -710,7 +710,7 @@ int sysenter(syd_process_t *current)
 	r = 0;
 	current->retval = 0;
 	if (entry->enter)
-		r = entry->enter(current);
+		; // r = entry->enter(current);
 	if (entry->exit)
 		current->flags |= SYD_STOP_AT_SYSEXIT;
 

@@ -318,8 +318,16 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 	bool share_thread, share_fs, share_files;
 
 	if (!parent) {
-		P_CWD(current) = xgetcwd(); /* FIXME: too long hack changes
-					       directories, this may not work! */
+		int r;
+		char *cwd;
+		if ((r = proc_cwd(current->pid, sydbox->config.use_toolong_hack,
+				  &cwd)) < 0) {
+			errno = -r;
+			say_errno("proc_cwd");
+			P_CWD(current) = strdup("/");
+		} else {
+			P_CWD(current) = cwd;
+		}
 		copy_sandbox(P_BOX(current), box_current(NULL));
 		return;
 	}
@@ -1299,6 +1307,24 @@ notify_receive:
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
 
+		/* Search early for exit before getting a process entry. */
+		if ((!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
+			int process_count = process_count();
+			if (pid == sydbox->execve_pid) {
+				sydbox->exit_code = sydbox->request->data.args[0];
+				say("process %d exiting with %d code from %s system call, "
+				    "process count %d",
+				    pid, sydbox->exit_code, name,
+				    process_count);
+			}
+			remove_process(pid, 0);
+			reap_zombies();
+			if (process_count() <= 2)
+				goto notify_respond;
+			else
+				continue;
+		}
+
 		if (!current) {
 			syd_process_t *parent;
 			parent = parent_process(pid, current);
@@ -1330,20 +1356,6 @@ notify_receive:
 			sandbox_t *box = box_current(current);
 			if (box->mode.sandbox_exec != SANDBOX_OFF)
 				r = event_syscall(current);
-		} else if ((!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
-			int process_count = process_count();
-			if (pid == sydbox->execve_pid) {
-				sydbox->exit_code = sydbox->request->data.args[0];
-				say("process %d exiting with %d code from %s system call, process count %d",
-				    pid, sydbox->exit_code, name,
-				    process_count);
-			}
-			remove_process(pid, 0);
-			reap_zombies();
-			if (process_count() <= 2)
-				goto notify_respond;
-			else
-				continue;
 		} else {
 			r = event_syscall(current);
 		}
