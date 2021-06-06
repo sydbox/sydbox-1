@@ -1269,6 +1269,7 @@ static int notify_loop(syd_process_t *current)
 
 	for (uint64_t i = 0;;i++) {
 		char *name = NULL;
+		bool jump = false;
 
 		pid = sydbox->execve_pid;
 		if (i > 1) {
@@ -1283,13 +1284,6 @@ static int notify_loop(syd_process_t *current)
 			}
 		}
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
-		if (!process_is_alive(pid)) {
-			sydbox->exit_code = 128;
-			reap_zombies();
-			if (!process_count()) {
-				break;
-			}
-		}
 notify_receive:
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
 						sydbox->request)) < 0) {
@@ -1348,10 +1342,10 @@ notify_receive:
 			}
 			remove_process(pid, 0);
 			reap_zombies();
-			if (process_count())
-				goto notify_respond;
-			else
-				break;
+			int count = process_count();
+			if (count <= 1)
+				jump = true;
+			goto notify_respond;
 		}
 
 		if (!current) {
@@ -1430,14 +1424,6 @@ notify_receive:
 			r = event_syscall(current);
 		}
 
-		if (!process_is_alive(pid)) {
-			if (pid == current->pid)
-				sydbox->exit_code = 128;
-			reap_zombies();
-			if (!process_count()) {
-				break;
-			}
-		}
 notify_respond:
 		/* 0 if valid, ENOENT if not */
 		if ((r = seccomp_notify_id_valid(sydbox->notify_fd,
@@ -1484,6 +1470,9 @@ notify_respond:
 
 		if (name)
 			free(name);
+
+		if (jump)
+			break;
 
 		/* We handled quick cases, we are permitted to interrupt now. */
 		if ((r = check_interrupt()) != 0)
