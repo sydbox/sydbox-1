@@ -1352,10 +1352,10 @@ notify_receive:
 			}
 			remove_process(pid, 0);
 			reap_zombies();
-			if (process_count() <= 2)
+			if (process_count())
 				goto notify_respond;
 			else
-				continue;
+				break;
 		}
 
 		if (!current) {
