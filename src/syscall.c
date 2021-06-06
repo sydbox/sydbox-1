@@ -49,27 +49,33 @@ static const sysentry_t syscall_entries[] = {
 	{
 		.name = "stat",
 		.enter = sys_stat,
+		.sandbox_pseudo = true,
 	},
 	{
 		.name = "lstat",
 		.user_notif = true,
 		.enter = sys_stat,
+		.sandbox_pseudo = true,
 	},
 	{
 		.name = "statx",
 		.enter = sys_statx,
+		.sandbox_pseudo = true,
 	},
 	{
 		.name = "stat64",
 		.enter = sys_stat,
+		.sandbox_pseudo = true,
 	},
 	{
 		.name = "lstat64",
 		.enter = sys_stat,
+		.sandbox_pseudo = true,
 	},
 	{
 		.name = "newfstatat",
 		.enter = sys_fstatat,
+		.sandbox_pseudo = true,
 	},
 	/*
 	 * TODO: This requires updates in the ABI & struct stat logic in
@@ -132,18 +138,6 @@ static const sysentry_t syscall_entries[] = {
 		.filter = filter_fcntl,
 		.enter = sys_fcntl,
 		.sandbox_read = true,
-	},
-	{
-		.name = "dup",
-		.enter = sys_dup,
-	},
-	{
-		.name = "dup2",
-		.enter = sys_dup,
-	},
-	{
-		.name = "dup3",
-		.enter = sys_dup,
 	},
 
 	{
@@ -589,6 +583,8 @@ int sysinit_seccomp_load(void)
 				mode[0] = box->mode.sandbox_write;
 			} else if (syscall_entries[i].sandbox_read) {
 				mode[0] = box->mode.sandbox_read;
+			} else if (syscall_entries[i].sandbox_pseudo) {
+				;
 			} else {
 				continue;
 			}
@@ -606,7 +602,10 @@ int sysinit_seccomp_load(void)
 					has_allow = true;
 				}
 			}
-			if (all_off) {
+			if (syscall_entries[i].sandbox_pseudo && use_notify()) {
+				action = SCMP_ACT_NOTIFY;
+				user_notified = true;
+			} else if (all_off) {
 				continue;
 			} else if (has_deny) {
 				action = SCMP_ACT_ERRNO(EPERM);

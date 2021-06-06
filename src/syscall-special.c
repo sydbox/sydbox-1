@@ -109,11 +109,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 			return r;
 		}
 
-		if ((r = syd_read_argument_int(current, 4, &flags)) < 0) {
-			if (prefix)
-				free(prefix);
-			return r;
-		}
+		flags = current->args[4];
 	}
 
 	if ((r = path_decode(current, at_func ? 1 : 0, &path)) < 0) {
@@ -331,8 +327,8 @@ static int write_stat(syd_process_t *current, unsigned int buf_index, bool exten
 	}
 
 	long addr;
-	if (syd_read_argument(current, buf_index, &addr) == 0)
-		syd_write_vm_data(current, addr, bufaddr, bufsize);
+	addr = current->args[buf_index];
+	syd_write_vm_data(current, addr, bufaddr, bufsize);
 
 	return true;
 }
@@ -372,11 +368,7 @@ static int do_stat(syd_process_t *current, const char *path,
 			r = deny(current, errno);
 		}
 	} else if (r != MAGIC_RET_NOOP) {
-#if WRITE_STAT_ON_ENTRY
 		write_stat(current, buf_index, extended);
-#else
-		current->flags |= SYD_STOP_AT_SYSEXIT;
-#endif
 
 		/* magic command accepted */
 		if (r < 0)
@@ -394,7 +386,7 @@ static int do_stat(syd_process_t *current, const char *path,
 			magic_set_sandbox_all("deny", current);
 		}
 
-		r = deny(current, errno);
+		r = deny(current, 0);
 		if (violation_decision == VIOLATION_NOOP) {
 			sydbox->config.violation_decision = VIOLATION_NOOP;
 			magic_set_sandbox_all("dump", current);
@@ -410,7 +402,6 @@ static int do_stat(syd_process_t *current, const char *path,
 
 int sys_stat(syd_process_t *current)
 {
-	int r;
 	long addr;
 	char path[SYDBOX_PATH_MAX];
 
@@ -419,37 +410,15 @@ int sys_stat(syd_process_t *current)
 		return 0;
 	}
 
-	if ((r = syd_read_argument(current, 0, &addr)) < 0)
-		return r;
+	addr = current->args[0];
 	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
 		return errno == EFAULT ? 0 : -errno;
 
 	return do_stat(current, path, 1, false);
 }
 
-#if !WRITE_STAT_ON_ENTRY
-int sysx_stat(syd_process_t *current)
-{
-	write_stat(current, 1, false);
-	return 0;
-}
-
-int sysx_statx(syd_process_t *current)
-{
-	write_stat(current, 4, true);
-	return 0;
-}
-
-int sysx_fstatat(syd_process_t *current)
-{
-	write_stat(current, 2, false);
-	return 0;
-}
-#endif
-
 int sys_fstatat(syd_process_t *current)
 {
-	int r;
 	long addr;
 	char path[SYDBOX_PATH_MAX];
 
@@ -466,8 +435,7 @@ int sys_fstatat(syd_process_t *current)
 	 * fstatat(AT_FDCWD, /dev/sydbox/..., 0);
 	 * does.
 	 */
-	if ((r = syd_read_argument(current, 1, &addr)) < 0)
-		return r;
+	addr = current->args[1];
 	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
 		return errno == EFAULT ? 0 : -errno;
 
@@ -476,7 +444,6 @@ int sys_fstatat(syd_process_t *current)
 
 int sys_statx(syd_process_t *current)
 {
-	int r;
 	long addr;
 	char path[SYDBOX_PATH_MAX];
 
@@ -486,68 +453,17 @@ int sys_statx(syd_process_t *current)
 	}
 
 	/* See the note in sys_fstatat() on why we ignore AT_FDCWD. */
-	if ((r = syd_read_argument(current, 1, &addr)) < 0)
-		return r;
+	addr = current->args[1];
 	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
 		return errno == EFAULT ? 0 : -errno;
 
 	return do_stat(current, path, 4, true);
 }
 
-int sys_dup(syd_process_t *current)
-{
-	int r;
-	long fd;
-
-	current->args[0] = -1;
-
-	if (sandbox_off_network(current) ||
-	    !sydbox->config.whitelist_successful_bind)
-		return 0;
-
-	if ((r = syd_read_argument(current, 0, &fd)) < 0)
-		return r;
-
-	current->args[0] = fd;
-	current->flags |= SYD_STOP_AT_SYSEXIT;
-	return 0;
-}
-
-#if 0
-int sysx_dup(syd_process_t *current)
-{
-	int r;
-	long retval;
-	const struct sockinfo *oldinfo;
-
-	if (sandbox_off_network(current) ||
-	    !sydbox->config.whitelist_successful_bind ||
-	    current->args[0] < 0)
-		return 0;
-
-	if ((r = syd_read_retval(current, &retval, NULL)) < 0)
-		return r;
-
-	if (retval < 0) {
-		/* ignore failed system call */
-		return 0;
-	}
-
-	if (!(oldinfo = sockmap_find(&P_SOCKMAP(current), current->args[0]))) {
-		/* duplicated unknown file descriptor, ignore */
-		return 0;
-	}
-
-	/* file descriptor duplicated */
-	sockmap_add(&P_SOCKMAP(current), retval, sockinfo_xdup(oldinfo));
-	return 0;
-}
-#endif
-
 int sys_fcntl(syd_process_t *current)
 {
 	bool strict;
-	int r, fd, cmd, arg0;
+	int cmd, arg0;
 
 	current->args[0] = -1;
 	strict = !sydbox->config.use_seccomp &&
@@ -557,9 +473,7 @@ int sys_fcntl(syd_process_t *current)
 			!sydbox->config.whitelist_successful_bind))
 		return 0;
 
-	if ((r = syd_read_argument_int(current, 1, &cmd)) < 0)
-		return r;
-
+	cmd = current->args[1];
 	switch (cmd) {
 	case F_DUPFD:
 #ifdef F_DUPFD_CLOEXEC
@@ -569,8 +483,7 @@ int sys_fcntl(syd_process_t *current)
 	case F_SETFL:
 		if (!strict)
 			return 0;
-		if ((r = syd_read_argument_int(current, 0, &arg0)) < 0)
-			return r;
+		arg0 = current->args[0];
 		if (arg0 & (O_ASYNC|O_DIRECT))
 			return deny(current, EPERM);
 		/* fall through */
@@ -597,10 +510,6 @@ int sys_fcntl(syd_process_t *current)
 	     !sydbox->config.whitelist_successful_bind)
 	    return 0;
 
-	if ((r = syd_read_argument_int(current, 0, &fd)) < 0)
-		return r;
-
-	current->args[0] = fd;
 	current->args[1] = cmd;
 	current->flags |= SYD_STOP_AT_SYSEXIT;
 	return 0;

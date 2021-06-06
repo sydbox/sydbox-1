@@ -588,6 +588,7 @@ struct sysentry {
 	bool sandbox_write:1;
 	bool sandbox_exec:1;
 	bool sandbox_network:1;
+	bool sandbox_pseudo:1; /* use for stat() etc. */
 };
 typedef struct sysentry sysentry_t;
 
@@ -945,7 +946,6 @@ int sys_openat(syd_process_t *current);
 int sys_openat2(syd_process_t *current);
 int sys_creat(syd_process_t *current);
 int sys_close(syd_process_t *current);
-int sysx_close(syd_process_t *current);
 int sys_mkdir(syd_process_t *current);
 int sys_mkdirat(syd_process_t *current);
 int sys_mknod(syd_process_t *current);
@@ -986,16 +986,6 @@ int sys_execveat(syd_process_t *current);
 int sys_stat(syd_process_t *current);
 int sys_fstatat(syd_process_t *current);
 int sys_statx(syd_process_t *current);
-#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
-# define WRITE_STAT_ON_ENTRY 0
-# define WRITE_RETVAL_ON_ENTRY 0
-int sysx_stat(syd_process_t *current);
-int sysx_statx(syd_process_t *current);
-int sysx_fstatat(syd_process_t *current);
-#else
-# define WRITE_STAT_ON_ENTRY 1
-# define WRITE_RETVAL_ON_ENTRY 1
-#endif
 
 int sys_socketcall(syd_process_t *current);
 int sys_bind(syd_process_t *current);
@@ -1004,10 +994,11 @@ int sys_sendto(syd_process_t *current);
 int sys_getsockname(syd_process_t *current);
 
 int sysx_chdir(syd_process_t *current);
-int sysx_dup(syd_process_t *current);
+#if 0
 int sysx_fcntl(syd_process_t *current);
 int sysx_socketcall(syd_process_t *current);
 int sysx_bind(syd_process_t *current);
 int sysx_getsockname(syd_process_t *current);
+#endif
 
 #endif
