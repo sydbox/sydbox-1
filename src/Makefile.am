@@ -27,6 +27,9 @@ if WANT_DEBUG
 AM_CFLAGS+= $(libunwind_CFLAGS)
 endif
 
+AM_LFLAGS = -v
+AM_YFLAGS = -d
+
 bin_PROGRAMS= sydbox sydfmt
 sydbox_CPPFLAGS= -DSYDBOX
 sydfmt_CPPFLAGS= -DSYDFMT
@@ -45,6 +48,8 @@ noinst_HEADERS+= \
 		 pathdecode.h \
 		 pathmatch.h \
 		 procmatch.h \
+		 #profile_parser.y \
+		 #profile_scanner.l \
 		 sockmatch.h \
 		 sockmap.h \
 		 util.h \
