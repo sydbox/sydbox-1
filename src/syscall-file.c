@@ -274,9 +274,8 @@ out:
 
 static int restrict_open_flags(syd_process_t *current, unsigned long flags)
 {
-	if (!sydbox->config.use_seccomp &&
-	    sydbox->config.restrict_file_control &&
-	    flags & (O_ASYNC|O_DIRECT|O_SYNC))
+	if (sydbox->config.restrict_file_control &&
+	    (flags & (O_ASYNC|O_DIRECT|O_SYNC)))
 		return deny(current, EPERM);
 	return 0;
 }
@@ -289,15 +288,16 @@ int sys_open(syd_process_t *current)
 	syscall_info_t info;
 	struct open_info open_info;
 
-	strict = !sydbox->config.use_seccomp &&
-		 sydbox->config.restrict_file_control;
+	strict = sydbox->config.restrict_file_control;
 
+	say("strict:%d sandbox_off_read:%d sandbox_off_write:%d", strict,
+	    sandbox_off_read(current), sandbox_off_write(current));
 	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
 
 	/* check flags first */
 	how.flags = current->args[1];
-	if ((r = restrict_open_flags(current, how.flags)) < 0)
+	if (strict && (r = restrict_open_flags(current, how.flags)) < 0)
 		return r;
 
 	if (sandbox_off_read(current) && sandbox_off_write(current))

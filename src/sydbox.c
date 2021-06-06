@@ -1195,9 +1195,6 @@ static int event_exec(syd_process_t *current)
 
 static int event_syscall(syd_process_t *current)
 {
-	if (sydbox->execve_wait)
-		return 0;
-
 	return sysenter(current);
 }
 
@@ -1297,6 +1294,7 @@ notify_receive:
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
 
+		say("pid:%d -> %s()", pid, name);
 		/* Search early for exit before getting a process entry. */
 		if ((!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
 			int process_count = process_count();
@@ -1334,11 +1332,6 @@ notify_receive:
 			if (r < 0)
 				say_errno("sys_chdir");
 			current->update_cwd = false;
-		}
-
-		if (sydbox->execve_wait) {
-			say("execve_wait, responding notify");
-			goto notify_respond;
 		}
 
 		r = 0;
