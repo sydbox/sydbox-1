@@ -467,8 +467,8 @@ int sysinit_seccomp_load(void)
 			die_errno("can't lookup system call name:%s",
 				  syscall_entries[i].name);
 		if (sysnum < 0) {
-			say("unknown system call name:%s, continuing...",
-			    syscall_entries[i].name);
+			/* say("unknown system call name:%s, continuing...",
+			    syscall_entries[i].name); */
 			continue;
 		}
 
@@ -637,8 +637,8 @@ int sysinit_seccomp_load(void)
 				die_errno("can't lookup system call name:%s",
 					  calls[i]);
 			else if (sysnum < 0) {
-				say("unknown system call name:%s, continuing...",
-				    calls[i]);
+				/* say("unknown system call name:%s, continuing...",
+				    calls[i]); */
 				continue;
 			}
 			if ((r = rule_add_action(SCMP_ACT_NOTIFY, sysnum)) < 0) {

@@ -219,8 +219,10 @@ static syd_process_t *new_thread(pid_t pid)
 	thread->pid = pid;
 	thread->ppid = SYD_PPID_NONE;
 	thread->tgid = SYD_TGID_NONE;
-	if ((thread->pidfd = syscall(__NR_pidfd_open, pid, 0)) < 0)
-		say_errno("pidfd_open(%d)", pid);
+	if ((thread->pidfd = syscall(__NR_pidfd_open, pid, 0)) < 0) {
+		if (errno != EINVAL)
+			say_errno("pidfd_open(%d)", pid);
+	}
 
 	process_add(thread);
 
@@ -458,6 +460,7 @@ void bury_process(syd_process_t *p)
 	free(p); /* good bye, good bye, good bye. */
 }
 
+#if 0
 /* Drop leader, switch to the thread, reusing leader's tid */
 static void tweak_execve_thread(syd_process_t *execve_thread, pid_t leader_pid, int flags)
 {
@@ -490,6 +493,7 @@ static void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_th
 
 	free(leader);
 }
+#endif
 
 void remove_process_node(syd_process_t *p)
 {
@@ -983,6 +987,14 @@ static bool process_kill(pid_t pid, int sig)
 	if (!current)
 		return false;
 
+	if (current->pidfd < 0) {
+		say("pidfd unavailable for pid:%d, killing directly.", current->pid);
+		say("this is known to be racy, you have been warned.");
+		if (kill(pid, sig) < 0 && errno == ESRCH)
+			return false;
+		return true;
+	}
+
 	r = syscall(__NR_pidfd_send_signal, current->pidfd, sig, NULL, 0);
 	if (r < 0) {
 		if (errno == ESRCH)
@@ -1257,10 +1269,10 @@ notify_receive:
 						sydbox->request)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
 				if (!process_is_alive(pid)) {
-					say("process %d terminated abnormally "
+					/*say("process %d terminated abnormally "
 					    "with process count %d",
 					    sydbox->execve_pid,
-					    process_count());
+					    process_count()); */
 					sydbox->exit_code = 128;
 					if (!process_count()) {
 						break;
@@ -1294,16 +1306,18 @@ notify_receive:
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
 
-		say("pid:%d -> %s()", pid, name);
+		// say("pid:%d -> %s()", pid, name);
+
 		/* Search early for exit before getting a process entry. */
 		if ((!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
-			int process_count = process_count();
 			if (pid == sydbox->execve_pid) {
 				sydbox->exit_code = sydbox->request->data.args[0];
-				say("process %d exiting with %d code from %s system call, "
+				/*
+				 * int process_count = process_count();
+				 * say("process %d exiting with %d code from %s system call, "
 				    "process count %d",
 				    pid, sydbox->exit_code, name,
-				    process_count);
+				    process_count); */
 			}
 			remove_process(pid, 0);
 			reap_zombies();
@@ -1347,7 +1361,6 @@ notify_receive:
 			current->update_cwd = true;
 			r = 0;
 		} else if ((!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
-			say("execve_wait done, processing");
 			int ew = sydbox->execve_wait;
 			sydbox->execve_wait = false;
 			r = event_exec(current);
@@ -1373,10 +1386,10 @@ notify_respond:
 			say("Returned: %d, %s", -r, strerror(-r));
 			if (r == -ECANCELED || r == -EINTR) {
 				if (!process_is_alive(current->pid)) {
-					say("process %d terminated abnormally "
+					/* say("process %d terminated abnormally "
 					    "with process count %d",
 					    sydbox->execve_pid,
-					    process_count());
+					    process_count()); */
 					if (pid == current->pid)
 						sydbox->exit_code = 128;
 					if (!process_count()) {
@@ -1708,6 +1721,8 @@ static pid_t startup_child(char **argv)
 
 		if ((r = sysinit_seccomp()) < 0) {
 			errno = -r;
+			if (errno == ENOTTY || errno == ENOENT)
+				errno = EINVAL;
 			die_errno("seccomp load failed");
 		}
 		execv(pathname, argv);
@@ -1730,14 +1745,12 @@ static pid_t startup_child(char **argv)
 	} else {
 		int fd;
 		if ((r = parent_read_int(&fd)) < 0) {
-			say("TODO: Is it a good idea to run the process under"
-			    " seccomp-bpf only restrictions?");
 			say("exiting because all sandbox modes are off");
+			say("try to set \"-m core/sandbox/{read,write,exec,network}:{bpf,allow,deny}\"");
 			say("no seccomp user notify fd received, exiting");
 			exit(-r);
 		} else {
 			sydbox->notify_fd = fd;
-			// say("pid:%d notify_fd:%d", getpid(), sydbox->notify_fd);
 
 			close(pfd[0]);
 			sydbox->seccomp_fd = -1;
@@ -1750,7 +1763,6 @@ static pid_t startup_child(char **argv)
 				die_errno("failed to obtain seccomp user fd");
 			// close(sydbox->notify_fd);
 			sydbox->notify_fd = fd;
-			// say("notify_fd:%d", fd);
 
 			kill(sydbox->execve_pid, SIGCONT);
 			child = new_process_or_kill(pid);

@@ -252,11 +252,11 @@ int syd_read_socket_subcall(syd_process_t *current, long *subcall)
 	SYD_RETURN_IF_DETACHED(current);
 
 	bool decode_socketcall = !strcmp(current->sysname, "socketcall");
-	if (decode_socketcall)
+	if (decode_socketcall) {
 		*subcall = current->args[0];
-	else
+	} else {
 		*subcall = current->sysnum;
-
+	}
 	return 0;
 }
 

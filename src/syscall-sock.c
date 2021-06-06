@@ -37,8 +37,6 @@ int sys_bind(syd_process_t *current)
 	info.arg_index = 1;
 	info.rmode = RPATH_NOLAST;
 	info.deny_errno = EADDRNOTAVAIL;
-	if (current->subcall == PINK_SOCKET_SUBCALL_BIND)
-		info.decode_socketcall = true;
 	if (sandbox_deny_network(current) || sydbox->permissive)
 		info.access_mode = ACCESS_WHITELIST;
 	else

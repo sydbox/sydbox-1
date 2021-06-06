@@ -290,8 +290,6 @@ int sys_open(syd_process_t *current)
 
 	strict = sydbox->config.restrict_file_control;
 
-	say("strict:%d sandbox_off_read:%d sandbox_off_write:%d", strict,
-	    sandbox_off_read(current), sandbox_off_write(current));
 	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
 
@@ -328,8 +326,7 @@ int sys_openat(syd_process_t *current)
 		return 0;
 
 	/* check flags first */
-	if ((r = syd_read_argument(current, 2, (long *)&how.flags)) < 0)
-		return r;
+	how.flags = current->args[2];
 	if ((r = restrict_open_flags(current, how.flags)) < 0)
 		return r;
 
@@ -418,7 +415,6 @@ int sys_chmod(syd_process_t *current)
 
 int sys_fchmodat(syd_process_t *current)
 {
-	int r;
 	long flags;
 	syscall_info_t info;
 
@@ -426,8 +422,7 @@ int sys_fchmodat(syd_process_t *current)
 		return 0;
 
 	/* check for AT_SYMLINK_NOFOLLOW */
-	if ((r = syd_read_argument(current, 3, &flags)) < 0)
-		return r;
+	flags = current->args[3];
 
 	init_sysinfo(&info);
 	info.at_func = true;
@@ -465,7 +460,6 @@ int sys_lchown(syd_process_t *current)
 
 int sys_fchownat(syd_process_t *current)
 {
-	int r;
 	long flags;
 	syscall_info_t info;
 
@@ -473,8 +467,7 @@ int sys_fchownat(syd_process_t *current)
 		return 0;
 
 	/* check for AT_SYMLINK_NOFOLLOW */
-	if ((r = syd_read_argument(current, 4, &flags)) < 0)
-		return r;
+	flags = current->args[4];
 
 	init_sysinfo(&info);
 	info.at_func = true;
@@ -654,7 +647,6 @@ int sys_umount(syd_process_t *current)
 int sys_umount2(syd_process_t *current)
 {
 #ifdef UMOUNT_NOFOLLOW
-	int r;
 	long flags;
 #endif
 	syscall_info_t info;
@@ -665,8 +657,7 @@ int sys_umount2(syd_process_t *current)
 	init_sysinfo(&info);
 #ifdef UMOUNT_NOFOLLOW
 	/* check for UMOUNT_NOFOLLOW */
-	if ((r = syd_read_argument(current, 1, &flags)) < 0)
-		return r;
+	flags = current->args[1];
 	if (flags & UMOUNT_NOFOLLOW)
 		info.rmode |= RPATH_NOFOLLOW;
 #endif
@@ -700,7 +691,6 @@ int sys_utimes(syd_process_t *current)
 
 int sys_utimensat(syd_process_t *current)
 {
-	int r;
 	long flags;
 	syscall_info_t info;
 
@@ -708,8 +698,7 @@ int sys_utimensat(syd_process_t *current)
 		return 0;
 
 	/* check for AT_SYMLINK_NOFOLLOW */
-	if ((r = syd_read_argument(current, 3, &flags)) < 0)
-		return r;
+	flags = current->args[3];
 
 	init_sysinfo(&info);
 	info.at_func = true;
@@ -752,15 +741,13 @@ int sys_unlink(syd_process_t *current)
 
 int sys_unlinkat(syd_process_t *current)
 {
-	int r;
 	long flags;
 	syscall_info_t info;
 
 	if (sandbox_off_write(current))
 		return 0;
 
-	if ((r = syd_read_argument(current, 2, &flags)) < 0)
-		return r;
+	flags = current->args[2];
 
 	init_sysinfo(&info);
 	info.at_func = true;
@@ -823,8 +810,7 @@ int sys_linkat(syd_process_t *current)
 		return 0;
 
 	/* check for AT_SYMLINK_FOLLOW */
-	if ((r = syd_read_argument(current, 4, &flags)) < 0)
-		return r;
+	flags = current->args[4];
 
 	init_sysinfo(&info);
 	info.at_func = true;
