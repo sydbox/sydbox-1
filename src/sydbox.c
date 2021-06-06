@@ -1425,12 +1425,6 @@ notify_respond:
 	close(sydbox->notify_fd);
 	sydbox->notify_fd = -1;
 	r = sydbox->exit_code;
-	if (sydbox->violation) {
-		if (sydbox->config.violation_exit_code > 0)
-			r = sydbox->config.violation_exit_code;
-		else if (sydbox->config.violation_exit_code == 0)
-			r = 128 + sydbox->exit_code;
-	}
 
 		/* We handled quick cases, we are permitted to interrupt now.
 		 * FIXME: Do we really want this while the child is stopped?
@@ -2001,6 +1995,12 @@ restart_waitpid:
 		sydbox->exit_code = 128 + WTERMSIG(wstatus);
 	}
 	exit_code = sydbox->exit_code;
+	if (sydbox->violation) {
+		if (sydbox->config.violation_exit_code > 0)
+			exit_code = sydbox->config.violation_exit_code;
+		else if (sydbox->config.violation_exit_code == 0)
+			exit_code = 128 + sydbox->exit_code;
+	}
 	cleanup();
 	return exit_code;
 }

@@ -73,6 +73,8 @@ int sysx_chdir(syd_process_t *current)
 
 	/* dump_syscall_2(current, "chdir", "OK", retval, P_CWD(current), newcwd); */
 
+	/* say("chdir done, updating cwd of pid:%d to %s", current->pid,
+	    newcwd); */
 	if (P_CWD(current))
 		free(P_CWD(current));
 	P_CWD(current) = newcwd;
