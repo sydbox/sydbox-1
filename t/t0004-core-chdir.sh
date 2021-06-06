@@ -9,7 +9,7 @@ save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
 SYDBOX_TEST_OPTIONS=
 export SYDBOX_TEST_OPTIONS
 
-test_expect_success_foreach_option 'chdir() hook with EEXIST (mkdir -p) [RAISE_SAFE=0]' '
+test_expect_success 'chdir() hook with EEXIST (mkdir -p) [RAISE_SAFE=0]' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
@@ -20,7 +20,7 @@ test_expect_success_foreach_option 'chdir() hook with EEXIST (mkdir -p) [RAISE_S
         syd-mkdir-p "$cdir"
 '
 
-test_expect_success_foreach_option 'chdir() hook with EEXIST (mkdir -p) [RAISE_SAFE=1]' '
+test_expect_success 'chdir() hook with EEXIST (mkdir -p) [RAISE_SAFE=1]' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
@@ -31,7 +31,7 @@ test_expect_success_foreach_option 'chdir() hook with EEXIST (mkdir -p) [RAISE_S
         syd-mkdir-p "$cdir"
 '
 
-test_expect_success_foreach_option 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0]' '
+test_expect_success 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0]' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
@@ -42,7 +42,7 @@ test_expect_success_foreach_option 'chdir() hook with EPERM (mkdir -p) [RAISE_SA
         syd-mkdir-p "$cdir"
 '
 
-test_expect_success_foreach_option 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0,WHITELIST]' '
+test_expect_success 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0,WHITELIST]' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
