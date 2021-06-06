@@ -1987,19 +1987,21 @@ int main(int argc, char **argv)
 	   Also we do not need to be protected by them as during interruption
 	   in the STARTUP_CHILD mode we kill the spawned process anyway.  */
 	pid_t pid = startup_child(&argv[optind]);
+	int exit_code = -1;
 	if (use_notify()) {
 		syd_process_t *current = new_process(pid);
 		init_process_data(current, NULL);
 		init_signals();
-		r = notify_loop(current);
+		exit_code = notify_loop(current);
+		sydbox->exit_code = exit_code;
 	}
-	int exit_code, wstatus;
+	int wstatus;
 restart_waitpid:
 	if (waitpid(pid, &wstatus, __WALL) < 0) {
 		if (errno == EINTR)
 			goto restart_waitpid;
 		say_errno("waitpid: %d", sydbox->exit_code);
-		sydbox->exit_code = 128;
+		//sydbox->exit_code = 128;
 	} else if (WIFEXITED(wstatus)) {
 		sydbox->exit_code = WEXITSTATUS(wstatus);
 	} else if (WIFSIGNALED(wstatus)) {
@@ -2009,7 +2011,8 @@ restart_waitpid:
 	if (sydbox->violation) {
 		if (sydbox->config.violation_exit_code > 0)
 			exit_code = sydbox->config.violation_exit_code;
-		else if (sydbox->config.violation_exit_code == 0)
+		else if (sydbox->config.violation_exit_code == 0 &&
+			 sydbox->exit_code < 128)
 			exit_code = 128 + sydbox->exit_code;
 	}
 	cleanup();
