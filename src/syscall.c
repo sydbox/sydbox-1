@@ -325,25 +325,6 @@ static const sysentry_t syscall_entries[] = {
 	},
 
 	{
-		.name = "fork",
-		.enter = sys_fork,
-	},
-	{
-		.name = "vfork",
-		.enter = sys_vfork,
-	},
-	{
-		.name = "clone",
-		.enter = sys_clone,
-	},
-	/* TODO
-	{
-		.name = "clone3",
-		.enter = sys_clone3,
-	},
-	*/
-
-	{
 		.name = "execve",
 		.enter = sys_execve,
 		.sandbox_exec = true,
@@ -650,21 +631,28 @@ int sysinit_seccomp_load(void)
 	}
 
 	if (user_notified) {
-		const char *exit_calls[] = {"exit", "exit_group"};
-		for (unsigned short i = 0; i < 2; i++) {
-			sysnum = seccomp_syscall_resolve_name(exit_calls[i]);
+		sandbox_t *box = box_current(NULL);
+		const char *calls[] = {
+			"execve", "execveat",
+			"exit", "exit_group",
+			"clone", "fork", "vfork", "clone3",
+		};
+		for (unsigned short i = 0; i < 4; i++) {
+			if (i < 2 && box->mode.sandbox_exec != SANDBOX_OFF)
+				continue; /* execve* already added */
+			sysnum = seccomp_syscall_resolve_name(calls[i]);
 			if (sysnum == __NR_SCMP_ERROR)
 				die_errno("can't lookup system call name:%s",
-					  exit_calls[i]);
+					  calls[i]);
 			else if (sysnum < 0) {
 				say("unknown system call name:%s, continuing...",
-				    exit_calls[i]);
+				    calls[i]);
 				continue;
 			}
 			if ((r = rule_add_action(SCMP_ACT_NOTIFY, sysnum)) < 0) {
 				errno = -r;
 				say_errno("can't add notify for %s, continuing...",
-				    exit_calls[i]);
+				    calls[i]);
 				continue;
 			}
 		}
@@ -706,32 +694,25 @@ int sysinit_seccomp(void)
 int sysenter(syd_process_t *current)
 {
 	int r;
-	long sysnum;
 	const sysentry_t *entry;
 
 	assert(current);
 
-	if ((r = syd_read_syscall(current, &sysnum)) < 0)
-		return r;
-
-	r = 0;
-	entry = systable_lookup(sysnum, current->arch);
-	if (entry) {
-		current->retval = 0;
-		current->sysnum = sysnum;
-		current->sysname = entry->name;
-		if (entry->enter) {
-			r = entry->enter(current);
-			if (entry->enter == sys_clone ||
-			    entry->enter == sys_fork ||
-			    entry->enter == sys_vfork)
-				current->flags |= SYD_IN_CLONE;
-			else if (entry->enter == sys_execve)
-				current->flags |= SYD_IN_EXECVE;
+	entry = NULL;
+	for (unsigned i = 0; i < ELEMENTSOF(syscall_entries); i++) {
+		if (!strcmp(current->sysname, syscall_entries[i].name)) {
+			entry = &syscall_entries[i];
+			break;
 		}
-		if (entry->exit)
-			current->flags |= SYD_STOP_AT_SYSEXIT;
 	}
+	if (!entry)
+		return 0;
+	r = 0;
+	current->retval = 0;
+	if (entry->enter)
+		r = entry->enter(current);
+	if (entry->exit)
+		current->flags |= SYD_STOP_AT_SYSEXIT;
 
 	return r;
 }

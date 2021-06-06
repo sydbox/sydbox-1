@@ -938,6 +938,7 @@ static void sig_usr(int sig)
 	fprintf(stderr, "Tracing %u process%s\n", count, count > 1 ? "es" : "");
 }
 
+PINK_GCC_ATTR((unused))
 static int proc_info(pid_t pid) {
 	char *cmd;
 
@@ -970,7 +971,7 @@ static void reap_zombies(void)
 	}
 }
 
-static bool process_is_alive(pid_t pid)
+static bool process_kill(pid_t pid, int sig)
 {
 	int r;
 	syd_process_t *current;
@@ -980,7 +981,7 @@ static bool process_is_alive(pid_t pid)
 	if (!current)
 		return false;
 
-	r = syscall(__NR_pidfd_send_signal, current->pidfd, 0, NULL, 0);
+	r = syscall(__NR_pidfd_send_signal, current->pidfd, sig, NULL, 0);
 	if (r < 0) {
 		if (errno == ESRCH)
 			return false;
@@ -989,6 +990,11 @@ static bool process_is_alive(pid_t pid)
 	}
 
 	return true;
+}
+
+static inline bool process_is_alive(pid_t pid)
+{
+	return process_kill(pid, 0);
 }
 
 static int wait_for_notify_fd(pid_t pid)
@@ -1021,6 +1027,8 @@ static void init_early(void)
 	sydbox->execve_wait = false;
 	sydbox->exit_code = EXIT_SUCCESS;
 	sydbox->program_invocation_name = NULL;
+	sydbox->seccomp_fd = -1;
+	sydbox->notify_fd = -1;
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	sydbox->dump_fd = -1;
 #endif
@@ -1108,36 +1116,25 @@ static int check_interrupt(void)
 	return r;
 }
 
-static int event_clone(syd_process_t *current, enum pink_event event)
+static int event_clone(syd_process_t *current, const char clone_type)
 {
 	assert(current);
 
 	if (!current->new_clone_flags) {
-		/* No syscall-enter received before clone event. */
-		switch (event) {
-		case PINK_EVENT_FORK:
+		switch (clone_type) {
+		case 'f':
+		case 'v':
+		case 'c':
+			current->new_clone_flags = current->args[2];
+			break;
+		case '3': /* Cannot decode argument, treat as non-thread */
 			current->new_clone_flags = SIGCHLD;
-			break;
-		case PINK_EVENT_VFORK:
-			current->new_clone_flags = CLONE_VM|CLONE_VFORK|SIGCHLD;
-			break;
-		case PINK_EVENT_CLONE:
-			current->new_clone_flags = CLONE_THREAD;
 			break;
 		default:
 			assert_not_reached();
 		}
-		current->flags |= SYD_IN_CLONE;
 	}
-
-	int r;
-	long cpid = -1;
-
-	r = syd_trace_geteventmsg(current, (unsigned long *)&cpid);
-	if (r < 0 || cpid <= 0)
-		return (r < 0) ? r : -EINVAL;
-
-	clone_process(current, cpid);
+	current->flags |= SYD_IN_CLONE;
 
 	return 0;
 }
@@ -1148,10 +1145,7 @@ static int event_exec(syd_process_t *current)
 	const char *match;
 
 	if (sydbox->execve_wait) {
-#if SYDBOX_HAVE_SECCOMP
-		if (sydbox->config.use_seccomp)
-			sydbox->execve_wait = false;
-#endif
+		sydbox->execve_wait = false;
 		return 0;
 	}
 
@@ -1182,14 +1176,14 @@ static int event_exec(syd_process_t *current)
 		say("kill_if_match pattern=`%s' matches execve path=`%s'",
 		    match, current->abspath);
 		say("killing process");
-		syd_trace_kill(current, SIGKILL);
+		process_kill(current->pid, SIGKILL);
 		return -ESRCH;
 	} else if (acl_match_path(ACL_ACTION_NONE, &sydbox->config.exec_resume_if_match,
 				  current->abspath, &match)) {
 		say("resume_if_match pattern=`%s' matches execve path=`%s'",
 		    match, current->abspath);
 		say("detaching from process");
-		syd_trace_detach(current, 0);
+		current->flags |= SYD_DETACHED;
 		return -ESRCH;
 	}
 	/* execve path does not match if_match patterns */
@@ -1197,55 +1191,16 @@ static int event_exec(syd_process_t *current)
 	free(current->abspath);
 	current->abspath = NULL;
 
+	current->flags |= SYD_IN_EXECVE;
 	return r;
 }
 
 static int event_syscall(syd_process_t *current)
 {
-	int r = 0;
-
-	if (sydbox->execve_wait) {
-#if SYDBOX_HAVE_SECCOMP
-		if (sydbox->config.use_seccomp)
-			return 0;
-#endif
-		if (entering(current)) {
-			current->flags |= SYD_IN_SYSCALL;
-		} else {
-			current->flags &= ~SYD_IN_SYSCALL;
-			sydbox->execve_wait = false;
-		}
+	if (sydbox->execve_wait)
 		return 0;
-	}
 
-	if (entering(current)) {
-#if SYDBOX_HAVE_SECCOMP
-		if (sydbox->config.use_seccomp &&
-		    (current->flags & SYD_STOP_AT_SYSEXIT)) {
-			/* seccomp: skipping sysenter */
-			current->flags |= SYD_IN_SYSCALL;
-			return 0;
-		}
-#endif
-		//if ((r = syd_regset_fill(current)) < 0)
-		//	return r; /* process dead */
-		r = sysenter(current);
-#if SYDBOX_HAVE_SECCOMP
-		if (sydbox->config.use_seccomp &&
-		    !(current->flags & SYD_STOP_AT_SYSEXIT)) {
-			/* seccomp: skipping sysexit, resuming */
-			current->trace_step = SYD_STEP_RESUME;
-			return r;
-		}
-#endif
-		current->flags |= SYD_IN_SYSCALL;
-	} else {
-		//if ((r = syd_regset_fill(current)) < 0)
-		//	return r; /* process dead */
-		r = sysexit(current);
-		current->flags &= ~SYD_IN_SYSCALL;
-	}
-	return r;
+	return sysenter(current);
 }
 
 #if SYDBOX_HAVE_SECCOMP
@@ -1344,24 +1299,6 @@ notify_receive:
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
 
-		if ((!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
-			int process_count = process_count();
-			if (pid == sydbox->execve_pid) {
-				sydbox->exit_code = sydbox->request->data.args[0];
-				say("process %d exiting with %d code from %s system call, process count %d",
-				    pid, sydbox->exit_code, name,
-				    process_count);
-			}
-			remove_process(pid, 0);
-			reap_zombies();
-			if (process_count() <= 2)
-				goto notify_respond;
-			else
-				continue;
-			//close(sydbox->notify_fd);
-			//break;
-		}
-
 		if (!current) {
 			syd_process_t *parent;
 			parent = parent_process(pid, current);
@@ -1375,7 +1312,41 @@ notify_receive:
 		current->sysname = name;
 		for (unsigned short idx = 0; idx < 6; idx++)
 			current->args[idx] = sydbox->request->data.args[idx];
-		//r = event_syscall(current);
+
+		r = 0;
+		if (!strcmp(name, "clone")) {
+			r = event_clone(current, 'c');
+		} else if (!strcmp(name, "fork")) {
+			r = event_clone(current, 'f');
+		} else if (!strcmp(name, "vfork")) {
+			r = event_clone(current, 'v');
+		} else if (!strcmp(name, "clone3")) {
+			r = event_clone(current, '3');
+		} else if ((!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
+			r = event_exec(current);
+			/* if (r < 0) // ESRCH
+				say_errno("event_exec");
+			*/
+			sandbox_t *box = box_current(current);
+			if (box->mode.sandbox_exec != SANDBOX_OFF)
+				r = event_syscall(current);
+		} else if ((!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
+			int process_count = process_count();
+			if (pid == sydbox->execve_pid) {
+				sydbox->exit_code = sydbox->request->data.args[0];
+				say("process %d exiting with %d code from %s system call, process count %d",
+				    pid, sydbox->exit_code, name,
+				    process_count);
+			}
+			remove_process(pid, 0);
+			reap_zombies();
+			if (process_count() <= 2)
+				goto notify_respond;
+			else
+				continue;
+		} else {
+			r = event_syscall(current);
+		}
 
 notify_respond:
 		alarmed = false; alarm(1);
@@ -1423,6 +1394,8 @@ notify_respond:
 			free(name);
 	}
 
+	close(sydbox->notify_fd);
+	sydbox->notify_fd = -1;
 	r = sydbox->exit_code;
 	if (sydbox->violation) {
 		if (sydbox->config.violation_exit_code > 0)
@@ -1791,6 +1764,10 @@ void cleanup(void)
 	ACLQ_FREE(node, &sydbox->config.filter_write, free);
 	ACLQ_FREE(node, &sydbox->config.filter_network, free_sockmatch);
 
+	if (sydbox->seccomp_fd >= 0)
+		close(sydbox->seccomp_fd);
+	if (sydbox->notify_fd >= 0)
+		close(sydbox->notify_fd);
 	if (sydbox->program_invocation_name)
 		free(sydbox->program_invocation_name);
 	free(sydbox);
