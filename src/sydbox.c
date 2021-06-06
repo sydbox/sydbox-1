@@ -1121,7 +1121,7 @@ static int setup_alarm(void)
 	alarmed = false;
 
 	it_val.it_value.tv_sec = 0;
-	it_val.it_value.tv_usec = 720000; /* 720 milliseconds */
+	it_val.it_value.tv_usec = 2000000; /* 2000 milliseconds */
 	it_val.it_interval.tv_sec = 0;
 	it_val.it_interval.tv_usec = 0;
 
