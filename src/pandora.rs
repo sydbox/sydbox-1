@@ -62,7 +62,6 @@ core/violation/exit_code:-1
 core/violation/raise_fail:false
 core/violation/raise_safe:false
 
-core/trace/follow_fork:true
 core/trace/magic_lock:off
 core/trace/use_toolong_hack:true
 
