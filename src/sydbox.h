@@ -344,6 +344,9 @@ struct syd_process {
 	/* Thread group ID */
 	pid_t tgid;
 
+	/* Pid FD */
+	int pidfd;
+
 	/* System call ABI */
 	uint32_t arch;
 

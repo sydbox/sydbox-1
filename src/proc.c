@@ -29,6 +29,7 @@
 #include "macro.h"
 #include "util.h"
 #include "toolong.h"
+#include "xfunc.h"
 
 /* Useful macros */
 #ifndef MAX

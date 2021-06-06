@@ -219,6 +219,8 @@ static syd_process_t *new_thread(pid_t pid)
 	thread->pid = pid;
 	thread->ppid = SYD_PPID_NONE;
 	thread->tgid = SYD_TGID_NONE;
+	if ((thread->pidfd = syscall(__NR_pidfd_open, pid, 0)) < 0)
+		say_errno("pidfd_open(%d)", pid);
 
 	process_add(thread);
 
@@ -420,6 +422,10 @@ void bury_process(syd_process_t *p)
 	pid = p->pid;
 	dump(DUMP_THREAD_FREE, pid);
 
+	if (p->pidfd >= 0) {
+		close(p->pidfd);
+		p->pidfd = -1;
+	}
 	if (p->abspath) {
 		free(p->abspath);
 		p->abspath = NULL;
@@ -932,11 +938,51 @@ static void sig_usr(int sig)
 	fprintf(stderr, "Tracing %u process%s\n", count, count > 1 ? "es" : "");
 }
 
-static bool child_is_alive(void)
+static int proc_info(pid_t pid) {
+	char *cmd;
+
+	xasprintf(&cmd, "cat /proc/%d/stat", sydbox->execve_pid);
+	system(cmd); free(cmd);
+	xasprintf(&cmd, "cat /proc/%d/status", sydbox->execve_pid);
+	system(cmd); free(cmd);
+	xasprintf(&cmd, "cat /proc/%d/seccomp", sydbox->execve_pid);
+	system(cmd); free(cmd);
+	xasprintf(&cmd, "cat /proc/%d/syscall", sydbox->execve_pid);
+	system(cmd); free(cmd);
+	xasprintf(&cmd, "ls -l /proc/%d/fd", sydbox->execve_pid);
+	system(cmd); free(cmd);
+
+	return 0;
+}
+
+static int reap_zombies(void)
+{
+	syd_process_t *node, *tmp;
+	process_iter(node, tmp) { /* process_iter is delete-safe. */
+		struct proc_statinfo info;
+		if (proc_stat(node->pid, &info) < 0) {
+			say_errno("proc_stat");
+			remove_process_node(node);
+		} else if (info.state == 'Z') {
+			/* Zombie process, not alive. */
+			remove_process_node(node);
+		}
+	}
+
+}
+
+static bool child_is_alive(syd_process_t *current)
 {
 	int r;
+	pid_t pid;
 
-	r = syscall(__NR_pidfd_send_signal, sydbox->execve_pidfd, 0, NULL, 0);
+	pid = current->pid;
+	reap_zombies();
+	current = lookup_process(pid);
+	if (!current)
+		return false;
+
+	r = syscall(__NR_pidfd_send_signal, current->pidfd, 0, NULL, 0);
 	if (r < 0) {
 		if (errno == ESRCH)
 			return false;
@@ -944,20 +990,10 @@ static bool child_is_alive(void)
 		return false;
 	}
 
-	struct proc_statinfo info;
-	if (proc_stat(sydbox->execve_pid, &info) < 0) {
-		say_errno("proc_stat");
-		return false;
-	}
-	if (info.state == 'Z') {
-		/* Zombie process, not alive. */
-		return false;
-	}
-
 	return true;
 }
 
-static int wait_for_notify_fd(void)
+static int wait_for_notify_fd(syd_process_t *current)
 {
 	struct pollfd pollfd;
 
@@ -967,7 +1003,7 @@ poll_begin:
 	errno = 0;
 	if (poll(&pollfd, 1, 1000) < 0) {
 		if (!errno || errno == EINTR) { /* timeout */
-			if (!child_is_alive())
+			if (!child_is_alive(current))
 				return 1;
 			goto poll_begin;
 		}
@@ -1240,10 +1276,9 @@ static int event_seccomp(syd_process_t *current)
 }
 #endif
 
-static int notify_loop(void)
+static int notify_loop(syd_process_t *current)
 {
 	int pid, r;
-	//syd_process_t *current;
 
 	if ((r = seccomp_notify_alloc(&sydbox->request,
 				      &sydbox->response)) < 0) {
@@ -1256,7 +1291,7 @@ static int notify_loop(void)
 		char *name = NULL;
 
 		if (i > 1) {
-			if ((r = wait_for_notify_fd() < 0)) {
+			if ((r = wait_for_notify_fd(current) < 0)) {
 				if (errno)
 					say_errno("poll");
 			} else if (r == 0) {
@@ -1272,11 +1307,16 @@ notify_receive:
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
 						sydbox->request)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
-				if (!child_is_alive()) {
-					say("process %d terminated abnormally",
-					    sydbox->execve_pid);
+				if (!child_is_alive(current)) {
+					say("process %d terminated abnormally "
+					    "with process count %d",
+					    sydbox->execve_pid,
+					    process_count());
 					sydbox->exit_code = 128;
-					break;
+					if (!process_count())
+						break;
+					else
+						goto notify_receive;
 				} else {
 					goto notify_receive;
 				}
@@ -1286,17 +1326,10 @@ notify_receive:
 			 * on abnormal exit.
 			 */
 			say_errno("seccomp_notify_receive");
-#if 0
-			char *cmd;
-			xasprintf(&cmd, "cat /proc/%d/status", sydbox->execve_pid);
-			system(cmd); free(cmd);
-			xasprintf(&cmd, "cat /proc/%d/seccomp", sydbox->execve_pid);
-			system(cmd); free(cmd);
-			xasprintf(&cmd, "cat /proc/%d/syscall", sydbox->execve_pid);
-			system(cmd); free(cmd);
-#endif
+			// proc_info(sydbox->execve_pid);
 			break;
 		}
+		alarm(0);
 
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
@@ -1305,42 +1338,41 @@ notify_receive:
 		sydbox->response->val = 0;
 
 		pid = sydbox->request->pid;
-		//current = lookup_process(pid);
+		current = lookup_process(pid);
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
 
-		if (pid == sydbox->execve_pid &&
-		    (!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
-			sydbox->exit_code = sydbox->request->data.args[0];
-			say("process %d exiting with %d code from %s system call",
-			    pid, sydbox->exit_code, name);
+		if ((!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
+			if (pid == sydbox->execve_pid) {
+				sydbox->exit_code = sydbox->request->data.args[0];
+				say("process %d exiting with %d code from %s system call, process count %d",
+				    pid, sydbox->exit_code, name,
+				    process_count());
+			}
 			free(name);
-			close(sydbox->notify_fd);
-			break;
+			remove_process(pid, 0);
+			if (!process_count())
+				break;
+			else
+				continue;
+			//close(sydbox->notify_fd);
+			//break;
 		}
 
-#if 0
 		if (!current) {
 			syd_process_t *parent;
-			YELL_ON(parent, "pid %u, syscall %s("
-				"%llu,%llu,%llu,%llu,%llu,%llu)",
-				pid, name,
-				sydbox->request->data.args[0],
-				sydbox->request->data.args[1],
-				sydbox->request->data.args[2],
-				sydbox->request->data.args[3],
-				sydbox->request->data.args[4],
-				sydbox->request->data.args[5]);
 			parent = parent_process(pid, current);
-			current = clone_process(parent, pid);
-			BUG_ON(current); /* Just bizarre, no questions */
+			if (parent) {
+				current = clone_process(parent, pid);
+			} else {
+				current = new_process(pid);
+			}
 		}
 		current->sysnum = sydbox->request->data.nr;
 		current->sysname = name;
 		for (unsigned short idx = 0; idx < 6; idx++)
 			current->args[idx] = sydbox->request->data.args[idx];
-		r = event_syscall(current);
-#endif
+		//r = event_syscall(current);
 
 		/* 0 if valid, ENOENT if not */
 		if ((r = seccomp_notify_id_valid(sydbox->notify_fd,
@@ -1917,14 +1949,17 @@ int main(int argc, char **argv)
 	   Also we do not need to be protected by them as during interruption
 	   in the STARTUP_CHILD mode we kill the spawned process anyway.  */
 	pid_t pid = startup_child(&argv[optind]);
-
 	if (use_notify()) {
+		syd_process_t *current = new_process(pid);
 		init_signals();
-		r = notify_loop();
+		r = notify_loop(current);
 	}
 	int exit_code, wstatus;
+restart_waitpid:
 	if (waitpid(pid, &wstatus, __WALL) < 0) {
-		say_errno("waitpid");
+		if (errno == EINTR)
+			goto restart_waitpid;
+		say_errno("waitpid: %d", sydbox->exit_code);
 		sydbox->exit_code = 128;
 	} else if (WIFEXITED(wstatus)) {
 		sydbox->exit_code = WEXITSTATUS(wstatus);
