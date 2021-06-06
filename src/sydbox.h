@@ -40,6 +40,20 @@
 #endif
 #define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
 
+/* System call numbers */
+#include "config.h"
+#ifdef HAVE_ASM_UNISTD_H
+# include <asm/uinstd.h>
+#endif
+#if !(defined(__NR_pidfd_open) && defined(__NR_pidfd_getfd))
+# ifndef __NR_pidfd_open
+#  define __NR_pidfd_open 434
+# endif
+# ifndef __NR_pidfd_getfd
+#  define __NR_pidfd_getfd 438
+# endif
+#endif
+
 #define strbool(arg)	((arg) ? "yes" : "no")
 
 /* Process flags */

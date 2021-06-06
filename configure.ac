@@ -190,8 +190,10 @@ AC_CHECK_HEADERS_ONCE(m4_flatten([
 	sys/user.h
 	sys/wait.h
 	asm/ptrace.h
+	asm/unistd.h
 	linux/ptrace.h
 	linux/openat2.h
+	linux/unistd.h
 ]))
 
 dnl check for types
@@ -320,15 +322,18 @@ AC_SUBST([SYDBOX_DEBUG])
 
 dnl check for pidfd_open and pidfd_getfd.
 m4_define([include_pidfd_headers], [
+	   #ifdef HAVE_ASM_UNISTD_H
 	   #include <asm/unistd.h>
+	   #endif
+	   #ifdef HAVE_LINUX_UNISTD_H
+	   #include <linux/unistd.h>
+	   #endif
 ])
-AC_CHECK_HEADER([asm/unistd.h],   [],
-		[AC_MSG_ERROR([The header <asm/unistd.h> is required to build sydbox])])
 AC_CHECK_DECL([__NR_pidfd_open],  [],
-	      [AC_MSG_ERROR([__NR_pidfd_open not declared! pidfd is required to build sydbox])],
+	      [AC_MSG_WARN([__NR_pidfd_open not declared! Setting pidfd_open to 434.])],
 	      [include_pidfd_headers])
 AC_CHECK_DECL([__NR_pidfd_getfd], [],
-	      [AC_MSG_ERROR([__NR_pidfd_getfd not declared! pidfd is required to build sydbox])],
+	      [AC_MSG_WARN([__NR_pidfd_getfd not declared! Setting pidfd_getfd to 438.])],
 	      [include_pidfd_headers])
 
 AC_MSG_CHECKING([for dump])
