@@ -39,7 +39,7 @@ configuring seccomp filters such as:
 	:kill_thread=signal		|
 	:detach_process=signal		|
 	:detach_thread=signal		|
-	:fault=errno			|
+	:trap=errno|retval		|
 	:allow				|
 	:load=/path/to/profile.so[:profile-options...]
     ]
@@ -48,6 +48,7 @@ syscall_set is borrowed from strace see strace(1) with the addition of two sets:
 	- %file_rd for read only system calls
 	- %file_wr for write only and read/write system calls
 	- %exec for execve() and execveat()
+	  %net for connect() and bind()
 arg_expr is [:arg0..5<cmp_operator><argval_expr>]
 The special character _ may be used rather than 0..5 to infer the argument number
 from the system call number. This only works for string and network address
@@ -57,7 +58,7 @@ cmp_operator, ie the comparison operator must be exactly one of:
 	Arithmetic values:
 		=, !=, >, >=, <, <=,
 		&, !& Bitwise AND and Bitwise NOT AND
-	String matching: =, =~, !~, =*, !*
+	String matching: =, !=, =~, !~, =*, !*
 	Network address matching: @~, @!
 
 Only arithmetic values can be used with seccomp-bpf rules, string and network
