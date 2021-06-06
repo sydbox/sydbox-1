@@ -961,11 +961,18 @@ static int wait_for_notify_fd(void)
 {
 	struct pollfd pollfd;
 
+poll_begin:
 	pollfd.fd = sydbox->notify_fd;
 	pollfd.events = POLLIN;
-
-	if (poll(&pollfd, 1, 1000) < 0)
+	errno = 0;
+	if (poll(&pollfd, 1, 1000) < 0) {
+		if (!errno || errno == EINTR) { /* timeout */
+			if (!child_is_alive())
+				return 1;
+			goto poll_begin;
+		}
 		return -errno;
+	}
 	return 0;
 }
 
@@ -1250,11 +1257,14 @@ static int notify_loop(void)
 
 		if (i > 1) {
 			if ((r = wait_for_notify_fd() < 0)) {
-				errno = -r;
-				say_errno("poll");
-			} /* notify fd is ready to read. */
-			if (!child_is_alive())
+				if (errno)
+					say_errno("poll");
+			} else if (r == 0) {
+				; /* notify fd is ready to read. */
+			} else {
+				/* child is no longer alive */
 				break;
+			}
 		}
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
 notify_receive:

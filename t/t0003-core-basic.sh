@@ -64,34 +64,18 @@ export SYDBOX_TEST_OPTIONS
 # The NOT_ON_BUILD_HOST prerequisite checks for the job id so we can still
 # manually run these tests on the build host.
 test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated' '
-    test_expect_code 130 sydbox -- syd-abort 2 && # SIGINT
-    test_expect_code 131 sydbox -- syd-abort 3 && # SIGQUIT
-    test_expect_code 132 sydbox -- syd-abort 4 && # SIGILL
-    test_expect_code 134 sydbox -- syd-abort 6 && # SIGABRT
-    test_expect_code 136 sydbox -- syd-abort 8 && # SIGFPE
-    test_expect_code 139 sydbox -- syd-abort 11 && # SIGFPE
-    test_expect_code 141 sydbox -- syd-abort 13 && # SIGPIPE
-    test_expect_code 142 sydbox -- syd-abort 14 && # SIGALRM
-    test_expect_code 143 sydbox -- syd-abort 15 # SIGTERM
+    test_expect_code 128 sydbox -- syd-abort 2 && # SIGINT
+    test_expect_code 128 sydbox -- syd-abort 3 && # SIGQUIT
+    test_expect_code 128 sydbox -- syd-abort 4 && # SIGILL
+    test_expect_code 128 sydbox -- syd-abort 6 && # SIGABRT
+    test_expect_code 128 sydbox -- syd-abort 8 && # SIGFPE
+    test_expect_code 128 sydbox -- syd-abort 11 && # SIGFPE
+    test_expect_code 128 sydbox -- syd-abort 13 && # SIGPIPE
+    test_expect_code 128 sydbox -- syd-abort 14 && # SIGALRM
+    test_expect_code 128 sydbox -- syd-abort 15 # SIGTERM
 '
 
 # FIXME:
-# These termination exit code checks fails on buildhost only when run via CI.
-# The tests pass if you ssh into the buildhost and run the tests manually.
-# The NOT_ON_BUILD_HOST prerequisite checks for the job id so we can still
-# manually run these tests on the build host.
-#test_expect_success_foreach_option NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated' '
-#    test_expect_code 130 sydbox -- syd-abort 2 && # SIGINT
-#    test_expect_code 131 sydbox -- syd-abort 3 && # SIGQUIT
-#    test_expect_code 132 sydbox -- syd-abort 4 && # SIGILL
-#    test_expect_code 134 sydbox -- syd-abort 6 && # SIGABRT
-#    test_expect_code 136 sydbox -- syd-abort 8 && # SIGFPE
-#    test_expect_code 139 sydbox -- syd-abort 11 && # SIGFPE
-#    test_expect_code 141 sydbox -- syd-abort 13 && # SIGPIPE
-#    test_expect_code 142 sydbox -- syd-abort 14 && # SIGALRM
-#    test_expect_code 143 sydbox -- syd-abort 15 # SIGTERM
-#'
-#
 #test_expect_success_foreach_option NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated (STATIC)' '
 #    test_expect_code 130 sydbox -- syd-abort-static 2 && # SIGINT
 #    test_expect_code 131 sydbox -- syd-abort-static 3 && # SIGQUIT
