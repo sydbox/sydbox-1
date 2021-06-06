@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <sys/utsname.h>
 #include <getopt.h>
+#include <poll.h>
 #include <seccomp.h>
 #include "asyd.h"
 #include "macro.h"
@@ -926,24 +927,22 @@ static void sig_usr(int sig)
 
 static bool child_is_alive(void)
 {
-	if (syscall(__NR_pidfd_send_signal, sydbox->execve_pidfd, 0, NULL, 0) < 0)
+	int r;
+	if (syscall(__NR_pidfd_send_signal, sydbox->execve_pidfd, 0, NULL, 0) < 0) {
 		if (errno == ESRCH)
-			return true;
-	return false;
+			return false;
+	return true;
 }
 
 static int wait_for_notify_fd(void)
 {
-	fd_set readfds;
+	struct pollfd pollfd;
 
-	FD_ZERO(&readfds);
-	FD_SET(sydbox->notify_fd, &readfds);
+	pollfd.fd = sydbox->notify_fd;
+	pollfd.events = POLLIN;
 
-	if (select(1, &readfds, NULL, NULL, NULL) < 0) {
-		int r = errno;
-		say_errno("sydbox: select_user_notify_fd");
-		return -r;
-	}
+	if (poll(&pollfd, 1, 100) < 0)
+		return -errno;
 	return 0;
 }
 
@@ -1218,15 +1217,20 @@ static int notify_loop(void)
 		errno = -r;
 		die_errno("seccomp_notify_alloc");
 	}
+	memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 
 	for (uint64_t i = 0;;i++) {
 		char *name = NULL;
 
 		if (i > 1) {
-			wait_for_notify_fd();
+			if ((r = wait_for_notify_fd() < 0)) {
+				errno = -r;
+				say_errno("poll");
+			} /* notify fd is ready to read. */
 			if (!child_is_alive())
 				break;
 		}
+		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
 						sydbox->request)) < 0) {
 			/* TODO use:
@@ -1234,13 +1238,19 @@ static int notify_loop(void)
 			 * on abnormal exit.
 			 */
 			say_errno("seccomp_notify_receive");
+#if 0
+			char *cmd;
+			xasprintf(&cmd, "cat /proc/%d/status", sydbox->execve_pid);
+			system(cmd); free(cmd);
+			xasprintf(&cmd, "cat /proc/%d/seccomp", sydbox->execve_pid);
+			system(cmd); free(cmd);
+			xasprintf(&cmd, "cat /proc/%d/syscall", sydbox->execve_pid);
+			system(cmd); free(cmd);
+#endif
 			break;
 		}
-		say("notify_receive id:%lld pid:%d flags:%d",
-		    sydbox->request->id,
-		    sydbox->request->pid,
-		    sydbox->request->flags);
 
+		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
 		sydbox->response->flags |= SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 		sydbox->response->error = 0;
@@ -1251,11 +1261,14 @@ static int notify_loop(void)
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
 
-		say("sysname: %s", name);
 		if (pid == sydbox->execve_pid &&
 		    (!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
 			sydbox->exit_code = sydbox->request->data.args[0];
-			say("process %d exiting with %d", pid, sydbox->exit_code);
+			say("process %d exiting with %d code from %s system call",
+			    pid, sydbox->exit_code, name);
+			free(name);
+			close(sydbox->notify_fd);
+			break;
 		}
 
 		if (!current) {
@@ -1284,8 +1297,8 @@ static int notify_loop(void)
 
 		current->sysnum = sydbox->request->data.nr;
 		current->sysname = name;
-		for (unsigned short i = 0; i < 6; i++)
-			current->args[i] = sydbox->request->data.args[i];
+		for (unsigned short idx = 0; idx < 6; idx++)
+			current->args[idx] = sydbox->request->data.args[idx];
 
 		//r = event_syscall(current);
 
@@ -1568,7 +1581,7 @@ cleanup:
 
 static pid_t startup_child(char **argv)
 {
-	int r, pfd[2], woptions;
+	int r, pfd[2];
 	char *pathname;
 	pid_t pid = 0;
 	syd_process_t *child;
@@ -1614,9 +1627,9 @@ static pid_t startup_child(char **argv)
 
 	sydbox->execve_pid = pid;
 	sydbox->execve_wait = true;
+	say("execve pid:%d", pid);
 
 	sydbox->seccomp_fd = pfd[0];
-	woptions = __WALL;
 	if (!use_notify()) {
 		sydbox->exit_code = 0;
 	} else {

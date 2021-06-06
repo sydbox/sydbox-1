@@ -508,7 +508,6 @@ int sysinit_seccomp_load(void)
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		if (!syscall_entries[i].filter)
 			continue;
-		say("entry:%s", syscall_entries[i].name);
 		if ((r = apply_simple_filter(&syscall_entries[i])) < 0)
 			return r;
 	}
