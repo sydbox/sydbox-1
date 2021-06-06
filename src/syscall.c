@@ -502,9 +502,18 @@ int sysinit_seccomp_load(void)
 {
 	int r;
 	uint32_t action;
+	long sysnum;
+	bool user_notified = false;
 
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		long sysnum;
+		if (!syscall_entries[i].filter)
+			continue;
+		say("entry:%s", syscall_entries[i].name);
+		if ((r = apply_simple_filter(&syscall_entries[i])) < 0)
+			return r;
+	}
+
+	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		if (syscall_entries[i].name)
 			sysnum = seccomp_syscall_resolve_name(syscall_entries[i].name);
 		else
@@ -513,8 +522,8 @@ int sysinit_seccomp_load(void)
 			die_errno("can't lookup system call name:%s",
 				  syscall_entries[i].name);
 		if (sysnum < 0) {
-			/* say("unknown system call name:%s, continuing...",
-			    syscall_entries[i].name); */
+			say("unknown system call name:%s, continuing...",
+			    syscall_entries[i].name);
 			continue;
 		}
 
@@ -523,8 +532,11 @@ int sysinit_seccomp_load(void)
 		if (open_flag) {
 			enum sandbox_mode mode_r = box->mode.sandbox_read;
 			enum sandbox_mode mode_w = box->mode.sandbox_write;
+
 			//struct sock_filter *item = NULL;
-			if (mode_r == SANDBOX_OFF && mode_w == SANDBOX_OFF) {
+			if (mode_r == SANDBOX_OFF &&
+			    mode_w == SANDBOX_OFF) {
+#if 0
 				if (use_notify())
 					action = SCMP_ACT_NOTIFY;
 				else /* no need to do anything */
@@ -532,43 +544,62 @@ int sysinit_seccomp_load(void)
 				r = seccomp_rule_add(sydbox->ctx, action, sysnum, 0);
 				if (r < 0)
 					return r;
-			} else if ((mode_r == SANDBOX_OFF &&
+#endif
+				;
+			} else if ((mode_r == SANDBOX_OFF ||
 				    mode_w == SANDBOX_ALLOW) ||
-				   (mode_r == SANDBOX_ALLOW
-				    && mode_w == SANDBOX_OFF)) {
+				   (mode_r == SANDBOX_ALLOW &&
+				    mode_w == SANDBOX_OFF)) {
 				if (use_notify()) {
 					r = rule_add_action(SCMP_ACT_NOTIFY,
 							    sysnum);
 					if (r < 0)
 						return r;
 				} /* else no need to do anything. */
-			} else if ((mode_r == SANDBOX_OFF ||
-				    mode_r == SANDBOX_ALLOW) &&
+			} else if (mode_r == SANDBOX_OFF &&
 				   mode_w == SANDBOX_DENY) {
-				if (use_notify())
-					r = rule_add_action(SCMP_ACT_NOTIFY,
-							    sysnum);
-				else
-					r = rule_add_open_wr(sysnum, open_flag);
-				if (r < 0)
-					return 0;
-			} else if (mode_r == SANDBOX_ALLOW &&
-				   mode_w == SANDBOX_ALLOW) {
-				; /* no need to do anything */
-			} else if (mode_r == SANDBOX_DENY &&
-				   (mode_w == SANDBOX_OFF ||
-				    mode_w == SANDBOX_ALLOW)) {
-				if (use_notify())
-					r = rule_add_action(SCMP_ACT_NOTIFY,
-							    sysnum);
-				else
-					r = rule_add_open_rd(sysnum, open_flag);
-				if (r < 0)
-					return r;
-			} else if (mode_r == SANDBOX_DENY && mode_w == SANDBOX_DENY) {
 				if (use_notify()) {
 					r = rule_add_action(SCMP_ACT_NOTIFY,
 							    sysnum);
+					user_notified = true;
+				} else {
+					r = rule_add_open_wr(sysnum, open_flag);
+				}
+				if (r < 0)
+					return 0;
+			} else if (mode_r == SANDBOX_OFF &&
+				   mode_w == SANDBOX_ALLOW) {
+				if (use_notify()) {
+					r = rule_add_action(SCMP_ACT_NOTIFY,
+							    sysnum);
+					if (r < 0)
+						return 0;
+					user_notified = true;
+				} /* else { ; } no need to do anything here. */
+			} else if (mode_r == SANDBOX_ALLOW &&
+				   mode_w == SANDBOX_ALLOW) {
+				if (use_notify()) {
+					r = rule_add_action(SCMP_ACT_NOTIFY,
+							    sysnum);
+					user_notified = true;
+				} /* else { ; } no need to do anything here. */
+			} else if (mode_r == SANDBOX_DENY &&
+				   mode_w == SANDBOX_OFF) {
+				if (use_notify()) {
+					r = rule_add_action(SCMP_ACT_NOTIFY,
+							    sysnum);
+					user_notified = true;
+				} else {
+					r = rule_add_open_rd(sysnum, open_flag);
+				}
+				if (r < 0)
+					return r;
+			} else if (mode_r == SANDBOX_DENY &&
+				   mode_w == SANDBOX_DENY) {
+				if (use_notify()) {
+					r = rule_add_action(SCMP_ACT_NOTIFY,
+							    sysnum);
+					user_notified = true;
 				} else
 					r = seccomp_rule_add(sydbox->ctx,
 							     SCMP_ACT_ERRNO(EPERM),
@@ -577,28 +608,65 @@ int sysinit_seccomp_load(void)
 					return r;
 			}
 		} else {
-			int mode;
-			if (syscall_entries[i].sandbox_network)
-				mode = box->mode.sandbox_network;
-			else if (syscall_entries[i].sandbox_exec)
-				mode = box->mode.sandbox_exec;
-			else if (syscall_entries[i].sandbox_write)
-				mode = box->mode.sandbox_write;
-			else if (syscall_entries[i].sandbox_read)
-				mode = box->mode.sandbox_read;
-			else
-				mode = -1;
-
-			if (use_notify()) {
-				action = SCMP_ACT_NOTIFY;
-			} else if (mode == SANDBOX_DENY) {
-				action = SCMP_ACT_ERRNO(EPERM);
-			} else { /* if (mode == -1 || mode == SANDBOX_ALLOW) */
-				continue;
+			int mode[2] = { -1, -1 };
+			if (syscall_entries[i].sandbox_network) {
+				mode[0] = box->mode.sandbox_network;
+			} else if (syscall_entries[i].sandbox_exec) {
+				mode[0] = box->mode.sandbox_exec;
+			} else if (syscall_entries[i].sandbox_write) {
+				mode[0] = box->mode.sandbox_write;
+			} else if (syscall_entries[i].sandbox_read) {
+				mode[0] = box->mode.sandbox_read;
+			} else {
+				mode[0] = box->mode.sandbox_read;
 			}
+
+			bool all_off = true;
+			bool has_deny = false;
+			bool has_allow = true;
+			for (unsigned short k = 0; k < 2; k++) {
+				if (mode[k] != -1 && mode[k] != SANDBOX_OFF) {
+					all_off = false;
+					break;
+				} else if (mode[k] == SANDBOX_DENY) {
+					has_deny = true;
+				} else if (mode[k] == SANDBOX_ALLOW) {
+					has_allow = true;
+				}
+			}
+			if (all_off) {
+				continue;
+			} else if (has_deny) {
+				action = SCMP_ACT_ERRNO(EPERM);
+			} else if ((has_allow || has_deny) && use_notify()) {
+				action = SCMP_ACT_NOTIFY;
+				user_notified = true;
+			} else /* if (mode == -1 || mode == SANDBOX_ALLOW) */
+				assert_not_reached();
 
 			if ((r = rule_add_action(action, sysnum)) < 0)
 				return r;
+		}
+	}
+
+	if (user_notified) {
+		const char *exit_calls[] = {"exit", "exit_group"};
+		for (unsigned short i = 0; i < 2; i++) {
+			sysnum = seccomp_syscall_resolve_name(exit_calls[i]);
+			if (sysnum == __NR_SCMP_ERROR)
+				die_errno("can't lookup system call name:%s",
+					  exit_calls[i]);
+			else if (sysnum < 0) {
+				say("unknown system call name:%s, continuing...",
+				    exit_calls[i]);
+				continue;
+			}
+			if ((r = rule_add_action(SCMP_ACT_NOTIFY, sysnum)) < 0) {
+				errno = -r;
+				say_errno("can't add notify for %s, continuing...",
+				    exit_calls[i]);
+				continue;
+			}
 		}
 	}
 
@@ -611,15 +679,8 @@ int sysinit_seccomp(void)
 {
 	int r;
 
-	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		if (!syscall_entries[i].filter)
-			continue;
-		if ((r = apply_simple_filter(&syscall_entries[i])) < 0)
-			return r;
-	}
 	if ((r = sysinit_seccomp_load() < 0))
 		return r;
-
 	if (getenv("EXPORT") && (r = seccomp_export_pfc(sydbox->ctx, 2)) < 0)
 		say("seccomp_export_pfc: %d %s", -r, strerror(-r));
 	if ((r = seccomp_load(sydbox->ctx)) < 0)
@@ -630,7 +691,7 @@ int sysinit_seccomp(void)
 			return -errno;
 		if (parent_write_int(fd))
 			return -errno;
-		pause();
+		kill(getpid(), SIGSTOP);
 	}
 
 	seccomp_release(sydbox->ctx);

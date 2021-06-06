@@ -924,34 +924,18 @@ static void sig_usr(int sig)
 	fprintf(stderr, "Tracing %u process%s\n", count, count > 1 ? "es" : "");
 }
 
-static int wait_for_child_fd(void)
+static int wait_for_notify_fd(void)
 {
 	fd_set readfds;
 
 	FD_ZERO(&readfds);
 	FD_SET(sydbox->notify_fd, &readfds);
-	FD_SET(sydbox->seccomp_fd, &readfds);
 
-	if (select(2, &readfds, NULL, NULL, NULL) < 0) {
+	if (select(1, &readfds, NULL, NULL, NULL) < 0) {
 		int r = errno;
-		perror("sydbox: select()");
+		say_errno("sydbox: select_user_notify_fd");
 		return -r;
-	} else if (!FD_ISSET(sydbox->seccomp_fd, &readfds)) {
-		return 1;
 	}
-
-	errno = 0;
-	int exit_code;
-	ssize_t count = atomic_read(sydbox->seccomp_fd, &exit_code, sizeof(int));
-	if (!count && count != sizeof(int)) { /* count=0 is EOF */
-		if (!errno)
-			errno = EINVAL;
-		say("failed to read exit code from pipe: %zu != %zu",
-		    count, sizeof(int));
-		sydbox->exit_code = -errno;
-	}
-	sydbox->exit_code = exit_code;
-
 	return 0;
 }
 
@@ -1218,7 +1202,7 @@ static int event_seccomp(syd_process_t *current)
 
 static int notify_loop(void)
 {
-	int pid, r, sig;
+	int pid, r;
 	syd_process_t *current;
 
 	if ((r = seccomp_notify_alloc(&sydbox->request,
@@ -1227,23 +1211,27 @@ static int notify_loop(void)
 		die_errno("seccomp_notify_alloc");
 	}
 
-	bool child_exited = false;
-	for (sydbox->notify_fd = 0;;) {
+	for (uint64_t i = 0;;i++) {
 		char *name = NULL;
 
-		if (!child_exited && sydbox->notify_fd && wait_for_child_fd())
-			child_exited = true;
-
+		if (i > 1)
+			wait_for_notify_fd();
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
 						sydbox->request)) < 0) {
 			/* TODO use:
 			 * __NR_pidfd_send_signal to kill the process
 			 * on abnormal exit.
 			 */
-			die_errno("seccomp_notify_receive");
+			say_errno("seccomp_notify_receive");
+			break;
 		}
+		say("notify_receive id:%lld pid:%d flags:%d",
+		    sydbox->request->id,
+		    sydbox->request->pid,
+		    sydbox->request->flags);
 
 		sydbox->response->id = sydbox->request->id;
+		sydbox->response->flags |= SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 		sydbox->response->error = 0;
 		sydbox->response->val = 0;
 
@@ -1251,6 +1239,13 @@ static int notify_loop(void)
 		current = lookup_process(pid);
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
+
+		say("sysname: %s", name);
+		if (pid == sydbox->execve_pid &&
+		    (!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
+			sydbox->exit_code = sydbox->request->data.args[0];
+			say("process %d exiting with %d", pid, sydbox->exit_code);
+		}
 
 		if (!current) {
 			syd_process_t *parent;
@@ -1281,11 +1276,23 @@ static int notify_loop(void)
 		for (unsigned short i = 0; i < 6; i++)
 			current->args[i] = sydbox->request->data.args[i];
 
-		r = event_syscall(current);
+		//r = event_syscall(current);
 
+		/* 0 if valid, ENOENT if not */
+		if ((r = seccomp_notify_id_valid(sydbox->notify_fd,
+						 sydbox->request->id)) < 0) {
+			say_errno("seccomp_notify_id_valid");
+			break;
+		}
+
+		if ((r = seccomp_notify_respond(sydbox->notify_fd,
+						sydbox->response)) < 0)
+			say_errno("seccomp_notify_respond");
+#if 0
 		sig = 0; /* TODO */
 		if (sig && current->pid == sydbox->execve_pid)
 			save_exit_signal(term_sig(sig));
+#endif
 
 		if (name)
 			free(name);
@@ -1548,9 +1555,9 @@ cleanup:
 #endif
 }
 
-static void startup_child(char **argv)
+static pid_t startup_child(char **argv)
 {
-	int r, pfd[2];
+	int r, pfd[2], woptions;
 	char *pathname;
 	pid_t pid = 0;
 	syd_process_t *child;
@@ -1579,35 +1586,14 @@ static void startup_child(char **argv)
 		}
 #endif
 
-		pid_t cpid = fork();
-		if (cpid < 0) {
-			die_errno("can't double fork");
-		} else if (cpid == 0) {
-			if ((r = sysinit_seccomp()) < 0) {
-				errno = -r;
-				die_errno("seccomp load failed");
-			}
-			execv(pathname, argv);
-			fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
-				pathname, errno, strerror(errno));
-			_exit(EXIT_FAILURE);
+		if ((r = sysinit_seccomp()) < 0) {
+			errno = -r;
+			die_errno("seccomp load failed");
 		}
-
-		int wstatus, exit_code;
-		if (wait(&wstatus) < 0)
-			exit_code = 128;
-		else if (WIFEXITED(wstatus))
-			exit_code = WEXITSTATUS(wstatus);
-		else if (WIFSIGNALED(wstatus))
-			exit_code = 128 + WTERMSIG(wstatus);
-		else
-			exit_code = 128;
-
-		parent_write(exit_code, sizeof(int));
-		pid = getpid();
-		parent_write(pid, sizeof(int));
-		pause();
-		_exit(exit_code);
+		execv(pathname, argv);
+		fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
+			pathname, errno, strerror(errno));
+		_exit(EXIT_FAILURE);
 	}
 
 	/* write end of the pipe is not used. */
@@ -1618,33 +1604,44 @@ static void startup_child(char **argv)
 	sydbox->execve_pid = pid;
 	sydbox->execve_wait = true;
 
-	errno = 0;
-	int fd[2];
-	for (unsigned short i = 0; i < 2; i++) {
-		ssize_t count = atomic_read(pfd[0], &fd[i], sizeof(int));
-		if (!count && count != sizeof(int)) { /* count=0 is EOF */
-			if (!errno)
-				errno = EINVAL;
-			die_errno("failed to read int from pipe: %zu != %zu",
-				  count, sizeof(int));
+	sydbox->seccomp_fd = pfd[0];
+	woptions = __WALL;
+	if (!use_notify()) {
+		sydbox->exit_code = 0;
+	} else {
+		int fd;
+		if ((r = parent_read_int(&fd)) < 0) {
+			say("TODO: Is it a good idea to run the process under"
+			    " seccomp-bpf only restrictions?");
+			say("exiting because all sandbox modes are off");
+			say("no seccomp user notify fd received, exiting");
+			exit(-r);
+		} else {
+			sydbox->notify_fd = fd;
+			say("pid:%d notify_fd:%d", getpid(), sydbox->notify_fd);
+			kill(pid, SIGCONT);
+
+			close(pfd[0]);
+			sydbox->seccomp_fd = -1;
+			//sydbox->seccomp_fd = pfd[0];
+			//close(pfd[0]); /* read end is no longer necessary */
+
+			if ((sydbox->notify_fd = syscall(__NR_pidfd_open, pid, 0)) < 0)
+				die_errno("failed to open pidfd for pid:%d", pid);
+			if ((fd = syscall(__NR_pidfd_getfd, sydbox->notify_fd,
+					  fd, 0)) < 0)
+				die_errno("failed to obtain seccomp user fd");
+			// close(sydbox->notify_fd);
+			sydbox->notify_fd = fd;
+			say("notify_fd:%d", fd);
+
+			child = new_process_or_kill(pid);
+			init_process_data(child, NULL);
+			dump(DUMP_STARTUP, pid);
 		}
 	}
-	say("pid:%d", pid);
-	pid = fd[1]; /* Second int is the process id of the double fork. */
-	kill(pid,SIGCONT);
-	sydbox->seccomp_fd = pfd[0]; /* Expecting the exit code... */
 
-	say("pid:%d", pid);
-	if ((sydbox->notify_fd = syscall(__NR_pidfd_open, pid, 0)) < 0)
-		die_errno("failed to open pidfd for pid:%d", pid);
-	if ((fd[0] = syscall(__NR_pidfd_getfd, sydbox->notify_fd, fd[0], 0)) < 0)
-		die_errno("failed to obtain seccomp user notify fd");
-	// close(sydbox->notify_fd);
-	sydbox->notify_fd = fd[0];
-
-	child = new_process_or_kill(pid);
-	init_process_data(child, NULL);
-	dump(DUMP_STARTUP, pid);
+	return pid;
 }
 
 void cleanup(void)
@@ -1708,6 +1705,7 @@ int main(int argc, char **argv)
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
 		say("can't optimize seccomp filter (%d %s), continuing...",
 		    -r, strerror(-r));
+	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_NATIVE);
 
 	while ((opt = getopt_long(argc, argv, "a:hd:vc:m:E:", long_options, &options_index)) != EOF) {
 		switch (opt) {
@@ -1849,11 +1847,23 @@ int main(int argc, char **argv)
 	   installed below as they are inherited into the spawned process.
 	   Also we do not need to be protected by them as during interruption
 	   in the STARTUP_CHILD mode we kill the spawned process anyway.  */
-	startup_child(&argv[optind]);
+	pid_t pid = startup_child(&argv[optind]);
+
+	int exit_code = 0;
 	if (use_notify()) {
 		init_signals();
 		r = notify_loop();
+	} else {
+		int wstatus;
+		if (waitpid(pid, &wstatus, __WALL) < 0) {
+			say_errno("waitpid");
+			sydbox->exit_code = 128;
+		} else if (WIFEXITED(wstatus))
+			sydbox->exit_code = WEXITSTATUS(wstatus);
+		else if (WIFSIGNALED(wstatus))
+			sydbox->exit_code = 128 + WTERMSIG(wstatus);
 	}
+	exit_code = sydbox->exit_code;
 	cleanup();
-	return r;
+	return exit_code;
 }

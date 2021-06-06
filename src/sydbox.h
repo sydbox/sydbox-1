@@ -79,9 +79,9 @@
 
 /* Type declarations */
 enum sandbox_mode {
-	SANDBOX_DENY,
-	SANDBOX_ALLOW,
 	SANDBOX_OFF,
+	SANDBOX_ALLOW,
+	SANDBOX_DENY,
 };
 static const char *const sandbox_mode_table[] = {
 	[SANDBOX_OFF] = "off",
@@ -116,15 +116,7 @@ static const char *const violation_decision_table[] = {
 };
 DEFINE_STRING_TABLE_LOOKUP(violation_decision, int)
 
-enum syd_action {
-	SYD_ACTION_KILL_PROCESS,
-	SYD_ACTION_KILL_THREAD,
-	SYD_ACTION_FAULT,
-	SYD_ACTION_TRAP,
-	SYD_ACTION_LOG,
-	SYD_ACTION_ALLOW,
-	SYD_ACTION_USER,
-};
+#include "rule.h"
 static const char *const syd_action_table[] = {
 	[SYD_ACTION_KILL_PROCESS] = "kill_process",
 	[SYD_ACTION_KILL_THREAD] = "kill_thread",
@@ -646,7 +638,7 @@ extern sydbox_t *sydbox;
 #endif
 
 #define tracing() (0)
-#define use_notify() (0) //((sydbox)->config.use_notify)
+#define use_notify() (1) //((sydbox)->config.use_notify)
 
 #define entering(p) (!((p)->flags & SYD_IN_SYSCALL))
 #define exiting(p) ((p)->flags & SYD_IN_SYSCALL)

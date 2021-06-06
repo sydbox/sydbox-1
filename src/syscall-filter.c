@@ -106,7 +106,7 @@ int filter_fcntl(void)
 		F_SETLK64, F_SETLKW64, F_GETFD, F_SETFD, F_DUPFD, F_DUPFD_CLOEXEC };
 	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fcntl),
 			     1,
-			     SCMP_A1( SCMP_CMP_MASKED_EQ, 
+			     SCMP_A1( SCMP_CMP_MASKED_EQ,
 	for (unsigned short i = 0; i < FCNTL_OK_MAX; i++) {
 		if (r < 0)
 			return r;

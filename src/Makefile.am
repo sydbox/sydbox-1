@@ -41,6 +41,7 @@ noinst_HEADERS+= \
 		 pathlookup.h \
 		 pink.h \
 		 proc.h \
+		 rule.h \
 		 pathdecode.h \
 		 pathmatch.h \
 		 procmatch.h \
