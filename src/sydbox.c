@@ -1019,7 +1019,7 @@ poll_begin:
 	pollfd.fd = sydbox->notify_fd;
 	pollfd.events = POLLIN;
 	errno = 0;
-	if (poll(&pollfd, 1, 1000) < 0) {
+	if (poll(&pollfd, 1, 100) < 0) {
 		if (!errno || errno == EINTR) { /* timeout */
 			if (!process_is_alive(pid))
 				return 1;
@@ -1114,6 +1114,38 @@ static int handle_interrupt(int sig)
 		dump(DUMP_CLOSE);
 		return 128 + sig;
 	}
+}
+
+static int setup_alarm(void)
+{
+	struct itimerval it_val;
+
+	alarmed = false;
+
+	it_val.it_value.tv_sec = 0;
+	it_val.it_value.tv_usec = 100000; /* 100 milliseconds */
+	it_val.it_interval.tv_sec = 0;
+	it_val.it_interval.tv_usec = 0;
+
+	if (setitimer(ITIMER_REAL, &it_val, NULL) < 0)
+		die_errno("setup_alarm");
+
+	return 0;
+}
+
+static int disarm_alarm(void)
+{
+	struct itimerval it_val;
+
+	it_val.it_value.tv_sec = 0;
+	it_val.it_value.tv_usec = 0;
+	it_val.it_interval.tv_sec = 0;
+	it_val.it_interval.tv_usec = 0;
+
+	if (setitimer(ITIMER_REAL, &it_val, NULL) < 0)
+		die_errno("setup_alarm");
+
+	return 0;
 }
 
 PINK_GCC_ATTR((unused))
@@ -1264,7 +1296,7 @@ static int notify_loop(syd_process_t *current)
 		}
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
 notify_receive:
-		alarmed = false; alarm(1);
+		setup_alarm();
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
 						sydbox->request)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
@@ -1293,7 +1325,7 @@ notify_receive:
 			// proc_info(sydbox->execve_pid);
 			break;
 		}
-		alarm(0);
+		disarm_alarm();
 
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
@@ -1377,7 +1409,7 @@ notify_receive:
 		}
 
 notify_respond:
-		alarmed = false; alarm(1);
+		setup_alarm();
 		/* 0 if valid, ENOENT if not */
 		if ((r = seccomp_notify_id_valid(sydbox->notify_fd,
 						 sydbox->request->id)) < 0 ||
@@ -1411,7 +1443,7 @@ notify_respond:
 			// proc_info(sydbox->execve_pid);
 			break;
 		}
-		alarm(0);
+		disarm_alarm();
 #if 0
 		sig = 0; /* TODO */
 		if (sig && current->pid == sydbox->execve_pid)
