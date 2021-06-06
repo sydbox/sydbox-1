@@ -1017,7 +1017,7 @@ poll_begin:
 	pollfd.fd = sydbox->notify_fd;
 	pollfd.events = POLLIN;
 	errno = 0;
-	if (poll(&pollfd, 1, 360) < 0) {
+	if (poll(&pollfd, 1, 720) < 0) {
 		if (!errno || errno == EINTR) { /* timeout */
 			if (!process_is_alive(pid))
 				return 1;
@@ -1121,7 +1121,7 @@ static int setup_alarm(void)
 	alarmed = false;
 
 	it_val.it_value.tv_sec = 0;
-	it_val.it_value.tv_usec = 360000; /* 360 milliseconds */
+	it_val.it_value.tv_usec = 720000; /* 720 milliseconds */
 	it_val.it_interval.tv_sec = 0;
 	it_val.it_interval.tv_usec = 0;
 
