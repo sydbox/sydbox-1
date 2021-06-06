@@ -628,7 +628,7 @@ int sysinit_seccomp_load(void)
 			"clone", "fork", "vfork", "clone3",
 			"chdir", "fchdir",
 		};
-		for (unsigned short i = 0; i < 4; i++) {
+		for (unsigned short i = 0; i < 10; i++) {
 			if (i < 2 && box->mode.sandbox_exec != SANDBOX_OFF)
 				continue; /* execve* already added */
 			sysnum = seccomp_syscall_resolve_name(calls[i]);
