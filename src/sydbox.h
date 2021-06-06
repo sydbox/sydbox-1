@@ -717,7 +717,8 @@ static inline syd_process_t *lookup_process(pid_t pid)
 
 void cleanup(void);
 
-int parent_write(int64_t message, ssize_t size);
+int parent_read_int(int *message);
+int parent_write_int(int message);
 
 void kill_all(int fatal_sig);
 int kill_one(syd_process_t *current, int fatal_sig);

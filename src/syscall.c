@@ -468,16 +468,32 @@ static int apply_simple_filter(const sysentry_t *entry)
 	return 0;
 }
 
-int parent_write(int64_t message, ssize_t size)
+int parent_read_int(int *message) {
+	if (!message)
+		return -EINVAL;
+	errno = 0;
+	ssize_t count = atomic_read(sydbox->seccomp_fd, message, sizeof(int));
+	if (!count && count != sizeof(int)) { /* count=0 is EOF */
+		if (!errno)
+			errno = EINVAL;
+		return -errno;
+		die_errno("failed to read int from pipe: %zu != %zu",
+			  count, sizeof(int));
+	}
+	return *message;
+}
+
+int parent_write_int(int message)
 {
 	ssize_t count;
 
 	errno = 0;
-	count = atomic_write(sydbox->seccomp_fd, &message, size);
-	if (count != size) {
+	count = atomic_write(sydbox->seccomp_fd, &message, sizeof(int));
+	if (count != sizeof(int)) {
 		if (!errno)
 			errno = EINVAL;
-		die_errno("can't write int to pipe: %zu != %zu", count, size);
+		die_errno("can't write int to pipe: %zu != %zu", count,
+			  sizeof(int));
 	}
 	return 0;
 }
@@ -497,8 +513,8 @@ int sysinit_seccomp_load(void)
 			die_errno("can't lookup system call name:%s",
 				  syscall_entries[i].name);
 		if (sysnum < 0) {
-			say("unknown system call name:%s, continuing...",
-			    syscall_entries[i].name);
+			/* say("unknown system call name:%s, continuing...",
+			    syscall_entries[i].name); */
 			continue;
 		}
 
@@ -612,8 +628,9 @@ int sysinit_seccomp(void)
 		int fd;
 		if ((fd = seccomp_notify_fd(sydbox->ctx)) < 0)
 			return -errno;
-		if (use_notify() && parent_write(fd, sizeof(int)))
+		if (parent_write_int(fd))
 			return -errno;
+		pause();
 	}
 
 	seccomp_release(sydbox->ctx);
