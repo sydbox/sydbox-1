@@ -1114,6 +1114,7 @@ static int handle_interrupt(int sig)
 	}
 }
 
+PINK_GCC_ATTR((unused))
 static int setup_alarm(int time_sec)
 {
 	struct itimerval it_val;
@@ -1131,6 +1132,7 @@ static int setup_alarm(int time_sec)
 	return 0;
 }
 
+PINK_GCC_ATTR((unused))
 static int disarm_alarm(void)
 {
 	struct itimerval it_val;
@@ -1293,26 +1295,22 @@ static int notify_loop(syd_process_t *current)
 			}
 		}
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
+		if (!process_is_alive(pid)) {
+			sydbox->exit_code = 128;
+			reap_zombies();
+			if (!process_count()) {
+				break;
+			}
+		}
 notify_receive:
-		setup_alarm(3);
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
 						sydbox->request)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
 				if (!process_is_alive(pid)) {
-					/*say("process %d terminated abnormally "
-					    "with process count %d",
-					    sydbox->execve_pid,
-					    process_count()); */
-					sydbox->exit_code = 128;
 					reap_zombies();
-					if (!process_count()) {
+					if (!process_count())
 						break;
-					} else {
-						disarm_alarm();
-						goto notify_receive;
-					}
 				} else {
-					disarm_alarm();
 					goto notify_receive;
 				}
 			}
@@ -1324,7 +1322,6 @@ notify_receive:
 			// proc_info(sydbox->execve_pid);
 			break;
 		}
-		disarm_alarm();
 
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
@@ -1407,8 +1404,15 @@ notify_receive:
 			r = event_syscall(current);
 		}
 
+		if (!process_is_alive(pid)) {
+			if (pid == current->pid)
+				sydbox->exit_code = 128;
+			reap_zombies();
+			if (!process_count()) {
+				break;
+			}
+		}
 notify_respond:
-		setup_alarm(3);
 		/* 0 if valid, ENOENT if not */
 		if ((r = seccomp_notify_id_valid(sydbox->notify_fd,
 						 sydbox->request->id)) < 0 ||
@@ -1416,20 +1420,14 @@ notify_respond:
 						sydbox->response)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
 				if (!process_is_alive(current->pid)) {
-					/* say("process %d terminated abnormally "
-					    "with process count %d",
-					    sydbox->execve_pid,
-					    process_count()); */
 					if (pid == current->pid)
 						sydbox->exit_code = 128;
 					if (!process_count()) {
 						break;
 					} else {
-						disarm_alarm();
 						goto notify_respond;
 					}
 				} else {
-					disarm_alarm();
 					goto notify_respond;
 				}
 			}
@@ -1441,7 +1439,6 @@ notify_respond:
 			// proc_info(sydbox->execve_pid);
 			break;
 		}
-		disarm_alarm();
 #if 0
 		sig = 0; /* TODO */
 		if (sig && current->pid == sydbox->execve_pid)
