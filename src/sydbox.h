@@ -44,7 +44,7 @@
 /* System call numbers */
 #include "config.h"
 #ifdef HAVE_ASM_UNISTD_H
-# include <asm/uinstd.h>
+# include <asm/unistd.h>
 #endif
 #if !(defined(__NR_pidfd_open) && defined(__NR_pidfd_getfd))
 # ifndef __NR_pidfd_open
