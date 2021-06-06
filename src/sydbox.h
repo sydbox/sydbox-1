@@ -342,6 +342,9 @@ struct syd_process {
 	/* Thread group ID */
 	pid_t tgid;
 
+	/* Execve process ID */
+	pid_t execve_pid;
+
 	/* Pid FD */
 	int pidfd;
 

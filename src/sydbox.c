@@ -454,7 +454,6 @@ void bury_process(syd_process_t *p)
 	free(p); /* good bye, good bye, good bye. */
 }
 
-#if 0
 /* Drop leader, switch to the thread, reusing leader's tid */
 static void tweak_execve_thread(syd_process_t *execve_thread, pid_t leader_pid, int flags)
 {
@@ -487,7 +486,6 @@ static void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_th
 
 	free(leader);
 }
-#endif
 
 void remove_process_node(syd_process_t *p)
 {
@@ -1198,16 +1196,6 @@ static int event_exec(syd_process_t *current)
 		P_BOX(current)->magic_lock = LOCK_SET;
 	}
 
-	/* Drop all threads except this one */
-	syd_process_t *node, *tmp;
-	process_iter(node, tmp) {
-		if (current->pid != node->pid &&
-		    current->tgid == node->tgid &&
-		    current->shm.clone_thread == node->shm.clone_thread) {
-			remove_process_node(node); /* process_iter is delete-safe. */
-		}
-	}
-
 	if (!current->abspath) /* nothing left to do */
 		return 0;
 
@@ -1380,6 +1368,32 @@ notify_receive:
 		for (unsigned short idx = 0; idx < 6; idx++)
 			current->args[idx] = sydbox->request->data.args[idx];
 
+		if (current->execve_pid) {
+			if (pid != current->execve_pid) {
+				syd_process_t *execve_thread;
+
+				execve_thread = lookup_process(current->execve_pid);
+				assert(execve_thread);
+
+				if (current)
+					switch_execve_leader(current, execve_thread);
+				else
+					tweak_execve_thread(execve_thread, pid,
+							    execve_thread->flags);
+				current = execve_thread;
+			}
+			/* Drop all threads except this one */
+			syd_process_t *node, *tmp;
+			process_iter(node, tmp) {
+				if (current->pid != node->pid &&
+				    current->tgid == node->tgid &&
+				    current->shm.clone_thread == node->shm.clone_thread) {
+					/* process_iter is delete-safe. */
+					remove_process_node(node);
+				}
+			}
+			current->execve_pid = 0;
+		}
 		if (current->update_cwd) {
 			r = sysx_chdir(current);
 			if (r < 0)
@@ -1402,6 +1416,7 @@ notify_receive:
 		} else if ((!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
 			int ew = sydbox->execve_wait;
 			sydbox->execve_wait = false;
+			sydbox->execve_pid = pid;
 			r = event_exec(current);
 			/* if (r < 0) // ESRCH
 				say_errno("event_exec");
