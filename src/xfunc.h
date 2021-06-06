@@ -1,7 +1,7 @@
 /*
  * sydbox/xfunc.h
  *
- * Copyright (c) 2010, 2012, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2012, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
@@ -56,6 +56,8 @@ extern void syd_abort_func(void (*func)(int));
 extern void vsay(const char *fmt, va_list ap)
 	PINK_GCC_ATTR((format (printf, 1, 0)));
 extern void say(const char *fmt, ...)
+	PINK_GCC_ATTR((format (printf, 1, 2)));
+void say_errno(const char *fmt, ...)
 	PINK_GCC_ATTR((format (printf, 1, 2)));
 
 extern void bug_on(const char *expr,
