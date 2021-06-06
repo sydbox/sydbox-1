@@ -438,10 +438,6 @@ void bury_process(syd_process_t *p)
 		free(p->abspath);
 		p->abspath = NULL;
 	}
-	if (p->regset) {
-		pink_regset_free(p->regset);
-		p->regset = NULL;
-	}
 	for (unsigned short i = 0; i < PINK_MAX_ARGS; i++) {
 		if (p->repr[i]) {
 			free(p->repr[i]);
@@ -483,8 +479,6 @@ static void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_th
 	P_CLONE_FS_RELEASE(leader);
 	P_CLONE_FILES_RELEASE(leader);
 
-	if (leader->regset)
-		pink_regset_free(leader->regset);
 	if (execve_thread->abspath)
 		free(execve_thread->abspath);
 
@@ -1110,6 +1104,7 @@ static int handle_interrupt(int sig)
 	}
 }
 
+PINK_GCC_ATTR((unused))
 static int check_interrupt(void)
 {
 	int r = 0;
@@ -1151,11 +1146,6 @@ static int event_exec(syd_process_t *current)
 {
 	int r;
 	const char *match;
-
-	if (sydbox->execve_wait) {
-		sydbox->execve_wait = false;
-		return 0;
-	}
 
 	assert(current);
 
@@ -1339,6 +1329,18 @@ notify_receive:
 		for (unsigned short idx = 0; idx < 6; idx++)
 			current->args[idx] = sydbox->request->data.args[idx];
 
+		if (current->update_cwd) {
+			r = sysx_chdir(current);
+			if (r < 0)
+				say_errno("sys_chdir");
+			current->update_cwd = false;
+		}
+
+		if (sydbox->execve_wait) {
+			say("execve_wait, responding notify");
+			goto notify_respond;
+		}
+
 		r = 0;
 		if (!strcmp(name, "clone")) {
 			r = event_clone(current, 'c');
@@ -1348,14 +1350,22 @@ notify_receive:
 			r = event_clone(current, 'v');
 		} else if (!strcmp(name, "clone3")) {
 			r = event_clone(current, '3');
+		} else if (!strcmp(name, "chdir") || !strcmp(name, "fchdir")) {
+			current->update_cwd = true;
+			r = 0;
 		} else if ((!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
+			say("execve_wait done, processing");
+			int ew = sydbox->execve_wait;
+			sydbox->execve_wait = false;
 			r = event_exec(current);
 			/* if (r < 0) // ESRCH
 				say_errno("event_exec");
 			*/
-			sandbox_t *box = box_current(current);
-			if (box->mode.sandbox_exec != SANDBOX_OFF)
-				r = event_syscall(current);
+			if (!ew) { /* allow the initial exec */
+				sandbox_t *box = box_current(current);
+				if (box->mode.sandbox_exec != SANDBOX_OFF)
+					r = event_syscall(current);
+			}
 		} else {
 			r = event_syscall(current);
 		}

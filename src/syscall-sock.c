@@ -63,7 +63,7 @@ int sys_bind(syd_process_t *current)
 		/* Access granted.
 		 * Read the file descriptor, for use in exit.
 		 */
-		r = syd_read_socket_argument(current, info.decode_socketcall, 0, &fd);
+		r = syd_read_socket_argument(current, 0, &fd);
 		if (r < 0)
 			goto out;
 		current->args[0] = fd;
@@ -85,6 +85,7 @@ out:
 	return r;
 }
 
+#if 0
 int sysx_bind(syd_process_t *current)
 {
 	int r;
@@ -130,6 +131,7 @@ zero:
 	P_SAVEBIND(current) = NULL;
 	return 0;
 }
+#endif
 
 static int sys_connect_or_sendto(syd_process_t *current, unsigned arg_index)
 {
@@ -175,7 +177,6 @@ int sys_sendto(syd_process_t *current)
 int sys_getsockname(syd_process_t *current)
 {
 	int r;
-	bool decode_socketcall;
 	unsigned long fd;
 
 	current->args[0] = -1;
@@ -184,8 +185,7 @@ int sys_getsockname(syd_process_t *current)
 	    !sydbox->config.whitelist_successful_bind)
 		return 0;
 
-	decode_socketcall = !!(current->subcall == PINK_SOCKET_SUBCALL_GETSOCKNAME);
-	if ((r = syd_read_socket_argument(current, decode_socketcall, 0, &fd)) < 0)
+	if ((r = syd_read_socket_argument(current, 0, &fd)) < 0)
 		return r;
 
 	if (sockmap_find(&P_SOCKMAP(current), fd)) {
@@ -196,10 +196,10 @@ int sys_getsockname(syd_process_t *current)
 	return 0;
 }
 
+#if 0
 int sysx_getsockname(syd_process_t *current)
 {
 	int r;
-	bool decode_socketcall;
 	unsigned port;
 	long retval;
 	struct pink_sockaddr psa;
@@ -220,8 +220,7 @@ int sysx_getsockname(syd_process_t *current)
 		return 0;
 	}
 
-	decode_socketcall = !!(current->subcall == PINK_SOCKET_SUBCALL_GETSOCKNAME);
-	if ((r = syd_read_socket_address(current, decode_socketcall, 1, NULL, &psa)) < 0) {
+	if ((r = syd_read_socket_address(current, 1, NULL, &psa)) < 0) {
 		return r;
 	}
 
@@ -254,6 +253,7 @@ int sysx_getsockname(syd_process_t *current)
 	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
 	return 0;
 }
+#endif
 
 int sys_socketcall(syd_process_t *current)
 {
@@ -263,7 +263,7 @@ int sys_socketcall(syd_process_t *current)
 	if (sandbox_off_network(current))
 		return 0;
 
-	if ((r = syd_read_socket_subcall(current, true, &subcall)) < 0)
+	if ((r = syd_read_socket_subcall(current, &subcall)) < 0)
 		return r;
 
 	current->subcall = subcall;
@@ -283,6 +283,7 @@ int sys_socketcall(syd_process_t *current)
 	}
 }
 
+#if 0
 int sysx_socketcall(syd_process_t *current)
 {
 	if (sandbox_off_network(current))
@@ -297,3 +298,4 @@ int sysx_socketcall(syd_process_t *current)
 		return 0;
 	}
 }
+#endif

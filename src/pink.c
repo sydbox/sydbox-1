@@ -13,266 +13,311 @@
 #include <errno.h>
 #include <string.h>
 
-#define SYD_RETURN_IF_KILLED(current) do { \
-	if (current->flags & SYD_KILLED) { \
+#define SYD_RETURN_IF_DETACHED(current) do { \
+	if (current->flags & SYD_DETACHED) { \
 		return 0; \
 	}} while (0)
 
-static int syd_check(syd_process_t *current, int retval, const char *func_name, size_t line_count)
+#if PINK_HAVE_PROCESS_VM_READV
+static ssize_t _pink_process_vm_readv(pid_t pid,
+				      const struct iovec *local_iov,
+				      unsigned long liovcnt,
+				      const struct iovec *remote_iov,
+				      unsigned long riovcnt,
+				      unsigned long flags)
 {
-	if (retval == -ESRCH) {
-		remove_process_node(current);
-	} else if (retval < 0) {
-		say("pink: %s:%zu failed for pid:%u", func_name, line_count, current->pid);
-		return panic(current);
-	}
-	return retval;
-}
-#define SYD_CHECK(current, retval) syd_check((current), (retval), __func__, __LINE__)
-
-int syd_trace_step(syd_process_t *current, int sig)
-{
-	int r;
-	enum syd_step step;
-
-	SYD_RETURN_IF_KILLED(current);
-
-	step = current->trace_step == SYD_STEP_NOT_SET
-	       ? sydbox->trace_step
-	       : current->trace_step;
-
-	switch (step) {
-	case SYD_STEP_SYSCALL:
-		r = pink_trace_syscall(current->pid, sig);
-		break;
-	case SYD_STEP_RESUME:
-		r = pink_trace_resume(current->pid, sig);
-		break;
-	default:
-		assert_not_reached();
-	}
-
-	return SYD_CHECK(current, r);
-}
-
-int syd_trace_listen(syd_process_t *current)
-{
-	int r;
-
-	SYD_RETURN_IF_KILLED(current);
-
-	r = pink_trace_listen(current->pid);
-
-	return SYD_CHECK(current, r);
-}
-
-int syd_trace_detach(syd_process_t *current, int sig)
-{
-	int r;
-
-	SYD_RETURN_IF_KILLED(current);
-
-	if (sydbox->config.use_seccomp) {
-		/*
-		 * Careful! Detaching here would cause the untraced
-		 * process' observed system calls to return -ENOSYS.
-		 */
-		r = 0;
-	} else {
-		r = pink_trace_detach(current->pid, sig);
-	}
-
-	r = SYD_CHECK(current, r);
-	if (r >= 0)
-		bury_process(current);
+	ssize_t r;
+# if defined(HAVE_PROCESS_VM_READV)
+	r = process_vm_readv(pid,
+			     local_iov, liovcnt,
+			     remote_iov, riovcnt,
+			     flags);
+# elif defined(__NR_process_vm_readv)
+	r = syscall(__NR_process_vm_readv, (long)pid,
+		    local_iov, liovcnt,
+		    remote_iov, riovcnt, flags);
+# else
+	errno = ENOSYS;
+	return -1;
+# endif
 	return r;
 }
 
-int syd_trace_kill(syd_process_t *current, int sig)
-{
-	int r;
-
-	SYD_RETURN_IF_KILLED(current);
-
-	r = pink_trace_kill(current->pid, -1, sig);
-
-	r = SYD_CHECK(current, r);
-	if (r >= 0)
-		bury_process(current);
-	return r;
-}
-
-int syd_trace_setup(syd_process_t *current)
-{
-	int r;
-	int opts = sydbox->trace_options;
-
-	assert(current);
-
-	r = pink_trace_setup(current->pid, opts);
-
-	return SYD_CHECK(current, r);
-}
-
-int syd_trace_geteventmsg(syd_process_t *current, unsigned long *data)
-{
-	int r;
-
-	SYD_RETURN_IF_KILLED(current);
-
-	r = pink_trace_geteventmsg(current->pid, data);
-
-	return SYD_CHECK(current, r);
-}
-
-#if 0
-int syd_regset_fill(syd_process_t *current)
-{
-	int r;
-
-	assert(current);
-
-	r = pink_regset_fill(current->pid, current->regset);
-	if (r == 0) {
-		pink_read_abi(current->pid, current->regset, &current->abi);
-		return 0;
-	}
-	return SYD_CHECK(current, r);
-}
+# define process_vm_readv _pink_process_vm_readv
+#else
+# define process_vm_readv(...) (errno = ENOSYS, -1)
 #endif
 
-int syd_read_syscall(syd_process_t *current, long *sysnum)
+#if PINK_HAVE_PROCESS_VM_WRITEV
+PINK_GCC_ATTR((unused))
+static ssize_t _pink_process_vm_writev(pid_t pid,
+				       const struct iovec *local_iov,
+				       unsigned long liovcnt,
+				       const struct iovec *remote_iov,
+				       unsigned long riovcnt,
+				       unsigned long flags)
 {
-	int r;
+	ssize_t r;
+# if defined(HAVE_PROCESS_VM_WRITEV)
+	r = process_vm_writev(pid,
+			      local_iov, liovcnt,
+			      remote_iov, riovcnt,
+			      flags);
+# elif defined(__NR_process_vm_writev)
+	r = syscall(__NR_process_vm_writev, (long)pid,
+		    local_iov, liovcnt,
+		    remote_iov, riovcnt,
+		    flags);
+# else
+	errno = ENOSYS;
+	return -1;
+# endif
+	return r;
+}
 
-	SYD_RETURN_IF_KILLED(current);
+# define process_vm_writev _pink_process_vm_writev
+#else
+# define process_vm_writev(...) (errno = ENOSYS, -1)
+#endif
+
+
+
+static inline int abi_wordsize(const syd_process_t *current)
+{
+	switch (current->arch) {
+#if defined(__x86_64__)
+	case SCMP_ARCH_X86_64:
+		return 8;
+		break;
+	case SCMP_ARCH_X86:
+		return 4;
+		break;
+	case SCMP_ARCH_X32:
+		return 4;
+		break;
+#elif defined(__aarch64__)
+	switch (current->arch) {
+	case SCMP_ARCH_AARCH64:
+		return 8;
+		break;
+	case SCMP_ARCH_ARM:
+		return 4;
+		break;
+#elif defined(__powerpc64__)
+	case SCMP_ARCH_PPC64:
+		return 8;
+		break;
+	case SCMP_ARCH_PPC:
+		return 4;
+		break;
+#endif
+	case SCMP_ARCH_NATIVE:
+	default:
+		return (int)(sizeof(long));
+		break;
+	}
+}
+
+PINK_GCC_ATTR((nonnull(1,3)))
+int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len)
+{
+	struct iovec local[1], remote[1];
+
+#if SIZEOF_LONG > 4
+	size_t wsize = abi_wordsize(current);
+	if (wsize < sizeof(addr))
+		addr &= (1ul << 8 * wsize) - 1;
+#endif
+	local[0].iov_base = dest;
+	remote[0].iov_base = (void *)addr;
+	local[0].iov_len = remote[0].iov_len = len;
+
+	return process_vm_readv(current->pid, local, 1, remote, 1, /*flags:*/0);
+}
+
+PINK_GCC_ATTR((nonnull(1,3)))
+ssize_t syd_write_vm_data(syd_process_t *current, long addr, const char *src,
+			  size_t len)
+{
+#if PINK_HAVE_PROCESS_VM_WRITEV
+	struct iovec local[1], remote[1];
+
+#if SIZEOF_LONG > 4
+	size_t wsize = abi_wordsize(current);
+	if (wsize < sizeof(addr))
+		addr &= (1ul << 8 * wsize) - 1;
+#endif
+	local[0].iov_base = (void *)src;
+	remote[0].iov_base = (void *)addr;
+	local[0].iov_len = remote[0].iov_len = len;
+#endif
+
+	return process_vm_writev(current->pid, local, 1, remote, 1, /*flags:*/ 0);
+}
+
+PINK_GCC_ATTR((nonnull(1,3)))
+int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argval)
+{
+	ssize_t l;
+
+	errno = 0;
+	l = syd_read_vm_data(current, addr, (char *)argval, sizeof(long));
+	if (l < 0)
+		return -errno;
+	if (sizeof(long) != (size_t)l)
+		return -EFAULT;
+	return 0;
+}
+
+inline int syd_read_syscall(syd_process_t *current, long *sysnum)
+{
+	SYD_RETURN_IF_DETACHED(current);
 	BUG_ON(sysnum);
 
-	r = pink_read_syscall(current->pid, current->regset, sysnum);
+	*sysnum = current->sysnum;
 
-	return SYD_CHECK(current, r);
+	return 0;
 }
 
-int syd_read_retval(syd_process_t *current, long *retval, int *error)
+inline int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval)
 {
-	int r;
-
-	SYD_RETURN_IF_KILLED(current);
-
-	r = pink_read_retval(current->pid, current->regset, retval, error);
-
-	return SYD_CHECK(current, r);
-}
-
-int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval)
-{
-	int r;
-
-	SYD_RETURN_IF_KILLED(current);
+	SYD_RETURN_IF_DETACHED(current);
 	BUG_ON(argval);
+	BUG_ON(arg_index >= 6);
 
-	r = pink_read_argument(current->pid, current->regset, arg_index, &current->args[arg_index]);
-	if (!r) /* success */
-		*argval = current->args[arg_index];
+	*argval = current->args[arg_index];
 
-	return SYD_CHECK(current, r);
+	return 0;
 }
 
 int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argval)
 {
-	int r;
-	long arg_l;
-
-	SYD_RETURN_IF_KILLED(current);
+	SYD_RETURN_IF_DETACHED(current);
 	BUG_ON(argval);
+	BUG_ON(arg_index >= 6);
 
-	r = pink_read_argument(current->pid, current->regset, arg_index, &arg_l);
-	if (r == 0) {
-		*argval = (int)arg_l;
-		return 0;
-	}
-	return SYD_CHECK(current, r);
+	*argval = (int)current->args[arg_index];
+
+	return 0;
 }
 
 ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t len)
 {
-	int r;
-	ssize_t rlen;
+	size_t wsize;
 
-	SYD_RETURN_IF_KILLED(current);
+	SYD_RETURN_IF_DETACHED(current);
 
-	errno = 0;
-	rlen = pink_read_string(current->pid, current->regset, addr, dest, len);
-	if (rlen < 0 && errno == EFAULT) { /* NULL pointer? */
-		return -1;
-	} else if (rlen >= 0 && (size_t)rlen <= len) { /* partial read? */
-		errno = 0;
-		dest[rlen] = '\0';
-	}
+#if SIZEOF_LONG > 4
+	wsize = abi_wordsize(current);
+	if (wsize < sizeof(addr))
+		addr &= (1ul << 8 * wsize) - 1;
+#endif
 
-	r = SYD_CHECK(current, -errno);
-	return r == 0 ? rlen : r;
+	struct iovec local[1], remote[1];
+	local[0].iov_base = dest;
+	remote[0].iov_base = (void *)addr;
+	local[0].iov_len = remote[0].iov_len = len;
+
+	return process_vm_readv(current->pid, local, 1, remote, 1, /*flags:*/0);
 }
 
-int syd_read_socket_argument(syd_process_t *current, bool decode_socketcall,
-			     unsigned arg_index, unsigned long *argval)
+int syd_read_socket_argument(syd_process_t *current, unsigned arg_index,
+			     unsigned long *argval)
 {
 	int r;
 
-	SYD_RETURN_IF_KILLED(current);
+	SYD_RETURN_IF_DETACHED(current);
 	BUG_ON(argval);
 
-	r = pink_read_socket_argument(current->pid, current->regset,
-				      decode_socketcall,
-				      arg_index, argval);
-	return SYD_CHECK(current, r);
+	bool decode_socketcall = !strcmp(current->sysname, "socketcall");
+	if (!decode_socketcall) {
+		*argval = current->args[arg_index];
+		return 0;
+	}
+
+	size_t wsize;
+	long addr;
+	unsigned long u_addr;
+
+	addr = current->args[1];
+	u_addr = addr;
+	wsize = abi_wordsize(current);
+	errno = 0;
+	if (wsize == sizeof(int)) {
+		unsigned int arg;
+		if ((r = syd_read_vm_data_full(current, u_addr, (long unsigned *)&arg)) < 0)
+			return r;
+		*argval = arg;
+	} else {
+		unsigned long arg;
+		if ((r = syd_read_vm_data_full(current, u_addr, &arg)) < 0)
+			return r;
+		*argval = arg;
+	}
+
+	return 0;
 }
 
-int syd_read_socket_subcall(syd_process_t *current, bool decode_socketcall,
-			    long *subcall)
+PINK_GCC_ATTR((nonnull(1,2)))
+int syd_read_socket_subcall(syd_process_t *current, long *subcall)
 {
-	int r;
+	SYD_RETURN_IF_DETACHED(current);
 
-	SYD_RETURN_IF_KILLED(current);
+	bool decode_socketcall = !strcmp(current->sysname, "socketcall");
+	if (decode_socketcall)
+		*subcall = current->args[0];
+	else
+		*subcall = current->sysnum;
 
-	r = pink_read_socket_subcall(current->pid, current->regset,
-				     decode_socketcall, subcall);
-	return SYD_CHECK(current, r);
+	return 0;
 }
 
-int syd_read_socket_address(syd_process_t *current, bool decode_socketcall,
-			    unsigned arg_index, int *fd,
+PINK_GCC_ATTR((nonnull(1,4)))
+int syd_read_socket_address(syd_process_t *current, unsigned arg_index, int *fd,
 			    struct pink_sockaddr *sockaddr)
 {
 	int r;
+	unsigned long myfd;
+	unsigned long addr, addrlen;
 
-	SYD_RETURN_IF_KILLED(current);
-	BUG_ON(sockaddr);
+	SYD_RETURN_IF_DETACHED(current);
 
-	r = pink_read_socket_address(current->pid, current->regset,
-				     decode_socketcall,
-				     arg_index, fd, sockaddr);
-	return SYD_CHECK(current, r);
+	if (fd) {
+		if ((r = syd_read_socket_argument(current, 0, &myfd)) < 0)
+			return r;
+		*fd = (int)myfd;
+	}
+	if ((r = syd_read_socket_argument(current, arg_index, &addr)) < 0)
+		return r;
+	if ((r = syd_read_socket_argument(current, arg_index + 1, &addrlen)) < 0)
+		return r;
+
+	if (addr == 0) {
+		sockaddr->family = -1;
+		sockaddr->length = 0;
+		return 0;
+	}
+	if (addrlen < 2 || addrlen > sizeof(sockaddr->u))
+		addrlen = sizeof(sockaddr->u);
+
+	memset(&sockaddr->u, 0, sizeof(sockaddr->u));
+	if ((r = syd_read_vm_data(current, addr, (char *)sockaddr->u.pad, addrlen)) < 0)
+		return r;
+	sockaddr->u.pad[sizeof(sockaddr->u.pad) - 1] = '\0';
+
+	sockaddr->family = sockaddr->u.sa.sa_family;
+	sockaddr->length = addrlen;
+
+	return 0;
 }
 
-int syd_write_syscall(syd_process_t *current, long sysnum)
-{
-	int r;
-
-	SYD_RETURN_IF_KILLED(current);
-
-	r = pink_write_syscall(current->pid, current->regset, sysnum);
-
-	return SYD_CHECK(current, r);
-}
-
+PINK_GCC_ATTR((nonnull(1)))
 int syd_write_retval(syd_process_t *current, long retval, int error)
 {
-	int r;
+	SYD_RETURN_IF_DETACHED(current);
 
-	SYD_RETURN_IF_KILLED(current);
+	sydbox->response->val = retval;
+	sydbox->response->error = error;
 
-	r = pink_write_retval(current->pid, current->regset, retval, error);
-
-	return SYD_CHECK(current, r);
+	return 0;
 }

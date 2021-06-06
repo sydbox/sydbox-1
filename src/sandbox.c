@@ -513,8 +513,7 @@ int box_check_socket(syd_process_t *current, syscall_info_t *info)
 	abspath = NULL;
 	psa = xmalloc(sizeof(struct pink_sockaddr));
 
-	if ((r = syd_read_socket_address(current, info->decode_socketcall,
-					 info->arg_index, info->ret_fd,
+	if ((r = syd_read_socket_address(current, info->arg_index, info->ret_fd,
 					 psa)) < 0)
 		goto out;
 

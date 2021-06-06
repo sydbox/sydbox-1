@@ -49,45 +49,27 @@ static const sysentry_t syscall_entries[] = {
 	{
 		.name = "stat",
 		.enter = sys_stat,
-#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
-		.exit = sysx_stat,
-#endif
 	},
 	{
 		.name = "lstat",
 		.user_notif = true,
 		.enter = sys_stat,
-#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
-		.exit = sysx_stat,
-#endif
 	},
 	{
 		.name = "statx",
 		.enter = sys_statx,
-#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
-		.exit = sysx_statx,
-#endif
 	},
 	{
 		.name = "stat64",
 		.enter = sys_stat,
-#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
-		.exit = sysx_stat,
-#endif
 	},
 	{
 		.name = "lstat64",
 		.enter = sys_stat,
-#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
-		.exit = sysx_stat,
-#endif
 	},
 	{
 		.name = "newfstatat",
 		.enter = sys_fstatat,
-#if PINK_ARCH_AARCH64 || PINK_ARCH_ARM
-		.exit = sysx_fstatat,
-#endif
 	},
 	/*
 	 * TODO: This requires updates in the ABI & struct stat logic in
@@ -143,39 +125,25 @@ static const sysentry_t syscall_entries[] = {
 		.name = "fcntl",
 		.filter = filter_fcntl,
 		.enter = sys_fcntl,
-		.exit = sysx_fcntl,
 		.sandbox_read = true,
 	},
 	{
 		.name = "fcntl64",
 		.filter = filter_fcntl,
 		.enter = sys_fcntl,
-		.exit = sysx_fcntl,
 		.sandbox_read = true,
 	},
 	{
 		.name = "dup",
 		.enter = sys_dup,
-		.exit = sysx_dup,
 	},
 	{
 		.name = "dup2",
 		.enter = sys_dup,
-		.exit = sysx_dup,
 	},
 	{
 		.name = "dup3",
 		.enter = sys_dup,
-		.exit = sysx_dup,
-	},
-
-	{
-		.name = "chdir",
-		.exit = sysx_chdir,
-	},
-	{
-		.name = "fchdir",
-		.exit = sysx_chdir,
 	},
 
 	{
@@ -338,13 +306,11 @@ static const sysentry_t syscall_entries[] = {
 	{
 		.name = "socketcall",
 		.enter = sys_socketcall,
-		.exit = sysx_socketcall,
 		.sandbox_network = true,
 	},
 	{
 		.name = "bind",
 		.enter = sys_bind,
-		.exit = sysx_bind,
 		.sandbox_network = true,
 	},
 	{
@@ -360,7 +326,6 @@ static const sysentry_t syscall_entries[] = {
 	{
 		.name = "getsockname",
 		.enter = sys_getsockname,
-		.exit = sysx_getsockname,
 	},
 
 	{
@@ -514,7 +479,33 @@ int sysinit_seccomp_load(void)
 			enum sandbox_mode mode_w = box->mode.sandbox_write;
 
 			//struct sock_filter *item = NULL;
-			if (mode_r == SANDBOX_OFF &&
+			if (mode_r == SANDBOX_BPF &&
+			    mode_w == SANDBOX_BPF) {
+				if ((r = rule_add_open_rd(sysnum,
+							  open_flag)) < 0) {
+					errno = -r;
+					die_errno("rule_add_open_rd_eperm");
+				}
+				if ((r = rule_add_open_wr(sysnum,
+							  open_flag)) < 0) {
+					errno = -r;
+					die_errno("rule_add_open_wr_eperm");
+				}
+			} else if (mode_r == SANDBOX_BPF &&
+				   mode_w == SANDBOX_OFF) {
+				if ((r = rule_add_open_rd(sysnum,
+							  open_flag)) < 0) {
+					errno = -r;
+					die_errno("rule_add_open_rd_eperm");
+				}
+			} else if (mode_r == SANDBOX_OFF &&
+				   mode_w == SANDBOX_BPF) {
+				if ((r = rule_add_open_wr(sysnum,
+							  open_flag)) < 0) {
+					errno = -r;
+					die_errno("rule_add_open_wr_eperm");
+				}
+			} else if (mode_r == SANDBOX_OFF &&
 			    mode_w == SANDBOX_OFF) {
 #if 0
 				if (use_notify())
@@ -636,6 +627,7 @@ int sysinit_seccomp_load(void)
 			"execve", "execveat",
 			"exit", "exit_group",
 			"clone", "fork", "vfork", "clone3",
+			"chdir", "fchdir",
 		};
 		for (unsigned short i = 0; i < 4; i++) {
 			if (i < 2 && box->mode.sandbox_exec != SANDBOX_OFF)
@@ -710,7 +702,7 @@ int sysenter(syd_process_t *current)
 	r = 0;
 	current->retval = 0;
 	if (entry->enter)
-		; // r = entry->enter(current);
+		r = entry->enter(current);
 	if (entry->exit)
 		current->flags |= SYD_STOP_AT_SYSEXIT;
 

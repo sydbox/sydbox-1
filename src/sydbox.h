@@ -81,11 +81,13 @@
 /* Type declarations */
 enum sandbox_mode {
 	SANDBOX_OFF,
+	SANDBOX_BPF,
 	SANDBOX_ALLOW,
 	SANDBOX_DENY,
 };
 static const char *const sandbox_mode_table[] = {
 	[SANDBOX_OFF] = "off",
+	[SANDBOX_BPF] = "bpf",
 	[SANDBOX_DENY] = "deny",
 	[SANDBOX_ALLOW] = "allow",
 };
@@ -354,8 +356,8 @@ struct syd_process {
 	/* SYD_* flags */
 	int flags;
 
-	/* Stepping method */
-	enum syd_step trace_step;
+	/* Update current working directory, next step */
+	bool update_cwd;
 
 	/* Last system call */
 	unsigned long sysnum;
@@ -377,9 +379,6 @@ struct syd_process {
 
 	/* Resolved path argument for specially treated system calls like execve() */
 	char *abspath;
-
-	/* Process registry set */
-	struct pink_regset *regset;
 
 	/* Arguments of last system call */
 	long args[PINK_MAX_ARGS];
@@ -693,13 +692,15 @@ int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argva
 ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t len);
 int syd_write_syscall(syd_process_t *current, long sysnum);
 int syd_write_retval(syd_process_t *current, long retval, int error);
-int syd_read_socket_argument(syd_process_t *current, bool decode_socketcall,
-			     unsigned arg_index, unsigned long *argval);
-int syd_read_socket_subcall(syd_process_t *current, bool decode_socketcall,
-			    long *subcall);
-int syd_read_socket_address(syd_process_t *current, bool decode_socketcall,
-			    unsigned arg_index, int *fd,
+int syd_read_socket_argument(syd_process_t *current, unsigned arg_index,
+			     unsigned long *argval);
+int syd_read_socket_subcall(syd_process_t *current, long *subcall);
+int syd_read_socket_address(syd_process_t *current, unsigned arg_index, int *fd,
 			    struct pink_sockaddr *sockaddr);
+int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len);
+int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argval);
+ssize_t syd_write_vm_data(syd_process_t *current, long addr, const char *src,
+			  size_t len);
 
 void reset_process(syd_process_t *p);
 void bury_process(syd_process_t *p);

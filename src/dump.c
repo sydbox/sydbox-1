@@ -583,7 +583,6 @@ static void dump_pink(const char *name, int retval, int save_errno, pid_t pid, v
 		fprintf(fp, ","J(options));
 		dump_ptrace_options(options);
 	} else if (streq(name, "read_syscall") || streq(name, "write_syscall")) {
-		const char *sysname;
 		va_arg(ap, struct pink_regset *); /* regset is unused */
 		long sysnum;
 

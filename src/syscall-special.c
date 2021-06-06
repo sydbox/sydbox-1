@@ -64,17 +64,7 @@ struct stat32 { /* for 32bit emulation */
 
 int sysx_chdir(syd_process_t *current)
 {
-	int r;
-	long retval;
 	char *newcwd;
-
-	if ((r = syd_read_retval(current, &retval, NULL)) < 0)
-		return r;
-
-	if (retval < 0) {
-		/* dump_syscall_0(current, "chdir", "IGNORE", retval); */
-		return 0;
-	}
 
 	if (proc_cwd(current->pid, sydbox->config.use_toolong_hack, &newcwd) < 0) {
 		/* TODO: dump(DUMP_SYSCALL, current, "chdir", retval, "panic"); */
@@ -341,8 +331,8 @@ static int write_stat(syd_process_t *current, unsigned int buf_index, bool exten
 	}
 
 	long addr;
-	if (pink_read_argument(current->pid, current->regset, buf_index, &addr) == 0)
-		pink_write_vm_data(current->pid, current->regset, addr, bufaddr, bufsize);
+	if (syd_read_argument(current, buf_index, &addr) == 0)
+		syd_write_vm_data(current, addr, bufaddr, bufsize);
 
 	return true;
 }
@@ -523,6 +513,7 @@ int sys_dup(syd_process_t *current)
 	return 0;
 }
 
+#if 0
 int sysx_dup(syd_process_t *current)
 {
 	int r;
@@ -551,6 +542,7 @@ int sysx_dup(syd_process_t *current)
 	sockmap_add(&P_SOCKMAP(current), retval, sockinfo_xdup(oldinfo));
 	return 0;
 }
+#endif
 
 int sys_fcntl(syd_process_t *current)
 {
@@ -614,6 +606,7 @@ int sys_fcntl(syd_process_t *current)
 	return 0;
 }
 
+#if 0
 int sysx_fcntl(syd_process_t *current)
 {
 	int r;
@@ -642,3 +635,4 @@ int sysx_fcntl(syd_process_t *current)
 	sockmap_add(&P_SOCKMAP(current), retval, sockinfo_xdup(oldinfo));
 	return 0;
 }
+#endif

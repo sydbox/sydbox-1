@@ -106,15 +106,13 @@ out:
 
 int sys_access(syd_process_t *current)
 {
-	int r;
 	long mode;
 	syscall_info_t info;
 
 	if (sandbox_off_file(current))
 		return 0;
 
-	if ((r = syd_read_argument(current, 1, &mode)) < 0)
-		return r;
+	mode = current->args[1];
 	if (!check_access_mode(current, mode))
 		return 0;
 
@@ -127,7 +125,6 @@ int sys_access(syd_process_t *current)
 
 static int do_faccessat(syd_process_t *current, bool has_flags)
 {
-	int r;
 	long mode, flags;
 	syscall_info_t info;
 
@@ -135,12 +132,10 @@ static int do_faccessat(syd_process_t *current, bool has_flags)
 		return 0;
 
 	/* check mode and then the AT_SYMLINK_NOFOLLOW flag */
-	if ((r = syd_read_argument(current, 2, &mode)) < 0)
-		return r;
+	mode = current->args[2];
 	if (!check_access_mode(current, mode))
 		return 0;
-	if (has_flags && (r = syd_read_argument(current, 3, &flags)) < 0)
-		return r;
+	flags = current->args[3];
 
 	init_sysinfo(&info);
 	info.at_func = true;
@@ -301,8 +296,7 @@ int sys_open(syd_process_t *current)
 		return 0;
 
 	/* check flags first */
-	if ((r = syd_read_argument(current, 1, (long *)&how.flags)) < 0)
-		return r;
+	how.flags = current->args[1];
 	if ((r = restrict_open_flags(current, how.flags)) < 0)
 		return r;
 
@@ -372,16 +366,14 @@ int sys_openat2(syd_process_t *current)
 	struct open_how how;
 	long addr, size;
 
-	if ((r = syd_read_argument(current, 2, &addr)) < 0 ||
-	    (r = syd_read_argument(current, 3, &size)) < 0)
-		return r;
+	addr = current->args[2];
+	size = current->args[3];
 
 	if (size < OPEN_HOW_MIN_SIZE) {
 		how.flags = 0;
 		how.mode = 0;
 		how.resolve = 0;
-	} else if ((r = pink_read_vm_data(current->pid, current->regset,
-					  addr, (char *)&how, size)) < 0) {
+	} else if ((r = syd_read_vm_data(current, addr, (char *)&how, size)) < 0) {
 			return r;
 	} else if ((r = restrict_open_flags(current, how.flags)) < 0) {
 			return r;
@@ -524,6 +516,7 @@ int sys_close(syd_process_t *current)
 	return 0;
 }
 
+#if 0
 int sysx_close(syd_process_t *current)
 {
 	int r;
@@ -545,6 +538,7 @@ int sysx_close(syd_process_t *current)
 	sockmap_remove(&P_SOCKMAP(current), current->args[0]);
 	return 0;
 }
+#endif
 
 int sys_mkdir(syd_process_t *current)
 {

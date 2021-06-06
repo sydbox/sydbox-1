@@ -134,15 +134,11 @@ int deny(syd_process_t *current, int err_no)
 	if (sydbox->permissive)
 		return 0; /* dry-run, no intervention. */
 	current->retval = errno2retval(err_no);
-#if WRITE_RETVAL_ON_ENTRY
-	/* Restore syscall */
-	int r;
-	if ((r = restore(current)) < 0)
-		return r;
-#else
-	current->flags |= SYD_STOP_AT_SYSEXIT;
-#endif
-	return syd_write_syscall(current, -1);
+	sydbox->response->val = 0;
+	sydbox->response->error = err_no;
+	sydbox->response->flags = 0; /* drop SECCOMP_USER_NOTIF_FLAG_CONTINUE */
+
+	return 0;
 }
 
 int restore(syd_process_t *current)
