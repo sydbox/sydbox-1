@@ -322,6 +322,22 @@ AM_CONDITIONAL([WANT_DEBUG], test x"$WANT_DEBUG" = x"yes")
 AC_DEFINE_UNQUOTED([SYDBOX_DEBUG], [$SYDBOX_DEBUG], ['Enable debug support (requires: libunwind)'])
 AC_SUBST([SYDBOX_DEBUG])
 
+dnl check for process_vm_readv, process_vm_writev
+AC_CHECK_FUNCS([process_vm_readv],
+	       [PINK_HAVE_PROCESS_VM_READV=1],
+	       [AC_CHECK_DECL([__NR_process_vm_readv],
+			      [PINK_HAVE_PROCESS_VM_READV=1],
+			      [PINK_HAVE_PROCESS_VM_READV=0],
+			      [#include <asm/unistd.h>])])
+AC_CHECK_FUNCS([process_vm_writev],
+	       [PINK_HAVE_PROCESS_VM_WRITEV=1],
+	       [AC_CHECK_DECL([__NR_process_vm_writev],
+			      [PINK_HAVE_PROCESS_VM_WRITEV=1],
+			      [PINK_HAVE_PROCESS_VM_WRITEV=0],
+			      [#include <asm/unistd.h>])])
+AC_SUBST([PINK_HAVE_PROCESS_VM_READV])
+AC_SUBST([PINK_HAVE_PROCESS_VM_WRITEV])
+
 dnl check for pidfd_open and pidfd_getfd.
 m4_define([include_pidfd_headers], [
 	   #ifdef HAVE_ASM_UNISTD_H

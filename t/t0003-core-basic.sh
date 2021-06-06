@@ -15,10 +15,10 @@ export SYDBOX_TEST_OPTIONS
 #    sydfmt --help &&
 #    sydfmt --version
 #'
-
-SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS -mcore/sandbox/read:allow"
-export SYDBOX_TEST_OPTIONS
-
+#
+#SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS -mcore/sandbox/read:allow"
+#export SYDBOX_TEST_OPTIONS
+#
 #test_expect_success 'return success if tracee returns success' '
 #    sydbox -- syd-true
 #'
@@ -58,25 +58,24 @@ export SYDBOX_TEST_OPTIONS
 #test_expect_success 'return failure if initial tracee returns failure (PTHREAD)' '
 #    test_expect_code 1 sydbox -- syd-false-pthread 32
 #'
-
-# These termination exit code checks fails on buildhost only when run via CI.
-# The tests pass if you ssh into the buildhost and run the tests manually.
-# The NOT_ON_BUILD_HOST prerequisite checks for the job id so we can still
-# manually run these tests on the build host.
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated' '
-    test_expect_code 128 sydbox -- syd-abort 2 && # SIGINT
-    test_expect_code 128 sydbox -- syd-abort 3 && # SIGQUIT
-    test_expect_code 128 sydbox -- syd-abort 4 && # SIGILL
-    test_expect_code 128 sydbox -- syd-abort 6 && # SIGABRT
-    test_expect_code 128 sydbox -- syd-abort 8 && # SIGFPE
-    test_expect_code 128 sydbox -- syd-abort 11 && # SIGFPE
-    test_expect_code 128 sydbox -- syd-abort 13 && # SIGPIPE
-    test_expect_code 128 sydbox -- syd-abort 14 && # SIGALRM
-    test_expect_code 128 sydbox -- syd-abort 15 # SIGTERM
-'
-
-# FIXME:
-#test_expect_success_foreach_option NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated (STATIC)' '
+#
+## These termination exit code checks fails on buildhost only when run via CI.
+## The tests pass if you ssh into the buildhost and run the tests manually.
+## The NOT_ON_BUILD_HOST prerequisite checks for the job id so we can still
+## manually run these tests on the build host.
+#test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated' '
+#    test_expect_code 130 sydbox -- syd-abort 2 && # SIGINT
+#    test_expect_code 131 sydbox -- syd-abort 3 && # SIGQUIT
+#    test_expect_code 132 sydbox -- syd-abort 4 && # SIGILL
+#    test_expect_code 134 sydbox -- syd-abort 6 && # SIGABRT
+#    test_expect_code 136 sydbox -- syd-abort 8 && # SIGFPE
+#    test_expect_code 139 sydbox -- syd-abort 11 && # SIGFPE
+#    test_expect_code 141 sydbox -- syd-abort 13 && # SIGPIPE
+#    test_expect_code 142 sydbox -- syd-abort 14 && # SIGALRM
+#    test_expect_code 143 sydbox -- syd-abort 15 # SIGTERM
+#'
+#
+#test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated (STATIC)' '
 #    test_expect_code 130 sydbox -- syd-abort-static 2 && # SIGINT
 #    test_expect_code 131 sydbox -- syd-abort-static 3 && # SIGQUIT
 #    test_expect_code 132 sydbox -- syd-abort-static 4 && # SIGILL
@@ -88,7 +87,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is termina
 #    test_expect_code 143 sydbox -- syd-abort-static 15 # SIGTERM
 #'
 #
-#test_expect_success_foreach_option NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated (FORK)' '
+#test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated (FORK)' '
 #    test_expect_code 130 sydbox -- syd-abort-fork 256 2 && # SIGINT
 #    test_expect_code 131 sydbox -- syd-abort-fork 256 3 && # SIGQUIT
 #    test_expect_code 132 sydbox -- syd-abort-fork 256 4 && # SIGILL
@@ -100,7 +99,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is termina
 #    test_expect_code 143 sydbox -- syd-abort-fork 256 15 # SIGTERM
 #'
 #
-#test_expect_success_foreach_option NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated (STATIC|FORK)' '
+#test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated (STATIC|FORK)' '
 #    test_expect_code 130 sydbox -- syd-abort-fork-static 256 2 && # SIGINT
 #    test_expect_code 131 sydbox -- syd-abort-fork-static 256 3 && # SIGQUIT
 #    test_expect_code 132 sydbox -- syd-abort-fork-static 256 4 && # SIGILL
@@ -112,7 +111,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is termina
 #    test_expect_code 143 sydbox -- syd-abort-fork-static 256 15 # SIGTERM
 #'
 #
-#test_expect_success_foreach_option FIXME 'return 128 + $SIGNUM if tracee is terminated (PTHREAD)' '
+#test_expect_success 'return 128 + $SIGNUM if tracee is terminated (PTHREAD)' '
 #    test_expect_code 130 sydbox -- syd-abort-pthread 8 2 && # SIGINT
 #    test_expect_code 131 sydbox -- syd-abort-pthread 8 3 && # SIGQUIT
 #    test_expect_code 132 sydbox -- syd-abort-pthread 8 4 && # SIGILL
@@ -124,7 +123,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is termina
 #    test_expect_code 143 sydbox -- syd-abort-pthread 8 15 # SIGTERM
 #'
 #
-#test_expect_success_foreach_option FIXME 'return 128 + $SIGNUM if tracee is terminated (STATIC|PTHREAD)' '
+#test_expect_success 'return 128 + $SIGNUM if tracee is terminated (STATIC|PTHREAD)' '
 #    test_expect_code 130 sydbox -- syd-abort-pthread-static 8 2 && # SIGINT
 #    test_expect_code 131 sydbox -- syd-abort-pthread-static 8 3 && # SIGQUIT
 #    test_expect_code 132 sydbox -- syd-abort-pthread-static 8 4 && # SIGILL
@@ -253,20 +252,23 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is termina
 #        -m core/violation/raise_safe:0 \
 #        syd-mkdir-p "$cdir"
 #'
-#
-## Note, we use test_must_fail here rather than ! so we know if sydbox exits
-## abnormally, eg. segfaults.
-#test_expect_success 'read sandboxing for open works' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    test_must_fail sydbox \
-#        -m core/sandbox/read:deny \
-#        syd-open-static "$cdir"/readme rdonly
-#'
-#
+
+# Note, we use test_must_fail here rather than ! so we know if sydbox exits
+# abnormally, eg. segfaults.
+test_expect_success 'read sandboxing for open works' '
+    pdir="$(unique_dir)" &&
+    mkdir "$pdir" &&
+    cdir="${pdir}/$(unique_dir)" &&
+    mkdir "$cdir" &&
+    touch "$cdir"/readme &&
+    test_must_fail sydbox \
+        -m core/sandbox/read:deny \
+        -m core/sandbox/write:off \
+        -m core/sandbox/exec:off \
+        -m core/sandbox/network:off \
+        syd-open-static "$cdir"/readme rdonly
+'
+
 #test_expect_success 'read sandboxing for open works with whitelist' '
 #    pdir="$(unique_dir)" &&
 #    mkdir "$pdir" &&
@@ -276,18 +278,6 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is termina
 #    sydbox \
 #        -m core/sandbox/read:deny \
 #        -m "whitelist/read+/***" \
-#        syd-open-static "$cdir"/readme rdonly
-#'
-#
-#test_expect_success PTRACE_SECCOMP 'read sandboxing for open can be reenabled under seccomp' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    test_must_fail sydbox \
-#        -m core/trace/use_seccomp:true \
-#        -m core/sandbox/read:deny \
 #        syd-open-static "$cdir"/readme rdonly
 #'
 #
@@ -375,7 +365,8 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is termina
 #        -m core/restrict/file_control:true \
 #        syd-open-static "$cdir"/readme rdonly sync
 #'
-#
+
+## XXX TODO FIXME KEEP use_ptrace disabled and remove!
 #test_expect_success PTRACE_SECCOMP 'both seccomp and ptrace can not be disabled' '
 #    test_expect_code 1 sydbox \
 #        -m core/trace/use_seccomp:0 \
