@@ -331,11 +331,17 @@ m4_define([include_pidfd_headers], [
 	   #include <linux/unistd.h>
 	   #endif
 ])
+PIDFD_OPEN_WARN=0
+PIDFD_GETFD_WARN=0
+PIDFD_SEND_SIGNAL_WARN=0
 AC_CHECK_DECL([__NR_pidfd_open],  [],
-	      [AC_MSG_WARN([__NR_pidfd_open not declared! Setting pidfd_open to 434.])],
+	      [PIDFD_OPEN_WARN=1],
 	      [include_pidfd_headers])
 AC_CHECK_DECL([__NR_pidfd_getfd], [],
-	      [AC_MSG_WARN([__NR_pidfd_getfd not declared! Setting pidfd_getfd to 438.])],
+	      [PIDFD_OPEN_WARN=1],
+	      [include_pidfd_headers])
+AC_CHECK_DECL([__NR_pidfd_send_signal], [],
+	      [PIDFD_OPEN_WARN=1],
 	      [include_pidfd_headers])
 
 AC_MSG_CHECKING([for dump])
@@ -395,3 +401,21 @@ AC_CONFIG_FILES([Makefile
 		 t/test-data/Makefile
 		 t/valgrind/Makefile])
 AC_OUTPUT
+
+PIDFD_WARN=0
+if test x"$PIDFD_OPEN_WARN" = x"1"; then
+	AC_MSG_WARN([__NR_pidfd_open not declared! Setting pidfd_open to 434.])
+	PIDFD_WARN=1
+fi
+if test x"$PIDFD_GETFD_WARN" = x"1"; then
+	AC_MSG_WARN([__NR_pidfd_getfd not declared! Setting pidfd_getfd to 438.])
+	PIDFD_WARN=1
+fi
+if test x"$PIDFD_SEND_SIGNAL" = x"1"; then
+	AC_MSG_WARN([__NR_pidfd_send_signal not declared! Setting pidfd_getfd to 424.])
+	PIDFD_WARN=1
+fi
+if test x"$PIDFD_WARN" = x"1"; then
+	AC_MSG_WARN([SydBox may not work correctly!"])
+	AC_MSG_WARN([Try using a newer Linux kernel version."])
+fi
