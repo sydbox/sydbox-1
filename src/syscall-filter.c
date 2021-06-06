@@ -89,27 +89,29 @@ int filter_fcntl(void)
 
 	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fcntl),
 			     2,
-			     SCMP_A1( SCMP_CMP_EQ, F_SETFL, F_SETFL ),
+			     SCMP_A1( SCMP_CMP_EQ, F_SETFL, F_SETFL),
 			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_ASYNC, O_ASYNC));
 	if (r < 0)
 		return r;
 	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fcntl),
 			     2,
-			     SCMP_A1( SCMP_CMP_EQ, F_SETFL, F_SETFL ),
+			     SCMP_A1( SCMP_CMP_EQ, F_SETFL, F_SETFL),
 			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_DIRECT, O_DIRECT));
 	if (r < 0)
 		return r;
 
+#if 0
 #define FCNTL_OK_MAX 11
 	int ok[FCNTL_OK_MAX] = { F_GETFL, F_SETFL, F_SETOWN, F_SETLK, F_SETLKW,
 		F_SETLK64, F_SETLKW64, F_GETFD, F_SETFD, F_DUPFD, F_DUPFD_CLOEXEC };
+	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fcntl),
+			     1,
+			     SCMP_A1( SCMP_CMP_MASKED_EQ, 
 	for (unsigned short i = 0; i < FCNTL_OK_MAX; i++) {
-		r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, SCMP_SYS(fcntl),
-				     1,
-				     SCMP_A1( SCMP_CMP_EQ, ok[i], ok[i] ));
 		if (r < 0)
 			return r;
 	}
+#endif
 	return 0;
 }
 
