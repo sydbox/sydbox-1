@@ -1039,8 +1039,8 @@ static void init_signals(void)
 	x_sigaction(SIGUSR1, &sa, NULL);
 	x_sigaction(SIGUSR2, &sa, NULL);
 
-	if (signal(SIGALRM, sig_alarm) < 0)
-		die_errno("signal");
+	sa.sa_handler = sig_alarm;
+	x_sigaction(SIGALRM, &sa, NULL);
 
 #undef x_sigaction
 }
@@ -1243,7 +1243,7 @@ static int event_seccomp(syd_process_t *current)
 static int notify_loop(void)
 {
 	int pid, r;
-	syd_process_t *current;
+	//syd_process_t *current;
 
 	if ((r = seccomp_notify_alloc(&sydbox->request,
 				      &sydbox->response)) < 0) {
@@ -1273,7 +1273,7 @@ notify_receive:
 						sydbox->request)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
 				if (!child_is_alive()) {
-					say("process %d terminated abnormally, exiting with 128",
+					say("process %d terminated abnormally",
 					    sydbox->execve_pid);
 					sydbox->exit_code = 128;
 					break;
@@ -1305,7 +1305,7 @@ notify_receive:
 		sydbox->response->val = 0;
 
 		pid = sydbox->request->pid;
-		current = lookup_process(pid);
+		//current = lookup_process(pid);
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
 
@@ -1319,11 +1319,9 @@ notify_receive:
 			break;
 		}
 
+#if 0
 		if (!current) {
 			syd_process_t *parent;
-
-			parent = parent_process(pid, current);
-
 			YELL_ON(parent, "pid %u, syscall %s("
 				"%llu,%llu,%llu,%llu,%llu,%llu)",
 				pid, name,
@@ -1333,22 +1331,16 @@ notify_receive:
 				sydbox->request->data.args[3],
 				sydbox->request->data.args[4],
 				sydbox->request->data.args[5]);
+			parent = parent_process(pid, current);
 			current = clone_process(parent, pid);
 			BUG_ON(current); /* Just bizarre, no questions */
 		}
-
-		/* We handled quick cases, we are permitted to interrupt now.
-		 * FIXME: Do we really want this while the child is stopped?
-		if ((r = check_interrupt()) != 0)
-			return r;
-		*/
-
 		current->sysnum = sydbox->request->data.nr;
 		current->sysname = name;
 		for (unsigned short idx = 0; idx < 6; idx++)
 			current->args[idx] = sydbox->request->data.args[idx];
-
-		//r = event_syscall(current);
+		r = event_syscall(current);
+#endif
 
 		/* 0 if valid, ENOENT if not */
 		if ((r = seccomp_notify_id_valid(sydbox->notify_fd,
@@ -1377,6 +1369,13 @@ notify_receive:
 		else if (sydbox->config.violation_exit_code == 0)
 			r = 128 + sydbox->exit_code;
 	}
+
+		/* We handled quick cases, we are permitted to interrupt now.
+		 * FIXME: Do we really want this while the child is stopped?
+		if ((r = check_interrupt()) != 0)
+			return r;
+		*/
+
 
 	return r;
 
@@ -1919,19 +1918,18 @@ int main(int argc, char **argv)
 	   in the STARTUP_CHILD mode we kill the spawned process anyway.  */
 	pid_t pid = startup_child(&argv[optind]);
 
-	int exit_code = 0;
 	if (use_notify()) {
 		init_signals();
 		r = notify_loop();
-	} else {
-		int wstatus;
-		if (waitpid(pid, &wstatus, __WALL) < 0) {
-			say_errno("waitpid");
-			sydbox->exit_code = 128;
-		} else if (WIFEXITED(wstatus))
-			sydbox->exit_code = WEXITSTATUS(wstatus);
-		else if (WIFSIGNALED(wstatus))
-			sydbox->exit_code = 128 + WTERMSIG(wstatus);
+	}
+	int exit_code, wstatus;
+	if (waitpid(pid, &wstatus, __WALL) < 0) {
+		say_errno("waitpid");
+		sydbox->exit_code = 128;
+	} else if (WIFEXITED(wstatus)) {
+		sydbox->exit_code = WEXITSTATUS(wstatus);
+	} else if (WIFSIGNALED(wstatus)) {
+		sydbox->exit_code = 128 + WTERMSIG(wstatus);
 	}
 	exit_code = sydbox->exit_code;
 	cleanup();
