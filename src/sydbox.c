@@ -60,6 +60,8 @@ static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
 static void sig_alarm(int sig);
 
+static inline bool process_is_alive(pid_t pid);
+
 static void about(void)
 {
 	printf(PACKAGE"-"VERSION GITVERSION);
@@ -958,14 +960,8 @@ static void reap_zombies(void)
 {
 	syd_process_t *node, *tmp;
 	process_iter(node, tmp) { /* process_iter is delete-safe. */
-		struct proc_statinfo info;
-		if (proc_stat(node->pid, &info) < 0) {
-			say_errno("proc_stat");
+		if (!process_is_alive(node->pid))
 			remove_process_node(node);
-		} else if (info.state == 'Z') {
-			/* Zombie process, not alive. */
-			remove_process_node(node);
-		}
 	}
 }
 
@@ -974,7 +970,6 @@ static bool process_kill(pid_t pid, int sig)
 	int r;
 	syd_process_t *current;
 
-	reap_zombies();
 	current = lookup_process(pid);
 	if (!current)
 		return false;
@@ -1000,7 +995,18 @@ static bool process_kill(pid_t pid, int sig)
 
 static inline bool process_is_alive(pid_t pid)
 {
-	return process_kill(pid, 0);
+	struct proc_statinfo info;
+
+	if (!process_kill(pid, 0)) {
+		return false;
+	} else if (proc_stat(pid, &info) < 0) {
+		say_errno("proc_stat(%d)", pid);
+		return false;
+	} else if (info.state == 'Z') {
+		/* Zombie process, not alive. */
+		return false;
+	}
+	return true;
 }
 
 static int wait_for_notify_fd(pid_t pid)
@@ -1011,7 +1017,7 @@ poll_begin:
 	pollfd.fd = sydbox->notify_fd;
 	pollfd.events = POLLIN;
 	errno = 0;
-	if (poll(&pollfd, 1, 100) < 0) {
+	if (poll(&pollfd, 1, 360) < 0) {
 		if (!errno || errno == EINTR) { /* timeout */
 			if (!process_is_alive(pid))
 				return 1;
@@ -1115,7 +1121,7 @@ static int setup_alarm(void)
 	alarmed = false;
 
 	it_val.it_value.tv_sec = 0;
-	it_val.it_value.tv_usec = 100000; /* 100 milliseconds */
+	it_val.it_value.tv_usec = 360000; /* 360 milliseconds */
 	it_val.it_interval.tv_sec = 0;
 	it_val.it_interval.tv_usec = 0;
 
@@ -1298,6 +1304,7 @@ notify_receive:
 					    sydbox->execve_pid,
 					    process_count()); */
 					sydbox->exit_code = 128;
+					reap_zombies();
 					if (!process_count()) {
 						break;
 					} else {
@@ -1444,18 +1451,15 @@ notify_respond:
 
 		if (name)
 			free(name);
+
+		/* We handled quick cases, we are permitted to interrupt now. */
+		if ((r = check_interrupt()) != 0)
+			return sydbox->exit_code;
 	}
 
 	close(sydbox->notify_fd);
 	sydbox->notify_fd = -1;
 	r = sydbox->exit_code;
-
-		/* We handled quick cases, we are permitted to interrupt now.
-		 * FIXME: Do we really want this while the child is stopped?
-		if ((r = check_interrupt()) != 0)
-			return r;
-		*/
-
 
 	return r;
 
