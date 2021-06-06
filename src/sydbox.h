@@ -523,6 +523,7 @@ struct sydbox {
 	int exit_code;
 
 	pid_t execve_pid;
+	int execve_pidfd;
 
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	int dump_fd;

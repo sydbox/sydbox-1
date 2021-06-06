@@ -555,6 +555,7 @@ int sysinit_seccomp_load(void)
 							    sysnum);
 					if (r < 0)
 						return r;
+					user_notified = true;
 				} /* else no need to do anything. */
 			} else if (mode_r == SANDBOX_OFF &&
 				   mode_w == SANDBOX_DENY) {
@@ -618,7 +619,7 @@ int sysinit_seccomp_load(void)
 			} else if (syscall_entries[i].sandbox_read) {
 				mode[0] = box->mode.sandbox_read;
 			} else {
-				mode[0] = box->mode.sandbox_read;
+				continue;
 			}
 
 			bool all_off = true;
@@ -691,7 +692,7 @@ int sysinit_seccomp(void)
 			return -errno;
 		if (parent_write_int(fd))
 			return -errno;
-		kill(getpid(), SIGSTOP);
+		//kill(getpid(), SIGSTOP);
 	}
 
 	seccomp_release(sydbox->ctx);

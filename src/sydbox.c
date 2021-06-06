@@ -924,6 +924,14 @@ static void sig_usr(int sig)
 	fprintf(stderr, "Tracing %u process%s\n", count, count > 1 ? "es" : "");
 }
 
+static bool child_is_alive(void)
+{
+	if (syscall(__NR_pidfd_send_signal, sydbox->execve_pidfd, 0, NULL, 0) < 0)
+		if (errno == ESRCH)
+			return true;
+	return false;
+}
+
 static int wait_for_notify_fd(void)
 {
 	fd_set readfds;
@@ -1214,8 +1222,11 @@ static int notify_loop(void)
 	for (uint64_t i = 0;;i++) {
 		char *name = NULL;
 
-		if (i > 1)
+		if (i > 1) {
 			wait_for_notify_fd();
+			if (!child_is_alive())
+				break;
+		}
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
 						sydbox->request)) < 0) {
 			/* TODO use:
@@ -1618,23 +1629,22 @@ static pid_t startup_child(char **argv)
 			exit(-r);
 		} else {
 			sydbox->notify_fd = fd;
-			say("pid:%d notify_fd:%d", getpid(), sydbox->notify_fd);
-			kill(pid, SIGCONT);
+			// say("pid:%d notify_fd:%d", getpid(), sydbox->notify_fd);
 
 			close(pfd[0]);
 			sydbox->seccomp_fd = -1;
-			//sydbox->seccomp_fd = pfd[0];
 			//close(pfd[0]); /* read end is no longer necessary */
 
-			if ((sydbox->notify_fd = syscall(__NR_pidfd_open, pid, 0)) < 0)
+			if ((sydbox->execve_pidfd = syscall(__NR_pidfd_open, pid, 0)) < 0)
 				die_errno("failed to open pidfd for pid:%d", pid);
-			if ((fd = syscall(__NR_pidfd_getfd, sydbox->notify_fd,
+			if ((fd = syscall(__NR_pidfd_getfd, sydbox->execve_pidfd,
 					  fd, 0)) < 0)
 				die_errno("failed to obtain seccomp user fd");
 			// close(sydbox->notify_fd);
 			sydbox->notify_fd = fd;
-			say("notify_fd:%d", fd);
+			// say("notify_fd:%d", fd);
 
+			kill(sydbox->execve_pid, SIGCONT);
 			child = new_process_or_kill(pid);
 			init_process_data(child, NULL);
 			dump(DUMP_STARTUP, pid);
