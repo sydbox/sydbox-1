@@ -1114,19 +1114,19 @@ static int handle_interrupt(int sig)
 	}
 }
 
-static int setup_alarm(void)
+static int setup_alarm(int time_sec)
 {
 	struct itimerval it_val;
 
 	alarmed = false;
 
-	it_val.it_value.tv_sec = 0;
-	it_val.it_value.tv_usec = 2000000; /* 2000 milliseconds */
+	it_val.it_value.tv_sec = time_sec;
+	it_val.it_value.tv_usec = 0;
 	it_val.it_interval.tv_sec = 0;
 	it_val.it_interval.tv_usec = 0;
 
 	if (setitimer(ITIMER_REAL, &it_val, NULL) < 0)
-		die_errno("setup_alarm");
+		die_errno("setup_alarm(%dsec)", time_sec);
 
 	return 0;
 }
@@ -1294,7 +1294,7 @@ static int notify_loop(syd_process_t *current)
 		}
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
 notify_receive:
-		setup_alarm();
+		setup_alarm(3);
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
 						sydbox->request)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
@@ -1308,11 +1308,11 @@ notify_receive:
 					if (!process_count()) {
 						break;
 					} else {
-						alarm(0);
+						disarm_alarm();
 						goto notify_receive;
 					}
 				} else {
-					alarm(0);
+					disarm_alarm();
 					goto notify_receive;
 				}
 			}
@@ -1408,13 +1408,12 @@ notify_receive:
 		}
 
 notify_respond:
-		setup_alarm();
+		setup_alarm(3);
 		/* 0 if valid, ENOENT if not */
 		if ((r = seccomp_notify_id_valid(sydbox->notify_fd,
 						 sydbox->request->id)) < 0 ||
 		    (r = seccomp_notify_respond(sydbox->notify_fd,
 						sydbox->response)) < 0) {
-			say("Returned: %d, %s", -r, strerror(-r));
 			if (r == -ECANCELED || r == -EINTR) {
 				if (!process_is_alive(current->pid)) {
 					/* say("process %d terminated abnormally "
@@ -1426,11 +1425,11 @@ notify_respond:
 					if (!process_count()) {
 						break;
 					} else {
-						alarm(0);
+						disarm_alarm();
 						goto notify_respond;
 					}
 				} else {
-					alarm(0);
+					disarm_alarm();
 					goto notify_respond;
 				}
 			}
