@@ -8,6 +8,6 @@
 #ifndef PATHLOOKUP_H
 #define PATHLOOKUP_H
 
-int path_lookup(const char *filename, char **buf);
+char *path_lookup(const char *filename);
 
 #endif

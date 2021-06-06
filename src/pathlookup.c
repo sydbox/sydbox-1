@@ -22,9 +22,9 @@
 
 /*
  * Look up path using `PATH' environment variable.
- * Returns 0 on success, -1 on failure.
+ * Returns path on success, NULL on failure.
  */
-int path_lookup(const char *filename, char **buf)
+char *path_lookup(const char *filename)
 {
 	struct stat statbuf;
 	char pathname[SYDBOX_PATH_MAX];
@@ -33,8 +33,10 @@ int path_lookup(const char *filename, char **buf)
 	pathname[0] = '\0';
 	filename_len = strlen(filename);
 
-	if (filename_len > sizeof(pathname) - 1)
-		return -ENAMETOOLONG;
+	if (filename_len > sizeof(pathname) - 1) {
+		errno = ENAMETOOLONG;
+		return NULL;
+	}
 	if (strchr(filename, '/'))
 		strcpy(pathname, filename);
 #ifdef SYDBOX_USE_DEBUGGING_EXEC
@@ -85,11 +87,8 @@ int path_lookup(const char *filename, char **buf)
 			pathname[0] = '\0';
 	}
 	if (stat(pathname, &statbuf) < 0) {
-		return -errno;
+		return NULL;
 	}
 
-	*buf = strdup(pathname);
-	if (*buf == NULL)
-		return -ENOMEM;
-	return 0;
+	return strdup(pathname);
 }

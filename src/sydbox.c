@@ -1689,11 +1689,9 @@ static pid_t startup_child(char **argv)
 	pid_t pid = 0;
 	syd_process_t *child;
 
-	r = path_lookup(argv[0], &pathname);
-	if (r < 0) {
-		errno = -r;
+	pathname = path_lookup(argv[0]);
+	if (!pathname)
 		die_errno("can't exec `%s'", argv[0]);
-	}
 
 	if (pipe2(pfd, O_CLOEXEC|O_DIRECT) < 0)
 		die_errno("can't pipe");
@@ -1722,6 +1720,7 @@ static pid_t startup_child(char **argv)
 		execv(pathname, argv);
 		fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
 			pathname, errno, strerror(errno));
+		free(pathname);
 		_exit(EXIT_FAILURE);
 	}
 
