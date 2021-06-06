@@ -1430,14 +1430,25 @@ notify_respond:
 				} else {
 					goto notify_respond;
 				}
+			} else if (r == -ENOENT) {
+				/* If we didn't find a notification,
+				 * it could be that the task was
+				 * interrupted by a fatal signal between
+				 * the time we were woken and
+				 * when we were able to acquire the rw lock.
+				 */
+				reap_zombies();
+				if (!process_count())
+					break;
+			} else {
+				/* TODO use:
+				 * __NR_pidfd_send_signal to kill the process
+				 * on abnormal exit.
+				 */
+				say_errno("seccomp_notify_respond");
+				// proc_info(sydbox->execve_pid);
+				break;
 			}
-			/* TODO use:
-			 * __NR_pidfd_send_signal to kill the process
-			 * on abnormal exit.
-			 */
-			say_errno("seccomp_notify_respond");
-			// proc_info(sydbox->execve_pid);
-			break;
 		}
 #if 0
 		sig = 0; /* TODO */
