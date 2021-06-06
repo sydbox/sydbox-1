@@ -927,10 +927,12 @@ static void sig_usr(int sig)
 
 static bool child_is_alive(void)
 {
-	int r;
 	if (syscall(__NR_pidfd_send_signal, sydbox->execve_pidfd, 0, NULL, 0) < 0) {
 		if (errno == ESRCH)
 			return false;
+		say_errno("pidfd_send_signal");
+		return false;
+	}
 	return true;
 }
 
@@ -941,7 +943,7 @@ static int wait_for_notify_fd(void)
 	pollfd.fd = sydbox->notify_fd;
 	pollfd.events = POLLIN;
 
-	if (poll(&pollfd, 1, 100) < 0)
+	if (poll(&pollfd, 1, 1000) < 0)
 		return -errno;
 	return 0;
 }
