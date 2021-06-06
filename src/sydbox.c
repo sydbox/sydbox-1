@@ -955,7 +955,7 @@ static int proc_info(pid_t pid) {
 	return 0;
 }
 
-static int reap_zombies(void)
+static void reap_zombies(void)
 {
 	syd_process_t *node, *tmp;
 	process_iter(node, tmp) { /* process_iter is delete-safe. */
@@ -968,15 +968,13 @@ static int reap_zombies(void)
 			remove_process_node(node);
 		}
 	}
-
 }
 
-static bool child_is_alive(syd_process_t *current)
+static bool process_is_alive(pid_t pid)
 {
 	int r;
-	pid_t pid;
+	syd_process_t *current;
 
-	pid = current->pid;
 	reap_zombies();
 	current = lookup_process(pid);
 	if (!current)
@@ -993,7 +991,7 @@ static bool child_is_alive(syd_process_t *current)
 	return true;
 }
 
-static int wait_for_notify_fd(syd_process_t *current)
+static int wait_for_notify_fd(pid_t pid)
 {
 	struct pollfd pollfd;
 
@@ -1003,7 +1001,7 @@ poll_begin:
 	errno = 0;
 	if (poll(&pollfd, 1, 1000) < 0) {
 		if (!errno || errno == EINTR) { /* timeout */
-			if (!child_is_alive(current))
+			if (!process_is_alive(pid))
 				return 1;
 			goto poll_begin;
 		}
@@ -1290,8 +1288,9 @@ static int notify_loop(syd_process_t *current)
 	for (uint64_t i = 0;;i++) {
 		char *name = NULL;
 
+		pid = sydbox->execve_pid;
 		if (i > 1) {
-			if ((r = wait_for_notify_fd(current) < 0)) {
+			if ((r = wait_for_notify_fd(sydbox->execve_pid) < 0)) {
 				if (errno)
 					say_errno("poll");
 			} else if (r == 0) {
@@ -1307,17 +1306,20 @@ notify_receive:
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
 						sydbox->request)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
-				if (!child_is_alive(current)) {
+				if (!process_is_alive(pid)) {
 					say("process %d terminated abnormally "
 					    "with process count %d",
 					    sydbox->execve_pid,
 					    process_count());
 					sydbox->exit_code = 128;
-					if (!process_count())
+					if (!process_count()) {
 						break;
-					else
+					} else {
+						alarm(0);
 						goto notify_receive;
+					}
 				} else {
+					alarm(0);
 					goto notify_receive;
 				}
 			}
@@ -1343,16 +1345,17 @@ notify_receive:
 							sydbox->request->data.nr);
 
 		if ((!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
+			int process_count = process_count();
 			if (pid == sydbox->execve_pid) {
 				sydbox->exit_code = sydbox->request->data.args[0];
 				say("process %d exiting with %d code from %s system call, process count %d",
 				    pid, sydbox->exit_code, name,
-				    process_count());
+				    process_count);
 			}
-			free(name);
 			remove_process(pid, 0);
-			if (!process_count())
-				break;
+			reap_zombies();
+			if (process_count() <= 2)
+				goto notify_respond;
 			else
 				continue;
 			//close(sydbox->notify_fd);
@@ -1374,16 +1377,42 @@ notify_receive:
 			current->args[idx] = sydbox->request->data.args[idx];
 		//r = event_syscall(current);
 
+notify_respond:
+		alarmed = false; alarm(1);
 		/* 0 if valid, ENOENT if not */
 		if ((r = seccomp_notify_id_valid(sydbox->notify_fd,
-						 sydbox->request->id)) < 0) {
-			say_errno("seccomp_notify_id_valid");
+						 sydbox->request->id)) < 0 ||
+		    (r = seccomp_notify_respond(sydbox->notify_fd,
+						sydbox->response)) < 0) {
+			say("Returned: %d, %s", -r, strerror(-r));
+			if (r == -ECANCELED || r == -EINTR) {
+				if (!process_is_alive(current->pid)) {
+					say("process %d terminated abnormally "
+					    "with process count %d",
+					    sydbox->execve_pid,
+					    process_count());
+					if (pid == current->pid)
+						sydbox->exit_code = 128;
+					if (!process_count()) {
+						break;
+					} else {
+						alarm(0);
+						goto notify_respond;
+					}
+				} else {
+					alarm(0);
+					goto notify_respond;
+				}
+			}
+			/* TODO use:
+			 * __NR_pidfd_send_signal to kill the process
+			 * on abnormal exit.
+			 */
+			say_errno("seccomp_notify_respond");
+			// proc_info(sydbox->execve_pid);
 			break;
 		}
-
-		if ((r = seccomp_notify_respond(sydbox->notify_fd,
-						sydbox->response)) < 0)
-			say_errno("seccomp_notify_respond");
+		alarm(0);
 #if 0
 		sig = 0; /* TODO */
 		if (sig && current->pid == sydbox->execve_pid)
