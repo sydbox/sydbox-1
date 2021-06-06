@@ -60,11 +60,13 @@ static int post_attach_sigstop = SYD_IGNORE_ONE_SIGSTOP;
 sydbox_t *sydbox;
 static unsigned os_release;
 static volatile sig_atomic_t interrupted;
+static volatile sig_atomic_t alarmed;
 static sigset_t empty_set, blocked_set;
 static struct sigaction child_sa;
 
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
+static void sig_alarm(int sig);
 
 static void about(void)
 {
@@ -563,6 +565,11 @@ static void interrupt(int sig)
 	interrupted = sig;
 }
 
+static void sig_alarm(int sig)
+{
+	alarmed = true;
+}
+
 static unsigned get_os_release(void)
 {
 	unsigned rel;
@@ -927,12 +934,26 @@ static void sig_usr(int sig)
 
 static bool child_is_alive(void)
 {
-	if (syscall(__NR_pidfd_send_signal, sydbox->execve_pidfd, 0, NULL, 0) < 0) {
+	int r;
+
+	r = syscall(__NR_pidfd_send_signal, sydbox->execve_pidfd, 0, NULL, 0);
+	if (r < 0) {
 		if (errno == ESRCH)
 			return false;
 		say_errno("pidfd_send_signal");
 		return false;
 	}
+
+	struct proc_statinfo info;
+	if (proc_stat(sydbox->execve_pid, &info) < 0) {
+		say_errno("proc_stat");
+		return false;
+	}
+	if (info.state == 'Z') {
+		/* Zombie process, not alive. */
+		return false;
+	}
+
 	return true;
 }
 
@@ -1010,6 +1031,9 @@ static void init_signals(void)
 	x_sigaction(SIGABRT, &sa, NULL);
 	x_sigaction(SIGUSR1, &sa, NULL);
 	x_sigaction(SIGUSR2, &sa, NULL);
+
+	if (signal(SIGALRM, sig_alarm) < 0)
+		die_errno("signal");
 
 #undef x_sigaction
 }
@@ -1233,8 +1257,20 @@ static int notify_loop(void)
 				break;
 		}
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
+notify_receive:
+		alarmed = false; alarm(1);
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
 						sydbox->request)) < 0) {
+			if (r == -ECANCELED || r == -EINTR) {
+				if (!child_is_alive()) {
+					say("process %d terminated abnormally, exiting with 128",
+					    sydbox->execve_pid);
+					sydbox->exit_code = 128;
+					break;
+				} else {
+					goto notify_receive;
+				}
+			}
 			/* TODO use:
 			 * __NR_pidfd_send_signal to kill the process
 			 * on abnormal exit.
@@ -1629,7 +1665,6 @@ static pid_t startup_child(char **argv)
 
 	sydbox->execve_pid = pid;
 	sydbox->execve_wait = true;
-	say("execve pid:%d", pid);
 
 	sydbox->seccomp_fd = pfd[0];
 	if (!use_notify()) {
