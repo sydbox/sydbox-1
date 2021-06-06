@@ -32,6 +32,7 @@ sydbox_CPPFLAGS= -DSYDBOX
 sydfmt_CPPFLAGS= -DSYDFMT
 noinst_HEADERS+= \
 		 acl-queue.h \
+		 arch.h \
 		 asyd.h \
 		 dump.h \
 		 file.h \
@@ -52,6 +53,7 @@ noinst_HEADERS+= \
 		 sydbox.h
 sydbox_SOURCES= \
 		 $(noinst_HEADERS) \
+		 arch.c \
 		 file.c \
 		 filter.c \
 		 path.c \

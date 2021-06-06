@@ -33,6 +33,7 @@
 #include "sockmap.h"
 #include "util.h"
 #include "xfunc.h"
+#include "arch.h"
 
 /* Definitions */
 #ifdef KERNEL_VERSION
@@ -88,30 +89,6 @@ static const char *const sandbox_mode_table[] = {
 	[SANDBOX_ALLOW] = "allow",
 };
 DEFINE_STRING_TABLE_LOOKUP(sandbox_mode, int)
-
-static const char *const arch_table[] = {
-	[SCMP_ARCH_NATIVE] = "native",
-	[SCMP_ARCH_X86_64] = "x86_64",
-	[SCMP_ARCH_X86] = "x86",
-	[SCMP_ARCH_X32] = "x32",
-	[SCMP_ARCH_ARM] = "arm",
-	[SCMP_ARCH_AARCH64] = "aarch64",
-	[SCMP_ARCH_MIPS] = "mips",
-	[SCMP_ARCH_MIPS64] = "mips64",
-	[SCMP_ARCH_MIPS64N32] = "mips64n32",
-	[SCMP_ARCH_MIPSEL] = "mipsel",
-	[SCMP_ARCH_MIPSEL64] = "mipsel64",
-	[SCMP_ARCH_MIPSEL64N32] = "mipsel64n32",
-	[SCMP_ARCH_PPC] = "ppc",
-	[SCMP_ARCH_PPC64] = "ppc64",
-	[SCMP_ARCH_PPC64LE] = "ppc64le",
-	[SCMP_ARCH_S390] = "s390",
-	[SCMP_ARCH_S390X] = "s390x",
-	[SCMP_ARCH_PARISC] = "parisc",
-	[SCMP_ARCH_PARISC64] = "parisc64",
-	[SCMP_ARCH_RISCV64] = "riscv64",
-};
-DEFINE_STRING_TABLE_LOOKUP(arch, int32_t)
 
 enum lock_state {
 	LOCK_UNSET,

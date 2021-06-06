@@ -1677,6 +1677,7 @@ int main(int argc, char **argv)
 	int opt, r;
 	const char *env;
 
+	int32_t arch;
 	int ptrace_options;
 	enum syd_step ptrace_default_step;
 
@@ -1725,7 +1726,12 @@ int main(int argc, char **argv)
 			}
 			usage(stderr, 1);
 		case 'a':
-			r = seccomp_arch_add(sydbox->ctx, (uint32_t)arch_from_string(optarg));
+			arch = arch_from_string(optarg);
+			if (arch < 0) {
+				errno = EINVAL;
+				die_errno("invalid architecture %s", optarg);
+			}
+			r = seccomp_arch_add(sydbox->ctx, (uint32_t)arch);
 			if (r == -EINVAL) {
 				say("architecture %s: not ok, continuing..",
 				    optarg);
