@@ -319,8 +319,7 @@ int sys_openat(syd_process_t *current)
 	syscall_info_t info;
 	struct open_info open_info;
 
-	strict = !sydbox->config.use_seccomp &&
-		 sydbox->config.restrict_file_control;
+	strict = sydbox->config.restrict_file_control;
 
 	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
@@ -353,8 +352,7 @@ int sys_openat2(syd_process_t *current)
 	syscall_info_t info;
 	struct open_info open_info;
 
-	strict = !sydbox->config.use_seccomp &&
-		 sydbox->config.restrict_file_control;
+	strict = sydbox->config.restrict_file_control;
 
 	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;

@@ -185,14 +185,9 @@ enum magic_key {
 	MAGIC_KEY_CORE_VIOLATION_RAISE_SAFE,
 
 	MAGIC_KEY_CORE_TRACE,
-	MAGIC_KEY_CORE_TRACE_FOLLOW_FORK,
-	MAGIC_KEY_CORE_TRACE_EXIT_KILL,
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
 	MAGIC_KEY_CORE_TRACE_INTERRUPT,
-	MAGIC_KEY_CORE_TRACE_USE_PTRACE,
-	MAGIC_KEY_CORE_TRACE_USE_SECCOMP,
 	MAGIC_KEY_CORE_TRACE_USE_NOTIFY,
-	MAGIC_KEY_CORE_TRACE_USE_SEIZE,
 	MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK,
 
 	MAGIC_KEY_EXEC,
@@ -494,10 +489,6 @@ struct config {
 	bool violation_raise_fail;
 	bool violation_raise_safe;
 
-	bool follow_fork;
-	bool exit_kill;
-	bool use_ptrace;
-	bool use_seccomp;
 	bool use_notify;
 
 	aclq_t exec_kill_if_match;
@@ -848,18 +839,8 @@ int magic_set_violation_raise_fail(const void *val, syd_process_t *current);
 int magic_query_violation_raise_fail(syd_process_t *current);
 int magic_set_violation_raise_safe(const void *val, syd_process_t *current);
 int magic_query_violation_raise_safe(syd_process_t *current);
-int magic_set_trace_follow_fork(const void *val, syd_process_t *current);
-int magic_query_trace_follow_fork(syd_process_t *current);
-int magic_set_trace_exit_kill(const void *val, syd_process_t *current);
-int magic_query_trace_exit_kill(syd_process_t *current);
-int magic_set_trace_use_ptrace(const void *val, syd_process_t *current);
-int magic_query_trace_use_ptrace(syd_process_t *current);
-int magic_set_trace_use_seccomp(const void *val, syd_process_t *current);
-int magic_query_trace_use_seccomp(syd_process_t *current);
 int magic_set_trace_use_notify(const void *val, syd_process_t *current);
 int magic_query_trace_use_notify(syd_process_t *current);
-int magic_set_trace_use_seize(const void *val, syd_process_t *current);
-int magic_query_trace_use_seize(syd_process_t *current);
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current);
 int magic_query_trace_use_toolong_hack(syd_process_t *current);
 int magic_set_restrict_fcntl(const void *val, syd_process_t *current);

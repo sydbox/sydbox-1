@@ -64,8 +64,6 @@ core/violation/raise_safe:false
 
 core/trace/follow_fork:true
 core/trace/magic_lock:off
-core/trace/use_seccomp:true
-core/trace/use_seize:true
 core/trace/use_toolong_hack:true
 
 core/restrict/file_control:false

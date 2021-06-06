@@ -378,8 +378,7 @@ size_t syscall_entries_max(void)
 void sysinit(void)
 {
 	for (unsigned i = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		if (sydbox->config.use_seccomp &&
-		    syscall_entries[i].filter &&
+		if (syscall_entries[i].filter &&
 		    syscall_entries[i].ptrace_fallback)
 			continue;
 

@@ -253,44 +253,12 @@ static const struct key key_table[] = {
 		.query  = magic_query_violation_raise_safe,
 	},
 
-	[MAGIC_KEY_CORE_TRACE_FOLLOW_FORK] = {
-		.name   = "follow_fork",
-		.lname  = "core.trace.follow_fork",
-		.parent = MAGIC_KEY_CORE_TRACE,
-		.type   = MAGIC_TYPE_BOOLEAN,
-		.set    = magic_set_trace_follow_fork,
-		.query  = magic_query_trace_follow_fork
-	},
-	[MAGIC_KEY_CORE_TRACE_EXIT_KILL] = {
-		.name   = "exit_kill",
-		.lname  = "core.trace.exit_kill",
-		.parent = MAGIC_KEY_CORE_TRACE,
-		.type   = MAGIC_TYPE_BOOLEAN,
-		.set    = magic_set_trace_exit_kill,
-		.query  = magic_query_trace_exit_kill,
-	},
 	[MAGIC_KEY_CORE_TRACE_MAGIC_LOCK] = {
 		.name   = "magic_lock",
 		.lname  = "core.trace.magic_lock",
 		.parent = MAGIC_KEY_CORE_TRACE,
 		.type   = MAGIC_TYPE_STRING,
 		.set    = magic_set_trace_magic_lock,
-	},
-	[MAGIC_KEY_CORE_TRACE_USE_PTRACE] = {
-		.name   = "use_ptrace",
-		.lname  = "core.trace.use_ptrace",
-		.parent = MAGIC_KEY_CORE_TRACE,
-		.type   = MAGIC_TYPE_BOOLEAN,
-		.set    = magic_set_trace_use_ptrace,
-		.query  = magic_query_trace_use_ptrace,
-	},
-	[MAGIC_KEY_CORE_TRACE_USE_SECCOMP] = {
-		.name   = "use_seccomp",
-		.lname  = "core.trace.use_seccomp",
-		.parent = MAGIC_KEY_CORE_TRACE,
-		.type   = MAGIC_TYPE_BOOLEAN,
-		.set    = magic_set_trace_use_seccomp,
-		.query  = magic_query_trace_use_seccomp,
 	},
 	[MAGIC_KEY_CORE_TRACE_USE_NOTIFY] = {
 		.name   = "use_notify",
@@ -299,14 +267,6 @@ static const struct key key_table[] = {
 		.type   = MAGIC_TYPE_BOOLEAN,
 		.set    = magic_set_trace_use_notify,
 		.query  = magic_query_trace_use_notify,
-	},
-	[MAGIC_KEY_CORE_TRACE_USE_SEIZE] = {
-		.name   = "use_seize",
-		.lname  = "core.trace.use_seize",
-		.parent = MAGIC_KEY_CORE_TRACE,
-		.type   = MAGIC_TYPE_BOOLEAN,
-		.set    = magic_set_trace_use_seize,
-		.query  = magic_query_trace_use_seize,
 	},
 	[MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK] = {
 		.name   = "use_toolong_hack",

@@ -43,14 +43,6 @@
 # include <libunwind.h>
 #endif
 
-#if PINK_HAVE_SEIZE
-static int post_attach_sigstop = SYD_IGNORE_ONE_SIGSTOP;
-# define syd_use_seize (post_attach_sigstop == 0)
-#else
-# define post_attach_sigstop SYD_IGNORE_ONE_SIGSTOP
-# define syd_use_seize 0
-#endif
-
 #ifndef NR_OPEN
 # define NR_OPEN 1024
 #endif
@@ -1834,8 +1826,6 @@ int main(int argc, char **argv)
 	const char *env;
 
 	int32_t arch;
-	int ptrace_options;
-	enum syd_step ptrace_default_step;
 
 	/* Long options are present for compatibility with sydbox-0.
 	 * Thus they are not documented!
@@ -1949,42 +1939,6 @@ int main(int argc, char **argv)
 
 	systable_init();
 	sysinit();
-
-	ptrace_options = PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC;
-	ptrace_default_step = SYD_STEP_SYSCALL;
-	if (sydbox->config.follow_fork)
-		ptrace_options |= (PINK_TRACE_OPTION_FORK |
-				   PINK_TRACE_OPTION_VFORK |
-				   PINK_TRACE_OPTION_CLONE);
-#if PINK_HAVE_OPTION_EXITKILL
-	if (sydbox->config.exit_kill)
-		ptrace_options |= PINK_TRACE_OPTION_EXITKILL;
-#endif
-	if (sydbox->config.use_seccomp) {
-#if SYDBOX_HAVE_SECCOMP
-		if (os_release >= KERNEL_VERSION(3,5,0)) {
-			ptrace_options |= PINK_TRACE_OPTION_SECCOMP;
-			ptrace_default_step = SYD_STEP_RESUME;
-		} else {
-			/* say("Linux-3.5.0 required for seccomp support, disabling"); */
-			sydbox->config.use_seccomp = false;
-		}
-#else
-		/* say("seccomp not supported, disabling"); */
-		sydbox->config.use_seccomp = false;
-#endif
-	}
-	if (sydbox->config.use_seize) {
-#if PINK_HAVE_SEIZE
-		post_attach_sigstop = 0; /* this sets syd_use_seize to 1 */
-#else
-		/* say("seize not supported, disabling"); */
-		sydbox->config.use_seize = false;
-#endif
-	}
-
-	sydbox->trace_options = ptrace_options;
-	sydbox->trace_step = ptrace_default_step;
 
 	/*
 	 * Initial program_invocation_name to be used for P_COMM(current).

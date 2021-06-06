@@ -295,27 +295,12 @@
           There are other ways to further restrict access, see:
           <itemizedlist>
             <listitem>
-              <link linkend="core-trace-exit_kill">core/trace/exit_kill</link>
-            </listitem>
-          </itemizedlist>
-          <itemizedlist>
-            <listitem>
           <link linkend="core-restrict-fcntl">core/restrict/file_control</link>
             </listitem>
           </itemizedlist>
           <itemizedlist>
             <listitem>
           <link linkend="core-restrict-shm-wr">core/restrict/shared_memory_writable</link>
-            </listitem>
-          </itemizedlist>
-          <itemizedlist>
-            <listitem>
-          <link linkend="core-trace-use_ptrace">core/trace/use_ptrace</link>
-            </listitem>
-          </itemizedlist>
-          <itemizedlist>
-            <listitem>
-          <link linkend="core-trace-use_seccomp">core/trace/use_seccomp</link>
             </listitem>
           </itemizedlist>
           <itemizedlist>
@@ -781,40 +766,6 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-trace-follow_fork">core/trace/follow_fork</option></term>
-          <listitem>
-            <para>type: <type>boolean</type></para>
-            <para>default: <varname>true</varname></para>
-            <para>
-              A boolean specifying whether Sydbox should follow forks, vforks and clones.
-            </para>
-            <note>
-              <para>
-                This option can not be disabled if the option
-                <link linkend="core-trace-exit_kill">core/trace/use_seccomp</link>
-                is enabled.
-              </para>
-            </note>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="core-trace-exit_kill">core/trace/exit_kill</option></term>
-          <listitem>
-            <para>type: <type>boolean</type></para>
-            <para>default: <varname>false</varname></para>
-            <para>
-              A boolean specifying whether traced processes should be killed when Sydbox exits.
-            </para>
-            <note>
-              <para>
-                This is supported on Linux-3.8 or newer via <constant>PTRACE_O_EXITKILL</constant>.
-              </para>
-            </note>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
           <term><option id="core-trace-magic_lock">core/trace/magic_lock</option></term>
           <listitem>
             <para>type: <type>string</type></para>
@@ -825,54 +776,6 @@
               commands are allowed. Note, the magic lock is tracked per-process. If <varname>exec</varname> is
               specified, the magic lock is set to <varname>on</varname> when the process returns from the system call
               <function>execve</function><manvolnum>2</manvolnum>.</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="core-trace-use_ptrace">core/trace/use_ptrace</option></term>
-          <listitem>
-            <para>type: <type>boolean</type></para>
-            <para>default: <varname>true</varname></para>
-            <para>
-              A boolean specifying whether <function>ptrace()</function>
-              tracing should be enabled. Setting this option to <varname>false</varname> on startup
-              turns sydbox into a seccomp-bpf only sandbox. In this mode, sydbox applies seccomp
-              filters based on the values of <varname>core/sandbox</varname> configuration options
-              and executes the given program without forking.
-            </para>
-
-            <note>
-              <para>
-                At least one of <varname>core/trace/use_ptrace</varname> and
-                <varname>core/trace/use_seccomp</varname>
-                must be enabled, otherwise sydbox will refuse to execute the given
-                command.
-              </para>
-            </note>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="core-trace-use_seccomp">core/trace/use_seccomp</option></term>
-          <listitem>
-            <para>type: <type>boolean</type></para>
-            <para>default: <varname>true</varname> if <option>--enable-seccomp</option></para>
-            <para>
-              A boolean specifying whether seccomp user-mode filters should be used. This works only on Linux-3.5 or
-              newer and sydbox must be compiled with the <option>--enable-seccomp</option> configure option.
-            </para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="core-trace-use_seize">core/trace/use_seize</option></term>
-          <listitem>
-            <para>type: <type>boolean</type></para>
-            <para>default: <varname>true</varname></para>
-            <para>
-              A boolean specifying whether sydbox should use the new ptrace requests <constant>PTRACE_SEIZE</constant>
-              and <constant>PTRACE_INTERRUPT</constant> to trace processes.
-            </para>
           </listitem>
         </varlistentry>
 

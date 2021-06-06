@@ -37,14 +37,7 @@ void config_init(void)
 	sydbox->config.magic_core_allow = true;
 
 	/* set sane defaults for configuration */
-	sydbox->config.follow_fork = true;
-	sydbox->config.exit_kill = false;
-	/* TODO: Remove use_ptrace and use_seccomp */
-	/* TODO: Make seccomp_notify work! */
-	sydbox->config.use_ptrace = false;
-	sydbox->config.use_seccomp = true;
 	sydbox->config.use_notify = true;
-	sydbox->config.use_seize = true;
 	sydbox->config.use_toolong_hack = false;
 	sydbox->config.restrict_shared_memory_writable = true;
 	sydbox->config.whitelist_per_process_directories = true;
