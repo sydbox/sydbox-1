@@ -34,7 +34,7 @@
 
   <refnamediv>
     <refname>sydbox</refname>
-    <refpurpose>ptrace &amp; seccomp-bpf based sandbox</refpurpose>
+    <refpurpose>seccomp-bpf &amp; seccomp-user-notify based sandbox</refpurpose>
   </refnamediv>
 
   <refsynopsisdiv id="synopsis">
@@ -48,8 +48,6 @@
 
     <para>
       <command>sydbox</command> is a
-      <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>
-      &amp;
       <citerefentry><refentrytitle>seccomp</refentrytitle><manvolnum>2</manvolnum></citerefentry>
       based sandboxing utility for modern Linux machines to sandbox unwanted process access to
       filesystem and network resources.
@@ -60,16 +58,27 @@
       These restrictions define which system calls the command is allowed to run and which argument
       values are allowed for the given system call. The restrictions may be applied via two ways.
       <varname>seccomp-bpf</varname> can be used to apply simple seccomp user filters and
-      <function>ptrace()</function> may be used to do more thorough checking of system call arguments.
+      <varname>seccomp-user-notify</varname> functionality can be used to trace the system calls with
+      the ability to dereference their pointer arguments (pathnames, socket addresses, etc.)
     </para>
     <para>
       The main difference of these methods is <varname>seccomp-bpf</varname> filters
-      run on the kernel space and <function>ptrace()</function> tracing runs on user space.
+      run on the kernel space and <varname>seccomp-user-notify</varname> tracing runs on user space.
       This makes <varname>seccomp-bpf</varname> filters extremely fast and secure yet somewhat limited.
       The limitation stems from the fact that a seccomp filter may not dereference a pointer in a system call
       argument. This means, e.g, one may not check if a path name argument is under a certain directory tree.
       However, one may check if a file opening call is read or write. Note, this is important from the
       security point of view as dereferencing a pointer opens the way for <constant>TOCTOU</constant> attacks.
+      This means using <varname>seccomp-user-notify</varname> is never completely secure.
+    </para>
+    <para>
+      To be able tu use <command>sydbox</command>, you need a recent Linux kernel with the system
+      calls <function>pidfd_getfd</function>, <function>pidfd_send_signal</function>,
+      <function>process_vm_readv</function> and <function>process_vm_writev</function>. The
+      Secure Computing facility of the Linux kernel should support
+      the <constant>SECCOMP_USER_NOTIF_FLAG_CONTINUE</constant> operation. Linux-5.11 or later
+      is recommended. The kernel configuration option <constant>CONFIG_CROSS_MEMORY_ATTACH</constant>
+      must be enabled.
     </para>
   </refsect1>
 
@@ -159,13 +168,20 @@
       <listitem><para>Network sandboxing</para></listitem>
     </orderedlist>
 
-    <para>Sandboxing may have three states:</para>
+    <para>Sandboxing may have four states:</para>
 
     <variablelist>
       <varlistentry>
         <term><varname>off</varname></term>
         <listitem>
           <para>Sandboxing is off, none of the relevant system calls are checked and all access is allowed.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>bpf</varname></term>
+        <listitem>
+          <para>Sandboxing is initialized at startup, tracing happens at kernel space.</para>
         </listitem>
       </varlistentry>
 
