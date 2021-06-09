@@ -347,6 +347,36 @@ int syd_proc_state(pid_t pid, char *state)
 	return 0;
 }
 
+int syd_proc_mem_open(pid_t pid)
+{
+	int r, fd;
+	char p[SYD_PROC_MAX];
+
+	if (pid <= 0)
+		return -EINVAL;
+
+	r = snprintf(p, sizeof(p), "/proc/%u/mem", pid);
+	if (r < 0 || (size_t)r >= sizeof(p))
+		return -EINVAL;
+
+	fd = open(p, O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	return (fd < 0) ? -errno : fd;
+}
+
+ssize_t syd_proc_mem_read(int mem_fd, long addr, void *buf, size_t count)
+{
+	if (lseek(mem_fd, addr, SEEK_SET) < 0)
+		return -errno;
+	return read(mem_fd, buf, count);
+}
+
+ssize_t syd_proc_mem_write(int mem_fd, long addr, const void *buf, size_t count)
+{
+	if (lseek(mem_fd, addr, SEEK_SET) < 0)
+		return -errno;
+	return write(mem_fd, buf, count);
+}
+
 int syd_proc_fd_path(pid_t pid, int fd, char **dst)
 {
 	int pfd, r;
