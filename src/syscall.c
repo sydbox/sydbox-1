@@ -593,15 +593,18 @@ int sysinit_seccomp_load(void)
 
 			bool all_off = true;
 			bool has_deny = false;
-			bool has_allow = true;
+			bool has_allow = false;
+			bool has_bpf = false;
 			for (unsigned short k = 0; k < 2; k++) {
-				if (mode[k] != -1 && mode[k] != SANDBOX_OFF) {
+				if (mode[k] == SANDBOX_DENY) {
 					all_off = false;
-					break;
-				} else if (mode[k] == SANDBOX_DENY) {
 					has_deny = true;
 				} else if (mode[k] == SANDBOX_ALLOW) {
+					all_off = false;
 					has_allow = true;
+				} else if (mode[k] == SANDBOX_BPF) {
+					all_off = false;
+					has_bpf = true;
 				}
 			}
 			if (syscall_entries[i].sandbox_pseudo && use_notify()) {
@@ -609,13 +612,28 @@ int sysinit_seccomp_load(void)
 				user_notified = true;
 			} else if (all_off) {
 				continue;
-			} else if (has_deny) {
+			} else if (has_bpf) {
 				action = SCMP_ACT_ERRNO(EPERM);
 			} else if ((has_allow || has_deny) && use_notify()) {
 				action = SCMP_ACT_NOTIFY;
 				user_notified = true;
-			} else /* if (mode == -1 || mode == SANDBOX_ALLOW) */
+			} else if (has_deny) {
+				action = SCMP_ACT_ERRNO(EPERM);
+			} else { /* if (mode == -1 || mode == SANDBOX_ALLOW) */
+				sysentry_t entry = syscall_entries[i];
+				say("seccomp system call inconsistency "
+				    "detected.");
+				say("name:%s mode=%d,%d has_bpf=%s has_allow=%s "
+				    "has_deny:%s pseudo:%s use_notify=%s",
+				    entry.name,
+				    mode[0], mode[1],
+				    has_bpf ? "t" : "f",
+				    has_allow ? "t" : "f",
+				    has_deny ? "t" : "f",
+				    entry.sandbox_pseudo ? "t" : "f",
+				    use_notify() ? "t" : "f");
 				assert_not_reached();
+			}
 
 			if ((r = rule_add_action(action, sysnum)) < 0)
 				return r;
