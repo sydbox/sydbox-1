@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 #include <sys/mman.h>
 
 #if SYDBOX_HAVE_SECCOMP
@@ -38,9 +39,12 @@ static int filter_gen_level1[] = {
 #ifdef __NR_execveat
 	SCMP_SYS(execveat),
 #endif
+	SCMP_SYS(arch_prctl),
+	SCMP_SYS(set_tid_address),
 };
 
 static int filter_gen_level2[] = {
+	SCMP_SYS(arch_prctl),
 	SCMP_SYS(access),
 	SCMP_SYS(brk),
 	SCMP_SYS(clock_gettime),
@@ -91,7 +95,10 @@ static int filter_gen_level2[] = {
 #ifdef __NR_getgid32
 	SCMP_SYS(getgid32),
 #endif
+	SCMP_SYS(getpgrp),
 	SCMP_SYS(getpid),
+	SCMP_SYS(getppid),
+	SCMP_SYS(getpgid),
 #ifdef __NR_getrlimit
 	SCMP_SYS(getrlimit),
 #endif
@@ -130,7 +137,10 @@ static int filter_gen_level2[] = {
 #ifdef __NR_prlimit64
 	SCMP_SYS(prlimit64),
 #endif
+	SCMP_SYS(pselect6),
 	SCMP_SYS(read),
+	SCMP_SYS(rt_sigaction),
+	SCMP_SYS(rt_sigprocmask),
 	SCMP_SYS(rt_sigreturn),
 	SCMP_SYS(sched_getaffinity),
 #ifdef __NR_sched_yield
@@ -138,6 +148,7 @@ static int filter_gen_level2[] = {
 #endif
 	SCMP_SYS(sendmsg),
 	SCMP_SYS(set_robust_list),
+	SCMP_SYS(setpgid),
 #ifdef __NR_setrlimit
 	SCMP_SYS(setrlimit),
 #endif
@@ -157,6 +168,9 @@ static int filter_gen_level2[] = {
 	SCMP_SYS(exit),
 
 	SCMP_SYS(madvise),
+	SCMP_SYS(membarrier),
+	SCMP_SYS(set_tid_address),
+	SCMP_SYS(stat),
 #ifdef __NR_stat64
 	// getaddrinfo uses this..
 	SCMP_SYS(stat64),
@@ -197,6 +211,7 @@ static int filter_gen_level2[] = {
 };
 
 static int filter_gen_level3[] = {
+	SCMP_SYS(arch_prctl),
 	SCMP_SYS(access),
 	SCMP_SYS(brk),
 	SCMP_SYS(clock_gettime),
@@ -247,7 +262,10 @@ static int filter_gen_level3[] = {
 #ifdef __NR_getgid32
 	SCMP_SYS(getgid32),
 #endif
+	SCMP_SYS(getpgrp),
 	SCMP_SYS(getpid),
+	SCMP_SYS(getppid),
+	SCMP_SYS(getpgid),
 #ifdef __NR_getrlimit
 	SCMP_SYS(getrlimit),
 #endif
@@ -278,7 +296,10 @@ static int filter_gen_level3[] = {
 #ifdef __NR_prlimit64
 	SCMP_SYS(prlimit64),
 #endif
+	SCMP_SYS(pselect6),
 	SCMP_SYS(read),
+	SCMP_SYS(rt_sigaction),
+	SCMP_SYS(rt_sigprocmask),
 	SCMP_SYS(rt_sigreturn),
 	SCMP_SYS(sched_getaffinity),
 #ifdef __NR_sched_yield
@@ -286,6 +307,7 @@ static int filter_gen_level3[] = {
 #endif
 	SCMP_SYS(sendmsg),
 	SCMP_SYS(set_robust_list),
+	SCMP_SYS(setpgid),
 #ifdef __NR_setrlimit
 	SCMP_SYS(setrlimit),
 #endif
@@ -305,6 +327,9 @@ static int filter_gen_level3[] = {
 	SCMP_SYS(exit),
 
 	SCMP_SYS(madvise),
+	SCMP_SYS(membarrier),
+	SCMP_SYS(set_tid_address),
+	SCMP_SYS(stat),
 #ifdef __NR_stat64
 	// getaddrinfo uses this..
 	SCMP_SYS(stat64),
@@ -660,6 +685,10 @@ int filter_general(void)
 		int allow_calls[] = {
 			SCMP_SYS(exit),
 			SCMP_SYS(exit_group),
+			SCMP_SYS(arch_prctl),
+			SCMP_SYS(membarrier),
+			SCMP_SYS(set_tid_address),
+			SCMP_SYS(rt_sigprocmask),
 		};
 		for (unsigned int i = 0; i < ELEMENTSOF(allow_calls); i++)
 			if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
@@ -684,26 +713,31 @@ int filter_general(void)
 int filter_open(void)
 {
 	int r;
+	uint32_t action;
 
-	if (!sydbox->config.restrict_file_control)
+	if (!sydbox->config.restrict_fcntl)
+		return 0;
+
+	action = SCMP_ACT_ERRNO(EPERM);
+	if (action == sydbox->seccomp_action)
 		return 0;
 
 	/* O_ASYNC */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL), SCMP_SYS(open),
+	r = seccomp_rule_add(sydbox->ctx, action, SCMP_SYS(open),
 			     1,
 			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_ASYNC, O_ASYNC ));
 	if (r < 0)
 		return r;
 
 	/* O_DIRECT */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL), SCMP_SYS(open),
+	r = seccomp_rule_add(sydbox->ctx, action, SCMP_SYS(open),
 			     1,
 			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_DIRECT, O_DIRECT ));
 	if (r < 0)
 		return r;
 
 	/* O_SYNC */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL), SCMP_SYS(open),
+	r = seccomp_rule_add(sydbox->ctx, action, SCMP_SYS(open),
 			     1,
 			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_SYNC, O_SYNC ));
 	if (r < 0)
@@ -716,7 +750,7 @@ int filter_openat(void)
 {
 	int r;
 
-	if (!sydbox->config.restrict_file_control)
+	if (!sydbox->config.restrict_fcntl)
 		return 0;
 
 	/* O_ASYNC */
@@ -747,7 +781,7 @@ int filter_fcntl(void)
 {
 	int r;
 
-	if (!sydbox->config.restrict_file_control)
+	if (!sydbox->config.restrict_fcntl)
 		return 0;
 
 	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fcntl),
@@ -866,4 +900,58 @@ int filter_mmap2(void)
 		return filter_mmap_restrict(SCMP_SYS(mmap));
 	else
 		return 0;
+}
+
+int filter_mprotect(void)
+{
+	int r;
+	uint32_t action;
+
+	action = SCMP_ACT_ALLOW;
+	if (action == sydbox->seccomp_action)
+		return 0;
+
+	if (sydbox->config.restrict_mmap) {
+		r = seccomp_rule_add(sydbox->ctx, action,
+				     SCMP_SYS(mprotect), 1,
+				     SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ));
+		if (!r) {
+			r = seccomp_rule_add(sydbox->ctx, action,
+					     SCMP_SYS(mprotect), 1,
+					     SCMP_CMP(2, SCMP_CMP_EQ,
+						      PROT_READ|PROT_WRITE));
+		}
+	} else {
+		r = seccomp_rule_add(sydbox->ctx, action,
+				     SCMP_SYS(mprotect), 0);
+	}
+	return r;
+}
+
+int filter_ioctl(void)
+{
+	int r;
+	uint32_t action;
+
+	if (!sydbox->config.restrict_ioctl)
+		return 0;
+
+	action = SCMP_ACT_ALLOW;
+	if (action == sydbox->seccomp_action)
+		return 0;
+
+	unsigned long request[] = {
+		TCGETS,
+		TIOCGWINSZ,
+		TIOCGPGRP,
+		TIOCSPGRP,
+	};
+	for (unsigned short i = 0; i < ELEMENTSOF(request); i++)
+		if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
+					  SCMP_SYS(ioctl), 1,
+					  SCMP_CMP(1, SCMP_CMP_EQ,
+						   request[i]))) < 0)
+			return r;
+
+	return 0;
 }

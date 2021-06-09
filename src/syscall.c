@@ -41,6 +41,14 @@ static const sysentry_t syscall_entries[] = {
 		.name = "mmap",
 		.filter = filter_mmap,
 	},
+	{
+		.name = "mprotect",
+		.filter = filter_mprotect,
+	},
+	{
+		.name = "ioctl",
+		.filter = filter_ioctl,
+	},
 
 	{
 		.name = "stat",
@@ -81,6 +89,11 @@ static const sysentry_t syscall_entries[] = {
 	},
 	{
 		.name = "faccessat",
+		.notify = sys_faccessat,
+		.sandbox_read = true,
+	},
+	{
+		.name = "faccessat2",
 		.notify = sys_faccessat,
 		.sandbox_read = true,
 	},
@@ -592,7 +605,9 @@ int sysinit_seccomp_load(void)
 				if (action == sydbox->seccomp_action)
 					continue;
 			} else if (mode == SANDBOX_OFF) {
-				continue;
+				action = SCMP_ACT_ALLOW;
+				if (action == sydbox->seccomp_action)
+					continue;
 			} else if (mode == SANDBOX_BPF) {
 				action = SCMP_ACT_ERRNO(EPERM);
 				if (action == sydbox->seccomp_action)

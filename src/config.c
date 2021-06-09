@@ -37,10 +37,10 @@ void config_init(void)
 	sydbox->config.magic_core_allow = true;
 
 	/* set sane defaults for configuration */
-	sydbox->config.use_notify = true;
 	sydbox->config.use_toolong_hack = false;
-	sydbox->config.restrict_general = 2;
-	sydbox->config.restrict_mmap = true;
+	sydbox->config.restrict_general = 0;
+	sydbox->config.restrict_ioctl = false;
+	sydbox->config.restrict_mmap = false;
 	sydbox->config.whitelist_per_process_directories = true;
 	sydbox->config.whitelist_successful_bind = true;
 	sydbox->config.whitelist_unsupported_socket_families = true;

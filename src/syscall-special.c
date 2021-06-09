@@ -475,7 +475,7 @@ int sys_fcntl(syd_process_t *current)
 	int cmd, arg0;
 
 	current->args[0] = -1;
-	strict = sydbox->config.restrict_file_control;
+	strict = sydbox->config.restrict_fcntl;
 
 	if (!strict && (sandbox_off_network(current) ||
 			!sydbox->config.whitelist_successful_bind))

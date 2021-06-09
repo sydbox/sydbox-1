@@ -25,13 +25,13 @@ int magic_query_restrict_general(syd_process_t *current)
 
 int magic_set_restrict_fcntl(const void *val, syd_process_t *current)
 {
-	sydbox->config.restrict_file_control = PTR_TO_BOOL(val);
+	sydbox->config.restrict_fcntl = PTR_TO_BOOL(val);
 	return MAGIC_RET_OK;
 }
 
 int magic_query_restrict_fcntl(syd_process_t *current)
 {
-	return MAGIC_BOOL(sydbox->config.restrict_file_control);
+	return MAGIC_BOOL(sydbox->config.restrict_fcntl);
 }
 
 int magic_set_restrict_mmap(const void *val, syd_process_t *current)
@@ -43,6 +43,17 @@ int magic_set_restrict_mmap(const void *val, syd_process_t *current)
 int magic_query_restrict_mmap(syd_process_t *current)
 {
 	return MAGIC_BOOL(sydbox->config.restrict_mmap);
+}
+
+int magic_set_restrict_ioctl(const void *val, syd_process_t *current)
+{
+	sydbox->config.restrict_ioctl = PTR_TO_BOOL(val);
+	return MAGIC_RET_OK;
+}
+
+int magic_query_restrict_ioctl(syd_process_t *current)
+{
+	return MAGIC_BOOL(sydbox->config.restrict_ioctl);
 }
 
 int magic_set_restrict_shm_wr(const void *val, syd_process_t *current)

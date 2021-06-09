@@ -407,36 +407,50 @@ out:
 
 int test_seccomp(bool report, bool test_seccomp_load)
 {
-	int r;
-	scmp_filter_ctx ctx;
+	pid_t pid;
 
-	r = 0;
-	if ((ctx = seccomp_init(SCMP_ACT_ALLOW)) == NULL) {
-		r = -errno;
-		say_errno("seccomp_init");
-		goto out;
-	}
+	pid = fork();
+	if (pid < 0) {
+		die_errno("fork");
+	} else if (pid == 0) {
+		int r;
+		scmp_filter_ctx ctx;
 
-	if ((r = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM),
-				  SCMP_SYS(mount), 0)) < 0) {
-		errno = -r;
-		say_errno("seccomp_rule_add");
-		goto out;
-	}
+		r = 0;
+		if ((ctx = seccomp_init(SCMP_ACT_ALLOW)) == NULL) {
+			r = -errno;
+			say_errno("seccomp_init");
+			goto out;
+		}
 
-	if (test_seccomp_load && (r = seccomp_load(ctx)) < 0) {
-		errno = -r;
-		say_errno("seccomp_load");
-	}
+		if ((r = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM),
+					  SCMP_SYS(mount), 0)) < 0) {
+			errno = -r;
+			say_errno("seccomp_rule_add");
+			goto out;
+		}
 
-	seccomp_release(ctx);
+		if (test_seccomp_load && (r = seccomp_load(ctx)) < 0) {
+			errno = -r;
+			say_errno("seccomp_load");
+		}
+
+		seccomp_release(ctx);
 out:
-	if (r)
-		say("warning: Your system does not support seccomp "
-		    "filters.");
-	else if (report)
-		say("[*] seccomp filters are functional.");
-	return r;
+		if (r)
+			say("warning: Your system does not support seccomp "
+			    "filters.");
+		else if (report)
+			say("[*] seccomp filters are functional.");
+		_exit(-r);
+	}
+
+	int wstatus;
+	if (waitpid(pid, &wstatus, __WALL) < 0)
+		die_errno("waitpid");
+	if (WIFEXITED(wstatus))
+		return -WEXITSTATUS(wstatus);
+	return -EINVAL;
 }
 
 PINK_GCC_ATTR((nonnull(1,3)))

@@ -171,9 +171,10 @@ enum magic_key {
 
 	MAGIC_KEY_CORE_RESTRICT,
 	MAGIC_KEY_CORE_RESTRICT_GENERAL,
-	MAGIC_KEY_CORE_RESTRICT_FILE_CONTROL,
+	MAGIC_KEY_CORE_RESTRICT_FCNTL,
+	MAGIC_KEY_CORE_RESTRICT_IOCTL,
 	MAGIC_KEY_CORE_RESTRICT_MMAP,
-	MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE,
+	MAGIC_KEY_CORE_RESTRICT_SHM_WR,
 
 	MAGIC_KEY_CORE_WHITELIST,
 	MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES,
@@ -189,7 +190,6 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE,
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
 	MAGIC_KEY_CORE_TRACE_INTERRUPT,
-	MAGIC_KEY_CORE_TRACE_USE_NOTIFY,
 	MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK,
 
 	MAGIC_KEY_EXEC,
@@ -479,7 +479,8 @@ struct config {
 	bool whitelist_unsupported_socket_families;
 
 	/* restrict knobs are not inherited, they're global config */
-	bool restrict_file_control;
+	bool restrict_fcntl;
+	bool restrict_ioctl;
 	bool restrict_mmap;
 	bool restrict_shared_memory_writable;
 	unsigned int restrict_general;
@@ -498,8 +499,6 @@ struct config {
 	int violation_exit_code;
 	bool violation_raise_fail;
 	bool violation_raise_safe;
-
-	bool use_notify;
 
 	aclq_t exec_kill_if_match;
 	aclq_t exec_resume_if_match;
@@ -851,8 +850,6 @@ int magic_set_violation_raise_fail(const void *val, syd_process_t *current);
 int magic_query_violation_raise_fail(syd_process_t *current);
 int magic_set_violation_raise_safe(const void *val, syd_process_t *current);
 int magic_query_violation_raise_safe(syd_process_t *current);
-int magic_set_trace_use_notify(const void *val, syd_process_t *current);
-int magic_query_trace_use_notify(syd_process_t *current);
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current);
 int magic_query_trace_use_toolong_hack(syd_process_t *current);
 int magic_set_restrict_general(const void *val, syd_process_t *current);
@@ -861,6 +858,8 @@ int magic_set_restrict_fcntl(const void *val, syd_process_t *current);
 int magic_query_restrict_fcntl(syd_process_t *current);
 int magic_set_restrict_mmap(const void *val, syd_process_t *current);
 int magic_query_restrict_mmap(syd_process_t *current);
+int magic_set_restrict_ioctl(const void *val, syd_process_t *current);
+int magic_query_restrict_ioctl(syd_process_t *current);
 int magic_set_restrict_shm_wr(const void *val, syd_process_t *current);
 int magic_query_restrict_shm_wr(syd_process_t *current);
 int magic_set_whitelist_ppd(const void *val, syd_process_t *current);
@@ -929,6 +928,8 @@ int filter_openat(void);
 int filter_fcntl(void);
 int filter_mmap(void);
 int filter_mmap2(void);
+int filter_mprotect(void);
+int filter_ioctl(void);
 int sys_fallback_mmap(syd_process_t *current);
 
 int sys_access(syd_process_t *current);

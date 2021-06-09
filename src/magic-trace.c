@@ -13,17 +13,6 @@
 
 #include "macro.h"
 
-int magic_set_trace_use_notify(const void *val, syd_process_t *current)
-{
-	sydbox->config.use_notify = PTR_TO_BOOL(val);
-	return MAGIC_RET_OK;
-}
-
-int magic_query_trace_use_notify(syd_process_t *current)
-{
-	return sydbox->config.use_notify;
-}
-
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current)
 {
 	sydbox->config.use_toolong_hack = PTR_TO_BOOL(val);
