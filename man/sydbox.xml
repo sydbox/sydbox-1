@@ -352,13 +352,16 @@
               <link linkend="core-restrict-fcntl">core/restrict/general</link>
             </listitem>
             <listitem>
-              <link linkend="core-restrict-fcntl">core/restrict/file_control</link>
+              <link linkend="core-restrict-fcntl">core/restrict/fcntl</link>
+            </listitem>
+            <listitem>
+              <link linkend="core-restrict-fcntl">core/restrict/ioctl</link>
             </listitem>
             <listitem>
               <link linkend="core-restrict-mmap">core/restrict/mmap</link>
             </listitem>
             <listitem>
-              <link linkend="core-restrict-shm-wr">core/restrict/shared_memory_writable</link>
+              <link linkend="core-restrict-shm-wr">core/restrict/shm_wr</link>
             </listitem>
             <listitem>
               <link linkend="core-whitelist-sb">core/whitelist/successful_bind</link>
@@ -666,7 +669,7 @@
           <term><option id="core-restrict-general">core/restrict/general</option></term>
           <listitem>
             <para>type: <type>integer</type></para>
-            <para>default: <varname>2</varname></para>
+            <para>default: <varname>0</varname></para>
             <para>
               An integer specifying the level of permitted system calls.
               Level 0 performs no restrictions and every system call is permitted.
@@ -687,8 +690,10 @@
               <function>stat</function><manvolnum>2</manvolnum>,
               <function>lstat</function><manvolnum>2</manvolnum>,
               <function>newfstatat</function><manvolnum>2</manvolnum>,
-              <function>execve</function><manvolnum>2</manvolnum> and
-              <function>execveat</function><manvolnum>2</manvolnum>.
+              <function>execve</function><manvolnum>2</manvolnum>,
+              <function>execveat</function><manvolnum>2</manvolnum>,
+              <function>arch_prctl</function><manvolnum>2</manvolnum>, and
+              <function>set_tid_address</function><manvolnum>2</manvolnum>.
               Only
               read-only <function>open</function> calls are permitted.
             </para>
@@ -717,7 +722,10 @@
               <function>getegid</function><manvolnum>2</manvolnum>,
               <function>geteuid</function><manvolnum>2</manvolnum>,
               <function>getgid</function><manvolnum>2</manvolnum>,
+              <function>getpgrp</function><manvolnum>2</manvolnum>,
               <function>getpid</function><manvolnum>2</manvolnum>,
+              <function>getppid</function><manvolnum>2</manvolnum>,
+              <function>getpgid</function><manvolnum>2</manvolnum>,
               <function>getrlimit</function><manvolnum>2</manvolnum>,
               <function>gettimeofday</function><manvolnum>2</manvolnum>,
               <function>gettid</function><manvolnum>2</manvolnum>,
@@ -734,12 +742,16 @@
               <function>open</function><manvolnum>2</manvolnum>,
               <function>openat</function><manvolnum>2</manvolnum>,
               <function>prlimit</function><manvolnum>2</manvolnum>,
+              <function>pselect6</function><manvolnum>2</manvolnum>,
               <function>read</function><manvolnum>2</manvolnum>,
+              <function>rt_sigaction</function><manvolnum>2</manvolnum>,
+              <function>rt_sigprocmask</function><manvolnum>2</manvolnum>,
               <function>rt_sigreturn</function><manvolnum>2</manvolnum>,
               <function>sched_getaffinity</function><manvolnum>2</manvolnum>,
               <function>sched_yield</function><manvolnum>2</manvolnum>,
               <function>sendmsg</function><manvolnum>2</manvolnum>,
               <function>set_robust_list</function><manvolnum>2</manvolnum>,
+              <function>setpgid</function><manvolnum>2</manvolnum>,
               <function>setrlimit</function><manvolnum>2</manvolnum>,
               <function>shutdown</function><manvolnum>2</manvolnum>,
               <function>sigaltstack</function><manvolnum>2</manvolnum>,
@@ -766,16 +778,20 @@
               <function>recvfrom</function><manvolnum>2</manvolnum>,
               <function>sendto</function><manvolnum>2</manvolnum>,
               <function>unlink</function><manvolnum>2</manvolnum>,
-              <function>unlinkat</function><manvolnum>2</manvolnum> and
-              <function>poll</function><manvolnum>2</manvolnum>. In addition,
-              Level 2 permits <function>openat2</function><manvolnum>2</manvolnum>
+              <function>unlinkat</function><manvolnum>2</manvolnum>,
+              <function>poll</function><manvolnum>2</manvolnum>,
+              <function>arch_prctl</function><manvolnum>2</manvolnum>,
+              <function>membarrier</function><manvolnum>2</manvolnum>, and
+              <function>set_tid_address</function><manvolnum>2</manvolnum>.
+              In addition, Level 2 permits the
+              <function>openat2</function><manvolnum>2</manvolnum> system call
               as well.
             </para>
           </listitem>
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-restrict-fcntl">core/restrict/file_control</option></term>
+          <term><option id="core-restrict-fcntl">core/restrict/fcntl</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>default: <varname>false</varname></para>
@@ -801,10 +817,35 @@
         </varlistentry>
 
         <varlistentry>
+          <term><option id="core-restrict-ioctl">core/restrict/ioctl</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>default: <varname>false</varname></para>
+            <para>
+              A boolean specifying whether <function>ioctl</function> calls
+              should be restricted. In this mode only a subset of
+              <function>ioctl</function> requests are allowed.
+            </para>
+            <para>
+              The list of permitted <function>ioctl</function> requests are
+              <constant>TCGETS</constant>,
+              <constant>TIOCGWINSZ</constant>,
+              <constant>TIOCGPGRP</constant>, and
+              <constant>TIOCSPGRP</constant>.
+            </para>
+            <note>
+              <para>
+                This option requires <option>core/restrict/general</option> to be non-zero.
+              </para>
+            </note>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
           <term><option id="core-restrict-mmap">core/restrict/mmap</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
-            <para>default: <varname>true</varname></para>
+            <para>default: <varname>false</varname></para>
             <para>
               A boolean specifying whether memory mapping should be restricted.
               In this mode, only a subset of readable, writable and executable memory mappings
@@ -839,7 +880,7 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-restrict-shm-wr">core/restrict/shared_memory_writable</option></term>
+          <term><option id="core-restrict-shm-wr">core/restrict/shm_wr</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>default: <varname>false</varname></para>

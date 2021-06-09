@@ -19,9 +19,10 @@ core/violation/raise_safe:false
 core/trace/magic_lock:off
 core/trace/use_toolong_hack:true
 
-core/restrict/file_control:false
+core/restrict/fcntl:false
+core/restrict/ioctl:false
 core/restrict/mmap:false
-core/restrict/shared_memory_writable:false
+core/restrict/shm_wr:false
 core/restrict/general:0
 
 core/match/case_sensitive:true

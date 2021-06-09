@@ -1969,6 +1969,7 @@ int main(int argc, char **argv)
 			opt_t[1] = test_proc_mem(true);
 			opt_t[2] = test_pidfd(true);
 			opt_t[3] = test_seccomp(true, true);
+			r = 0;
 			for (i = 0; i < 4; i++) {
 				if (opt_t[i] != 0) {
 					r = opt_t[i];
@@ -2030,7 +2031,7 @@ int main(int argc, char **argv)
 		say("can't optimize seccomp filter (%d %s), continuing...",
 		    -r, strerror(-r));
 	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_NATIVE);
-	for (i = arch_argv_idx; i < 0; i--) {
+	for (i = arch_argv_idx; i >= 0; i--) {
 		if (arch_argv[i] == NULL)
 			continue;
 		arch = arch_from_string(arch_argv[i]);
