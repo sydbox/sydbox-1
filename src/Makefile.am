@@ -20,7 +20,6 @@ AM_CFLAGS= \
 	   -I$(top_srcdir)/syd \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
-	   $(PTHREAD_CFLAGS) \
 	   $(pinktrace_CFLAGS) \
 	   $(libseccomp_CFLAGS) \
 	   @SYDBOX_CFLAGS@
@@ -124,7 +123,7 @@ sydbox_SOURCES+= \
 noinst_HEADERS+= \
 		 sys-queue.h
 
-sydbox_LDFLAGS= $(PTHREAD_LIBS) -lsyd_@LIBSYD_PC_SLOT@
+sydbox_LDFLAGS= -lsyd_@LIBSYD_PC_SLOT@
 sydbox_LDADD= \
 	      $(top_builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la \
 	      -L$(top_builddir)/syd/.libs \
