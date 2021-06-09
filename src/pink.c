@@ -106,6 +106,61 @@ static inline int abi_wordsize(const syd_process_t *current)
 	}
 }
 
+#if 0
+int test_cross_memory_attach(void)
+{
+	int pipefd[2];
+
+	if (pipe(pipefd) < 0)
+		die_errno("pipe");
+
+	pid_t pid = fork();
+	if (pid < 0) {
+		die_errno("fork");
+	} else if (pid == 0) {
+		const char *addr = "ping";
+
+		close(pipefd[0]);
+		write(pipefd[1], &addr, sizeof(long));
+		pause();
+		_exit(0);
+	}
+	long addr;
+	size_t wsize, len = 4; /* "ping" */
+	char dest[4];
+	syd_process_t *current = new_process(pid);
+	init_process_data(current, NULL);
+	current->arch = SCMP_ARCH_NATIVE;
+	if (read(pipefd[0], &addr, sizeof(long))) < 0
+		die_errno("read");
+#if SIZEOF_LONG > 4
+	wsize = abi_wordsize(current);
+	if (wsize < sizeof(addr))
+		addr &= (1ul << 8 * wsize) - 1;
+#endif
+
+	struct iovec local[1], remote[1];
+	local[0].iov_base = dest;
+	remote[0].iov_base = (void *)addr;
+	local[0].iov_len = remote[0].iov_len = len;
+
+	if (process_vm_readv(pid, local, 1, remote, 1, 0) < 0) {
+		if (errno == ENOSYS || errno == EPERM) {
+			say("Your system does not support process_vm_readv");
+			say("Please enable CONFIG_CROSS_MEMORY_ATTACH in your "
+			    "kernel configuration.");
+		}
+		die_errno("process_vm_readv");
+	}
+	if (strcmp(dest, "ping")) {
+		say("Your system does not support process_vm_readv: \"%s\"", dest);
+		say("Please enable CONFIG_CROSS_MEMORY_ATTACH in your "
+		    "kernel configuration.");
+	}
+	return 0;
+}
+#endif
+
 PINK_GCC_ATTR((nonnull(1,3)))
 int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len)
 {
