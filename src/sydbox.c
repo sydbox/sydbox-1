@@ -1015,7 +1015,7 @@ poll_begin:
 	pollfd.fd = sydbox->notify_fd;
 	pollfd.events = POLLIN;
 	errno = 0;
-	if (poll(&pollfd, 1, 720) < 0) {
+	if (poll(&pollfd, 1, 0) < 0) {
 		if (!errno || errno == EINTR) { /* timeout */
 			if (!process_is_alive(pid))
 				return 1;
@@ -1023,6 +1023,11 @@ poll_begin:
 		}
 		return -errno;
 	}
+	short revents = pollfd.revents;
+	if (revents & POLLIN)
+		return 0;
+	if (revents & POLLHUP || revents & POLLERR)
+		return -ESRCH;
 	return 0;
 }
 
@@ -1274,8 +1279,11 @@ static int notify_loop(syd_process_t *current)
 		pid = sydbox->execve_pid;
 		if (i > 1) {
 			if ((r = wait_for_notify_fd(sydbox->execve_pid) < 0)) {
-				if (errno)
-					say_errno("poll");
+				if (r == -ESRCH) {
+					close(sydbox->notify_fd);
+					sydbox->notify_fd = -1;
+					break;
+				}
 			} else if (r == 0) {
 				; /* notify fd is ready to read. */
 			} else {
@@ -1395,33 +1403,31 @@ notify_receive:
 			current->update_cwd = false;
 		}
 
-		r = 0;
 		if (!strcmp(name, "clone")) {
-			r = event_clone(current, 'c');
+			event_clone(current, 'c');
 		} else if (!strcmp(name, "fork")) {
-			r = event_clone(current, 'f');
+			event_clone(current, 'f');
 		} else if (!strcmp(name, "vfork")) {
-			r = event_clone(current, 'v');
+			event_clone(current, 'v');
 		} else if (!strcmp(name, "clone3")) {
-			r = event_clone(current, '3');
+			event_clone(current, '3');
 		} else if (!strcmp(name, "chdir") || !strcmp(name, "fchdir")) {
 			current->update_cwd = true;
-			r = 0;
 		} else if ((!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
 			int ew = sydbox->execve_wait;
 			sydbox->execve_wait = false;
 			sydbox->execve_pid = pid;
-			r = event_exec(current);
+			event_exec(current);
 			/* if (r < 0) // ESRCH
 				say_errno("event_exec");
 			*/
 			if (!ew) { /* allow the initial exec */
 				sandbox_t *box = box_current(current);
 				if (box->mode.sandbox_exec != SANDBOX_OFF)
-					r = event_syscall(current);
+					event_syscall(current);
 			}
 		} else {
-			r = event_syscall(current);
+			event_syscall(current);
 		}
 
 notify_respond:
@@ -1475,7 +1481,7 @@ notify_respond:
 			break;
 
 		/* We handled quick cases, we are permitted to interrupt now. */
-		if ((r = check_interrupt()) != 0)
+		if (check_interrupt() != 0)
 			return sydbox->exit_code;
 	}
 
@@ -1888,7 +1894,8 @@ int main(int argc, char **argv)
 			if (streq(long_options[options_index].name, "dry-run")) {
 				sydbox->permissive = true;
 				break;
-			} else if (streq(long_options[options_index].name, "profile")) {
+			} else if (optarg &&
+				   streq(long_options[options_index].name, "profile")) {
 				/* special case for backwards compatibility */
 				profile_name = xmalloc(sizeof(char) * (strlen(optarg) + 2));
 				profile_name[0] = SYDBOX_PROFILE_CHAR;
