@@ -313,12 +313,7 @@ struct syd_process_shared_clone_fs {
 /* Shared items when CLONE_FILES is set. */
 struct syd_process_shared_clone_files {
 	/*
-	 * Last bind(2) address with port argument zero
-	 */
-	struct sockinfo *savebind;
-
-	/*
-	 * File descriptor mappings for savebind
+	 * Inode socket address mapping for bind whitelist
 	 */
 	struct sockmap *sockmap;
 
@@ -431,7 +426,6 @@ typedef struct syd_process syd_process_t;
 		} \
 	} while (0)
 
-#define P_SAVEBIND(p) ((p)->shm.clone_files->savebind)
 #define P_SOCKMAP(p) ((p)->shm.clone_files->sockmap)
 #define P_CLONE_FILES_REFCNT(p) ((p)->shm.clone_files->refcnt)
 #define P_CLONE_FILES_RETAIN(p) ((p)->shm.clone_files->refcnt++)
@@ -440,9 +434,6 @@ typedef struct syd_process syd_process_t;
 		if ((p)->shm.clone_files != NULL) { \
 			(p)->shm.clone_files->refcnt--; \
 			if ((p)->shm.clone_files->refcnt == 0) { \
-				if ((p)->shm.clone_files->savebind) { \
-					free_sockinfo((p)->shm.clone_files->savebind); \
-				} \
 				if ((p)->shm.clone_files->sockmap) { \
 					sockmap_destroy(&(p)->shm.clone_files->sockmap); \
 					free((p)->shm.clone_files->sockmap); \
@@ -675,13 +666,7 @@ extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 #define process_remove(p) HASH_DEL(sydbox->proctab, (p))
 
 /* Global functions */
-int syd_trace_step(syd_process_t *current, int sig);
-int syd_trace_listen(syd_process_t *current);
-int syd_trace_detach(syd_process_t *current, int sig);
-int syd_trace_kill(syd_process_t *current, int sig);
-int syd_trace_setup(syd_process_t *current);
-int syd_trace_geteventmsg(syd_process_t *current, unsigned long *data);
-int syd_regset_fill(syd_process_t *current);
+int syd_kill(pid_t pid, pid_t tgid, int sig);
 int syd_read_syscall(syd_process_t *current, long *sysnum);
 int syd_read_retval(syd_process_t *current, long *retval, int *error);
 int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval);
@@ -991,7 +976,7 @@ int sys_socketcall(syd_process_t *current);
 int sys_bind(syd_process_t *current);
 int sys_connect(syd_process_t *current);
 int sys_sendto(syd_process_t *current);
-int sys_getsockname(syd_process_t *current);
+int sys_accept(syd_process_t *current);
 
 int sysx_chdir(syd_process_t *current);
 #if 0

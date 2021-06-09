@@ -40,4 +40,7 @@ int proc_comm(pid_t pid, char **name);
 int proc_environ(pid_t pid);
 #endif
 
+int proc_socket_inode(pid_t pid, int socket_fd, unsigned long long *inode);
+int proc_socket_port(unsigned long long inode, bool ipv4, int *port);
+
 #endif /* !PROC_H */

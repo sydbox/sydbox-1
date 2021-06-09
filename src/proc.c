@@ -380,3 +380,95 @@ int proc_environ(pid_t pid)
 	return r;
 }
 #endif
+
+/* /proc/<PID>/fd/<N> -> socket:[<inode>] */
+int proc_socket_inode(pid_t pid, int socket_fd, unsigned long long *inode)
+{
+	int r;
+	char *p;
+
+	assert(pid >= 1);
+	assert(socket_fd >= 0);
+
+	if (asprintf(&p, "/proc/%d/fd/%d", pid, socket_fd) < 0)
+		return -ENOMEM;
+
+#define PREFIX_LEN 8
+	char *l, *link = NULL;
+	if ((r = readlink_alloc(p, &link)) < 0)
+		goto out;
+	else if (r <= PREFIX_LEN) {
+		r = -EINVAL;
+		goto out;
+	}
+	r = 0;
+	if (strncmp(link, "socket:[", PREFIX_LEN)) {
+		r = -EINVAL;
+		goto out;
+	}
+	l = link + PREFIX_LEN;
+	if (*l == '\0') {
+		r = -EINVAL;
+		goto out;
+	}
+
+	char *end;
+	unsigned long long inode_r;
+
+	errno = 0;
+	inode_r = strtoull(l, &end, 10);
+	if (end && l == end) {
+		r = -EINVAL;
+		goto out;
+	} else if (errno) {
+		r = -errno;
+		goto out;
+	}
+	*inode = inode_r;
+
+out:
+	if (link)
+		free(link);
+	free(p);
+
+	return r;
+}
+
+int proc_socket_port(unsigned long long inode, bool ipv4, int *port)
+{
+	char buf[LINE_MAX];
+	FILE *f;
+	const char *path = ipv4 ? "/proc/net/tcp" : "/proc/net/tcp6";
+
+	assert(port);
+
+	f = fopen(path, "r");
+	if (!f)
+		return -errno;
+
+	fgets(buf, LINE_MAX, f); /* skip the header */
+	while (fgets(buf, LINE_MAX, f) != NULL) {
+		int n;
+		unsigned int port_r;
+		unsigned long long inode_r;
+		n = sscanf(buf, " %*d: "
+				"%*x:%x "
+				"%*x:%*x "
+				"%*x "
+				"%*x:%*x "
+				"%*x:%*x "
+				"%*x "
+				"%*x "
+				"%*x "
+				"%llu ",
+		       &port_r, &inode_r);
+		if (n != 2 || inode != inode_r)
+			continue;
+		*port = port_r;
+		fclose(f);
+		return 0;
+	}
+
+	fclose(f);
+	return -ESRCH;
+}

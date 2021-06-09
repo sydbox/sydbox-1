@@ -320,8 +320,14 @@ static const sysentry_t syscall_entries[] = {
 		.sandbox_network = true,
 	},
 	{
-		.name = "getsockname",
-		.notify = sys_getsockname,
+		.name = "accept",
+		.notify = sys_accept,
+		.sandbox_network = true,
+	},
+	{
+		.name = "accept4",
+		.notify = sys_accept,
+		.sandbox_network = true,
 	},
 
 	{

@@ -63,7 +63,7 @@ static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
 static void sig_alrm(int sig);
 
-static inline bool process_is_alive(pid_t pid);
+static inline bool process_is_alive(pid_t pid, pid_t tgid);
 
 static void about(void)
 {
@@ -173,6 +173,33 @@ static void kill_save_errno(pid_t pid, int sig)
 	errno = saved_errno;
 }
 
+static int process_proc(struct syd_process *p)
+{
+	int r = 0;
+
+	/*
+	 * Note: pidfd_open only works with thread-group leaders.
+	 * If the process id is not a thread-group leader,
+	 * pidfd_open returns EINVAL.
+	 */
+	if (p->pidfd < 0 &&
+	    (p->pidfd = syscall(__NR_pidfd_open, p->pid, 0)) < 0) {
+		if (errno != EINVAL)
+			say_errno("pidfd_open(%d)", p->pid);
+		p->pidfd = -1;
+		r = -errno;
+	}
+	if (p->memfd < 0 &&
+	    (p->memfd = syd_proc_mem_open(p->pid)) < 0) {
+		errno = -p->memfd;
+		r = -errno;
+		say_errno("memfd_open(%d)", p->pid);
+		p->memfd = -1;
+	}
+
+	return r;
+}
+
 static void new_shared_memory_clone_thread(struct syd_process *p)
 {
 	int r;
@@ -197,7 +224,6 @@ static void new_shared_memory_clone_files(struct syd_process *p)
 {
 	p->shm.clone_files = xmalloc(sizeof(struct syd_process_shared_clone_files));
 	p->shm.clone_files->refcnt = 1;
-	p->shm.clone_files->savebind = NULL;
 	p->shm.clone_files->sockmap = NULL;
 }
 
@@ -219,17 +245,9 @@ static syd_process_t *new_thread(pid_t pid)
 	thread->pid = pid;
 	thread->ppid = SYD_PPID_NONE;
 	thread->tgid = SYD_TGID_NONE;
-	if ((thread->pidfd = syscall(__NR_pidfd_open, pid, 0)) < 0) {
-		if (errno != EINVAL)
-			say_errno("pidfd_open(%d)", pid);
-		thread->pidfd = -1;
-	}
-	if ((thread->memfd = syd_proc_mem_open(pid)) < 0) {
-		errno = -thread->memfd;
-		say_errno("memfd_open(%d)", pid);
-		thread->memfd = -1;
-	}
-
+	thread->pidfd = -1;
+	thread->memfd = -1;
+	process_proc(thread);
 	process_add(thread);
 
 	dump(DUMP_THREAD_NEW, pid);
@@ -292,11 +310,6 @@ void reset_process(syd_process_t *p)
 			free(p->repr[i]);
 			p->repr[i] = NULL;
 		}
-	}
-
-	if (P_SAVEBIND(p)) {
-		free_sockinfo(P_SAVEBIND(p));
-		P_SAVEBIND(p) = NULL;
 	}
 }
 
@@ -398,18 +411,26 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent)
 
 static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
 {
-	syd_process_t *child;
+	int r;
 	bool new_child;
+	syd_process_t *child;
 
 	child = lookup_process(cpid);
 	new_child = (child == NULL);
 
 	if (new_child)
 		child = new_thread_or_kill(cpid);
+
+	/*
+	 * Careful here, the process may still be a thread although new
+	 * clone flags is missing CLONE_THREAD
+	 */
 	if (p->new_clone_flags & CLONE_THREAD) {
 		child->ppid = p->ppid;
 		child->tgid = p->tgid;
-	} else {
+	} else if ((r = proc_parents(child->pid,
+				     &child->tgid, &child->ppid)) < 0) {
+		say_errno("proc_parents");
 		child->ppid = p->pid;
 		child->tgid = child->pid;
 	}
@@ -548,17 +569,8 @@ static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
 		pid_task = p_task->pid;
 	}
 
-	/* Step 2: Check /proc/$pid/status
-	 * TODO: Two things to consider here:
-	 * 1. Is it correct to always prefer Tgid over Ppid?
-	 * 2. Is it more reliable to switch steps 2 & 3?
-	 */
-	if (!proc_parents(pid_task, &tgid, &ppid) &&
-			((parent_node = lookup_process(tgid)) ||
-			 (tgid != ppid && (parent_node = lookup_process(ppid)))))
-		return parent_node;
-
-	/* Step 3: Check for IN_CLONE|IN_EXECVE flags and /proc/$pid/task
+	/*
+	 * Step 2: Check for IN_CLONE|IN_EXECVE flags and /proc/$pid/task
 	 * We need IN_EXECVE for threaded exec -> leader lost case.
 	 */
 	parent_count = 0;
@@ -575,6 +587,16 @@ static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
 
 	if (parent_count == 1)
 		/* We have the suspect! */
+		return parent_node;
+
+	/* Step 3: Check /proc/$pid/status
+	 * TODO: Two things to consider here:
+	 * 1. Is it correct to always prefer Tgid over Ppid?
+	 * 2. Is it more reliable to switch steps 2 & 3?
+	 */
+	if (!proc_parents(pid_task, &tgid, &ppid) &&
+			((parent_node = lookup_process(tgid)) ||
+			 (tgid != ppid && (parent_node = lookup_process(ppid)))))
 		return parent_node;
 
 	return NULL;
@@ -979,12 +1001,12 @@ static void reap_zombies(void)
 {
 	syd_process_t *node, *tmp;
 	process_iter(node, tmp) { /* process_iter is delete-safe. */
-		if (!process_is_alive(node->pid))
+		if (!process_is_alive(node->pid, node->tgid))
 			remove_process_node(node);
 	}
 }
 
-static bool process_kill(pid_t pid, int sig)
+static bool process_kill(pid_t pid, pid_t tgid, int sig)
 {
 	int r;
 	syd_process_t *current;
@@ -992,11 +1014,10 @@ static bool process_kill(pid_t pid, int sig)
 	current = lookup_process(pid);
 	if (!current)
 		return false;
-
 	if (current->pidfd < 0) {
-		say("pidfd unavailable for pid:%d, killing directly.", current->pid);
-		say("this is known to be racy, you have been warned.");
-		if (kill(pid, sig) < 0 && errno == ESRCH)
+		if (!sig)
+			return true;
+		if (syd_kill(pid, tgid, sig) == -ESRCH)
 			return false;
 		return true;
 	}
@@ -1012,14 +1033,16 @@ static bool process_kill(pid_t pid, int sig)
 	return true;
 }
 
-static inline bool process_is_alive(pid_t pid)
+static inline bool process_is_alive(pid_t pid, pid_t tgid)
 {
+	int r;
 	struct proc_statinfo info;
 
-	if (!process_kill(pid, 0)) {
+	if (!process_kill(pid, tgid, 0)) {
 		return false;
-	} else if (proc_stat(pid, &info) < 0) {
-		say_errno("proc_stat(%d)", pid);
+	} else if ((r = proc_stat(pid, &info)) < 0) {
+		if (r != -ENOENT)
+			say_errno("proc_stat(%d)", pid);
 		return false;
 	} else if (info.state == 'Z') {
 		/* Zombie process, not alive. */
@@ -1239,7 +1262,7 @@ static int event_exec(syd_process_t *current)
 		say("kill_if_match pattern=`%s' matches execve path=`%s'",
 		    match, current->abspath);
 		say("killing process");
-		process_kill(current->pid, SIGKILL);
+		process_kill(current->pid, current->tgid, SIGKILL);
 		return -ESRCH;
 	} else if (acl_match_path(ACL_ACTION_NONE, &sydbox->config.exec_resume_if_match,
 				  current->abspath, &match)) {
@@ -1371,7 +1394,6 @@ notify_receive:
 		sydbox->response->val = 0;
 
 		pid = sydbox->request->pid;
-		current = lookup_process(pid);
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
 
@@ -1387,6 +1409,7 @@ notify_receive:
 			goto notify_respond;
 		}
 
+		current = lookup_process(pid);
 		if (!current) {
 			syd_process_t *parent;
 			parent = parent_process(pid, current);
@@ -1880,6 +1903,10 @@ int main(int argc, char **argv)
 	int opt, i, r, opt_t[4];
 	const char *env;
 	struct utsname buf_uts;
+#if SYDBOX_HAVE_DUMP_BUILTIN
+	unsigned long dump_fd;
+	char *end;
+#endif
 
 	int32_t arch;
 	size_t arch_argv_idx = 0;
@@ -1940,9 +1967,23 @@ int main(int argc, char **argv)
 		case 'd':
 			sydbox->config.violation_decision = VIOLATION_NOOP;
 			magic_set_sandbox_all("dump", NULL);
-			if (optarg)
-				if (strcmp(optarg, "tmp"))
-					sydbox->dump_fd = atoi(optarg);
+			if (!optarg) {
+				say("option requires an argument: d");
+				usage(stderr, 1);
+			}
+			if (!strcmp(optarg, "tmp"))
+				;
+			else {
+				errno = 0;
+				dump_fd = strtoul(optarg, &end, 10);
+				if (errno || optarg == end || dump_fd > INT_MAX)
+				{
+					say("Invalid argument for option -d: "
+					    "`%s'", optarg);
+					usage(stderr, 1);
+				}
+				sydbox->dump_fd = (int)dump_fd;
+			}
 			break;
 #else
 		case 'd':

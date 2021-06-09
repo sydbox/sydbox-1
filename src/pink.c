@@ -194,6 +194,198 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 #endif
 }
 
+int syd_kill(pid_t pid, pid_t tgid, int sig)
+{
+	int r = 0;
+#ifdef __NR_tgkill
+	if (syscall(__NR_tgkill, pid, tgid, sig) < 0)
+		r = -errno;
+#else
+	if (kill(pid, sig) < 0)
+		r = -errno;
+#endif
+	return r;
+}
+
+PINK_GCC_ATTR((nonnull(1,3)))
+int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len)
+{
+	return process_vm_read(current, addr, dest, len);
+}
+
+PINK_GCC_ATTR((nonnull(1,3)))
+ssize_t syd_write_vm_data(syd_process_t *current, long addr, const char *src,
+			  size_t len)
+{
+	return process_vm_write(current, addr, src, len);
+}
+
+PINK_GCC_ATTR((nonnull(1,3)))
+int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argval)
+{
+	ssize_t l;
+
+	errno = 0;
+	l = syd_read_vm_data(current, addr, (char *)argval, sizeof(long));
+	if (l < 0)
+		return -errno;
+	if (sizeof(long) != (size_t)l)
+		return -EFAULT;
+	return 0;
+}
+
+inline int syd_read_syscall(syd_process_t *current, long *sysnum)
+{
+	SYD_RETURN_IF_DETACHED(current);
+	BUG_ON(sysnum);
+
+	*sysnum = current->sysnum;
+
+	return 0;
+}
+
+inline int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval)
+{
+	SYD_RETURN_IF_DETACHED(current);
+	BUG_ON(argval);
+	BUG_ON(arg_index < 6);
+
+	*argval = current->args[arg_index];
+
+	return 0;
+}
+
+int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argval)
+{
+	SYD_RETURN_IF_DETACHED(current);
+	BUG_ON(argval);
+	BUG_ON(arg_index < 6);
+
+	*argval = (int)current->args[arg_index];
+
+	return 0;
+}
+
+ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t len)
+{
+	SYD_RETURN_IF_DETACHED(current);
+
+	return process_vm_read(current, addr, dest, len);
+}
+
+int syd_read_socket_argument(syd_process_t *current, unsigned arg_index,
+			     unsigned long *argval)
+{
+	int r;
+
+	SYD_RETURN_IF_DETACHED(current);
+	BUG_ON(argval);
+
+	bool decode_socketcall = !strcmp(current->sysname, "socketcall");
+	if (!decode_socketcall) {
+		*argval = current->args[arg_index];
+		return 0;
+	}
+
+	size_t wsize;
+	long addr;
+	unsigned long u_addr;
+
+	addr = current->args[1];
+	u_addr = addr;
+	wsize = abi_wordsize(current->arch);
+	errno = 0;
+	if (wsize == sizeof(int)) {
+		unsigned int arg;
+		if ((r = process_vm_read(current, u_addr,
+					 (long unsigned *)&arg,
+					 sizeof(unsigned int))) < 0)
+			return r;
+		*argval = arg;
+	} else {
+		unsigned long arg;
+		if ((r = process_vm_read(current, u_addr,
+					 (long unsigned *)&arg,
+					 sizeof(unsigned long))) < 0)
+			return r;
+		*argval = arg;
+	}
+
+	return 0;
+}
+
+PINK_GCC_ATTR((nonnull(1,2)))
+int syd_read_socket_subcall(syd_process_t *current, long *subcall)
+{
+	SYD_RETURN_IF_DETACHED(current);
+
+	bool decode_socketcall = !strcmp(current->sysname, "socketcall");
+	if (decode_socketcall) {
+		*subcall = current->args[0];
+	} else {
+		*subcall = current->sysnum;
+	}
+	return 0;
+}
+
+PINK_GCC_ATTR((nonnull(1,4)))
+int syd_read_socket_address(syd_process_t *current, unsigned arg_index, int *fd,
+			    struct pink_sockaddr *sockaddr)
+{
+	int r;
+	unsigned long myfd;
+	unsigned long addr, addrlen;
+
+	SYD_RETURN_IF_DETACHED(current);
+
+	if (fd) {
+		if ((r = syd_read_socket_argument(current, 0, &myfd)) < 0)
+			return r;
+		*fd = (int)myfd;
+	}
+	if ((r = syd_read_socket_argument(current, arg_index, &addr)) < 0)
+		return r;
+	if ((r = syd_read_socket_argument(current, arg_index + 1, &addrlen)) < 0)
+		return r;
+
+	if (addr == 0) {
+		sockaddr->family = -1;
+		sockaddr->length = 0;
+		return 0;
+	}
+	if (addrlen < 2 || addrlen > sizeof(sockaddr->u))
+		addrlen = sizeof(sockaddr->u);
+
+	memset(&sockaddr->u, 0, sizeof(sockaddr->u));
+	if ((r = process_vm_read(current, addr, sockaddr->u.pad, addrlen)) < 0)
+		return r;
+	sockaddr->u.pad[sizeof(sockaddr->u.pad) - 1] = '\0';
+
+	sockaddr->family = sockaddr->u.sa.sa_family;
+	sockaddr->length = addrlen;
+
+	return 0;
+}
+
+PINK_GCC_ATTR((nonnull(1)))
+int syd_write_retval(syd_process_t *current, long retval, int error)
+{
+	SYD_RETURN_IF_DETACHED(current);
+
+	sydbox->response->val = retval;
+	sydbox->response->error = error;
+
+	return 0;
+}
+
+ssize_t syd_write_data(syd_process_t *current, long addr, const void *buf,
+		       size_t count)
+{
+	SYD_RETURN_IF_DETACHED(current);
+
+	return process_vm_write(current, addr, buf, count);
+}
+
 int test_cross_memory_attach(bool report)
 {
 	int pipefd[2];
@@ -451,183 +643,4 @@ out:
 	if (WIFEXITED(wstatus))
 		return -WEXITSTATUS(wstatus);
 	return -EINVAL;
-}
-
-PINK_GCC_ATTR((nonnull(1,3)))
-int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len)
-{
-	return process_vm_read(current, addr, dest, len);
-}
-
-PINK_GCC_ATTR((nonnull(1,3)))
-ssize_t syd_write_vm_data(syd_process_t *current, long addr, const char *src,
-			  size_t len)
-{
-	return process_vm_write(current, addr, src, len);
-}
-
-PINK_GCC_ATTR((nonnull(1,3)))
-int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argval)
-{
-	ssize_t l;
-
-	errno = 0;
-	l = syd_read_vm_data(current, addr, (char *)argval, sizeof(long));
-	if (l < 0)
-		return -errno;
-	if (sizeof(long) != (size_t)l)
-		return -EFAULT;
-	return 0;
-}
-
-inline int syd_read_syscall(syd_process_t *current, long *sysnum)
-{
-	SYD_RETURN_IF_DETACHED(current);
-	BUG_ON(sysnum);
-
-	*sysnum = current->sysnum;
-
-	return 0;
-}
-
-inline int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval)
-{
-	SYD_RETURN_IF_DETACHED(current);
-	BUG_ON(argval);
-	BUG_ON(arg_index < 6);
-
-	*argval = current->args[arg_index];
-
-	return 0;
-}
-
-int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argval)
-{
-	SYD_RETURN_IF_DETACHED(current);
-	BUG_ON(argval);
-	BUG_ON(arg_index < 6);
-
-	*argval = (int)current->args[arg_index];
-
-	return 0;
-}
-
-ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t len)
-{
-	SYD_RETURN_IF_DETACHED(current);
-
-	return process_vm_read(current, addr, dest, len);
-}
-
-int syd_read_socket_argument(syd_process_t *current, unsigned arg_index,
-			     unsigned long *argval)
-{
-	int r;
-
-	SYD_RETURN_IF_DETACHED(current);
-	BUG_ON(argval);
-
-	bool decode_socketcall = !strcmp(current->sysname, "socketcall");
-	if (!decode_socketcall) {
-		*argval = current->args[arg_index];
-		return 0;
-	}
-
-	size_t wsize;
-	long addr;
-	unsigned long u_addr;
-
-	addr = current->args[1];
-	u_addr = addr;
-	wsize = abi_wordsize(current->arch);
-	errno = 0;
-	if (wsize == sizeof(int)) {
-		unsigned int arg;
-		if ((r = process_vm_read(current, u_addr,
-					 (long unsigned *)&arg,
-					 sizeof(unsigned int))) < 0)
-			return r;
-		*argval = arg;
-	} else {
-		unsigned long arg;
-		if ((r = process_vm_read(current, u_addr,
-					 (long unsigned *)&arg,
-					 sizeof(unsigned long))) < 0)
-			return r;
-		*argval = arg;
-	}
-
-	return 0;
-}
-
-PINK_GCC_ATTR((nonnull(1,2)))
-int syd_read_socket_subcall(syd_process_t *current, long *subcall)
-{
-	SYD_RETURN_IF_DETACHED(current);
-
-	bool decode_socketcall = !strcmp(current->sysname, "socketcall");
-	if (decode_socketcall) {
-		*subcall = current->args[0];
-	} else {
-		*subcall = current->sysnum;
-	}
-	return 0;
-}
-
-PINK_GCC_ATTR((nonnull(1,4)))
-int syd_read_socket_address(syd_process_t *current, unsigned arg_index, int *fd,
-			    struct pink_sockaddr *sockaddr)
-{
-	int r;
-	unsigned long myfd;
-	unsigned long addr, addrlen;
-
-	SYD_RETURN_IF_DETACHED(current);
-
-	if (fd) {
-		if ((r = syd_read_socket_argument(current, 0, &myfd)) < 0)
-			return r;
-		*fd = (int)myfd;
-	}
-	if ((r = syd_read_socket_argument(current, arg_index, &addr)) < 0)
-		return r;
-	if ((r = syd_read_socket_argument(current, arg_index + 1, &addrlen)) < 0)
-		return r;
-
-	if (addr == 0) {
-		sockaddr->family = -1;
-		sockaddr->length = 0;
-		return 0;
-	}
-	if (addrlen < 2 || addrlen > sizeof(sockaddr->u))
-		addrlen = sizeof(sockaddr->u);
-
-	memset(&sockaddr->u, 0, sizeof(sockaddr->u));
-	if ((r = process_vm_read(current, addr, sockaddr->u.pad, addrlen)) < 0)
-		return r;
-	sockaddr->u.pad[sizeof(sockaddr->u.pad) - 1] = '\0';
-
-	sockaddr->family = sockaddr->u.sa.sa_family;
-	sockaddr->length = addrlen;
-
-	return 0;
-}
-
-PINK_GCC_ATTR((nonnull(1)))
-int syd_write_retval(syd_process_t *current, long retval, int error)
-{
-	SYD_RETURN_IF_DETACHED(current);
-
-	sydbox->response->val = retval;
-	sydbox->response->error = error;
-
-	return 0;
-}
-
-ssize_t syd_write_data(syd_process_t *current, long addr, const void *buf,
-		       size_t count)
-{
-	SYD_RETURN_IF_DETACHED(current);
-
-	return process_vm_write(current, addr, buf, count);
 }

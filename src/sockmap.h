@@ -18,36 +18,40 @@
 struct sockmap {
 	UT_hash_handle hh;
 	struct sockinfo *info;
-	int fd;
+	unsigned long long inode;
 };
 
-static inline void sockmap_add(struct sockmap **map, int fd, struct sockinfo *info)
+static inline void sockmap_add(struct sockmap **map,
+			       unsigned long long inode,
+			       struct sockinfo *info)
 {
 	struct sockmap *s = xmalloc(sizeof(struct sockmap));
-	s->fd = fd;
+	s->inode = inode;
 	s->info = info;
-	HASH_ADD_INT(*map, fd, s);
+	HASH_ADD(hh, *map, inode, sizeof(unsigned long long), s);
 }
 
-static inline const struct sockinfo *sockmap_find(struct sockmap **map, int fd)
+static inline const struct sockinfo *sockmap_find(struct sockmap **map,
+						  unsigned long long inode)
 {
 	struct sockmap *s;
 
-	if (!*map)
+	if (!map || !*map)
 		return NULL;
 
-	HASH_FIND_INT(*map, &fd, s);
+	HASH_FIND(hh, *map, &inode, sizeof(unsigned long long), s);
 	return s ? s->info : NULL;
 }
 
-static inline void sockmap_remove(struct sockmap **map, int fd)
+static inline void sockmap_remove(struct sockmap **map,
+				  unsigned long long inode)
 {
 	struct sockmap *s;
 
-	if (!*map)
+	if (!map || !*map)
 		return;
 
-	HASH_FIND_INT(*map, &fd, s);
+	HASH_FIND(hh, *map, &inode, sizeof(unsigned long long), s);
 	if (!s)
 		return;
 	HASH_DEL(*map, s);
@@ -59,7 +63,7 @@ static inline void sockmap_destroy(struct sockmap **map)
 {
 	struct sockmap *e, *t;
 
-	if (!*map)
+	if (!map || !*map)
 		return;
 
 	HASH_ITER(hh, *map, e, t) {

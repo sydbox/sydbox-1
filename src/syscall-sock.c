@@ -21,6 +21,7 @@
 #include "bsd-compat.h"
 #include "sockmap.h"
 #include "dump.h"
+#include "proc.h"
 
 int sys_bind(syd_process_t *current)
 {
@@ -61,14 +62,18 @@ int sys_bind(syd_process_t *current)
 		/* Access granted.
 		 * Read the file descriptor, for use in exit.
 		 */
+		unsigned long long inode;
+
 		r = syd_read_socket_argument(current, 0, &fd);
 		if (r < 0)
 			goto out;
-		current->args[0] = fd;
-		P_SAVEBIND(current) = xmalloc(sizeof(struct sockinfo));
-		P_SAVEBIND(current)->path = unix_abspath;
-		P_SAVEBIND(current)->addr = psa;
-		current->flags |= SYD_STOP_AT_SYSEXIT;
+		if ((r = proc_socket_inode(current->pid,
+					   current->args[0], &inode)) < 0)
+			goto out;
+		struct sockinfo *si = xmalloc(sizeof(struct sockinfo));
+		si->path = unix_abspath;
+		si->addr = psa;
+		sockmap_add(&P_SOCKMAP(current), inode, si);
 		return 0;
 	}
 
@@ -82,54 +87,6 @@ out:
 
 	return r;
 }
-
-#if 0
-int sysx_bind(syd_process_t *current)
-{
-	int r;
-	long retval;
-	struct acl_node *node;
-	struct sockmatch *match;
-
-	if (sandbox_off_network(current) ||
-	    !sydbox->config.whitelist_successful_bind ||
-	    !P_SAVEBIND(current))
-		return 0;
-
-	if ((r = syd_read_retval(current, &retval, NULL)) < 0)
-		return r;
-
-	if (retval < 0) {
-		/* ignore failed system call */
-		free_sockinfo(P_SAVEBIND(current));
-		P_SAVEBIND(current) = NULL;
-		return 0;
-	}
-
-	/* check for bind() with zero as port argument */
-	if (P_SAVEBIND(current)->addr->family == AF_INET &&
-	    P_SAVEBIND(current)->addr->u.sa_in.sin_port == 0)
-		goto zero;
-#if PINK_HAVE_IPV6
-	if (P_SAVEBIND(current)->addr->family == AF_INET6 &&
-	    P_SAVEBIND(current)->addr->u.sa6.sin6_port == 0)
-		goto zero;
-#endif
-
-	/* whitelist socket address */
-	node = xcalloc(1, sizeof(struct acl_node));
-	match = sockmatch_new(P_SAVEBIND(current));
-	node->action = ACL_ACTION_WHITELIST;
-	node->match = match;
-	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
-	return 0;
-zero:
-	/* save sockfd with port 0 for whitelisting */
-	sockmap_add(&P_SOCKMAP(current), current->args[0], P_SAVEBIND(current));
-	P_SAVEBIND(current) = NULL;
-	return 0;
-}
-#endif
 
 static int sys_connect_or_sendto(syd_process_t *current, unsigned arg_index)
 {
@@ -172,86 +129,56 @@ int sys_sendto(syd_process_t *current)
 	return sys_connect_or_sendto(current, 4);
 }
 
-int sys_getsockname(syd_process_t *current)
+int sys_accept(syd_process_t *current)
 {
-	int r;
-	unsigned long fd;
-
-	current->args[0] = -1;
+	int r, port;
+	unsigned long long inode;
+	const struct sockinfo *info;
+	struct sockmatch *match;
 
 	if (sandbox_off_network(current) ||
 	    !sydbox->config.whitelist_successful_bind)
 		return 0;
 
-	if ((r = syd_read_socket_argument(current, 0, &fd)) < 0)
+	if ((r = proc_socket_inode(current->pid,
+				   current->args[0],
+				   &inode)) < 0)
 		return r;
 
-	if (sockmap_find(&P_SOCKMAP(current), fd)) {
-		current->args[0] = fd;
-		current->flags |= SYD_STOP_AT_SYSEXIT;
-	}
-
-	return 0;
-}
-
-#if 0
-int sysx_getsockname(syd_process_t *current)
-{
-	int r;
-	unsigned port;
-	long retval;
-	struct pink_sockaddr psa;
-	struct acl_node *node;
-	const struct sockinfo *info;
-	struct sockmatch *match;
-
-	if (sandbox_off_network(current) ||
-	    !sydbox->config.whitelist_successful_bind ||
-	    current->args[0] < 0)
+	info = sockmap_find(&P_SOCKMAP(current), inode);
+	if (!info)
 		return 0;
-
-	if ((r = syd_read_retval(current, &retval, NULL)) < 0)
-		return r;
-
-	if (retval < 0) {
-		/* ignore failed system call */
-		return 0;
-	}
-
-	if ((r = syd_read_socket_address(current, 1, NULL, &psa)) < 0) {
-		return r;
-	}
-
-	info = sockmap_find(&P_SOCKMAP(current), current->args[0]);
-	assert(info);
 	match = sockmatch_new(info);
-	sockmap_remove(&P_SOCKMAP(current), current->args[0]);
 
 	switch (match->family) {
+	case AF_UNIX:
+		break;
 	case AF_INET:
-		port = ntohs(psa.u.sa_in.sin_port);
-		/* assert(port); */
+		port = ntohs(info->addr->u.sa_in.sin_port);
+		if (!port && (r = proc_socket_port(inode, true, &port)) < 0)
+			return 0;
 		match->addr.sa_in.port[0] = match->addr.sa_in.port[1] = port;
 		break;
-#if PINK_HAVE_IPV6
 	case AF_INET6:
-		port = ntohs(psa.u.sa6.sin6_port);
-		/* assert(port); */
+		port = ntohs(info->addr->u.sa6.sin6_port);
+		if (!port && (r = proc_socket_port(inode, false, &port)) < 0)
+			return 0;
 		match->addr.sa6.port[0] = match->addr.sa6.port[1] = port;
 		break;
-#endif
 	default:
 		assert_not_reached();
 	}
+	sockmap_remove(&P_SOCKMAP(current), inode);
 
 	/* whitelist bind(0 -> port) for connect() */
+	struct acl_node *node;
 	node = xcalloc(1, sizeof(struct acl_node));
 	node->action = ACL_ACTION_WHITELIST;
 	node->match = match;
 	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
+
 	return 0;
 }
-#endif
 
 int sys_socketcall(syd_process_t *current)
 {
@@ -274,8 +201,9 @@ int sys_socketcall(syd_process_t *current)
 		return sys_connect(current);
 	case PINK_SOCKET_SUBCALL_SENDTO:
 		return sys_sendto(current);
-	case PINK_SOCKET_SUBCALL_GETSOCKNAME:
-		return sys_getsockname(current);
+	case PINK_SOCKET_SUBCALL_ACCEPT:
+	case PINK_SOCKET_SUBCALL_ACCEPT4:
+		return sys_accept(current);
 	default:
 		return 0;
 	}
