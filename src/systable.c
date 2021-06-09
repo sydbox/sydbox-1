@@ -1,7 +1,7 @@
 /*
  * sydbox/systable.c
  *
- * Copyright (c) 2010, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2012, 2013, 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
@@ -20,14 +20,14 @@ struct systable {
 static struct systable *systable[PINK_ABIS_SUPPORTED];
 
 void systable_add_full(long no, short abi, const char *name,
-		       sysfunc_t fenter, sysfunc_t fexit)
+		       sysfunc_t fnotify, sysfunc_t fexit)
 {
 	struct systable *s;
 
 	s = xmalloc(sizeof(struct systable));
 	s->no = no;
 	s->entry.name = name;
-	s->entry.enter = fenter;
+	s->entry.notify = fnotify;
 	s->entry.exit = fexit;
 
 	HASH_ADD_INT(systable[abi], no, s);
@@ -50,14 +50,14 @@ void systable_free(void)
 	}
 }
 
-void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit)
+void systable_add(const char *name, sysfunc_t fnotify, sysfunc_t fexit)
 {
 	long no;
 
 	for (short abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
 		no = pink_lookup_syscall(name, abi);
 		if (no != -1)
-			systable_add_full(no, abi, name, fenter, fexit);
+			systable_add_full(no, abi, name, fnotify, fexit);
 	}
 }
 

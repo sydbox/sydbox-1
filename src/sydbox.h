@@ -560,7 +560,7 @@ struct sysentry {
 	long no; /* Used only if `name' is NULL.
 		  * May be used to implement virtual system calls.
 		  */
-	sysfunc_t enter;
+	sysfunc_t notify;
 	sysfunc_t exit;
 
 	/* XXX: Debug */
@@ -832,7 +832,7 @@ size_t syscall_entries_max(void);
 void sysinit(void);
 int sysinit_seccomp(void);
 int sysinit_seccomp_load(void);
-int sysenter(syd_process_t *current);
+int sysnotify(syd_process_t *current);
 int sysexit(syd_process_t *current);
 
 enum magic_ret magic_check_call(int rval);

@@ -1248,7 +1248,7 @@ static int event_exec(syd_process_t *current)
 
 static int event_syscall(syd_process_t *current)
 {
-	return sysenter(current);
+	return sysnotify(current);
 }
 
 #if SYDBOX_HAVE_SECCOMP
@@ -2080,9 +2080,10 @@ int main(int argc, char **argv)
 	sysinit();
 
 	/* Initialize Secure Computing */
-	sydbox->seccomp_action = sydbox->config.restrict_general > 0
-		? SCMP_ACT_ERRNO(EPERM)
-		: SCMP_ACT_ALLOW;
+	if (sydbox->config.restrict_general > 0)
+		sydbox->seccomp_action = SCMP_ACT_ERRNO(EPERM);
+	else
+		sydbox->seccomp_action = SCMP_ACT_ALLOW;
 	if (!(sydbox->ctx = seccomp_init(sydbox->seccomp_action)))
 		die_errno("seccomp_init");
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
