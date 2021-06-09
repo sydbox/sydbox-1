@@ -620,7 +620,7 @@ typedef struct syscall_info syscall_info_t;
 /* Global variables */
 extern sydbox_t *sydbox;
 
-#define OPEN_READONLY_FLAG_MAX 96
+#define OPEN_READONLY_FLAG_MAX 1024
 extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 
 #if SYDBOX_HAVE_DUMP_BUILTIN
