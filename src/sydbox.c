@@ -1354,7 +1354,7 @@ notify_receive:
 			remove_process(pid, 0);
 			reap_zombies();
 			int count = process_count();
-			if (count <= 1)
+			if (!count)
 				jump = true;
 			goto notify_respond;
 		}
