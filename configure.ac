@@ -385,6 +385,15 @@ for flag in $SYDBOX_WANTED_CFLAGS ; do
 done
 AC_SUBST([SYDBOX_CFLAGS])
 
+dnl extra LDFLAGS
+dnl Build sydbox binary static by default.
+dnl Disable with --disable-static
+SYDBOX_LDFLAGS=
+if test x"$enable_static" = x"yes"; then
+	SYDBOX_LDFLAGS="-all-static"
+fi
+AC_SUBST([SYDBOX_LDFLAGS])
+
 dnl check for xsltproc
 AC_PATH_PROG([XSLTPROC], [xsltproc])
 AM_CONDITIONAL([HAVE_XSLTPROC], test x"$XSLTPROC" != x"")

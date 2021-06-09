@@ -125,7 +125,11 @@ noinst_HEADERS+= \
 		 sys-queue.h
 
 sydbox_LDFLAGS= $(PTHREAD_LIBS) -lsyd_@LIBSYD_PC_SLOT@
-sydbox_LDADD= -L$(top_builddir)/syd/.libs -lsyd_@LIBSYD_PC_SLOT@ \
+sydbox_LDADD= \
+	      $(top_builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la \
+	      -L$(top_builddir)/syd/.libs \
+	      -lsyd_@LIBSYD_PC_SLOT@ \
+	      @SYDBOX_LDFLAGS@ \
 	      $(pinktrace_LIBS) \
 	      $(libseccomp_LIBS)
 if WANT_DEBUG
