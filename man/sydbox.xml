@@ -145,10 +145,46 @@
       </varlistentry>
 
       <varlistentry>
+        <term><option>-a</option> <varname>arch</varname></term>
+        <listitem>
+          <simpara>
+            native,x86_64,x86,x86,x32,arm,aarch64,mips,mips64,ppc,ppc64,
+            ppc64le,s390,s390x,parisc,parisc64,riscv64.
+          </simpara>
+          <simpara>
+            default: native, may be repeated.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-b</option></term>
+        <listitem>
+          <simpara>
+            Run in bpf only mode, no seccomp user notifications. All
+            tracing happens in kernel-space and action for read, write
+            and network sandboxing is determined by checking the relevant
+            sandboxing mode for <constant>allow</constant>,
+            <constant>deny</constant> or <constant>bpf</constant>.
+            See <xref linkend="sandboxing"/> for more information.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
         <term><option>-d</option> <varname>fd[0-9]+|tmp</varname></term>
         <listitem>
           <simpara>
-            dump system call information to the given file descriptor
+            Dump system call information to the given file descriptor
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-t</option></term>
+        <listitem>
+          <simpara>
+            Test if various runtime requirements are functional and exit.
           </simpara>
         </listitem>
       </varlistentry>
@@ -182,6 +218,7 @@
         <term><varname>bpf</varname></term>
         <listitem>
           <para>Sandboxing is initialized at startup, tracing happens at kernel space.</para>
+          <para>The action for the system call is deny with errno <constant>EPERM</constant>.</para>
         </listitem>
       </varlistentry>
 
@@ -1340,11 +1377,15 @@
     <title>Security</title>
 
     <para>
-      Sydbox is not an adequate security measure and suffers from TOCTOU attacks even with seccomp due to the use of
-      <constant>SECCOMP_RET_TRACE</constant>, see:
-      <citerefentry><refentrytitle>seccomp</refentrytitle><manvolnum>2</manvolnum></citerefentry>. Use this for
-      diagnosing or debugging or use other means to prevent such attack surfaces (chroot, namespaces, noexec, nosuid,
-      ymmv).
+      If you run SydBox with the <option>--bpf</option>, shortly <option>-b</option>,
+      option or if you set al sandboxing modes to exactly one of <constant>bpf</constant>
+      and <constant>off</constant> all system call sandboxing happens in kernel-space and
+      this approach is secure.
+    </para>
+
+    <para>
+      However, otherwise SydBox must dereference the pointer arguments which is known to be
+      insecure because it makes TOCTOU, time-of-check time-of-use, attacks possible.
     </para>
   </refsect1>
 
