@@ -40,8 +40,7 @@
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
       <itemizedlist>
-        <listitem><para><command>sydbox <arg choice="opt">-hvb</arg> <arg choice="opt" rep="repeat">-a arch</arg>  <arg choice="opt" rep="repeat">-c pathspec</arg> <arg choice="opt" rep="repeat">-m magic</arg> <arg choice="opt" rep="repeat">-E var</arg> <arg choice="opt" rep="repeat">-E var=val</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
-        <listitem><para><command>sydbox --dry-run <arg choice="req">-d fd|tmp</arg> <arg choice="opt" rep="repeat">-a arch</arg> <arg choice="opt" rep="repeat">-c pathspec</arg> <arg choice="opt" rep="repeat">-m magic</arg> <arg choice="opt" rep="repeat">-E var</arg> <arg choice="opt" rep="repeat">-E var=val</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
+        <listitem><para><command>sydbox <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">-d fd|path|tmp</arg> <arg choice="opt" rep="repeat">-a arch</arg>  <arg choice="opt" rep="repeat">-c pathspec</arg> <arg choice="opt" rep="repeat">-m magic</arg> <arg choice="opt" rep="repeat">-E var</arg> <arg choice="opt" rep="repeat">-E var=val</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
         <listitem><para><command>sydbox --test</command></para></listitem>
       </itemizedlist>
     </cmdsynopsis>
@@ -187,10 +186,16 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-d</option> <varname>fd[0-9]+|tmp</varname></term>
+        <term><option>-d</option> <varname>fd[0-9]+|path|tmp</varname></term>
         <listitem>
           <simpara>
-            Dump system call information to the given file descriptor
+            Dump system call information to the given file descriptor.
+          </simpara>
+          <simpara>
+            Use a number to dump to a file descriptor, e.g. 2 for standard error,
+            use a string to write the dump to a path, and use <constant>tmp</constant>
+            to write the dump to a temporary file. In the latter case, Sydbox prints
+            the path of the temporary file to standard error on start and exit.
           </simpara>
         </listitem>
       </varlistentry>
@@ -201,7 +206,7 @@
           <simpara>
             Run under inspection without denying system calls, use with
             <option>-d</option> to get an overview of what the traced process
-            is doing.
+            is doing without intervening with its processing.
           </simpara>
         </listitem>
       </varlistentry>
