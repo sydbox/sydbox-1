@@ -83,7 +83,7 @@ int sysx_chdir(syd_process_t *current)
 
 static int do_execve(syd_process_t *current, bool at_func)
 {
-	int r, flags;
+	int r, flags = 0;
 	bool badfd;
 	char *path = NULL, *abspath = NULL, *prefix = NULL;
 
