@@ -1293,6 +1293,7 @@ static int notify_loop(syd_process_t *current)
 		}
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
 notify_receive:
+		setup_alarm(1);
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
 						sydbox->request)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
@@ -1301,6 +1302,7 @@ notify_receive:
 					if (!process_count())
 						break;
 				} else {
+					disarm_alarm();
 					goto notify_receive;
 				}
 			} else if (r == -ENOENT) {
@@ -1323,6 +1325,7 @@ notify_receive:
 				break;
 			}
 		}
+		disarm_alarm();
 
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
@@ -1431,6 +1434,7 @@ notify_receive:
 		}
 
 notify_respond:
+		setup_alarm(1);
 		/* 0 if valid, ENOENT if not */
 		if ((r = seccomp_notify_id_valid(sydbox->notify_fd,
 						 sydbox->request->id)) < 0 ||
@@ -1443,9 +1447,11 @@ notify_respond:
 					if (!process_count()) {
 						break;
 					} else {
+						disarm_alarm();
 						goto notify_respond;
 					}
 				} else {
+					disarm_alarm();
 					goto notify_respond;
 				}
 			} else if (r == -ENOENT) {
