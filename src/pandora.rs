@@ -147,6 +147,8 @@ enum Dump {
         args: [i64; 6],
         repr: [String; 6],
     },
+    ThreadNew { id: u32 },
+    ThreadFree { id: u32 },
 }
 
 fn command_box<'a>(
@@ -616,6 +618,8 @@ fn parse_json_line(
         Dump::StartUp { id: 1, cmd, ts, .. } => {
             return (None, Some(cmd), Some(UNIX_EPOCH + Duration::from_secs(ts)));
         }
+        Dump::ThreadNew { id: 5, .. } => {},
+        Dump::ThreadFree { id: 6, .. } => {},
         Dump::SysEnt {
             event: EventStruct {id: 8, ..},
             repr,

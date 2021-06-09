@@ -624,7 +624,8 @@ extern sydbox_t *sydbox;
 extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 
 #if SYDBOX_HAVE_DUMP_BUILTIN
-# define inspecting() ((sydbox)->config.violation_decision == VIOLATION_NOOP)
+// # define inspecting() ((sydbox)->config.violation_decision == VIOLATION_NOOP)
+# define inspecting() (1)
 #else
 # define inspecting() (0)
 #endif

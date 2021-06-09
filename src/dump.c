@@ -134,13 +134,15 @@ static void dump_process(pid_t pid)
 	}
 	if (p->shm.clone_fs && p->shm.clone_fs->cwd)
 		fprintf(fp, "\"%s\"", p->shm.clone_fs->cwd);
+	else
+		dump_null();
 
 	fprintf(fp, "}");
 }
 
 static int dump_init(void)
 {
-	int fd = 0;
+	int fd = -1;
 	const char *pathname;
 
 	if (!nodump)

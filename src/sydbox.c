@@ -1108,7 +1108,6 @@ static void init_early(void)
 	sydbox->permissive = false;
 	config_init();
 	filter_init();
-	dump(DUMP_INIT);
 	syd_abort_func(kill_all);
 }
 
@@ -1654,14 +1653,25 @@ int main(int argc, char **argv)
 	int opt, i, r, opt_t[4];
 	const char *env;
 	struct utsname buf_uts;
-#if SYDBOX_HAVE_DUMP_BUILTIN
-	unsigned long dump_fd;
-	char *end;
-#endif
 
 	int32_t arch;
 	size_t arch_argv_idx = 0;
 	char *arch_argv[32] = { NULL };
+
+	/* Early initialisations */
+	init_early();
+
+#if SYDBOX_HAVE_DUMP_BUILTIN
+	unsigned long dump_fd;
+	char *end;
+
+# if SYDBOX_DUMP
+	sydbox->dump_fd = STDERR_FILENO;
+# else
+	if (strstr(argv[0], PACKAGE"-dump"))
+		sydbox->dump_fd = STDERR_FILENO;
+# endif
+#endif
 
 	/* Long options are present for compatibility with sydbox-0.
 	 * Thus they are not documented!
@@ -1678,9 +1688,6 @@ int main(int argc, char **argv)
 		{"test",	no_argument,		NULL,	't'},
 		{NULL,		0,		NULL,	0},
 	};
-
-	/* early initialisations */
-	init_early();
 
 	const struct sigaction sa = { .sa_handler = SIG_DFL };
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
@@ -1871,6 +1878,9 @@ int main(int argc, char **argv)
 	/* Poison! */
 	if (streq(argv[optind], "/bin/sh"))
 		fprintf(stderr, "[01;35m" PINK_FLOYD "[00;00m");
+
+	/* All ready, initialize dump */
+	dump(DUMP_INIT);
 
 	/* STARTUP_CHILD must be called before the signal handlers get
 	   installed below as they are inherited into the spawned process.
