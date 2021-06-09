@@ -884,7 +884,7 @@ static int filter_mmap_restrict(int sys_mmap)
 
 int filter_mmap(void)
 {
-	if (sydbox->config.restrict_shared_memory_writable)
+	if (sydbox->config.restrict_shm_wr)
 		return filter_mmap_restrict_shared(SCMP_SYS(mmap));
 	else if (sydbox->config.restrict_mmap)
 		return filter_mmap_restrict(SCMP_SYS(mmap));
@@ -894,7 +894,7 @@ int filter_mmap(void)
 
 int filter_mmap2(void)
 {
-	if (sydbox->config.restrict_shared_memory_writable)
+	if (sydbox->config.restrict_shm_wr)
 		return filter_mmap_restrict_shared(SCMP_SYS(mmap));
 	else if (sydbox->config.restrict_mmap)
 		return filter_mmap_restrict(SCMP_SYS(mmap));

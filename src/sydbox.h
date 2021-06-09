@@ -171,10 +171,10 @@ enum magic_key {
 
 	MAGIC_KEY_CORE_RESTRICT,
 	MAGIC_KEY_CORE_RESTRICT_GENERAL,
-	MAGIC_KEY_CORE_RESTRICT_FCNTL,
-	MAGIC_KEY_CORE_RESTRICT_IOCTL,
-	MAGIC_KEY_CORE_RESTRICT_MMAP,
-	MAGIC_KEY_CORE_RESTRICT_SHM_WR,
+	MAGIC_KEY_CORE_RESTRICT_FILE_CONTROL,
+	MAGIC_KEY_CORE_RESTRICT_IO_CONTROL,
+	MAGIC_KEY_CORE_RESTRICT_MEMORY_MAP,
+	MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE,
 
 	MAGIC_KEY_CORE_WHITELIST,
 	MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES,
@@ -473,7 +473,7 @@ struct config {
 	bool restrict_fcntl;
 	bool restrict_ioctl;
 	bool restrict_mmap;
-	bool restrict_shared_memory_writable;
+	bool restrict_shm_wr;
 	unsigned int restrict_general;
 
 	/* same for these, not inherited: global */

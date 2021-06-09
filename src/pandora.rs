@@ -219,7 +219,7 @@ fn command_profile<'b>(bin: &'b str, cmd: &[&'b str], output_path: &'b str, path
 
     child.wait().expect("failed to wait for sydbox");
     eprintln!("success writing output to `{}' dump", output_path);
-    eprintln!("Edit the file ẁith your browser as necessary.");
+    eprintln!("Edit the file ẁith your editor as necessary.");
     eprintln!("Then use 'pandora box -c \"{}\" <command>'", output_path);
     eprintln!("To run the command under SydBox.");
 
@@ -494,6 +494,8 @@ core/sandbox/network:deny
 # Further restrictions for open(), fcntl() and mmap()
 # See sydbox manual page for further details
 core/restrict/file_control:false
+core/restrict/io_control:false
+core/restrict/memory_map:false
 core/restrict/shared_memory_writable:false
 
 core/whitelist/per_process_directories:true

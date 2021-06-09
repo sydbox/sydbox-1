@@ -58,11 +58,11 @@ int magic_query_restrict_ioctl(syd_process_t *current)
 
 int magic_set_restrict_shm_wr(const void *val, syd_process_t *current)
 {
-	sydbox->config.restrict_shared_memory_writable = PTR_TO_BOOL(val);
+	sydbox->config.restrict_shm_wr = PTR_TO_BOOL(val);
 	return MAGIC_RET_OK;
 }
 
 int magic_query_restrict_shm_wr(syd_process_t *current)
 {
-	return MAGIC_BOOL(sydbox->config.restrict_shared_memory_writable);
+	return MAGIC_BOOL(sydbox->config.restrict_shm_wr);
 }
