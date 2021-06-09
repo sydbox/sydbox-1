@@ -25,6 +25,8 @@ AC_CONFIG_SRCDIR([src/sydbox.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
+AC_CANONICAL_TARGET
+
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip std-options subdir-objects foreign])
 AM_MAINTAINER_MODE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -78,8 +80,6 @@ AC_PROG_CC_C99
 if test x"$ac_cv_prog_cc_c99" = x"no"; then
 	AC_MSG_ERROR([sydbox requires a C compiler that supports ISO C99!])
 fi
-AX_PTHREAD([],
-	   [AC_MSG_ERROR([sydbox requires the POSIX threads library!])])
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -279,6 +279,10 @@ AC_CHECK_FUNCS_ONCE(m4_flatten([
 
 dnl check for large file support
 AC_SYS_LARGEFILE
+
+dnl check for pthreads
+AX_PTHREAD([],
+	   [AC_MSG_WARN([POSIX threads library is missing, some tests may not build!])])
 
 dnl check for pkg-config
 PKG_PROG_PKG_CONFIG([0.20.0])
