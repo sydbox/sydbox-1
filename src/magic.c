@@ -189,7 +189,7 @@ static const struct key key_table[] = {
 		.query  = magic_query_restrict_general,
 	},
 	[MAGIC_KEY_CORE_RESTRICT_FILE_CONTROL] = {
-		.name   = "fcntl",
+		.name   = "file_control",
 		.lname  = "core.restrict.file_control",
 		.parent = MAGIC_KEY_CORE_RESTRICT,
 		.type   = MAGIC_TYPE_BOOLEAN,
@@ -197,7 +197,7 @@ static const struct key key_table[] = {
 		.query  = magic_query_restrict_fcntl,
 	},
 	[MAGIC_KEY_CORE_RESTRICT_IO_CONTROL] = {
-		.name   = "ioctl",
+		.name   = "io_control",
 		.lname  = "core.restrict.io_control",
 		.parent = MAGIC_KEY_CORE_RESTRICT,
 		.type   = MAGIC_TYPE_BOOLEAN,
@@ -205,7 +205,7 @@ static const struct key key_table[] = {
 		.query  = magic_query_restrict_ioctl,
 	},
 	[MAGIC_KEY_CORE_RESTRICT_MEMORY_MAP] = {
-		.name   = "mmap",
+		.name   = "memory_map",
 		.lname  = "core.restrict.memory_map",
 		.parent = MAGIC_KEY_CORE_RESTRICT,
 		.type   = MAGIC_TYPE_BOOLEAN,
@@ -214,7 +214,7 @@ static const struct key key_table[] = {
 	},
 	[MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE] = {
 		.name   = "shared_memory_writable",
-		.lname  = "core.restrict.shm_wr",
+		.lname  = "core.restrict.shared_memory_writable",
 		.parent = MAGIC_KEY_CORE_RESTRICT,
 		.type   = MAGIC_TYPE_BOOLEAN,
 		.set    = magic_set_restrict_shm_wr,
