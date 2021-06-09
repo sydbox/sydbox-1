@@ -1487,13 +1487,7 @@ notify_receive:
 			}
 		} else {
 			current->flags &= ~SYD_IN_CLONE;
-			if ((r = seccomp_notify_id_valid(sydbox->notify_fd,
-							 sydbox->request->id)) < 0) {
-				/* process invalid, don't process further */
-				;
-			} else if (r == 0) {
-				event_syscall(current);
-			}
+			event_syscall(current);
 		}
 
 notify_respond:
@@ -1522,15 +1516,8 @@ notify_respond:
 				break;
 			}
 		}
-#if 0
-		sig = 0; /* TODO */
-		if (sig && current->pid == sydbox->execve_pid)
-			save_exit_signal(term_sig(sig));
-#endif
-
 		if (name)
 			free(name);
-
 		if (jump)
 			break;
 
