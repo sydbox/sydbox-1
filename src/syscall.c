@@ -517,10 +517,13 @@ int sysinit_seccomp_load(void)
 				if (use_notify()) {
 					r = rule_add_action(SCMP_ACT_NOTIFY,
 							    sysnum);
-					if (r < 0)
-						return r;
 					user_notified = true;
-				} /* else no need to do anything. */
+				} else {
+					r = rule_add_action(SCMP_ACT_ERRNO(EPERM),
+							    sysnum);
+				}
+				if (r < 0)
+					return r;
 			} else if (mode_r == SANDBOX_OFF &&
 				   mode_w == SANDBOX_DENY) {
 				if (use_notify()) {
@@ -537,19 +540,25 @@ int sysinit_seccomp_load(void)
 				if (use_notify()) {
 					r = rule_add_action(SCMP_ACT_NOTIFY,
 							    sysnum);
-					if (r < 0)
-						return 0;
 					user_notified = true;
-				} /* else { ; } no need to do anything here. */
+				} else {
+					r = rule_add_action(SCMP_ACT_ERRNO(EPERM),
+							    sysnum);
+				}
+				if (r < 0)
+					return 0;
 			} else if (mode_r == SANDBOX_ALLOW &&
 				   mode_w == SANDBOX_ALLOW) {
 				if (use_notify()) {
 					r = rule_add_action(SCMP_ACT_NOTIFY,
 							    sysnum);
-					if (r < 0)
-						return r;
 					user_notified = true;
-				} /* else { ; } no need to do anything here. */
+				} else {
+					r = rule_add_action(SCMP_ACT_ERRNO(EPERM),
+							    sysnum);
+				}
+				if (r < 0)
+					return r;
 			} else if (mode_r == SANDBOX_DENY &&
 				   mode_w == SANDBOX_OFF) {
 				if (use_notify()) {
