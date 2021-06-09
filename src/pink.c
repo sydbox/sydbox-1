@@ -593,7 +593,7 @@ out:
 		say("warning: Your system does not support pidfd "
 		    "interface.");
 	else if (report)
-		say("[*] pidfd interface is functional");
+		say("[*] pidfd interface is functional.");
 	return r;
 }
 

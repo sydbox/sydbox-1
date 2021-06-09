@@ -2016,6 +2016,7 @@ int main(int argc, char **argv)
 				    buf_uts.release,
 				    buf_uts.version);
 			}
+			say("[>] Checking for requirements...");
 			opt_t[0] = test_cross_memory_attach(true);
 			opt_t[1] = test_proc_mem(true);
 			opt_t[2] = test_pidfd(true);
@@ -2039,6 +2040,8 @@ int main(int argc, char **argv)
 				say("Sandboxing is only supported with bpf "
 				    "mode.");
 			}
+			if (!r)
+				say("[>] SydBox is supported on this system!");
 			exit(r == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 			break;
 		default:
