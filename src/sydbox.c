@@ -529,7 +529,7 @@ static void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_th
 
 void remove_process_node(syd_process_t *p)
 {
-	if (p->flags & SYD_IN_EXECVE) {
+	if (p->flags & SYD_IN_CLONE || p->flags & SYD_IN_EXECVE) {
 		/* Let's wait for the children before the funeral. */
 		if (sydbox->config.whitelist_per_process_directories)
 			procdrop(&sydbox->config.hh_proc_pid_auto, p->pid);
@@ -1000,11 +1000,18 @@ static int proc_info(pid_t pid) {
 	return 0;
 }
 
-static void reap_zombies(void)
+static void reap_zombies(syd_process_t *current, pid_t pid)
 {
+	if (current)
+		remove_process_node(current);
+	else if (pid >= 0)
+		remove_process(pid, 0);
+
 	syd_process_t *node, *tmp;
 	process_iter(node, tmp) { /* process_iter is delete-safe. */
-		if (!process_is_alive(node->pid, node->tgid))
+		if (((node->flags & SYD_KILLED) &&
+		     !(node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE))) ||
+		    !process_is_alive(node->pid, node->tgid))
 			remove_process_node(node);
 	}
 }
@@ -1331,6 +1338,7 @@ static int notify_loop(syd_process_t *current)
 		char *name = NULL;
 		bool jump = false;
 
+		pid = sydbox->execve_pid;
 wait_for_notify_fd:
 		if ((r = wait_for_notify_fd()) < 0) {
 			if (r == -ETIMEDOUT) {
@@ -1339,12 +1347,12 @@ wait_for_notify_fd:
 					child_notified = 0;
 					remove_process(pid, 0);
 				}
-				reap_zombies();
-				if (!process_count())
+				reap_zombies(NULL, -1);
+				if (!process_count_alive())
 					break;
 				goto wait_for_notify_fd;
 			} else if (r == -ESRCH) {
-				reap_zombies();
+				reap_zombies(lookup_process(pid), pid);
 				break;
 			} else {
 				errno = -r;
@@ -1356,9 +1364,9 @@ wait_for_notify_fd:
 		if (child_notified) {
 			pid = child_notified;
 			child_notified = 0;
-			remove_process(pid, 0);
-			reap_zombies();
-			if (!process_count())
+
+			reap_zombies(lookup_process(pid), pid);
+			if (!process_count_alive())
 				break;
 		}
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
@@ -1374,7 +1382,7 @@ notify_receive:
 				 * the time we were woken and
 				 * when we were able to acquire the rw lock.
 				 */
-				reap_zombies();
+				reap_zombies(lookup_process(pid), pid);
 				continue;
 			} else {
 				/* TODO use:
@@ -1387,7 +1395,7 @@ notify_receive:
 		}
 
 		if (sydbox->request->id == 0 && sydbox->request->pid == 0) {
-			reap_zombies();
+			reap_zombies(NULL, -1);
 			continue;
 		}
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
@@ -1399,20 +1407,19 @@ notify_receive:
 		pid = sydbox->request->pid;
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
+		current = lookup_process(pid);
 
 		/* Search early for exit before getting a process entry. */
 		if ((!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
 			if (pid == sydbox->execve_pid)
 				sydbox->exit_code = sydbox->request->data.args[0];
-			remove_process(pid, 0);
-			reap_zombies();
-			int count = process_count();
+			reap_zombies(current, -1);
+			int count = process_count_alive();
 			if (!count)
 				jump = true;
 			goto notify_respond;
 		}
 
-		current = lookup_process(pid);
 		if (!current) {
 			syd_process_t *parent;
 			parent = parent_process(pid, current);
@@ -1422,7 +1429,7 @@ notify_receive:
 			} else {
 				current = new_process(pid);
 			}
-			reap_zombies();
+			reap_zombies(NULL, -1);
 		}
 		current->sysnum = sydbox->request->data.nr;
 		current->sysname = name;
@@ -1505,7 +1512,7 @@ notify_respond:
 				 * the time we were woken and
 				 * when we were able to acquire the rw lock.
 				 */
-				reap_zombies();
+				reap_zombies(current, -1);
 			} else {
 				/* TODO use:
 				 * __NR_pidfd_send_signal to kill the process

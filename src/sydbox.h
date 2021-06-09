@@ -665,6 +665,20 @@ extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 #define process_add(p) HASH_ADD(hh, sydbox->proctab, pid, sizeof(pid_t), (p))
 #define process_remove(p) HASH_DEL(sydbox->proctab, (p))
 
+static inline unsigned int process_count_alive(void)
+{
+	unsigned int r;
+	syd_process_t *node, *tmp;
+
+	r = 0;
+	process_iter(node, tmp) {
+		if (node->flags & SYD_KILLED)
+			continue;
+		r += 1;
+	}
+	return r;
+}
+
 /* Global functions */
 int syd_kill(pid_t pid, pid_t tgid, int sig);
 int syd_read_syscall(syd_process_t *current, long *sysnum);
