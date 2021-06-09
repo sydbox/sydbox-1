@@ -1332,8 +1332,9 @@ wait_for_notify_fd:
 			child_notified = 0;
 			remove_process(pid, 0);
 			reap_zombies();
+			if (!process_count())
+				break;
 		}
-
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
 notify_receive:
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
@@ -1395,6 +1396,7 @@ notify_receive:
 			} else {
 				current = new_process(pid);
 			}
+			reap_zombies();
 		}
 		current->sysnum = sydbox->request->data.nr;
 		current->sysname = name;
