@@ -39,7 +39,7 @@ void config_init(void)
 	/* set sane defaults for configuration */
 	sydbox->config.use_notify = true;
 	sydbox->config.use_toolong_hack = false;
-	sydbox->config.restrict_shared_memory_writable = true;
+	sydbox->config.restrict_mmap = true;
 	sydbox->config.whitelist_per_process_directories = true;
 	sydbox->config.whitelist_successful_bind = true;
 	sydbox->config.whitelist_unsupported_socket_families = true;

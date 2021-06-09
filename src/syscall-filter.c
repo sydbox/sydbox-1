@@ -4,6 +4,11 @@
  * Simple seccomp based system call filters
  *
  * Copyright (c) 2013, 2021 Ali Polatel <alip@exherbo.org>
+ * Based in part upon Tor's sandbox which is
+ *   Copyright (c) 2001 Matej Pfajfar.
+ *   Copyright (c) 2001-2004, Roger Dingledine.
+ *   Copyright (c) 2004-2006, Roger Dingledine, Nick Mathewson.
+ *   Copyright (c) 2007-2021, The Tor Project, Inc.
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
@@ -115,34 +120,87 @@ int filter_fcntl(void)
 	return 0;
 }
 
-int filter_mmap(void)
-{
-	if (!sydbox->config.restrict_shared_memory_writable)
-		return 0;
-
-	return seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(mmap),
-				2,
-				SCMP_A2( SCMP_CMP_MASKED_EQ,
-					 PROT_WRITE, PROT_WRITE ),
-				SCMP_A3( SCMP_CMP_MASKED_EQ,
-					 MAP_SHARED, MAP_SHARED ));
-}
-
-int sys_fallback_mmap(syd_process_t *current)
+static int filter_mmap_restrict_shared(int sys_mmap)
 {
 	int r;
-	int prot, flags;
 
-	if (!sydbox->config.restrict_shared_memory_writable)
+	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+				  sys_mmap, 2,
+				  SCMP_A2( SCMP_CMP_MASKED_EQ,
+					   PROT_WRITE, PROT_WRITE ),
+				  SCMP_A3( SCMP_CMP_MASKED_EQ,
+					   MAP_SHARED, MAP_SHARED ))))
+		return r;
+
+	return 0;
+}
+
+static int filter_mmap_restrict(int sys_mmap)
+{
+	int r;
+
+	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
+				  sys_mmap, 2,
+				  SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ),
+				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE))))
+		return r;
+	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
+				  sys_mmap, 2,
+				  SCMP_CMP(2, SCMP_CMP_EQ, PROT_NONE),
+				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE))))
+		return r;
+	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
+				  sys_mmap, 2,
+				  SCMP_CMP(2, SCMP_CMP_EQ,
+					   PROT_READ|PROT_WRITE),
+				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE|MAP_ANONYMOUS))))
+		return r;
+	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
+				  sys_mmap, 2,
+				  SCMP_CMP(2, SCMP_CMP_EQ,
+					   PROT_READ|PROT_WRITE),
+				  SCMP_CMP(3, SCMP_CMP_EQ,MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK))))
+		return r;
+	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
+				  sys_mmap, 2,
+				  SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ|PROT_WRITE),
+				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE))))
+		return r;
+	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
+				  sys_mmap, 2,
+				  SCMP_CMP(2, SCMP_CMP_EQ,
+					   PROT_READ|PROT_WRITE),
+				  SCMP_CMP(3, SCMP_CMP_EQ,
+					   MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS))))
+		return r;
+	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
+				  sys_mmap, 2,
+				  SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ|PROT_EXEC),
+				  SCMP_CMP(3, SCMP_CMP_EQ,
+					   MAP_PRIVATE|MAP_DENYWRITE))))
+		return r;
+	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+				  sys_mmap, 0)))
+		return r;
+	return 0;
+}
+
+int filter_mmap(void)
+{
+	if (sydbox->config.restrict_shared_memory_writable)
+		return filter_mmap_restrict_shared(SCMP_SYS(mmap));
+	else if (sydbox->config.restrict_mmap)
+		return filter_mmap_restrict(SCMP_SYS(mmap));
+	else
 		return 0;
+}
 
-	if ((r = syd_read_argument_int(current, 2, &prot)) < 0)
-		return r;
-	if ((r = syd_read_argument_int(current, 3, &flags)) < 0)
-		return r;
-
-	r = 0;
-	if (prot & PROT_WRITE && flags & MAP_SHARED)
-		r = deny(current, EPERM);
-	return r;
+int filter_mmap2(void)
+{
+	if (sydbox->config.restrict_shared_memory_writable)
+		return filter_mmap_restrict_shared(SCMP_SYS(mmap));
+	else if (sydbox->config.restrict_mmap)
+		return filter_mmap_restrict(SCMP_SYS(mmap));
+	else
+		return 0;
 }

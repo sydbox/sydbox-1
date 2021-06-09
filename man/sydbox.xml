@@ -345,10 +345,16 @@
       <title>Further Restrictions</title>
 
         <para>
-          There are other ways to further restrict access, see:
+          There are other ways to further restrict access which are listed below.
+          Note, some of these options are enabled by default.
           <itemizedlist>
             <listitem>
           <link linkend="core-restrict-fcntl">core/restrict/file_control</link>
+            </listitem>
+          </itemizedlist>
+          <itemizedlist>
+            <listitem>
+          <link linkend="core-restrict-mmap">core/restrict/mmap</link>
             </listitem>
           </itemizedlist>
           <itemizedlist>
@@ -692,23 +698,69 @@
         </varlistentry>
 
         <varlistentry>
+          <term><option id="core-restrict-mmap">core/restrict/mmap</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>default: <varname>true</varname></para>
+            <para>
+              A boolean specifying whether memory mapping should be restricted.
+              In this mode, only a subset of readable, writable and executable memory mappings
+              are allowed. Shared memory mappings are not allowed. Memory mappings which are
+              both writable and executable are not allowed. There are many more restrictions.
+              Check the <function>filter_mmap</function> and <function>filter_mmap2</function>
+              functions in the file <varname>src/syscall-filter.c</varname> of sydbox' source
+              code for a complete list of restrictions.
+            </para>
+            <para>
+              This option filters <function>mmap</function> and <function>mmap2</function>
+              system calls.
+            </para>
+            <para>
+              The set of options restricted for memory mappings is borrowed from the sandbox
+              of the Tor project.
+            </para>
+            <warning>
+              <para>
+              This setting is meant as a protection against <constant>TOCTOU</constant> attacks.
+              However, it should be noted that such attack vectors are inevitable if seccomp
+              user notifications are enabled. See <xref linkend="security"/> for more
+              information.
+              </para>
+            </warning>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
           <term><option id="core-restrict-shm-wr">core/restrict/shared_memory_writable</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>default: <varname>false</varname></para>
             <para>
-              A boolean specifying whether writable shared memory mapping (
-              <function>mmap2</function><manvolnum>2</manvolnum> with
-              <constant>PROT_WRITE</constant> &amp; <constant>MAP_SHARED</constant> combination )
+              A boolean specifying whether writable shared memory mappings
               should be forbidden.
             </para>
-
-              <warning>
-                <para>
-                  This setting is meant as a protection against <constant>TOCTOU</constant> attacks. However, it should
-                  be noted that such attack vectors are relatively diverse under a ptrace() monitoring environment.
-                </para>
-              </warning>
+            <para>
+              This function filters <function>mmap</function><manvolnum>2</manvolnum> and
+              <function>mmap2</function><manvolnum>2</manvolnum> system calls with
+              <constant>PROT_WRITE</constant> given as the memory protection mode and
+              <constant>MAP_SHARED</constant> given as sharing mode.
+            </para>
+            <note>
+              <para>
+                This option has precedence over the option <option>core/restrict/mmap</option>.
+                If both are enabled, only restrictions given by this option are applied.
+                Note, though, the option <option>core/restrict/mmap</option> includes this
+                restrictions of this option and many more so it's recommended to use.
+              </para>
+            </note>
+            <warning>
+              <para>
+              This setting is meant as a protection against <constant>TOCTOU</constant> attacks.
+              However, it should be noted that such attack vectors are inevitable if seccomp
+              user notifications are enabled. See <xref linkend="security"/> for more
+              information.
+              </para>
+            </warning>
           </listitem>
         </varlistentry>
 

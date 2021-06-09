@@ -188,6 +188,14 @@ static const struct key key_table[] = {
 		.set    = magic_set_restrict_fcntl,
 		.query  = magic_query_restrict_fcntl,
 	},
+	[MAGIC_KEY_CORE_RESTRICT_MMAP] = {
+		.name   = "mmap",
+		.lname  = "core.restrict.mmap",
+		.parent = MAGIC_KEY_CORE_RESTRICT,
+		.type   = MAGIC_TYPE_BOOLEAN,
+		.set    = magic_set_restrict_mmap,
+		.query  = magic_query_restrict_mmap,
+	},
 	[MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE] = {
 		.name   = "shared_memory_writable",
 		.lname  = "core.restrict.shared_memory_writable",

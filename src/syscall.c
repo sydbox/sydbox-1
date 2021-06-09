@@ -35,15 +35,11 @@ static int rule_add_openat_wr_eperm(int sysnum);
 static const sysentry_t syscall_entries[] = {
 	{
 		.name = "mmap2",
-		.filter = filter_mmap,
-		.enter = sys_fallback_mmap,
-		.ptrace_fallback = true,
+		.filter = filter_mmap2,
 	},
 	{
 		.name = "mmap",
 		.filter = filter_mmap,
-		.enter = sys_fallback_mmap,
-		.ptrace_fallback = true,
 	},
 
 	{
@@ -378,8 +374,7 @@ size_t syscall_entries_max(void)
 void sysinit(void)
 {
 	for (unsigned i = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		if (syscall_entries[i].filter &&
-		    syscall_entries[i].ptrace_fallback)
+		if (syscall_entries[i].filter)
 			continue;
 
 		if (syscall_entries[i].name) {

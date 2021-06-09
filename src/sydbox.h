@@ -171,6 +171,7 @@ enum magic_key {
 
 	MAGIC_KEY_CORE_RESTRICT,
 	MAGIC_KEY_CORE_RESTRICT_FILE_CONTROL,
+	MAGIC_KEY_CORE_RESTRICT_MMAP,
 	MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE,
 
 	MAGIC_KEY_CORE_WHITELIST,
@@ -478,6 +479,7 @@ struct config {
 
 	/* restrict knobs are not inherited, they're global config */
 	bool restrict_file_control;
+	bool restrict_mmap;
 	bool restrict_shared_memory_writable;
 
 	/* same for these, not inherited: global */
@@ -567,11 +569,6 @@ struct sysentry {
 
 	/* Apply a simple seccomp filter (bpf-only, no ptrace) */
 	sysfilter_t filter;
-	/*
-	 * Are ".enter" and ".exit" members ptrace fallbacks when seccomp
-	 * support is not available or do they have to be called anyway?
-	 */
-	bool ptrace_fallback;
 
 	/*
 	 * If this is >0 this system call is an open*() system call with
@@ -858,6 +855,8 @@ int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current);
 int magic_query_trace_use_toolong_hack(syd_process_t *current);
 int magic_set_restrict_fcntl(const void *val, syd_process_t *current);
 int magic_query_restrict_fcntl(syd_process_t *current);
+int magic_set_restrict_mmap(const void *val, syd_process_t *current);
+int magic_query_restrict_mmap(syd_process_t *current);
 int magic_set_restrict_shm_wr(const void *val, syd_process_t *current);
 int magic_query_restrict_shm_wr(syd_process_t *current);
 int magic_set_whitelist_ppd(const void *val, syd_process_t *current);
@@ -924,6 +923,7 @@ int filter_open(void);
 int filter_openat(void);
 int filter_fcntl(void);
 int filter_mmap(void);
+int filter_mmap2(void);
 int sys_fallback_mmap(syd_process_t *current);
 
 int sys_access(syd_process_t *current);
