@@ -347,36 +347,37 @@
         <para>
           There are other ways to further restrict access which are listed below.
           Note, some of these options are enabled by default.
-          <itemizedlist>
-            <listitem>
-              <link linkend="core-restrict-fcntl">core/restrict/general</link>
-            </listitem>
-            <listitem>
-              <link linkend="core-restrict-fcntl">core/restrict/fcntl</link>
-            </listitem>
-            <listitem>
-              <link linkend="core-restrict-fcntl">core/restrict/ioctl</link>
-            </listitem>
-            <listitem>
-              <link linkend="core-restrict-mmap">core/restrict/mmap</link>
-            </listitem>
-            <listitem>
-              <link linkend="core-restrict-shm-wr">core/restrict/shm_wr</link>
-            </listitem>
-            <listitem>
-              <link linkend="core-whitelist-sb">core/whitelist/successful_bind</link>
-            </listitem>
-            <listitem>
-              <link linkend="core-whitelist-usf">core/whitelist/unsupported_socket_families</link>
-            </listitem>
-            <listitem>
-              <link linkend="exec-resume_if_match">exec/resume_if_match</link>
-            </listitem>
-            <listitem>
-              <link linkend="exec-kill_if_match">exec/kill_if_match</link>
-            </listitem>
-          </itemizedlist>
         </para>
+
+        <itemizedlist>
+          <listitem><para>
+            <link linkend="core-restrict-general">core/restrict/general</link>
+          </para></listitem>
+          <listitem><para>
+            <link linkend="core-restrict-fcntl">core/restrict/file_control</link>
+          </para></listitem>
+          <listitem><para>
+            <link linkend="core-restrict-ioctl">core/restrict/io_control</link>
+          </para></listitem>
+          <listitem><para>
+            <link linkend="core-restrict-mmap">core/restrict/memory_map</link>
+          </para></listitem>
+          <listitem><para>
+            <link linkend="core-restrict-shm-wr">core/restrict/shared_memory_writable</link>
+          </para></listitem>
+          <listitem><para>
+            <link linkend="core-whitelist-sb">core/whitelist/successful_bind</link>
+          </para></listitem>
+          <listitem><para>
+            <link linkend="core-whitelist-usf">core/whitelist/unsupported_socket_families</link>
+          </para></listitem>
+          <listitem><para>
+            <link linkend="exec-resume_if_match">exec/resume_if_match</link>
+          </para></listitem>
+          <listitem><para>
+            <link linkend="exec-kill_if_match">exec/kill_if_match</link>
+          </para></listitem>
+        </itemizedlist>
     </refsect2>
   </refsect1>
 
@@ -791,7 +792,7 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-restrict-fcntl">core/restrict/fcntl</option></term>
+          <term><option id="core-restrict-fcntl">core/restrict/file_control</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>default: <varname>false</varname></para>
@@ -817,7 +818,7 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-restrict-ioctl">core/restrict/ioctl</option></term>
+          <term><option id="core-restrict-ioctl">core/restrict/io_control</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>default: <varname>false</varname></para>
@@ -842,7 +843,7 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-restrict-mmap">core/restrict/mmap</option></term>
+          <term><option id="core-restrict-mmap">core/restrict/memory_map</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>default: <varname>false</varname></para>
@@ -880,7 +881,7 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-restrict-shm-wr">core/restrict/shm_wr</option></term>
+          <term><option id="core-restrict-shm-wr">core/restrict/shared_memory_writable</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>default: <varname>false</varname></para>
@@ -896,9 +897,9 @@
             </para>
             <note>
               <para>
-                This option has precedence over the option <option>core/restrict/mmap</option>.
+                This option has precedence over the option <option>core/restrict/memory_map</option>.
                 If both are enabled, only restrictions given by this option are applied.
-                Note, though, the option <option>core/restrict/mmap</option> includes this
+                Note, though, the option <option>core/restrict/memory_map</option> includes this
                 restrictions of this option and many more so it's recommended to use.
               </para>
             </note>
