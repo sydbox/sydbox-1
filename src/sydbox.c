@@ -107,11 +107,12 @@ usage: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] [-E var=val...] {command [
 -m magic    -- run a magic command during init, may be repeated\n\
 -E var=val  -- put var=val in the environment for command, may be repeated\n\
 -E var      -- remove var from the environment for command, may be repeated\n\
---dry-run   -- run under inspection without denying system calls\n\
--d <fd|tmp> -- dump system call information to the given file descriptor\n\
 -a <arch>   -- native,x86_64,x86,x86,x32,arm,aarch64,mips,mips64,ppc,ppc64\n\
                       ppc64le,s390,s390x,parisc,parisc64,riscv64\n\
                default: native, may be repeated\n\
+-b          -- run in bpf only mode, no seccomp user notifications\n\
+--dry-run   -- run under inspection without denying system calls\n\
+-d <fd|tmp> -- dump system call information to the given file descriptor\n\
 -t          -- test if various runtime requirements are functional\n\
 \n\
 Hey you, out there beyond the wall,\n\
@@ -1947,6 +1948,7 @@ int main(int argc, char **argv)
 		{"profile",	required_argument,	NULL,	0},
 		{"dry-run",	no_argument,		NULL,	0},
 		{"arch",	required_argument,	NULL,	'a'},
+		{"bpf",		no_argument,		NULL,	'b'},
 		{"test",	no_argument,		NULL,	't'},
 		{NULL,		0,		NULL,	0},
 	};
@@ -1968,7 +1970,7 @@ int main(int argc, char **argv)
 	*/
 	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_NATIVE);
 
-	while ((opt = getopt_long(argc, argv, "a:hd:vc:m:E:t", long_options,
+	while ((opt = getopt_long(argc, argv, "a:bhd:vc:m:E:t", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
@@ -1999,6 +2001,9 @@ int main(int argc, char **argv)
 				say("system calls in arch %s will be killed!",
 				    optarg);
 			}
+			break;
+		case 'b':
+			sydbox->bpf_only = true;
 			break;
 		case 'h':
 			usage(stdout, 0);
@@ -2078,8 +2083,12 @@ int main(int argc, char **argv)
 		say("Do not know how to sandbox, exiting.");
 		exit(EXIT_FAILURE);
 	}
-	if (test_cross_memory_attach(false) && test_proc_mem(false))
+	if (test_cross_memory_attach(false) && test_proc_mem(false)) {
+		say("warning: Neither cross memory attach nor /proc/pid/mem "
+			"interface is available.");
+		say("warning: Sandboxing is only supported with bpf mode.");
 		sydbox->bpf_only = true;
+	}
 
 	if ((env = getenv(SYDBOX_CONFIG_ENV)))
 		config_parse_spec(env);
