@@ -78,10 +78,8 @@ AC_PROG_CC_C99
 if test x"$ac_cv_prog_cc_c99" = x"no"; then
 	AC_MSG_ERROR([sydbox requires a C compiler that supports ISO C99!])
 fi
-CX_PTHREAD
-LIBS="$PTHREAD_LIBS $LIBS"
-CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-CC="$PTHREAD_CC"
+AX_PTHREAD([],
+	   [AC_MSG_ERROR([sydbox requires the POSIX threads library!])])
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
