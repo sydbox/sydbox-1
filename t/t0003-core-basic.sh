@@ -393,13 +393,14 @@ test_expect_success DIG 'network sandboxing = allow' '
     test -s "$cdir"/out
 '
 
+# TODO should be test_must_violate rather than test_must_fail
 test_expect_success DIG 'network sandboxing = deny' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
-    test_must_violate sydbox \
+    test_must_fail sydbox \
         -m core/sandbox/read:off \
         -m core/sandbox/write:off \
         -m core/sandbox/exec:off \
