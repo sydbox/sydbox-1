@@ -29,11 +29,11 @@ test_expect_success 'return success if tracee returns success (STATIC)' '
 '
 
 test_expect_success 'return success if initial tracee returns success (FORK)' '
-    sydbox -- syd-true-fork 256
+    sydbox -- syd-true-fork 64
 '
 
 test_expect_success 'return success if initial tracee returns success (STATIC|FORK)' '
-    sydbox -- syd-true-fork-static 256
+    sydbox -- syd-true-fork-static 64
 '
 
 test_expect_success 'return success if initial tracee returns success (PTHREAD)' '
@@ -49,11 +49,11 @@ test_expect_success 'return failure if tracee returns failure (STATIC)' '
 '
 
 test_expect_success 'return failure if initial tracee returns failure (FORK)' '
-    test_expect_code 1 sydbox -- syd-false-fork 256
+    test_expect_code 1 sydbox -- syd-false-fork 64
 '
 
 test_expect_success 'return failure if initial tracee returns failure (STATIC|FORK)' '
-    test_expect_code 1 sydbox -- syd-false-fork-static 256
+    test_expect_code 1 sydbox -- syd-false-fork-static 64
 '
 
 test_expect_success 'return failure if initial tracee returns failure (PTHREAD)' '
@@ -88,28 +88,28 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is termina
     test_expect_code 143 sydbox -- syd-abort-static 15 # SIGTERM
 '
 
-test_expect_success TODO,NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated (FORK)' '
-    test_expect_code 130 sydbox -- syd-abort-fork 256 2 && # SIGINT
-    test_expect_code 131 sydbox -- syd-abort-fork 256 3 && # SIGQUIT
-    test_expect_code 132 sydbox -- syd-abort-fork 256 4 && # SIGILL
-    test_expect_code 134 sydbox -- syd-abort-fork 256 6 && # SIGABRT
-    test_expect_code 136 sydbox -- syd-abort-fork 256 8 && # SIGFPE
-    test_expect_code 139 sydbox -- syd-abort-fork 256 11 && # SIGFPE
-    test_expect_code 141 sydbox -- syd-abort-fork 256 13 && # SIGPIPE
-    test_expect_code 142 sydbox -- syd-abort-fork 256 14 && # SIGALRM
-    test_expect_code 143 sydbox -- syd-abort-fork 256 15 # SIGTERM
+test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated (FORK)' '
+    test_expect_code 130 sydbox -- syd-abort-fork 64 2 && # SIGINT
+    test_expect_code 131 sydbox -- syd-abort-fork 64 3 && # SIGQUIT
+    test_expect_code 132 sydbox -- syd-abort-fork 64 4 && # SIGILL
+    test_expect_code 134 sydbox -- syd-abort-fork 64 6 && # SIGABRT
+    test_expect_code 136 sydbox -- syd-abort-fork 64 8 && # SIGFPE
+    test_expect_code 139 sydbox -- syd-abort-fork 64 11 && # SIGFPE
+    test_expect_code 141 sydbox -- syd-abort-fork 64 13 && # SIGPIPE
+    test_expect_code 142 sydbox -- syd-abort-fork 64 14 && # SIGALRM
+    test_expect_code 143 sydbox -- syd-abort-fork 64 15 # SIGTERM
 '
 
-test_expect_success TODO,NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated (STATIC|FORK)' '
-    test_expect_code 130 sydbox -- syd-abort-fork-static 256 2 && # SIGINT
-    test_expect_code 131 sydbox -- syd-abort-fork-static 256 3 && # SIGQUIT
-    test_expect_code 132 sydbox -- syd-abort-fork-static 256 4 && # SIGILL
-    test_expect_code 134 sydbox -- syd-abort-fork-static 256 6 && # SIGABRT
-    test_expect_code 136 sydbox -- syd-abort-fork-static 256 8 && # SIGFPE
-    test_expect_code 139 sydbox -- syd-abort-fork-static 256 11 && # SIGFPE
-    test_expect_code 141 sydbox -- syd-abort-fork-static 256 13 && # SIGPIPE
-    test_expect_code 142 sydbox -- syd-abort-fork-static 256 14 && # SIGALRM
-    test_expect_code 143 sydbox -- syd-abort-fork-static 256 15 # SIGTERM
+test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated (STATIC|FORK)' '
+    test_expect_code 130 sydbox -- syd-abort-fork-static 64 2 && # SIGINT
+    test_expect_code 131 sydbox -- syd-abort-fork-static 64 3 && # SIGQUIT
+    test_expect_code 132 sydbox -- syd-abort-fork-static 64 4 && # SIGILL
+    test_expect_code 134 sydbox -- syd-abort-fork-static 64 6 && # SIGABRT
+    test_expect_code 136 sydbox -- syd-abort-fork-static 64 8 && # SIGFPE
+    test_expect_code 139 sydbox -- syd-abort-fork-static 64 11 && # SIGFPE
+    test_expect_code 141 sydbox -- syd-abort-fork-static 64 13 && # SIGPIPE
+    test_expect_code 142 sydbox -- syd-abort-fork-static 64 14 && # SIGALRM
+    test_expect_code 143 sydbox -- syd-abort-fork-static 64 15 # SIGTERM
 '
 
 test_expect_success TODO 'return 128 + $SIGNUM if tracee is terminated (PTHREAD)' '
@@ -124,7 +124,7 @@ test_expect_success TODO 'return 128 + $SIGNUM if tracee is terminated (PTHREAD)
     test_expect_code 143 sydbox -- syd-abort-pthread 8 15 # SIGTERM
 '
 
-test_expect_success TODO 'return 128 + $SIGNUM if tracee is terminated (STATIC|PTHREAD)' '
+test_expect_success 'return 128 + $SIGNUM if tracee is terminated (STATIC|PTHREAD)' '
     test_expect_code 130 sydbox -- syd-abort-pthread-static 8 2 && # SIGINT
     test_expect_code 131 sydbox -- syd-abort-pthread-static 8 3 && # SIGQUIT
     test_expect_code 132 sydbox -- syd-abort-pthread-static 8 4 && # SIGILL
@@ -399,213 +399,12 @@ test_expect_success DIG 'network sandboxing = deny' '
     cdir="${pdir}/$(unique_dir)" &&
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
-    test_must_fail sydbox \
+    test_must_violate sydbox \
         -m core/sandbox/read:off \
         -m core/sandbox/write:off \
         -m core/sandbox/exec:off \
         -m core/sandbox/network:deny \
         dig +noall +answer dev.chessmuse.com
 '
-
-## XXX TODO FIXME KEEP use_ptrace disabled and remove!
-#test_expect_success 'both seccomp and ptrace can not be disabled' '
-#    test_expect_code 1 sydbox \
-#        -m core/trace/use_seccomp:0 \
-#        -m core/trace/use_ptrace:0 \
-#        true
-#'
-#
-#test_expect_success 'disabling use_ptrace works with read sandboxing = off' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    sydbox \
-#        -m core/trace/use_seccomp:1 \
-#        -m core/trace/use_ptrace:0 \
-#        -m core/sandbox/read:off \
-#        -m core/sandbox/write:off \
-#        -m core/sandbox/exec:off \
-#        -m core/sandbox/network:off \
-#        syd-open-static "$cdir"/readme rdonly
-#'
-#
-#test_expect_success 'disabling use_ptrace works with read sandboxing = allow' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    sydbox \
-#        -m core/trace/use_seccomp:1 \
-#        -m core/trace/use_ptrace:0 \
-#        -m core/sandbox/read:allow \
-#        -m core/sandbox/write:off \
-#        -m core/sandbox/exec:off \
-#        -m core/sandbox/network:off \
-#        syd-open-static "$cdir"/readme rdonly
-#'
-#
-#test_expect_success 'disabling use_ptrace works with read sandboxing = deny' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    test_expect_code 1 sydbox \
-#        -m core/trace/use_seccomp:1 \
-#        -m core/trace/use_ptrace:0 \
-#        -m core/sandbox/read:deny \
-#        -m core/sandbox/write:off \
-#        -m core/sandbox/exec:off \
-#        -m core/sandbox/network:off \
-#        syd-open-static "$cdir"/readme rdonly
-#'
-#
-#test_expect_success 'disabling use_ptrace works with write sandboxing = off' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    sydbox \
-#        -m core/trace/use_seccomp:1 \
-#        -m core/trace/use_ptrace:0 \
-#        -m core/sandbox/read:off \
-#        -m core/sandbox/write:off \
-#        -m core/sandbox/exec:off \
-#        -m core/sandbox/network:off \
-#        syd-open-static "$cdir"/readme wronly
-#'
-#
-#test_expect_success 'disabling use_ptrace works with write sandboxing = allow' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    sydbox \
-#        -m core/trace/use_seccomp:1 \
-#        -m core/trace/use_ptrace:0 \
-#        -m core/sandbox/read:off \
-#        -m core/sandbox/write:allow \
-#        -m core/sandbox/exec:off \
-#        -m core/sandbox/network:off \
-#        syd-open-static "$cdir"/readme wronly
-#'
-#
-#test_expect_success 'disabling use_ptrace works with write sandboxing = deny' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    test_expect_code 1 sydbox \
-#        -m core/trace/use_seccomp:1 \
-#        -m core/trace/use_ptrace:0 \
-#        -m core/sandbox/read:off \
-#        -m core/sandbox/write:deny \
-#        -m core/sandbox/exec:off \
-#        -m core/sandbox/network:off \
-#        syd-open-static "$cdir"/readme wronly
-#'
-#
-#test_expect_success 'disabling use_ptrace works with exec sandboxing = off' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    sydbox \
-#        -m core/trace/use_seccomp:1 \
-#        -m core/trace/use_ptrace:0 \
-#        -m core/sandbox/read:off \
-#        -m core/sandbox/write:off \
-#        -m core/sandbox/exec:off \
-#        -m core/sandbox/network:off \
-#        syd-open-static "$cdir"/readme wronly
-#'
-#
-#test_expect_success 'disabling use_ptrace works with exec sandboxing = allow' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    sydbox \
-#        -m core/trace/use_seccomp:1 \
-#        -m core/trace/use_ptrace:0 \
-#        -m core/sandbox/read:off \
-#        -m core/sandbox/write:off \
-#        -m core/sandbox/exec:allow \
-#        -m core/sandbox/network:off \
-#        syd-open-static "$cdir"/readme wronly
-#'
-#
-#test_expect_success 'disabling use_ptrace works with exec sandboxing = deny' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    test_expect_code 1 sydbox \
-#        -m core/trace/use_seccomp:1 \
-#        -m core/trace/use_ptrace:0 \
-#        -m core/sandbox/read:off \
-#        -m core/sandbox/write:off \
-#        -m core/sandbox/exec:deny \
-#        -m core/sandbox/network:off \
-#        syd-open-static "$cdir"/readme wronly
-#'
-#
-#test_expect_success DIG 'disabling use_ptrace works with network sandboxing = off' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    sydbox \
-#        -m core/trace/use_seccomp:1 \
-#        -m core/trace/use_ptrace:0 \
-#        -m core/sandbox/read:off \
-#        -m core/sandbox/write:off \
-#        -m core/sandbox/exec:off \
-#        -m core/sandbox/network:off \
-#        dig +noall +answer dev.chessmuse.com > "$cdir"/out &&
-#    test -s "$cdir"/out
-#'
-#
-#test_expect_success DIG 'disabling use_ptrace works with network sandboxing = allow' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    sydbox \
-#        -m core/trace/use_seccomp:1 \
-#        -m core/trace/use_ptrace:0 \
-#        -m core/sandbox/read:off \
-#        -m core/sandbox/write:off \
-#        -m core/sandbox/exec:off \
-#        -m core/sandbox/network:allow \
-#        dig +noall +answer dev.chessmuse.com > "$cdir"/out &&
-#    test -s "$cdir"/out
-#'
-#
-#test_expect_success DIG 'disabling use_ptrace works with network sandboxing = deny' '
-#    pdir="$(unique_dir)" &&
-#    mkdir "$pdir" &&
-#    cdir="${pdir}/$(unique_dir)" &&
-#    mkdir "$cdir" &&
-#    touch "$cdir"/readme &&
-#    test_must_fail sydbox \
-#        -m core/trace/use_seccomp:1 \
-#        -m core/trace/use_ptrace:0 \
-#        -m core/sandbox/read:off \
-#        -m core/sandbox/write:off \
-#        -m core/sandbox/exec:off \
-#        -m core/sandbox/network:deny \
-#        dig +noall +answer dev.chessmuse.com
-#'
 
 test_done
