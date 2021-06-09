@@ -733,8 +733,9 @@ test x"@SYDBOX_HAVE_NEWFSTATAT@" = x"0" || test_set_prereq HAVE_NEWFSTATAT
 # root user. Let's set a prereq to catch such cases and skip tests as necessary.
 test x"`id -u`" = x"0" || test_set_prereq NOT_ROOT
 
-# dig is used to test network sandboxing.
+# dig & perl are used to test network sandboxing.
 test x"`which dig`" = x"" || test_set_prereq DIG
+test x"`which python`" != x"" && python --version | grep -iq 'Python 3' && test_set_prereq PY3
 
 # Check if we're running on buildhost.
 test -n "$JOB_ID" && test_set_prereq ON_BUILD_HOST

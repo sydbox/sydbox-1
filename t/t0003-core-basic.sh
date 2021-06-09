@@ -363,49 +363,4 @@ test_expect_success 'restrict file control works to deny open(path,O_SYNC) with 
         syd-open-static "$cdir"/readme rdonly sync
 '
 
-test_expect_success DIG 'network sandboxing = off' '
-    pdir="$(unique_dir)" &&
-    mkdir "$pdir" &&
-    cdir="${pdir}/$(unique_dir)" &&
-    mkdir "$cdir" &&
-    touch "$cdir"/readme &&
-    sydbox \
-        -m core/sandbox/read:off \
-        -m core/sandbox/write:off \
-        -m core/sandbox/exec:off \
-        -m core/sandbox/network:off \
-        dig +noall +answer dev.chessmuse.com > "$cdir"/out &&
-        test -s "$cdir"/out
-'
-
-test_expect_success DIG 'network sandboxing = allow' '
-    pdir="$(unique_dir)" &&
-    mkdir "$pdir" &&
-    cdir="${pdir}/$(unique_dir)" &&
-    mkdir "$cdir" &&
-    touch "$cdir"/readme &&
-    sydbox \
-        -m core/sandbox/read:off \
-        -m core/sandbox/write:off \
-        -m core/sandbox/exec:off \
-        -m core/sandbox/network:allow \
-        dig +noall +answer dev.chessmuse.com > "$cdir"/out &&
-    test -s "$cdir"/out
-'
-
-# TODO should be test_must_violate rather than test_must_fail
-test_expect_success DIG 'network sandboxing = deny' '
-    pdir="$(unique_dir)" &&
-    mkdir "$pdir" &&
-    cdir="${pdir}/$(unique_dir)" &&
-    mkdir "$cdir" &&
-    touch "$cdir"/readme &&
-    test_must_fail sydbox \
-        -m core/sandbox/read:off \
-        -m core/sandbox/write:off \
-        -m core/sandbox/exec:off \
-        -m core/sandbox/network:deny \
-        dig +noall +answer dev.chessmuse.com
-'
-
 test_done
