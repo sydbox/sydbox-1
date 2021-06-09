@@ -493,19 +493,38 @@ const int open_readonly_flags[OPEN_READONLY_FLAG_MAX] = {
 	O_RDONLY|O_DIRECTORY|O_LARGEFILE|O_NONBLOCK|O_PATH|O_SYNC|O_DIRECT,
 };
 
-static int filter_open_readonly(void)
+static int filter_open_readonly()
 {
 	int r;
+	uint32_t action;
+	enum sandbox_mode mode;
+
+	mode = sydbox->config.box_static.mode.sandbox_read;
+	switch (mode) {
+	case SANDBOX_OFF:
+	case SANDBOX_ALLOW:
+		action = SCMP_ACT_ALLOW;
+		break;
+	case SANDBOX_BPF:
+	case SANDBOX_DENY:
+		action = SCMP_ACT_ERRNO(EPERM);
+		break;
+	default:
+		assert_not_reached();
+	}
+
+	if (action == sydbox->seccomp_action)
+		return 0;
 
 	for (unsigned i = 0; i < ELEMENTSOF(open_readonly_flags); i++) {
-		r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
+		r = seccomp_rule_add(sydbox->ctx, action,
 				     SCMP_SYS(open), 1,
 				     SCMP_A1( SCMP_CMP_EQ,
 					      open_readonly_flags[i],
 					      open_readonly_flags[i] ));
 		if (r < 0)
 			return r;
-		r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
+		r = seccomp_rule_add(sydbox->ctx, action,
 				     SCMP_SYS(openat), 1,
 				     SCMP_A2( SCMP_CMP_EQ,
 					      open_readonly_flags[i],

@@ -107,7 +107,13 @@ whitelist/network/connect+unix:/run/nscd/socket
 whitelist/network/connect+unix:/var/lib/sss/pipes/nss
 ";
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug)]
+struct EventStruct {
+    id: u32,
+    //name: String,
+}
+
+#[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 struct ProcessStruct {
     // pid: u32,
 // stat: StatStruct,
@@ -131,15 +137,14 @@ enum Dump {
     SysEnt {
         id: u32,
         ts: u64,
-        event: u16,
+        event: EventStruct,
         /*
-        event_name: String,
         pid: u32,
         ppid: u32,
         tgid: u32,
         */
-        sysname: String,
-        args: [u64; 6],
+        name: String,
+        args: [i64; 6],
         repr: [String; 6],
     },
 }
@@ -597,7 +602,7 @@ fn parse_json_line(
     path_limit: u8,
 ) -> (Option<String>, Option<String>, Option<SystemTime>) {
     match serde_json::from_str(&serialized)
-        .unwrap_or_else(|_| panic!("failed to parse `{}'", serialized))
+        .unwrap_or_else(|e| panic!("failed to parse `{}': {}", serialized, e))
     {
         Dump::Init {
             id: 0,
@@ -612,68 +617,68 @@ fn parse_json_line(
             return (None, Some(cmd), Some(UNIX_EPOCH + Duration::from_secs(ts)));
         }
         Dump::SysEnt {
-            event: 10,
+            event: EventStruct {id: 8, ..},
             repr,
-            sysname,
+            name,
             ..
-        } if sysname == "bind" => {
+        } if name == "bind" => {
             magic.insert((crate::Sandbox::Bind, repr[1].clone()));
         }
         Dump::SysEnt {
-            event: 10,
+            event: EventStruct {id: 8, ..},
             repr,
-            sysname,
+            name,
             ..
-        } if sysname == "connect" => {
+        } if name == "connect" => {
             magic.insert((crate::Sandbox::Connect, repr[1].clone()));
         }
         Dump::SysEnt {
-            event: 10,
+            event: EventStruct {id: 8, ..},
             repr,
-            sysname,
+            name,
             ..
-        } if sysname == "sendto" => {
+        } if name == "sendto" => {
             magic.insert((crate::Sandbox::Connect, repr[4].clone()));
         }
         Dump::SysEnt {
-            event: 10,
+            event: EventStruct {id: 8, ..},
             repr,
-            sysname,
+            name,
             ..
-        } if sysname == "execve" => {
+        } if name == "execve" => {
             magic.insert((crate::Sandbox::Exec, repr[0].clone()));
         }
         Dump::SysEnt {
-            event: 10,
+            event: EventStruct {id: 8, ..},
             args,
             repr,
-            sysname,
+            name,
             ..
         } => {
             let may_write: bool;
             let mut report_missing_handler = false;
             let mut repr_idx: [usize; 6] = [0; 6];
-            if sysname.ends_with("at") {
+            if name.ends_with("at") {
                 repr_idx[0] = 2;
             } else {
                 repr_idx[0] = 1;
             }
 
-            may_write = if sysname == "open" {
+            may_write = if name == "open" {
                 open_may_write(args[1])
-            } else if sysname == "openat" {
+            } else if name == "openat" {
                 open_may_write(args[2])
-            } else if sysname == "access" {
+            } else if name == "access" {
                 access_may_write(args[1])
-            } else if sysname == "faccessat" {
+            } else if name == "faccessat" {
                 access_may_write(args[2])
-            } else if sysname == "rename" {
+            } else if name == "rename" {
                 repr_idx[1] = 2;
                 true
-            } else if sysname == "symlink" {
+            } else if name == "symlink" {
                 repr_idx[0] = 2;
                 true
-            } else if sysname == "mkdir" || sysname == "rmdir" || sysname == "unlink" {
+            } else if name == "mkdir" || name == "rmdir" || name == "unlink" {
                 true
             } else {
                 report_missing_handler = true;
@@ -681,7 +686,7 @@ fn parse_json_line(
             };
 
             if report_missing_handler {
-                eprintln!("SYS:{:?} {:?} {:?}", sysname, args, repr);
+                eprintln!("SYS:{:?} {:?} {:?}", name, args, repr);
             }
 
             for idx in &repr_idx {
@@ -761,11 +766,11 @@ fn filter_proc(path: &str) -> String {
     path.to_string()
 }
 
-fn access_may_write(mode: u64) -> bool {
+fn access_may_write(mode: i64) -> bool {
     (mode as i32) & libc::W_OK != 0
 }
 
-fn open_may_write(flags: u64) -> bool {
+fn open_may_write(flags: i64) -> bool {
     let flags: i32 = flags as i32;
     match flags & libc::O_ACCMODE {
         libc::O_WRONLY | libc::O_RDWR => true,

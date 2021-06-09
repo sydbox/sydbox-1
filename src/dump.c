@@ -217,8 +217,7 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"%u,"
-			J(event_name)"\"%s\"",
+			J(event)"{\"id\":%u,\"name\":\"%s\"},",
 			id++, (unsigned long long)now,
 			DUMP_ASSERT, "assert");
 
@@ -235,8 +234,7 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"%u,"
-			J(event_name)"\"%s\","
+			J(event)"{\"id\":%u,\"name\":\"%s\"},"
 			J(signal)"%d",
 			id++, (unsigned long long)now,
 			DUMP_INTERRUPT, "interrupt", sig);
@@ -261,8 +259,7 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"%u,"
-			J(event_name)"\"%s\","
+			J(event)"{\"id\":%u,\"name\":\"%s\"},"
 			J(pid)"%d",
 			id++, (unsigned long long)now,
 			what, event_name, pid);
@@ -279,8 +276,7 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"%u,"
-			J(event_name)"\"%s\","
+			J(event)"{\"id\":%u,\"name\":\"%s\"},"
 			J(pid)"%d,"
 			J(cmd)"\"%s\"",
 			id++, (unsigned long long)now,
@@ -295,7 +291,7 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"%u,"
+			J(event)"{\"id\":%u,\"name\":\"exit\"},"
 			J(pid)"%d,"
 			J(exit_code)"%d",
 			id++, (unsigned long long)now,
@@ -309,8 +305,8 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"%u,"
-			J(sysname)"\"%s\","
+			J(event)"{\"id\":%u,\"name\":\"sys\"},"
+			J(name)"\"%s\","
 			J(args)"[%ld,%ld,%ld,%ld,%ld,%ld],"
 			J(repr)"[\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"]}",
 			id++, (unsigned long long)now,
