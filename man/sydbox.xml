@@ -34,12 +34,16 @@
 
   <refnamediv>
     <refname>sydbox</refname>
-    <refpurpose>seccomp-bpf &amp; seccomp-user-notify based sandbox</refpurpose>
+    <refpurpose>seccomp based application sandbox</refpurpose>
   </refnamediv>
 
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
-      <command>sydbox <arg choice="opt">-hv</arg> <arg choice="opt" rep="repeat">-c pathspec</arg> <arg choice="opt" rep="repeat">-m magic</arg> <arg choice="opt" rep="repeat">-E var=val</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command>
+      <itemizedlist>
+        <listitem><para><command>sydbox <arg choice="opt">-hvb</arg> <arg choice="opt" rep="repeat">-a arch</arg>  <arg choice="opt" rep="repeat">-c pathspec</arg> <arg choice="opt" rep="repeat">-m magic</arg> <arg choice="opt" rep="repeat">-E var</arg> <arg choice="opt" rep="repeat">-E var=val</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
+        <listitem><para><command>sydbox --dry-run <arg choice="req">-d fd|tmp</arg> <arg choice="opt" rep="repeat">-a arch</arg> <arg choice="opt" rep="repeat">-c pathspec</arg> <arg choice="opt" rep="repeat">-m magic</arg> <arg choice="opt" rep="repeat">-E var</arg> <arg choice="opt" rep="repeat">-E var=val</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
+        <listitem><para><command>sydbox --test</command></para></listitem>
+      </itemizedlist>
     </cmdsynopsis>
   </refsynopsisdiv>
 
@@ -76,9 +80,10 @@
       calls <function>pidfd_getfd</function>, <function>pidfd_send_signal</function>,
       <function>process_vm_readv</function> and <function>process_vm_writev</function>. The
       Secure Computing facility of the Linux kernel should support
-      the <constant>SECCOMP_USER_NOTIF_FLAG_CONTINUE</constant> operation. Linux-5.11 or later
-      is recommended. The kernel configuration option <constant>CONFIG_CROSS_MEMORY_ATTACH</constant>
-      must be enabled.
+      the <constant>SECCOMP_USER_NOTIF_FLAG_CONTINUE</constant> operation.
+      is recommended. It is recommended to enable the kernel configuration option
+      <constant>CONFIG_CROSS_MEMORY_ATTACH</constant>. Linux-5.11 or later is recommeded.
+      Check with <command>sydbox --test</command> to verify all the requirements are met.
     </para>
   </refsect1>
 
@@ -136,23 +141,33 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-E</option> <varname>var</varname></term>
-        <listitem>
-          <simpara>
-            Remove <varname>var</varname> from the environment for command, may be repeated
-          </simpara>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
         <term><option>-a</option> <varname>arch</varname></term>
         <listitem>
           <simpara>
-            native,x86_64,x86,x86,x32,arm,aarch64,mips,mips64,ppc,ppc64,
-            ppc64le,s390,s390x,parisc,parisc64,riscv64.
+            Filter system calls for the given architecture, may be repeated
           </simpara>
           <simpara>
-            default: native, may be repeated.
+            Available architectures are
+            <constant>native</constant>,
+            <constant>x86_64</constant>,
+            <constant>x86</constant>,
+            <constant>x86</constant>,
+            <constant>x32</constant>,
+            <constant>arm</constant>,
+            <constant>aarch64</constant>,
+            <constant>mips</constant>,
+            <constant>mips64</constant>,
+            <constant>ppc</constant>,
+            <constant>ppc64</constant>,
+            <constant>ppc64le</constant>,
+            <constant>s390</constant>,
+            <constant>s390x</constant>,
+            <constant>parisc</constant>,
+            <constant>parisc64</constant>, and
+            <constant>riscv64</constant>.
+          </simpara>
+          <simpara>
+            default: <constant>native</constant>, may be repeated.
           </simpara>
         </listitem>
       </varlistentry>
@@ -181,7 +196,18 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-t</option></term>
+        <term><option>--dry-run</option></term>
+        <listitem>
+          <simpara>
+            Run under inspection without denying system calls, use with
+            <option>-d</option> to get an overview of what the traced process
+            is doing.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--test</option></term>
         <listitem>
           <simpara>
             Test if various runtime requirements are functional and exit.

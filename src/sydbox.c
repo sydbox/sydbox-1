@@ -99,21 +99,24 @@ PINK_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
-"PACKAGE"-"VERSION GITVERSION" -- ptrace & seccomp based sandbox\n\
-usage: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
+"PACKAGE"-"VERSION GITVERSION" -- seccomp based application sandbox\n\
+usage: "PACKAGE" [-hvb] [-a arch...] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
+       "PACKAGE" --dry-run [-d <fd|tmp>] {command [arg...]}\n\
+       "PACKAGE" --test\n\
 -h          -- Show usage and exit\n\
 -v          -- Show version and exit\n\
--c pathspec -- path spec to the configuration file, may be repeated\n\
--m magic    -- run a magic command during init, may be repeated\n\
--E var=val  -- put var=val in the environment for command, may be repeated\n\
--E var      -- remove var from the environment for command, may be repeated\n\
--a <arch>   -- native,x86_64,x86,x86,x32,arm,aarch64,mips,mips64,ppc,ppc64\n\
+-c pathspec -- Path spec to the configuration file, may be repeated\n\
+-m magic    -- Run a magic command during init, may be repeated\n\
+-E var=val  -- Put var=val in the environment for command, may be repeated\n\
+-E var      -- Remove var from the environment for command, may be repeated\n\
+-a <arch>   -- Filter system calls for the given architecture, may be repeated\n\
+               native,x86_64,x86,x86,x32,arm,aarch64,mips,mips64,ppc,ppc64\n\
                       ppc64le,s390,s390x,parisc,parisc64,riscv64\n\
-               default: native, may be repeated\n\
--b          -- run in bpf only mode, no seccomp user notifications\n\
---dry-run   -- run under inspection without denying system calls\n\
--d <fd|tmp> -- dump system call information to the given file descriptor\n\
--t          -- test if various runtime requirements are functional\n\
+               default: native\n\
+-b          -- Run in bpf only mode, no seccomp user notifications\n\
+-d <fd|tmp> -- Dump system call information to the given file descriptor\n\
+--dry-run   -- Run under inspection without denying system calls\n\
+--test      -- Test if various runtime requirements are functional\n\
 \n\
 Hey you, out there beyond the wall,\n\
 Breaking bottles in the hall,\n\
