@@ -1326,6 +1326,14 @@ wait_for_notify_fd:
 				break;
 			}
 		} /* else { ; } notify fd is ready to read. */
+
+		if (child_notified) {
+			pid = child_notified;
+			child_notified = 0;
+			remove_process(pid, 0);
+			reap_zombies();
+		}
+
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
 notify_receive:
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
