@@ -55,19 +55,6 @@ static int magic_set_sandbox(enum sandbox_type t, const char *str, syd_process_t
 	if (r < 0)
 		return MAGIC_RET_INVALID_VALUE;
 
-	if (!use_notify()) {
-		say("warning: Running in seccomp-bpf only mode!");
-		switch (r) {
-		case SANDBOX_ALLOW:
-			say("Invalid value `allow' for sandbox.");
-			break;
-		case SANDBOX_DENY:
-			say("Invalid valud `deny' for sandbox.");
-			break;
-		}
-		return MAGIC_RET_INVALID_VALUE;
-	}
-
 	box = box_current(current);
 	switch (t) {
 	case SANDBOX_EXEC:
