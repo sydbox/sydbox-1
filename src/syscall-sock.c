@@ -155,12 +155,14 @@ int sys_accept(syd_process_t *current)
 		break;
 	case AF_INET:
 		port = ntohs(info->addr->u.sa_in.sin_port);
+		/* whitelist bind(0 -> port) for connect() */
 		if (!port && (r = proc_socket_port(inode, true, &port)) < 0)
 			return 0;
 		match->addr.sa_in.port[0] = match->addr.sa_in.port[1] = port;
 		break;
 	case AF_INET6:
 		port = ntohs(info->addr->u.sa6.sin6_port);
+		/* whitelist bind(0 -> port) for connect() */
 		if (!port && (r = proc_socket_port(inode, false, &port)) < 0)
 			return 0;
 		match->addr.sa6.port[0] = match->addr.sa6.port[1] = port;
@@ -170,7 +172,7 @@ int sys_accept(syd_process_t *current)
 	}
 	sockmap_remove(&P_SOCKMAP(current), inode);
 
-	/* whitelist bind(0 -> port) for connect() */
+	/* whitelist successful bind. */
 	struct acl_node *node;
 	node = xcalloc(1, sizeof(struct acl_node));
 	node->action = ACL_ACTION_WHITELIST;
