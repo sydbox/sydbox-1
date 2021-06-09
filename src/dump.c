@@ -124,6 +124,7 @@ static void dump_null(void)
 	fprintf(fp, "null");
 }
 
+#if 0
 static void dump_string(const char *s)
 {
 	unsigned i;
@@ -170,6 +171,7 @@ static void dump_quoted(const void *p)
 	dump_string(s);
 	fprintf(fp, "\"");
 }
+#endif
 
 static void dump_errno(int err_no)
 {
@@ -273,6 +275,7 @@ static void dump_wait_status(int status)
 	fprintf(fp, "}");
 }
 
+#if 0
 static void dump_clone_flags(int clone_flags)
 {
 	fprintf(fp, "{"
@@ -410,6 +413,7 @@ static void dump_clone_flags(int clone_flags)
 #endif
 		);
 }
+#endif
 
 static void dump_ptrace_options(int options)
 {
@@ -676,6 +680,7 @@ static void dump_pink(const char *name, int retval, int save_errno, pid_t pid, v
 	fprintf(fp, "}");
 }
 
+#if 0
 static void dump_aclq(const aclq_t *aclq, void (*dump_match_func)(const void *))
 {
 	int i = 0, j = 0;
@@ -721,6 +726,7 @@ static void dump_sandbox(const sandbox_t *box)
 	/*"J(TODO)"network whitelist */
 	fprintf(fp, "}");
 }
+#endif
 
 static void dump_process(pid_t pid)
 {

@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <sys/utsname.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
@@ -106,10 +107,12 @@ usage: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] [-E var=val...] {command [
 -m magic    -- run a magic command during init, may be repeated\n\
 -E var=val  -- put var=val in the environment for command, may be repeated\n\
 -E var      -- remove var from the environment for command, may be repeated\n\
+--dry-run   -- run under inspection without denying system calls\n\
 -d <fd|tmp> -- dump system call information to the given file descriptor\n\
 -a <arch>   -- native,x86_64,x86,x86,x32,arm,aarch64,mips,mips64,ppc,ppc64\n\
                       ppc64le,s390,s390x,parisc,parisc64,riscv64\n\
                default: native, may be repeated\n\
+-t          -- test if various runtime requirements are functional\n\
 \n\
 Hey you, out there beyond the wall,\n\
 Breaking bottles in the hall,\n\
@@ -218,6 +221,12 @@ static syd_process_t *new_thread(pid_t pid)
 	if ((thread->pidfd = syscall(__NR_pidfd_open, pid, 0)) < 0) {
 		if (errno != EINVAL)
 			say_errno("pidfd_open(%d)", pid);
+		thread->pidfd = -1;
+	}
+	if ((thread->memfd = syd_proc_mem_open(pid)) < 0) {
+		errno = -thread->memfd;
+		say_errno("memfd_open(%d)", pid);
+		thread->memfd = -1;
 	}
 
 	process_add(thread);
@@ -431,6 +440,10 @@ void bury_process(syd_process_t *p)
 	if (p->pidfd >= 0) {
 		close(p->pidfd);
 		p->pidfd = -1;
+	}
+	if (p->memfd >= 0) {
+		close(p->memfd);
+		p->memfd = -1;
 	}
 	if (p->abspath) {
 		free(p->abspath);
@@ -1444,7 +1457,13 @@ notify_receive:
 			}
 		} else {
 			current->flags &= ~SYD_IN_CLONE;
-			event_syscall(current);
+			if ((r = seccomp_notify_id_valid(sydbox->notify_fd,
+							 sydbox->request->id)) < 0) {
+				/* process invalid, don't process further */
+				;
+			} else if (r == 0) {
+				event_syscall(current);
+			}
 		}
 
 notify_respond:
@@ -1911,8 +1930,9 @@ void join_wait_thread(syd_process_t *current)
 
 int main(int argc, char **argv)
 {
-	int opt, r;
+	int opt, i, r, opt_t[4];
 	const char *env;
+	struct utsname buf_uts;
 
 	int32_t arch;
 
@@ -1927,6 +1947,7 @@ int main(int argc, char **argv)
 		{"profile",	required_argument,	NULL,	0},
 		{"dry-run",	no_argument,		NULL,	0},
 		{"arch",	required_argument,	NULL,	'a'},
+		{"test",	no_argument,		NULL,	't'},
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -1940,12 +1961,15 @@ int main(int argc, char **argv)
 	if (!(sydbox->ctx = seccomp_init(SCMP_ACT_ALLOW)))
 		die_errno("seccomp_init");
 
+	/*
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
 		say("can't optimize seccomp filter (%d %s), continuing...",
 		    -r, strerror(-r));
+	*/
 	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_NATIVE);
 
-	while ((opt = getopt_long(argc, argv, "a:hd:vc:m:E:", long_options, &options_index)) != EOF) {
+	while ((opt = getopt_long(argc, argv, "a:hd:vc:m:E:t", long_options,
+				  &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
 			if (streq(long_options[options_index].name, "dry-run")) {
@@ -2007,6 +2031,40 @@ int main(int argc, char **argv)
 			if (putenv(optarg))
 				die_errno("putenv");
 			break;
+		case 't':
+			if (uname(&buf_uts) < 0) {
+				say_errno("uname");
+			} else {
+				say("%s/%s %s %s",
+				    buf_uts.sysname,
+				    buf_uts.nodename,
+				    buf_uts.release,
+				    buf_uts.version);
+			}
+			opt_t[0] = test_cross_memory_attach(true);
+			opt_t[1] = test_proc_mem(true);
+			opt_t[2] = test_pidfd(true);
+			opt_t[3] = test_seccomp(true, true);
+			for (i = 0; i < 4; i++) {
+				if (opt_t[i] != 0) {
+					r = opt_t[i];
+					break;
+				}
+			}
+			if (opt_t[0] != 0) {
+				say("Enable CONFIG_CROSS_MEMORY_ATTACH "
+				    "in your kernel configuration "
+				    "for cross memory attach to work.");
+			}
+			if (opt_t[0] != 0 && opt_t[1] != 0) {
+				say("warning: Neither cross memory attach "
+				    "nor /proc/pid/mem interface is "
+				    "available.");
+				say("Sandboxing is only supported with bpf "
+				    "mode.");
+			}
+			exit(r == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
+			break;
 		default:
 			usage(stderr, 1);
 		}
@@ -2014,6 +2072,14 @@ int main(int argc, char **argv)
 
 	if (optind == argc)
 		usage(stderr, 1);
+
+	if (test_pidfd(false) || test_seccomp(false, false)) {
+		say("Neither pidfd interface nor seccomp functional");
+		say("Do not know how to sandbox, exiting.");
+		exit(EXIT_FAILURE);
+	}
+	if (test_cross_memory_attach(false) && test_proc_mem(false))
+		sydbox->bpf_only = true;
 
 	if ((env = getenv(SYDBOX_CONFIG_ENV)))
 		config_parse_spec(env);

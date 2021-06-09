@@ -240,6 +240,7 @@ int sys_execveat(syd_process_t *current)
 /* Write stat buffer */
 static int write_stat(syd_process_t *current, unsigned int buf_index, bool extended)
 {
+	int r;
 	const char *bufaddr = NULL;
 	size_t bufsize;
 	struct stat buf;
@@ -328,9 +329,15 @@ static int write_stat(syd_process_t *current, unsigned int buf_index, bool exten
 		}
 	}
 
+	say("writing stat");
 	long addr;
 	addr = current->args[buf_index];
-	syd_write_vm_data(current, addr, bufaddr, bufsize);
+	if ((r = syd_write_data(current, addr, bufaddr, bufsize) < 0)) {
+		errno = -r;
+		say_errno("syd_write_stat");
+	}
+	if (syd_proc_mem_write(current->memfd, addr, bufaddr, bufsize) < 0)
+		perror("syd_proc_mem_write");
 
 	return true;
 }

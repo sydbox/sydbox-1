@@ -345,8 +345,11 @@ struct syd_process {
 	/* Execve process ID */
 	pid_t execve_pid;
 
-	/* Pid FD */
+	/* Pid file descriptor */
 	int pidfd;
+
+	/* /proc/$pid/mem file descriptor */
+	int memfd;
 
 	/* System call ABI */
 	uint32_t arch;
@@ -527,6 +530,7 @@ struct sydbox {
 #endif
 
 	/* seccomp filters */
+	bool bpf_only;
 	int seccomp_fd;
 	int notify_fd;
 	bool seccomp_user_notify;
@@ -637,7 +641,7 @@ extern sydbox_t *sydbox;
 #endif
 
 #define tracing() (0)
-#define use_notify() (1) //((sydbox)->config.use_notify)
+#define use_notify() (!sydbox->bpf_only)
 
 #define detached(p) (!((p)->flags & SYD_IN_SYSCALL))
 #define entering(p) (!((p)->flags & SYD_IN_SYSCALL))
@@ -687,6 +691,7 @@ int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argva
 ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t len);
 int syd_write_syscall(syd_process_t *current, long sysnum);
 int syd_write_retval(syd_process_t *current, long retval, int error);
+ssize_t syd_write_data(syd_process_t *current, long addr, const void *buf, size_t count);
 int syd_read_socket_argument(syd_process_t *current, unsigned arg_index,
 			     unsigned long *argval);
 int syd_read_socket_subcall(syd_process_t *current, long *subcall);
@@ -696,6 +701,11 @@ int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len);
 int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argval);
 ssize_t syd_write_vm_data(syd_process_t *current, long addr, const char *src,
 			  size_t len);
+
+int test_cross_memory_attach(bool report);
+int test_proc_mem(bool report);
+int test_pidfd(bool report);
+int test_seccomp(bool report, bool test_seccomp_load);
 
 void reset_process(syd_process_t *p);
 void bury_process(syd_process_t *p);

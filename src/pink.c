@@ -12,6 +12,8 @@
 #include "syd.h"
 #include <errno.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #define SYD_RETURN_IF_DETACHED(current) do { \
 	if (current->flags & SYD_DETACHED) { \
@@ -32,8 +34,18 @@ static ssize_t _pink_process_vm_readv(pid_t pid,
 		    local_iov, liovcnt,
 		    remote_iov, riovcnt, flags);
 # else
-	errno = ENOSYS;
-	return -1;
+	static long sysnum = 0;
+
+	if (!sysnum)
+		sysnum = seccomp_syscall_resolve_name("process_vm_readv");
+	if (sysnum == __NR_SCMP_ERROR || sysnum < 0) {
+		errno = ENOSYS;
+		return -1;
+	} else {
+		r = syscall(sysnum, (long)pid,
+			    local_iov, liovcnt,
+			    remote_iov, riovcnt, flags);
+	}
 # endif
 	return r;
 }
@@ -59,8 +71,18 @@ static ssize_t _pink_process_vm_writev(pid_t pid,
 		    remote_iov, riovcnt,
 		    flags);
 # else
-	errno = ENOSYS;
-	return -1;
+	static long sysnum = 0;
+
+	if (!sysnum)
+		sysnum = seccomp_syscall_resolve_name("process_vm_writev");
+	if (sysnum == __NR_SCMP_ERROR || sysnum < 0) {
+		errno = ENOSYS;
+		return -1;
+	} else {
+		r = syscall(sysnum, (long)pid,
+			    local_iov, liovcnt,
+			    remote_iov, riovcnt, flags);
+	}
 # endif
 	return r;
 }
@@ -70,9 +92,9 @@ static ssize_t _pink_process_vm_writev(pid_t pid,
 # define process_vm_writev(...) (errno = ENOSYS, -1)
 #endif
 
-static inline int abi_wordsize(const syd_process_t *current)
+static inline int abi_wordsize(uint32_t arch)
 {
-	switch (current->arch) {
+	switch (arch) {
 #if defined(__x86_64__)
 	case SCMP_ARCH_X86_64:
 		return 8;
@@ -106,8 +128,73 @@ static inline int abi_wordsize(const syd_process_t *current)
 	}
 }
 
-#if 0
-int test_cross_memory_attach(void)
+static int process_vm_read(syd_process_t *current, long addr, void *buf,
+			   size_t count)
+{
+	size_t wsize;
+
+#if SIZEOF_LONG > 4
+	wsize = abi_wordsize(SCMP_ARCH_NATIVE);
+	if (wsize < sizeof(addr))
+		addr &= (1ul << 8 * wsize) - 1;
+#endif
+
+#if PINK_HAVE_PROCESS_VM_READV
+	static bool cross_memory_attach_works = true;
+
+	if (!cross_memory_attach_works) {
+		return syd_proc_mem_read(current->memfd, addr, buf, count);
+	} else {
+		int r;
+		struct iovec local[1], remote[1];
+		local[0].iov_base = buf;
+		remote[0].iov_base = (void *)addr;
+		local[0].iov_len = remote[0].iov_len = count;
+
+		r = process_vm_readv(current->pid, local, 1, remote, 1, /*flags:*/0);
+		if (errno == ENOSYS || errno == EPERM)
+			cross_memory_attach_works = false;
+		return r;
+	}
+#else
+	return syd_proc_mem_read(current->memfd, addr, buf, count);
+#endif
+}
+
+static int process_vm_write(syd_process_t *current, long addr, const void *buf,
+			    size_t count)
+{
+	size_t wsize;
+
+#if SIZEOF_LONG > 4
+	wsize = abi_wordsize(SCMP_ARCH_NATIVE);
+	if (wsize < sizeof(addr))
+		addr &= (1ul << 8 * wsize) - 1;
+#endif
+
+#if PINK_HAVE_PROCESS_VM_WRITEV
+	static bool cross_memory_attach_works = true;
+
+	if (!cross_memory_attach_works) {
+		return syd_proc_mem_write(current->memfd, addr, buf, count);
+	} else {
+		int r;
+		struct iovec local[1], remote[1];
+		local[0].iov_base = (void *)buf;
+		remote[0].iov_base = (void *)addr;
+		local[0].iov_len = remote[0].iov_len = count;
+
+		r = process_vm_writev(current->pid, local, 1, remote, 1, /*flags:*/0);
+		if (errno == ENOSYS || errno == EPERM)
+			cross_memory_attach_works = false;
+		return r;
+	}
+#else
+	return syd_proc_mem_write(current->memfd, addr, buf, count);
+#endif
+}
+
+int test_cross_memory_attach(bool report)
 {
 	int pipefd[2];
 
@@ -122,22 +209,17 @@ int test_cross_memory_attach(void)
 
 		close(pipefd[0]);
 		write(pipefd[1], &addr, sizeof(long));
+		close(pipefd[1]);
 		pause();
 		_exit(0);
 	}
 	long addr;
-	size_t wsize, len = 4; /* "ping" */
-	char dest[4];
-	syd_process_t *current = new_process(pid);
-	init_process_data(current, NULL);
-	current->arch = SCMP_ARCH_NATIVE;
-	if (read(pipefd[0], &addr, sizeof(long))) < 0
-		die_errno("read");
-#if SIZEOF_LONG > 4
-	wsize = abi_wordsize(current);
-	if (wsize < sizeof(addr))
-		addr &= (1ul << 8 * wsize) - 1;
-#endif
+	size_t len = 5; /* "ping" */
+	char dest[5];
+	close(pipefd[1]);
+	if (read(pipefd[0], &addr, sizeof(long)) < 0)
+		die_errno("pipe_read");
+	close(pipefd[0]);
 
 	struct iovec local[1], remote[1];
 	local[0].iov_base = dest;
@@ -145,57 +227,229 @@ int test_cross_memory_attach(void)
 	local[0].iov_len = remote[0].iov_len = len;
 
 	if (process_vm_readv(pid, local, 1, remote, 1, 0) < 0) {
-		if (errno == ENOSYS || errno == EPERM) {
-			say("Your system does not support process_vm_readv");
-			say("Please enable CONFIG_CROSS_MEMORY_ATTACH in your "
+		int save_errno = errno;
+		say_errno("process_vm_readv");
+		if (report && (errno == ENOSYS || errno == EPERM)) {
+			say("warning: Your system does not support process_vm_readv");
+			say("warning: Please enable CONFIG_CROSS_MEMORY_ATTACH in your "
 			    "kernel configuration.");
 		}
-		die_errno("process_vm_readv");
+		return -save_errno;
 	}
 	if (strcmp(dest, "ping")) {
-		say("Your system does not support process_vm_readv: \"%s\"", dest);
-		say("Please enable CONFIG_CROSS_MEMORY_ATTACH in your "
-		    "kernel configuration.");
+		if (report) {
+			say("warning: Your system does not support process_vm_readv: \"%s\"", dest);
+			say("warning: Please enable CONFIG_CROSS_MEMORY_ATTACH in your "
+			    "kernel configuration.");
+		}
+		return -ENOSYS;
 	}
+
+	if (report)
+		say("[*] cross memory attach is functional.");
 	return 0;
 }
+
+int test_proc_mem(bool report)
+{
+	int pipefd[2];
+
+	if (pipe(pipefd) < 0)
+		die_errno("pipe");
+
+	pid_t pid = fork();
+	if (pid < 0) {
+		die_errno("fork");
+	} else if (pid == 0) {
+		const char *addr = "ping";
+
+		close(pipefd[0]);
+		write(pipefd[1], &addr, sizeof(long));
+		close(pipefd[1]);
+		pause();
+		_exit(0);
+	}
+	long addr;
+	size_t wsize, len = 5; /* "ping" */
+	char dest[5];
+	close(pipefd[1]);
+	if (read(pipefd[0], &addr, sizeof(long)) < 0)
+		die_errno("pipe_read");
+	close(pipefd[0]);
+#if SIZEOF_LONG > 4
+	wsize = abi_wordsize(SCMP_ARCH_NATIVE);
+	if (wsize < sizeof(addr))
+		addr &= (1ul << 8 * wsize) - 1;
 #endif
+
+	int memfd = syd_proc_mem_open(pid);
+	if (memfd < 0) {
+		int save_errno = errno;
+		say_errno("syd_proc_mem_open");
+		if (report)
+			say("warning: Your system does not support /proc/pid/mem "
+			    "interface.");
+		return -save_errno;
+	}
+	if (syd_proc_mem_read(memfd, addr, dest, len) < 0) {
+		int save_errno = errno;
+		say_errno("syd_proc_mem_read");
+		if (report)
+			say("warning: Your system does not support /proc/pid/mem "
+			    "interface.");
+		return -save_errno;
+	}
+	if (strcmp(dest, "ping")) {
+		if (report)
+			say("warning: Your system does not support /proc/pid/mem "
+			    "interface: \"%s\"", dest);
+		return -ENOSYS;
+	}
+
+	if (report)
+		say("[*] /proc/pid/mem interface is functional.");
+	return 0;
+}
+
+int test_pidfd(bool report)
+{
+	int getfd, pidfd, r;
+	int pidfd_open, pidfd_getfd, pidfd_send_signal;
+	pid_t pid;
+
+	pid = fork();
+	if (pid < 0) {
+		die_errno("fork");
+	} else if (pid == 0) {
+		pause();
+		_exit(0);
+	}
+
+	r = 0;
+	pidfd_open = seccomp_syscall_resolve_name("pidfd_open");
+	if (pidfd_open == __NR_SCMP_ERROR ||
+	    pidfd_open < 0) {
+		if (!errno)
+			errno = ENOSYS;
+		r = -errno;
+		say_errno("pidfd_open");
+		goto out;
+	}
+	pidfd_getfd = seccomp_syscall_resolve_name("pidfd_getfd");
+	if (pidfd_getfd == __NR_SCMP_ERROR ||
+	    pidfd_getfd < 0) {
+		if (!errno)
+			errno = ENOSYS;
+		r = -errno;
+		say_errno("pidfd_getfd");
+		goto out;
+	}
+	pidfd_send_signal = seccomp_syscall_resolve_name("pidfd_send_signal");
+	if (pidfd_send_signal == __NR_SCMP_ERROR ||
+	    pidfd_send_signal < 0) {
+		if (!errno)
+			errno = ENOSYS;
+		r = -errno;
+		say_errno("pidfd_send_signal");
+		goto out;
+	}
+
+	pidfd = syscall(pidfd_open, pid, 0);
+	if (pidfd < 0) {
+		r = -errno;
+		say_errno("pidfd_open");
+		goto out;
+	}
+
+	getfd = syscall(pidfd_getfd, pidfd, STDERR_FILENO, 0);
+	if (getfd < 0) {
+		r = -errno;
+		say_errno("pidfd_getfd");
+		goto out;
+	}
+
+	if (syscall(pidfd_send_signal, pidfd, SIGKILL, NULL, 0) < 0) {
+		r = -errno;
+		say_errno("pidfd_send_signal");
+		goto out;
+	}
+
+	close(pidfd);
+
+	int wstatus;
+	if (waitpid(pid, &wstatus, __WALL) < 0) {
+		r = -errno;
+		say_errno("waitpid");
+		goto out;
+	}
+
+	if (WIFEXITED(wstatus)) {
+		say("warning: process exited normally after "
+		    "pidfd_send_signal.");
+		r = -EINVAL;
+	} else if (!WIFSIGNALED(wstatus)) {
+		say("warning: process was not terminated after "
+		    "pidfd_send_signal.");
+		r = -EINVAL;
+	} else if (WTERMSIG(wstatus) != SIGKILL) {
+		say("warning: process was not terminated with SIGKILL "
+		    "but %d.", WTERMSIG(wstatus));
+		r = -EINVAL;
+	}
+out:
+	if (r)
+		say("warning: Your system does not support pidfd "
+		    "interface.");
+	else if (report)
+		say("[*] pidfd interface is functional");
+	return r;
+}
+
+int test_seccomp(bool report, bool test_seccomp_load)
+{
+	int r;
+	scmp_filter_ctx ctx;
+
+	r = 0;
+	if ((ctx = seccomp_init(SCMP_ACT_ALLOW)) == NULL) {
+		r = -errno;
+		say_errno("seccomp_init");
+		goto out;
+	}
+
+	if ((r = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM),
+				  SCMP_SYS(mount), 0)) < 0) {
+		errno = -r;
+		say_errno("seccomp_rule_add");
+		goto out;
+	}
+
+	if (test_seccomp_load && (r = seccomp_load(ctx)) < 0) {
+		errno = -r;
+		say_errno("seccomp_load");
+	}
+
+	seccomp_release(ctx);
+out:
+	if (r)
+		say("warning: Your system does not support seccomp "
+		    "filters.");
+	else if (report)
+		say("[*] seccomp filters are functional.");
+	return r;
+}
 
 PINK_GCC_ATTR((nonnull(1,3)))
 int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len)
 {
-	struct iovec local[1], remote[1];
-
-#if SIZEOF_LONG > 4
-	size_t wsize = abi_wordsize(current);
-	if (wsize < sizeof(addr))
-		addr &= (1ul << 8 * wsize) - 1;
-#endif
-	local[0].iov_base = dest;
-	remote[0].iov_base = (void *)addr;
-	local[0].iov_len = remote[0].iov_len = len;
-
-	return process_vm_readv(current->pid, local, 1, remote, 1, /*flags:*/0);
+	return process_vm_read(current, addr, dest, len);
 }
 
 PINK_GCC_ATTR((nonnull(1,3)))
 ssize_t syd_write_vm_data(syd_process_t *current, long addr, const char *src,
 			  size_t len)
 {
-#if PINK_HAVE_PROCESS_VM_WRITEV
-	struct iovec local[1], remote[1];
-
-#if SIZEOF_LONG > 4
-	size_t wsize = abi_wordsize(current);
-	if (wsize < sizeof(addr))
-		addr &= (1ul << 8 * wsize) - 1;
-#endif
-	local[0].iov_base = (void *)src;
-	remote[0].iov_base = (void *)addr;
-	local[0].iov_len = remote[0].iov_len = len;
-#endif
-
-	return process_vm_writev(current->pid, local, 1, remote, 1, /*flags:*/ 0);
+	return process_vm_write(current, addr, src, len);
 }
 
 PINK_GCC_ATTR((nonnull(1,3)))
@@ -246,22 +500,9 @@ int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argva
 
 ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t len)
 {
-	size_t wsize;
-
 	SYD_RETURN_IF_DETACHED(current);
 
-#if SIZEOF_LONG > 4
-	wsize = abi_wordsize(current);
-	if (wsize < sizeof(addr))
-		addr &= (1ul << 8 * wsize) - 1;
-#endif
-
-	struct iovec local[1], remote[1];
-	local[0].iov_base = dest;
-	remote[0].iov_base = (void *)addr;
-	local[0].iov_len = remote[0].iov_len = len;
-
-	return process_vm_readv(current->pid, local, 1, remote, 1, /*flags:*/0);
+	return process_vm_read(current, addr, dest, len);
 }
 
 int syd_read_socket_argument(syd_process_t *current, unsigned arg_index,
@@ -284,16 +525,20 @@ int syd_read_socket_argument(syd_process_t *current, unsigned arg_index,
 
 	addr = current->args[1];
 	u_addr = addr;
-	wsize = abi_wordsize(current);
+	wsize = abi_wordsize(current->arch);
 	errno = 0;
 	if (wsize == sizeof(int)) {
 		unsigned int arg;
-		if ((r = syd_read_vm_data_full(current, u_addr, (long unsigned *)&arg)) < 0)
+		if ((r = process_vm_read(current, u_addr,
+					 (long unsigned *)&arg,
+					 sizeof(unsigned int))) < 0)
 			return r;
 		*argval = arg;
 	} else {
 		unsigned long arg;
-		if ((r = syd_read_vm_data_full(current, u_addr, &arg)) < 0)
+		if ((r = process_vm_read(current, u_addr,
+					 (long unsigned *)&arg,
+					 sizeof(unsigned long))) < 0)
 			return r;
 		*argval = arg;
 	}
@@ -344,7 +589,7 @@ int syd_read_socket_address(syd_process_t *current, unsigned arg_index, int *fd,
 		addrlen = sizeof(sockaddr->u);
 
 	memset(&sockaddr->u, 0, sizeof(sockaddr->u));
-	if ((r = syd_read_vm_data(current, addr, (char *)sockaddr->u.pad, addrlen)) < 0)
+	if ((r = process_vm_read(current, addr, sockaddr->u.pad, addrlen)) < 0)
 		return r;
 	sockaddr->u.pad[sizeof(sockaddr->u.pad) - 1] = '\0';
 
@@ -363,4 +608,12 @@ int syd_write_retval(syd_process_t *current, long retval, int error)
 	sydbox->response->error = error;
 
 	return 0;
+}
+
+ssize_t syd_write_data(syd_process_t *current, long addr, const void *buf,
+		       size_t count)
+{
+	SYD_RETURN_IF_DETACHED(current);
+
+	return process_vm_write(current, addr, buf, count);
 }
