@@ -253,7 +253,7 @@
       this case a match will prevent Sydbox from reporting a warning about the access violation, the system call is
       still denied though.</para>
 
-      <para>List of observed system calls are:
+      <para>List of filtered system calls are:
       <function>access</function><manvolnum>2</manvolnum>,
       <function>faccessat</function><manvolnum>2</manvolnum>,
       <function>faccessat2</function><manvolnum>2</manvolnum>,
@@ -305,7 +305,7 @@
       a path, this attempt is reported and the system call is denied. See <xref linkend="write-sandboxing"/> for more
       information on how to customize this behaviour.</para>
 
-      <para>List of observed system calls are:
+      <para>List of filtered system calls are:
       <function>access</function><manvolnum>2</manvolnum>,
       <function>faccessat</function><manvolnum>2</manvolnum>,
       <function>faccessat2</function><manvolnum>2</manvolnum>,
@@ -331,11 +331,11 @@
     <refsect2 id="network-sandboxing">
       <title>Network Sandboxing</title>
 
-      <para>This sandboxing exposes a way to prevent unwanted network calls. The observed system calls are:
+      <para>This sandboxing exposes a way to prevent unwanted network calls. The filtered system calls are:
       <function>bind</function><manvolnum>2</manvolnum>,
       <function>connect</function><manvolnum>2</manvolnum>, and
       <function>sendto</function><manvolnum>2</manvolnum>. To increase usability, these system calls are
-      observed in two groups: <emphasis>bind</emphasis> and <emphasis>connect</emphasis>.
+      filtered  in two groups: <emphasis>bind</emphasis> and <emphasis>connect</emphasis>.
       <function>bind</function><manvolnum>2</manvolnum> belongs to the first group, whereas the other two
       system calls belong to the <emphasis>connect</emphasis> group.
       </para>
@@ -349,37 +349,28 @@
           Note, some of these options are enabled by default.
           <itemizedlist>
             <listitem>
-          <link linkend="core-restrict-fcntl">core/restrict/file_control</link>
+              <link linkend="core-restrict-fcntl">core/restrict/general</link>
             </listitem>
-          </itemizedlist>
-          <itemizedlist>
             <listitem>
-          <link linkend="core-restrict-mmap">core/restrict/mmap</link>
+              <link linkend="core-restrict-fcntl">core/restrict/file_control</link>
             </listitem>
-          </itemizedlist>
-          <itemizedlist>
             <listitem>
-          <link linkend="core-restrict-shm-wr">core/restrict/shared_memory_writable</link>
+              <link linkend="core-restrict-mmap">core/restrict/mmap</link>
             </listitem>
-          </itemizedlist>
-          <itemizedlist>
             <listitem>
-          <link linkend="core-whitelist-sb">core/whitelist/successful_bind</link>
+              <link linkend="core-restrict-shm-wr">core/restrict/shared_memory_writable</link>
             </listitem>
-          </itemizedlist>
-          <itemizedlist>
             <listitem>
-          <link linkend="core-whitelist-usf">core/whitelist/unsupported_socket_families</link>
+              <link linkend="core-whitelist-sb">core/whitelist/successful_bind</link>
             </listitem>
-          </itemizedlist>
-          <itemizedlist>
             <listitem>
-          <link linkend="exec-resume_if_match">exec/resume_if_match</link>
+              <link linkend="core-whitelist-usf">core/whitelist/unsupported_socket_families</link>
             </listitem>
-          </itemizedlist>
-          <itemizedlist>
             <listitem>
-          <link linkend="exec-kill_if_match">exec/kill_if_match</link>
+              <link linkend="exec-resume_if_match">exec/resume_if_match</link>
+            </listitem>
+            <listitem>
+              <link linkend="exec-kill_if_match">exec/kill_if_match</link>
             </listitem>
           </itemizedlist>
         </para>
@@ -651,7 +642,7 @@
           <term><option id="core-sandbox-write">core/sandbox/write</option></term>
           <listitem>
             <para>type: <type>string</type></para>
-            <para>default: <varname>deny</varname></para>
+            <para>default: <varname>bpf</varname></para>
             <para>query: <varname>yes</varname></para>
             <para>
               A string specifying how write sandboxing should be done.
@@ -663,11 +654,123 @@
           <term><option id="core-sandbox-network">core/sandbox/network</option></term>
           <listitem>
             <para>type: <type>string</type></para>
-            <para>default: <varname>deny</varname></para>
+            <para>default: <varname>bpf</varname></para>
             <para>query: <varname>yes</varname></para>
             <para>
               A string specifying how network sandboxing should be done.
               See <xref linkend="network-sandboxing"/> for more information.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-restrict-general">core/restrict/general</option></term>
+          <listitem>
+            <para>type: <type>integer</type></para>
+            <para>default: <varname>2</varname></para>
+            <para>
+              An integer specifying the level of permitted system calls.
+              Level 0 performs no restrictions and every system call is permitted.
+              Level 1 is strict and resembles the first version of the Secure
+              Computing Mode. Level 2 is less strict and is designated for common
+              use. Level 3 is identical to Level 2 except it only permits read-only
+              open calls.
+            </para>
+            <para>
+              The list of permitted system calls in Level 1 are
+              <function>read</function><manvolnum>2</manvolnum>,
+              <function>write</function><manvolnum>2</manvolnum>,
+              <function>exit</function><manvolnum>2</manvolnum>,
+              <function>exit_group</function><manvolnum>2</manvolnum>,
+              <function>sigreturn</function><manvolnum>2</manvolnum>,
+              <function>open</function><manvolnum>2</manvolnum>,
+              <function>openat</function><manvolnum>2</manvolnum>,
+              <function>stat</function><manvolnum>2</manvolnum>,
+              <function>lstat</function><manvolnum>2</manvolnum>,
+              <function>newfstatat</function><manvolnum>2</manvolnum>,
+              <function>execve</function><manvolnum>2</manvolnum> and
+              <function>execveat</function><manvolnum>2</manvolnum>.
+              Only
+              read-only <function>open</function> calls are permitted.
+            </para>
+            <para>
+              The list of permitted system calls in Level 2 and Level 3 are
+              <function>access</function><manvolnum>2</manvolnum>,
+              <function>brk</function><manvolnum>2</manvolnum>,
+              <function>clock_gettime</function><manvolnum>2</manvolnum>,
+              <function>close</function><manvolnum>2</manvolnum>,
+              <function>clone</function><manvolnum>2</manvolnum>,
+              <function>dup</function><manvolnum>2</manvolnum>,
+              <function>execve</function><manvolnum>2</manvolnum>,
+              <function>execveat</function><manvolnum>2</manvolnum>,
+              <function>epoll_create</function><manvolnum>2</manvolnum>,
+              <function>epoll_wait</function><manvolnum>2</manvolnum>,
+              <function>epoll_pwait</function><manvolnum>2</manvolnum>,
+              <function>eventfd2</function><manvolnum>2</manvolnum>,
+              <function>pipe2</function><manvolnum>2</manvolnum>,
+              <function>pipe</function><manvolnum>2</manvolnum>,
+              <function>fchmod</function><manvolnum>2</manvolnum>,
+              <function>fcntl</function><manvolnum>2</manvolnum>,
+              <function>fstat</function><manvolnum>2</manvolnum>,
+              <function>fsync</function><manvolnum>2</manvolnum>,
+              <function>futex</function><manvolnum>2</manvolnum>,
+              <function>getdents</function><manvolnum>2</manvolnum>,
+              <function>getegid</function><manvolnum>2</manvolnum>,
+              <function>geteuid</function><manvolnum>2</manvolnum>,
+              <function>getgid</function><manvolnum>2</manvolnum>,
+              <function>getpid</function><manvolnum>2</manvolnum>,
+              <function>getrlimit</function><manvolnum>2</manvolnum>,
+              <function>gettimeofday</function><manvolnum>2</manvolnum>,
+              <function>gettid</function><manvolnum>2</manvolnum>,
+              <function>getuid</function><manvolnum>2</manvolnum>,
+              <function>lseek</function><manvolnum>2</manvolnum>,
+              <function>_llseek</function><manvolnum>2</manvolnum>,
+              <function>lstat</function><manvolnum>2</manvolnum>,
+              <function>mkdir</function><manvolnum>2</manvolnum>,
+              <function>mlockall</function><manvolnum>2</manvolnum>,
+              <function>mmap</function><manvolnum>2</manvolnum>,
+              <function>munmap</function><manvolnum>2</manvolnum>,
+              <function>nanosleep</function><manvolnum>2</manvolnum>,
+              <function>newfstatat</function><manvolnum>2</manvolnum>,
+              <function>open</function><manvolnum>2</manvolnum>,
+              <function>openat</function><manvolnum>2</manvolnum>,
+              <function>prlimit</function><manvolnum>2</manvolnum>,
+              <function>read</function><manvolnum>2</manvolnum>,
+              <function>rt_sigreturn</function><manvolnum>2</manvolnum>,
+              <function>sched_getaffinity</function><manvolnum>2</manvolnum>,
+              <function>sched_yield</function><manvolnum>2</manvolnum>,
+              <function>sendmsg</function><manvolnum>2</manvolnum>,
+              <function>set_robust_list</function><manvolnum>2</manvolnum>,
+              <function>setrlimit</function><manvolnum>2</manvolnum>,
+              <function>shutdown</function><manvolnum>2</manvolnum>,
+              <function>sigaltstack</function><manvolnum>2</manvolnum>,
+              <function>sigreturn</function><manvolnum>2</manvolnum>,
+              <function>stat</function><manvolnum>2</manvolnum>,
+              <function>uname</function><manvolnum>2</manvolnum>,
+              <function>wait4</function><manvolnum>2</manvolnum>,
+              <function>write</function><manvolnum>2</manvolnum>,
+              <function>writev</function><manvolnum>2</manvolnum>,
+              <function>exit_group</function><manvolnum>2</manvolnum>,
+              <function>exit</function><manvolnum>2</manvolnum>,
+              <function>madvise</function><manvolnum>2</manvolnum>,
+              <function>stat</function><manvolnum>2</manvolnum>,
+              <function>getrandom</function><manvolnum>2</manvolnum>,
+              <function>sysinfo</function><manvolnum>2</manvolnum>,
+              <function>recv</function><manvolnum>2</manvolnum>,
+              <function>send</function><manvolnum>2</manvolnum>,
+              <function>bind</function><manvolnum>2</manvolnum>,
+              <function>listen</function><manvolnum>2</manvolnum>,
+              <function>connect</function><manvolnum>2</manvolnum>,
+              <function>getsockname</function><manvolnum>2</manvolnum>,
+              <function>getpeername</function><manvolnum>2</manvolnum>,
+              <function>recvmsg</function><manvolnum>2</manvolnum>,
+              <function>recvfrom</function><manvolnum>2</manvolnum>,
+              <function>sendto</function><manvolnum>2</manvolnum>,
+              <function>unlink</function><manvolnum>2</manvolnum>,
+              <function>unlinkat</function><manvolnum>2</manvolnum> and
+              <function>poll</function><manvolnum>2</manvolnum>. In addition,
+              Level 2 permits <function>openat2</function><manvolnum>2</manvolnum>
+              as well.
+            </para>
           </listitem>
         </varlistentry>
 
@@ -719,6 +822,11 @@
               The set of options restricted for memory mappings is borrowed from the sandbox
               of the Tor project.
             </para>
+            <note>
+              <para>
+                This option requires <option>core/restrict/general</option> to be non-zero.
+              </para>
+            </note>
             <warning>
               <para>
               This setting is meant as a protection against <constant>TOCTOU</constant> attacks.
@@ -814,7 +922,10 @@
           <term><option id="core-violation-decision">core/violation/decision</option></term>
           <listitem>
             <para>type: <type>string</type></para>
-            <para>default: <varname>deny</varname></para>
+            <para>
+              default: <varname>deny</varname>, or <varname>bpf</varname> if
+              <option>-b</option> is given.
+            </para>
             <para>
               A string specifying the decision to take when an access violation occurs. Possible values are
               <varname>kill</varname>, <varname>killall</varname> and <varname>deny</varname>.
@@ -949,7 +1060,7 @@
             <note>
               <para>
                 This functionality does <emphasis>not</emphasis> work with seccomp because once enabled, seccomp mode
-                can not be disabled. If sydbox detaches from the process all observed system calls of the process will
+                can not be disabled. If sydbox detaches from the process all filtered system calls of the process will
                 fail with <constant>ENOSYS</constant>. Due to this fact upon receiving this command when seccomp is
                 enabled sydbox goes on to trace the process but stops sandboxing and frees all sandboxing related data
                 structures of the process. The process is <emphasis>ignored</emphasis>. However, this workaround may not

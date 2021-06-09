@@ -170,6 +170,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_SANDBOX_NETWORK,
 
 	MAGIC_KEY_CORE_RESTRICT,
+	MAGIC_KEY_CORE_RESTRICT_GENERAL,
 	MAGIC_KEY_CORE_RESTRICT_FILE_CONTROL,
 	MAGIC_KEY_CORE_RESTRICT_MMAP,
 	MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE,
@@ -481,6 +482,7 @@ struct config {
 	bool restrict_file_control;
 	bool restrict_mmap;
 	bool restrict_shared_memory_writable;
+	unsigned int restrict_general;
 
 	/* same for these, not inherited: global */
 	bool use_seize;
@@ -518,10 +520,6 @@ struct sydbox {
 
 	bool execve_wait;
 
-	enum syd_step trace_step:2;
-
-	int trace_options;
-
 	int exit_code;
 
 	pid_t execve_pid;
@@ -540,6 +538,7 @@ struct sydbox {
 	struct filter *filter;
 	struct seccomp_notif *request;
 	struct seccomp_notif_resp *response;
+	uint32_t seccomp_action;
 
 	bool permissive;
 
@@ -630,6 +629,9 @@ typedef struct syscall_info syscall_info_t;
 
 /* Global variables */
 extern sydbox_t *sydbox;
+
+#define OPEN_READONLY_FLAG_MAX 96
+extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 
 #if SYDBOX_HAVE_DUMP_BUILTIN
 # define inspecting() ((sydbox)->config.violation_decision == VIOLATION_NOOP)
@@ -853,6 +855,8 @@ int magic_set_trace_use_notify(const void *val, syd_process_t *current);
 int magic_query_trace_use_notify(syd_process_t *current);
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current);
 int magic_query_trace_use_toolong_hack(syd_process_t *current);
+int magic_set_restrict_general(const void *val, syd_process_t *current);
+int magic_query_restrict_general(syd_process_t *current);
 int magic_set_restrict_fcntl(const void *val, syd_process_t *current);
 int magic_query_restrict_fcntl(syd_process_t *current);
 int magic_set_restrict_mmap(const void *val, syd_process_t *current);
@@ -919,6 +923,7 @@ static inline void init_sysinfo(syscall_info_t *info)
 	memset(info, 0, sizeof(syscall_info_t));
 }
 
+int filter_general(void);
 int filter_open(void);
 int filter_openat(void);
 int filter_fcntl(void);

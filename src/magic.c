@@ -180,6 +180,14 @@ static const struct key key_table[] = {
 		.query  = magic_query_sandbox_network,
 	},
 
+	[MAGIC_KEY_CORE_RESTRICT_GENERAL] = {
+		.name   = "general",
+		.lname  = "core.restrict.general",
+		.parent = MAGIC_KEY_CORE_RESTRICT,
+		.type   = MAGIC_TYPE_INTEGER,
+		.set    = magic_set_restrict_general,
+		.query  = magic_query_restrict_general,
+	},
 	[MAGIC_KEY_CORE_RESTRICT_FILE_CONTROL] = {
 		.name   = "file_control",
 		.lname  = "core.restrict.file_control",

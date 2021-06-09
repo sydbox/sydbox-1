@@ -1836,10 +1836,8 @@ static pid_t startup_child(char **argv)
 	} else {
 		int fd;
 		if ((r = parent_read_int(&fd)) < 0) {
-			say_errno("failed to apply seccomp filters");
-			say("exiting because all sandbox modes are off");
-			say("try to set \"-m core/sandbox/{read,write,exec,network}:{bpf,allow,deny}\"");
-			say("no seccomp user notify fd received, exiting");
+			say_errno("failed to load seccomp filters");
+			say("Invalid sandbox options given.");
 			exit(-r);
 		} else {
 			sydbox->notify_fd = fd;
@@ -1936,6 +1934,8 @@ int main(int argc, char **argv)
 	struct utsname buf_uts;
 
 	int32_t arch;
+	size_t arch_argv_idx = 0;
+	char *arch_argv[32] = { NULL };
 
 	/* Long options are present for compatibility with sydbox-0.
 	 * Thus they are not documented!
@@ -1960,16 +1960,6 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	if (!(sydbox->ctx = seccomp_init(SCMP_ACT_ALLOW)))
-		die_errno("seccomp_init");
-
-	/*
-	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
-		say("can't optimize seccomp filter (%d %s), continuing...",
-		    -r, strerror(-r));
-	*/
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_NATIVE);
-
 	while ((opt = getopt_long(argc, argv, "a:bhd:vc:m:E:t", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
@@ -1989,18 +1979,9 @@ int main(int argc, char **argv)
 			}
 			usage(stderr, 1);
 		case 'a':
-			arch = arch_from_string(optarg);
-			if (arch < 0) {
-				errno = EINVAL;
-				die_errno("invalid architecture %s", optarg);
-			}
-			r = seccomp_arch_add(sydbox->ctx, (uint32_t)arch);
-			if (r == -EINVAL) {
-				say("architecture %s: not ok, continuing..",
-				    optarg);
-				say("system calls in arch %s will be killed!",
-				    optarg);
-			}
+			if (arch_argv_idx >= 32)
+				die("too many -a arguments");
+			arch_argv[arch_argv_idx++] = xstrdup(optarg);
 			break;
 		case 'b':
 			sydbox->bpf_only = true;
@@ -2095,15 +2076,38 @@ int main(int argc, char **argv)
 
 	config_done();
 
-	/* TODO: Find the library interface, this is an internal function!
-	if ((r = sys_chk_seccomp_flag(SECCOMP_FILTER_FLAG_NEW_LISTENER)) <= 0) {
-		errno = r ? -r : ENOSYS;
-		die_errno("System does not support SECCOMP_FILTER_FLAG_NEW_LISTENER");
-	}
-	*/
-
 	systable_init();
 	sysinit();
+
+	/* Initialize Secure Computing */
+	sydbox->seccomp_action = sydbox->config.restrict_general > 0
+		? SCMP_ACT_ERRNO(EPERM)
+		: SCMP_ACT_ALLOW;
+	if (!(sydbox->ctx = seccomp_init(sydbox->seccomp_action)))
+		die_errno("seccomp_init");
+	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
+		say("can't optimize seccomp filter (%d %s), continuing...",
+		    -r, strerror(-r));
+	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_NATIVE);
+	for (i = arch_argv_idx; i < 0; i--) {
+		if (arch_argv[i] == NULL)
+			continue;
+		arch = arch_from_string(arch_argv[i]);
+		if (arch < 0) {
+			errno = EINVAL;
+			die_errno("invalid architecture %s", arch_argv[i]);
+		}
+
+		r = seccomp_arch_add(sydbox->ctx, (uint32_t)arch);
+		if (r == -EINVAL) {
+			say("architecture %s: not ok, continuing..",
+			    arch_argv[i]);
+			say("system calls in arch %s will be killed!",
+			    arch_argv[i]);
+		}
+
+		free(arch_argv[i]);
+	}
 
 	/*
 	 * Initial program_invocation_name to be used for P_COMM(current).

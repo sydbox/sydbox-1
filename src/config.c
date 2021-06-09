@@ -39,6 +39,7 @@ void config_init(void)
 	/* set sane defaults for configuration */
 	sydbox->config.use_notify = true;
 	sydbox->config.use_toolong_hack = false;
+	sydbox->config.restrict_general = 2;
 	sydbox->config.restrict_mmap = true;
 	sydbox->config.whitelist_per_process_directories = true;
 	sydbox->config.whitelist_successful_bind = true;
@@ -53,13 +54,10 @@ void config_init(void)
 	 * Default to SANDBOX_BPF for bpf-only mode and
 	 * Default to SANDBOX_DENY for write & network sandboxing.
 	 */
-	enum sandbox_mode default_mode = sydbox->bpf_only ?
-		SANDBOX_BPF :
-		SANDBOX_DENY;
 	sydbox->config.box_static.mode.sandbox_read = SANDBOX_OFF;
 	sydbox->config.box_static.mode.sandbox_exec = SANDBOX_OFF;
-	sydbox->config.box_static.mode.sandbox_write = default_mode;
-	sydbox->config.box_static.mode.sandbox_network = default_mode;
+	sydbox->config.box_static.mode.sandbox_write = SANDBOX_BPF;
+	sydbox->config.box_static.mode.sandbox_network = SANDBOX_BPF;
 
 	/* initialize access control lists */
 	sydbox->config.hh_proc_pid_auto = NULL;

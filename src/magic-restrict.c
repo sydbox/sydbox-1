@@ -9,6 +9,20 @@
 
 #include "macro.h"
 
+int magic_set_restrict_general(const void *val, syd_process_t *current)
+{
+	unsigned u_val = PTR_TO_UINT(val);
+	if (u_val > 3)
+		return MAGIC_RET_INVALID_VALUE;
+	sydbox->config.restrict_general = u_val;
+	return MAGIC_RET_OK;
+}
+
+int magic_query_restrict_general(syd_process_t *current)
+{
+	return MAGIC_BOOL(sydbox->config.restrict_general > 0);
+}
+
 int magic_set_restrict_fcntl(const void *val, syd_process_t *current)
 {
 	sydbox->config.restrict_file_control = PTR_TO_BOOL(val);

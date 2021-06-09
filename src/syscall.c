@@ -73,15 +73,6 @@ static const sysentry_t syscall_entries[] = {
 		.enter = sys_fstatat,
 		.sandbox_pseudo = true,
 	},
-	/*
-	 * TODO: This requires updates in the ABI & struct stat logic in
-	 * sys_stat_common function. This system call is i386 only and is very
-	 * rarely used so we leave it out for the time being.
-	{
-		.name = "fstatat64",
-		.enter = sys_fstatat,
-	}
-	*/
 
 	{
 		.name = "access",
@@ -110,12 +101,14 @@ static const sysentry_t syscall_entries[] = {
 		.sandbox_read = true,
 		.sandbox_write = true,
 	},
+#ifdef __NR_openat2
 	{
 		.name = "openat2",
 		.enter = sys_openat2,
 		.sandbox_read = true,
 		.sandbox_write = true,
 	},
+#endif
 
 	{
 		.name = "creat",
@@ -439,6 +432,8 @@ int sysinit_seccomp_load(void)
 	long sysnum;
 	bool user_notified = false;
 
+	if ((r = filter_general()) < 0)
+		return r;
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		if (!syscall_entries[i].filter)
 			continue;
@@ -494,7 +489,7 @@ int sysinit_seccomp_load(void)
 					die_errno("rule_add_open_wr_eperm");
 				}
 			} else if (mode_r == SANDBOX_OFF &&
-			    mode_w == SANDBOX_OFF) {
+				   mode_w == SANDBOX_OFF) {
 #if 0
 				if (use_notify())
 					action = SCMP_ACT_NOTIFY;
@@ -505,7 +500,7 @@ int sysinit_seccomp_load(void)
 					return r;
 #endif
 				;
-			} else if ((mode_r == SANDBOX_OFF ||
+			} else if ((mode_r == SANDBOX_OFF &&
 				    mode_w == SANDBOX_ALLOW) ||
 				   (mode_r == SANDBOX_ALLOW &&
 				    mode_w == SANDBOX_OFF)) {
@@ -557,15 +552,18 @@ int sysinit_seccomp_load(void)
 				if (r < 0)
 					return r;
 			} else if (mode_r == SANDBOX_DENY &&
-				   mode_w == SANDBOX_DENY) {
+				   (mode_w == SANDBOX_BPF ||
+				    mode_w == SANDBOX_DENY)) {
 				if (use_notify()) {
 					r = rule_add_action(SCMP_ACT_NOTIFY,
 							    sysnum);
 					user_notified = true;
-				} else {
+				} else if (sydbox->seccomp_action != SCMP_ACT_ERRNO(EPERM)) {
 					r = seccomp_rule_add(sydbox->ctx,
 							     SCMP_ACT_ERRNO(EPERM),
 							     sysnum, 0);
+				} else {
+					continue;
 				}
 				if (r < 0)
 					return r;
@@ -609,11 +607,15 @@ int sysinit_seccomp_load(void)
 				continue;
 			} else if (has_bpf) {
 				action = SCMP_ACT_ERRNO(EPERM);
+				if (action == sydbox->seccomp_action)
+					continue;
 			} else if ((has_allow || has_deny) && use_notify()) {
 				action = SCMP_ACT_NOTIFY;
 				user_notified = true;
 			} else if (has_deny) {
 				action = SCMP_ACT_ERRNO(EPERM);
+				if (action == sydbox->seccomp_action)
+					continue;
 			} else { /* if (mode == -1 || mode == SANDBOX_ALLOW) */
 				sysentry_t entry = syscall_entries[i];
 				say("seccomp system call inconsistency "
@@ -630,6 +632,27 @@ int sysinit_seccomp_load(void)
 				assert_not_reached();
 			}
 
+			if (!strcmp(syscall_entries[i].name, "open")) {
+				sysentry_t entry = syscall_entries[i];
+				say("seccomp system call inconsistency "
+				    "detected.");
+				say("name:%s mode=%d,%d has_bpf=%s has_allow=%s "
+				    "has_deny:%s pseudo:%s use_notify=%s "
+				    "action:%s",
+				    entry.name,
+				    mode[0], mode[1],
+				    has_bpf ? "t" : "f",
+				    has_allow ? "t" : "f",
+				    has_deny ? "t" : "f",
+				    entry.sandbox_pseudo ? "t" : "f",
+				    use_notify() ? "t" : "f",
+				    action == SCMP_ACT_ALLOW
+					? "allow"
+					: (action == SCMP_ACT_ERRNO(EPERM)
+					   ? "eperm"
+					   : "unknown"));
+			}
+
 			if ((r = rule_add_action(action, sysnum)) < 0)
 				return r;
 		}
@@ -639,7 +662,6 @@ int sysinit_seccomp_load(void)
 		sandbox_t *box = box_current(NULL);
 		const char *calls[] = {
 			"execve", "execveat",
-			//"exit", "exit_group",
 			"clone", "fork", "vfork", "clone3",
 			"chdir", "fchdir",
 		};
@@ -783,16 +805,20 @@ static int
 rule_add_open_rd_eperm(int sysnum)
 {
 	int r;
+	uint32_t action = SCMP_ACT_ERRNO(EPERM);
+
+	if (action == sydbox->seccomp_action)
+		return 0;
 
 	/* O_RDONLY */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), sysnum,
+	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
 			     1,
 			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_RDONLY, O_RDONLY ));
 	if (r < 0)
 		return r;
 
 	/* O_RDWR */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), sysnum,
+	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
 			     1,
 			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_RDWR, O_RDWR ));
 	if (r < 0)
@@ -805,23 +831,27 @@ static int
 rule_add_open_wr_eperm(int sysnum)
 {
 	int r;
+	uint32_t action = SCMP_ACT_ERRNO(EPERM);
+
+	if (action == sydbox->seccomp_action)
+		return 0;
 
 	/* O_WRONLY */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), sysnum,
+	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
 			     1,
 			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_WRONLY, O_WRONLY ));
 	if (r < 0)
 		return r;
 
 	/* O_RDWR */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), sysnum,
+	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
 			     1,
 			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_RDWR, O_RDWR ));
 	if (r < 0)
 		return r;
 
 	/* O_CREAT */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), sysnum,
+	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
 			     1,
 			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_CREAT, O_CREAT ));
 	if (r < 0)
@@ -834,16 +864,20 @@ static int
 rule_add_openat_rd_eperm(int sysnum)
 {
 	int r;
+	uint32_t action = SCMP_ACT_ERRNO(EPERM);
+
+	if (action == sydbox->seccomp_action)
+		return 0;
 
 	/* O_RDONLY */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), sysnum,
+	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
 			     1,
 			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_RDONLY, O_RDONLY ));
 	if (r < 0)
 		return r;
 
 	/* O_RDWR */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), sysnum,
+	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
 			     1,
 			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_RDWR, O_RDWR ));
 	if (r < 0)
@@ -856,23 +890,27 @@ static int
 rule_add_openat_wr_eperm(int sysnum)
 {
 	int r;
+	uint32_t action = SCMP_ACT_ERRNO(EPERM);
+
+	if (action == sydbox->seccomp_action)
+		return 0;
 
 	/* O_WRONLY */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), sysnum,
+	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
 			     1,
 			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_WRONLY, O_WRONLY ));
 	if (r < 0)
 		return r;
 
 	/* O_RDWR */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), sysnum,
+	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
 			     1,
 			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_RDWR, O_RDWR ));
 	if (r < 0)
 		return r;
 
 	/* O_CREAT */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM), sysnum,
+	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
 			     1,
 			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_CREAT, O_CREAT ));
 	if (r < 0)
