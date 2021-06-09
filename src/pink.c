@@ -437,6 +437,9 @@ int test_cross_memory_attach(bool report)
 		return -ENOSYS;
 	}
 
+	kill(pid, SIGKILL);
+	wait(NULL);
+
 	if (report)
 		say("[*] cross memory attach is functional.");
 	return 0;
@@ -497,6 +500,9 @@ int test_proc_mem(bool report)
 			    "interface: \"%s\"", dest);
 		return -ENOSYS;
 	}
+
+	kill(pid, SIGKILL);
+	wait(NULL);
 
 	if (report)
 		say("[*] /proc/pid/mem interface is functional.");
