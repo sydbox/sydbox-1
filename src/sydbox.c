@@ -29,6 +29,7 @@
 #include <sys/utsname.h>
 #include <getopt.h>
 #include <poll.h>
+#include <pthread.h>
 #include <seccomp.h>
 #include "asyd.h"
 #include "macro.h"
@@ -50,6 +51,7 @@
 #define switch_execve_flags(f) ((f) & ~(SYD_IN_CLONE|SYD_IN_EXECVE|SYD_IN_SYSCALL|SYD_KILLED))
 
 sydbox_t *sydbox;
+static pthread_t wait_thread;
 static unsigned os_release;
 static volatile sig_atomic_t interrupted;
 static volatile sig_atomic_t alarmed;
@@ -489,7 +491,7 @@ static void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_th
 
 void remove_process_node(syd_process_t *p)
 {
-	if (p->flags & SYD_IN_CLONE || p->flags & SYD_IN_EXECVE) {
+	if (p->flags & SYD_IN_EXECVE) {
 		/* Let's wait for the children before the funeral. */
 		if (sydbox->config.whitelist_per_process_directories)
 			procdrop(&sydbox->config.hh_proc_pid_auto, p->pid);
@@ -1282,13 +1284,13 @@ static int notify_loop(syd_process_t *current)
 				if (r == -ESRCH) {
 					close(sydbox->notify_fd);
 					sydbox->notify_fd = -1;
-					break;
+					//break;
 				}
 			} else if (r == 0) {
 				; /* notify fd is ready to read. */
 			} else {
 				/* child is no longer alive */
-				break;
+				//break;
 			}
 		}
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
@@ -1327,6 +1329,13 @@ notify_receive:
 		}
 		disarm_alarm();
 
+		if (sydbox->request->id == 0 && sydbox->request->pid == 0) {
+			reap_zombies();
+			if (!process_count())
+				break;
+			else
+				continue;
+		}
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
 		sydbox->response->flags |= SECCOMP_USER_NOTIF_FLAG_CONTINUE;
@@ -1364,6 +1373,7 @@ notify_receive:
 			parent = parent_process(pid, current);
 			if (parent) {
 				current = clone_process(parent, pid);
+				parent->clone_flags &= ~SYD_IN_CLONE;
 			} else {
 				current = new_process(pid);
 			}
@@ -1418,6 +1428,9 @@ notify_receive:
 			current->update_cwd = true;
 		} else if ((!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
 			int ew = sydbox->execve_wait;
+
+			current->flags &= ~SYD_IN_CLONE;
+
 			sydbox->execve_wait = false;
 			sydbox->execve_pid = pid;
 			event_exec(current);
@@ -1430,6 +1443,7 @@ notify_receive:
 					event_syscall(current);
 			}
 		} else {
+			current->flags &= ~SYD_IN_CLONE;
 			event_syscall(current);
 		}
 
@@ -1462,8 +1476,10 @@ notify_respond:
 				 * when we were able to acquire the rw lock.
 				 */
 				reap_zombies();
-				if (!process_count())
-					break;
+				if (!process_count()) {
+					say("ENOENT: no processes left breaking");
+					//break;
+				}
 			} else {
 				/* TODO use:
 				 * __NR_pidfd_send_signal to kill the process
@@ -1800,6 +1816,7 @@ static pid_t startup_child(char **argv)
 	} else {
 		int fd;
 		if ((r = parent_read_int(&fd)) < 0) {
+			say_errno("failed to apply seccomp filters");
 			say("exiting because all sandbox modes are off");
 			say("try to set \"-m core/sandbox/{read,write,exec,network}:{bpf,allow,deny}\"");
 			say("no seccomp user notify fd received, exiting");
@@ -1856,6 +1873,40 @@ void cleanup(void)
 	sydbox = NULL;
 
 	systable_free();
+}
+
+void *wait_thread_func(void *pid_ptr)
+{
+	int wstatus;
+	pid_t pid = *(pid_t *)pid_ptr;
+
+restart_waitpid:
+	if (waitpid(pid, &wstatus, __WALL) < 0) {
+		if (errno == EINTR)
+			goto restart_waitpid;
+		say_errno("waitpid: %d", sydbox->exit_code);
+		//sydbox->exit_code = 128;
+	} else if (WIFEXITED(wstatus)) {
+		sydbox->exit_code = WEXITSTATUS(wstatus);
+	} else if (WIFSIGNALED(wstatus)) {
+		sydbox->exit_code = 128 + WTERMSIG(wstatus);
+	}
+
+	return NULL;
+}
+
+void start_wait_thread(syd_process_t *current)
+{
+	pid_t pid = current->pid;
+
+	if (pthread_create(&wait_thread, NULL, wait_thread_func, &pid))
+		say_errno("pthread_create");
+}
+
+void join_wait_thread(syd_process_t *current)
+{
+	if (pthread_join(wait_thread, NULL))
+		say_errno("pthread_join");
 }
 
 int main(int argc, char **argv)
@@ -2004,21 +2055,24 @@ int main(int argc, char **argv)
 	if (use_notify()) {
 		syd_process_t *current = new_process(pid);
 		init_process_data(current, NULL);
+		start_wait_thread(current);
 		init_signals();
 		exit_code = notify_loop(current);
-		sydbox->exit_code = exit_code;
-	}
-	int wstatus;
+		join_wait_thread(current);
+		/* sydbox->exit_code = exit_code; */
+	} else {
+		int wstatus;
 restart_waitpid:
-	if (waitpid(pid, &wstatus, __WALL) < 0) {
-		if (errno == EINTR)
-			goto restart_waitpid;
-		say_errno("waitpid: %d", sydbox->exit_code);
-		//sydbox->exit_code = 128;
-	} else if (WIFEXITED(wstatus)) {
-		sydbox->exit_code = WEXITSTATUS(wstatus);
-	} else if (WIFSIGNALED(wstatus)) {
-		sydbox->exit_code = 128 + WTERMSIG(wstatus);
+		if (waitpid(pid, &wstatus, __WALL) < 0) {
+			if (errno == EINTR)
+				goto restart_waitpid;
+			say_errno("waitpid: %d", sydbox->exit_code);
+			//sydbox->exit_code = 128;
+		} else if (WIFEXITED(wstatus)) {
+			sydbox->exit_code = WEXITSTATUS(wstatus);
+		} else if (WIFSIGNALED(wstatus)) {
+			sydbox->exit_code = 128 + WTERMSIG(wstatus);
+		}
 	}
 	exit_code = sydbox->exit_code;
 	if (sydbox->violation) {

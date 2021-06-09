@@ -118,7 +118,7 @@ static void report(syd_process_t *current, const char *fmt, va_list ap)
 	r = syd_proc_comm(current->pid, comm, sizeof(comm));
 
 	say("8< -- Access Violation! --");
-	vsay(fmt, ap);
+	vsay(stderr, fmt, ap);
 	fputc('\n', stderr);
 	say("proc: %s[%u] (parent:%u)", r == 0 ? comm : "?", current->pid, current->ppid);
 	say("cwd: `%s'", P_CWD(current));

@@ -10,6 +10,7 @@
 
 #include <stddef.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <pinktrace/compiler.h>
 
 extern void syd_abort_func(void (*func)(int));
@@ -53,8 +54,9 @@ extern void syd_abort_func(void (*func)(int));
 #define assert(expr) do { BUG_ON(expr); } while (0)
 #endif
 
-extern void vsay(const char *fmt, va_list ap)
-	PINK_GCC_ATTR((format (printf, 1, 0)));
+extern void vsay(FILE *f, const char *fmt, va_list ap)
+	PINK_GCC_ATTR((format (printf, 2, 0)))
+	PINK_GCC_ATTR((nonnull(1, 2)));
 extern void say(const char *fmt, ...)
 	PINK_GCC_ATTR((format (printf, 1, 2)));
 void say_errno(const char *fmt, ...)

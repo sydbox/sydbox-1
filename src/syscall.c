@@ -623,11 +623,11 @@ int sysinit_seccomp_load(void)
 		sandbox_t *box = box_current(NULL);
 		const char *calls[] = {
 			"execve", "execveat",
-			"exit", "exit_group",
+			//"exit", "exit_group",
 			"clone", "fork", "vfork", "clone3",
 			"chdir", "fchdir",
 		};
-		for (unsigned short i = 0; i < 10; i++) {
+		for (unsigned short i = 0; i < 8; i++) {
 			if (i < 2 && box->mode.sandbox_exec != SANDBOX_OFF)
 				continue; /* execve* already added */
 			sysnum = seccomp_syscall_resolve_name(calls[i]);
@@ -657,8 +657,11 @@ int sysinit_seccomp(void)
 {
 	int r;
 
-	if ((r = sysinit_seccomp_load() < 0))
+	if ((r = sysinit_seccomp_load() < 0)) {
+		errno = -r;
+		say_errno("sysinit_seccomp_load");
 		return r;
+	}
 	if (getenv("EXPORT") && (r = seccomp_export_pfc(sydbox->ctx, 2)) < 0)
 		say("seccomp_export_pfc: %d %s", -r, strerror(-r));
 	if ((r = seccomp_load(sydbox->ctx)) < 0)
