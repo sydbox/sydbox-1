@@ -66,8 +66,10 @@ core/trace/magic_lock:off
 core/trace/use_toolong_hack:true
 
 core/restrict/file_control:false
-core/restrict/mmap:true
+core/restrict/io_control:false
+core/restrict/memory_map:false
 core/restrict/shared_memory_writable:false
+core/restrict/general:0
 
 core/match/case_sensitive:true
 core/match/no_wildcard:prefix
