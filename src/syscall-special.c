@@ -329,15 +329,13 @@ static int write_stat(syd_process_t *current, unsigned int buf_index, bool exten
 		}
 	}
 
-	say("writing stat");
 	long addr;
 	addr = current->args[buf_index];
 	if ((r = syd_write_data(current, addr, bufaddr, bufsize) < 0)) {
 		errno = -r;
 		say_errno("syd_write_stat");
 	}
-	if (syd_proc_mem_write(current->memfd, addr, bufaddr, bufsize) < 0)
-		perror("syd_proc_mem_write");
+	(void)syd_proc_mem_write(current->memfd, addr, bufaddr, bufsize);
 
 	return true;
 }
