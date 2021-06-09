@@ -102,13 +102,13 @@ linux*)
 	AC_MSG_CHECKING([for supported kernel])
 	kernel_version=`uname -r | cut -d'-' -f1`
 	case "$kernel_version" in
-	0.*|1.*|2.0.*|2.1.*|2.2.*|2.3.*|2.4.*)
+	0.*|1.*|2.*|3.*|4.*|5.0.*|5.1.*|5.2.*|5.3.*|5.4.*|5.5.*)
 		AC_MSG_RESULT([NO!])
 		AC_MSG_ERROR([Linux kernel version $kernel_version is not supported by sydbox])
 		;;
-	2.5.*)
+	5.6.*)
 		kernel_minor_version=`echo $kernel_version | cut -d'.' -f3`
-		if test "$kernel_minor_version" -lt 46; then
+		if test "$kernel_minor_version" -lt 0; then
 			AC_MSG_RESULT([NO!])
 			AC_MSG_ERROR([Linux kernel version $kernel_version is not supported by sydbox])
 		fi

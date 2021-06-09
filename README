@@ -1,5 +1,4 @@
-Syd's Box
-=========
+# Syd's Box
 
 <img src="https://dev.exherbo.org/~alip/images/sydbox160.png" alt="SydBox" title="img: That cat's something I can't explain!"/>
 
@@ -10,36 +9,24 @@ filesystem and network resources.
 
 See: https://sydbox.exherbo.org
 
+## Build and Requirements
+
 SydBox uses autotools. To build, simply do `./configure`, `make` and `sudo make install`.
 
-To use SydBox you need a recent [Linux](https://kernel.org) kernel, preferably 3.5
-or newer which has [secure computing mode](https://en.wikipedia.org/wiki/Seccomp)
-facility. In addition, it is advised that you enable the kernel option
-`CONFIG_CROSS_MEMORY_ATTACH=y` so that SydBox can use the functions
-[process_vm_readv](https://man7.org/linux/man-pages/man2/process_vm_readv.2.html)
-and [process_vm_writev](https://man7.org/linux/man-pages/man2/process_vm_readv.2.html).
-These system calls are available in Linux since 3.2. Note SydBox will use the file
-`/proc/pid/mem` if these system calls are unavailable or not working.
-
-Moreover, since sydbox-1.2.2, SydBox makes use of the relatively recent system calls
+To use SydBox you need a [Linux](https://kernel.org) kernel with version 5.6 or
+newer which includes [the secure computing mode](https://en.wikipedia.org/wiki/Seccomp)
+with the `SECCOMP_USER_NOTIF_FLAG_CONTINUE` facility,
+and the system calls
 [pidfd_send_signal](https://man7.org/linux/man-pages/man2/pidfd_send_signal.2.html),
 and [pidfd_getfd](https://man7.org/linux/man-pages/man2/pidfd_getfd.2.html).
-[pidfd_send_signal](https://man7.org/linux/man-pages/man2/pidfd_send_signal.2.html)
-requires Linux-5.1 or newer whereas
-[pidfd_getfd](https://man7.org/linux/man-pages/man2/pidfd_getfd.2.html)
-requires Linux-5.6 or newer. See more information on
-[kernelnewbies.org](https://kernelnewbies.org/Linux_5.6#A_new_pidfd_syscall.2C_pidfd_getfd.282.29),
-and [LWN](https://lwn.net/Articles/808997/)
-about [pidfd_getfd](https://man7.org/linux/man-pages/man2/pidfd_getfd.2.html).
 
-In addition, since sydbox-1.2.2, SydBox requires that the
-[seccomp(2)](https://man7.org/linux/man-pages/man2/seccomp.2.html) notifier supports
-the `SECCOMP_USER_NOTIF_FLAG_CONTINUE` flag to allow for the continuation of a
-syscall. See
-[commit](https://git.kernel.org/linus/fb3c5386b382d4097476ce9647260fc89b34afdb),
-[commit](https://git.kernel.org/linus/223e660bc7638d126a0e4fbace4f33f2895788c4), and
-[commit](https://git.kernel.org/linus/0eebfed2954f152259cae0ad57b91d3ea92968e8) for
-more information.
+In addition, it is recommended that you enable the kernel option
+`CONFIG_CROSS_MEMORY_ATTACH=y` so that SydBox can use the system calls
+[process_vm_readv](https://man7.org/linux/man-pages/man2/process_vm_readv.2.html)
+and
+[process_vm_writev](https://man7.org/linux/man-pages/man2/process_vm_readv.2.html).
+These system calls are available in Linux since 3.2. Note SydBox will use the file
+`/proc/pid/mem` if these system calls are unavailable or not working.
 
 After building SydBox, you can use the `--test`, or shortly `-t`, option to test if
 all the required facilities are present on the running system. If this command returns
@@ -56,6 +43,32 @@ sydbox: [*] seccomp filters are functional.
 sydbox: [>] SydBox is supported on this system!
 ```
 
+For more information about these requirements, check the following links:
+- [kernelnewbies.org/Linux-5.6](https://kernelnewbies.org/Linux_5.6#A_new_pidfd_syscall.2C_pidfd_getfd.282.29)
+- [LWN article about pidfd_getfd](https://lwn.net/Articles/808997/)
+- `SECCOMP_USER_NOTIF_FLAG_CONTINUE`:
+[commit](https://git.kernel.org/linus/fb3c5386b382d4097476ce9647260fc89b34afdb),
+[commit](https://git.kernel.org/linus/223e660bc7638d126a0e4fbace4f33f2895788c4), and
+[commit](https://git.kernel.org/linus/0eebfed2954f152259cae0ad57b91d3ea92968e8).
+
+### PinkTrace
+
+SydBox requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/api/c/)
+
+See: https://pinktrace.exherbo.org
+
+- Exheres:
+  - [pinktrace-1.exlib](https://git.exherbo.org/arbor.git/tree/packages/dev-libs/pinktrace/pinktrace.exlib)
+  - [pinktrace-scm.exheres-0](https://git.exherbo.org/arbor.git/tree/packages/dev-libs/pinktrace/pinktrace-scm.exheres-0)
+- Git: https://git.exherbo.org/git/pinktrace-1.git
+- Lightweight [ptrace](http://linux.die.net/man/2/ptrace) wrapper library
+  providing a robust API for tracing processes.
+- An extensive API reference is available [here](http://dev.exherbo.org/~alip/pinktrace/api/c/).
+- Tar: https://dev.exherbo.org/distfiles/pinktrace/pinktrace-0.9.6.tar.bz2
+- Git: https://git.exherbo.org/git/pinktrace-1.git
+
+## Sandboxing
+
 See the [SydBox manual
 page](https://dev.exherbo.org/~alip/sydbox/sydbox.html) on more information about
 [secure computing mode](https://en.wikipedia.org/wiki/Seccomp) protections. The
@@ -67,6 +80,8 @@ parts which are of particular interest to read are:
 - [core/restrict/io_control](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-restrict-ioctl)
 - [core/restrict/memory_map](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-restrict-mmap)
 - [core/restrict/shared_memory_writable](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-restrict-shm-wr)
+
+## SydBox and Pandora
 
 **NOTE:** Pandora is in its early stages of development. To be able to use Pandora
 you need **Sydbox-1.2.1** or later.
@@ -92,22 +107,7 @@ Options: dump:yes seccomp:yes ipv6:yes netlink:yes
 - **seccomp:yes** indicates **--enable-seccomp** was passed on build.
 - **ipv6:yes** **IPv6 Network Sandboxing** is enabled.
 
-SydBox requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/api/c/)
-
-See: https://pinktrace.exherbo.org
-
-- Exheres:
-  - [pinktrace-1.exlib](https://git.exherbo.org/arbor.git/tree/packages/dev-libs/pinktrace/pinktrace.exlib)
-  - [pinktrace-scm.exheres-0](https://git.exherbo.org/arbor.git/tree/packages/dev-libs/pinktrace/pinktrace-scm.exheres-0)
-- Git: https://git.exherbo.org/git/pinktrace-1.git
-- Lightweight [ptrace](http://linux.die.net/man/2/ptrace) wrapper library
-  providing a robust API for tracing processes.
-- An extensive API reference is available [here](http://dev.exherbo.org/~alip/pinktrace/api/c/).
-- Tar: https://dev.exherbo.org/distfiles/pinktrace/pinktrace-0.9.6.tar.bz2
-- Git: https://git.exherbo.org/git/pinktrace-1.git
-
-Pandora
-=======
+# Pandora
 
 https://pandora.exherbo.org
 
@@ -200,8 +200,7 @@ Here is a Firefox profile edited by yours truly:
 
 https://git.exherbo.org/sydbox-1.git/plain/data/firefox.syd-1
 
-Bugs
-====
+# Bugs
 Read [BUGS](https://git.exherbo.org/sydbox-1.git/plain/BUGS).
 
 Below are the details of the author. **Mail is preferred. Attaching poems encourages
@@ -220,21 +219,18 @@ Can you help me?
 - **Mastodon:** https://mastodon.online/@alip
 - **IRC:** alip at [Libera](https://libera.chat/)
 
-Git
-===
+# Git
 - **Original Git**: https://git.exherbo.org/sydbox-1.git/
 - **Github Mirror**: https://github.com/sydbox/sydbox-1
 
 Github mirror is updated periodically. Feel free to submit an issue or a pull
 request there. **Attaching poems encourages consideration tremendously.**
 
-Documentation
-=============
+# Documentation
 
 Read the fine manual of [SydBox](https://dev.exherbo.org/~alip/sydbox/sydbox.html) and [SydFmt](https://dev.exherbo.org/~alip/sydbox/sydfmt.html).
 
-Blog Posts
-==========
+# Blog Posts
 
 * [Sydbox: Stop Skype P2P/Call Home: People Have The Right To Communicate W\o Eavesdropping](https://tinyurl.com/sydbox-stop-skype-call-home)
 * [Recent Linux Changes Help Safe & Secure w\o Root](https://tinyurl.com/recent-linux-changes-help-safe)
