@@ -175,7 +175,8 @@ static int dump_init(void)
 	fp = fdopen(fd, "a");
 	if (!fp)
 		die_errno("fdopen_dump");
-	if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+	if (fd > STDERR_FILENO &&
+	    fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
 		die_errno("fcntl");
 	nodump = 1;
 
