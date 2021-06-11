@@ -1824,8 +1824,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (optind == argc)
+	if (optind == argc) {
+		say("No command given.");
 		usage(stderr, 1);
+	}
 
 	if ((env = getenv(SYDBOX_CONFIG_ENV)))
 		config_parse_spec(env);
