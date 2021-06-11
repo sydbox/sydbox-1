@@ -59,9 +59,9 @@ static int filter_gen_level2[] = {
 	SCMP_SYS(execve),
 #ifdef __NR_execveat
 	SCMP_SYS(execveat),
+#endif
 	SCMP_SYS(exit),
 	SCMP_SYS(exit_group),
-#endif
 #ifdef HAVE_EVENTFD
 	SCMP_SYS(eventfd2),
 #endif
@@ -226,16 +226,16 @@ static int filter_gen_level3[] = {
 	SCMP_SYS(execve),
 #ifdef __NR_execveat
 	SCMP_SYS(execveat),
+#endif
 	SCMP_SYS(exit),
 	SCMP_SYS(exit_group),
-#endif
-#ifdef HAVE_EVENTFD
+#ifdef __NR_eventfd2
 	SCMP_SYS(eventfd2),
 #endif
-#ifdef HAVE_PIPE2
+#ifdef __NR_pipe2
 	SCMP_SYS(pipe2),
 #endif
-#ifdef HAVE_PIPE
+#ifdef __NR_pipe
 	SCMP_SYS(pipe),
 #endif
 #ifdef __NR_fchmod
