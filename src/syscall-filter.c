@@ -17,12 +17,10 @@
 #include <errno.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <sys/kd.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
-
-#if SYDBOX_HAVE_SECCOMP
-# include "seccomp_old.h"
-#endif
+#include <sys/vt.h>
 
 static const int filter_gen_level1[] = {
 	SCMP_SYS(close),
@@ -1047,11 +1045,78 @@ int filter_mprotect(void)
 int filter_ioctl(void)
 {
 	int r;
-	unsigned long request[] = {
+	static const unsigned long request[] = {
 		TCGETS,
+		TIOCGLCKTRMIOS,
 		TIOCGWINSZ,
+		TIOCSWINSZ,
+		FIONREAD,
+		TIOCINQ,
+		TIOCOUTQ,
+		TCFLSH,
+		TIOCSTI,
+		TIOCSCTTY,
+		TIOCNOTTY,
 		TIOCGPGRP,
 		TIOCSPGRP,
+		TIOCGSID,
+		TIOCEXCL,
+		TIOCGEXCL,
+		TIOCNXCL,
+		TIOCGETD,
+		TIOCSETD,
+		TIOCPKT,
+		TIOCGPKT,
+		TIOCSPTLCK,
+		TIOCGPTLCK,
+		TIOCGPTPEER,
+		TIOCGSOFTCAR,
+		TIOCSSOFTCAR,
+		KDGETLED,
+		KDSETLED,
+		KDGKBLED,
+		KDSKBLED,
+		KDGKBTYPE,
+		KDGETMODE,
+		KDSETMODE,
+		KDMKTONE,
+		KIOCSOUND,
+		GIO_CMAP,
+		PIO_CMAP,
+		GIO_FONT,
+		PIO_FONT,
+		GIO_FONTX,
+		PIO_FONTX,
+		PIO_FONTRESET,
+		GIO_SCRNMAP,
+		PIO_SCRNMAP,
+		GIO_UNISCRNMAP,
+		PIO_UNISCRNMAP,
+		GIO_UNIMAP,
+		PIO_UNIMAP,
+		PIO_UNIMAPCLR,
+		KDGKBMODE,
+		KDSKBMODE,
+		KDGKBMETA,
+		KDSKBMETA,
+		KDGKBENT,
+		KDSKBENT,
+		KDGKBSENT,
+		KDSKBSENT,
+		KDGKBDIACR,
+		KDGETKEYCODE,
+		KDSETKEYCODE,
+		KDSIGACCEPT,
+		VT_OPENQRY,
+		VT_GETMODE,
+		VT_SETMODE,
+		VT_GETSTATE,
+		VT_RELDISP,
+		VT_ACTIVATE,
+		VT_WAITACTIVE,
+		VT_DISALLOCATE,
+		VT_RESIZE,
+		VT_RESIZEX,
 	};
 
 	if (sydbox->seccomp_action != SCMP_ACT_ALLOW)
