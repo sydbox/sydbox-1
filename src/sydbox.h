@@ -958,6 +958,7 @@ static inline void init_sysinfo(syscall_info_t *info)
 	memset(info, 0, sizeof(syscall_info_t));
 }
 
+bool filter_includes(int sysnum);
 int filter_general(void);
 int filter_open(void);
 int filter_openat(void);

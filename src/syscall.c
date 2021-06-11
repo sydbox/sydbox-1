@@ -612,6 +612,8 @@ int sysinit_seccomp_load(void)
 				if (action == sydbox->seccomp_action)
 					continue;
 			} else if (mode == SANDBOX_OFF) {
+				if (!filter_includes(sysnum))
+					continue;
 				action = SCMP_ACT_ALLOW;
 				if (action == sydbox->seccomp_action)
 					continue;
@@ -628,6 +630,8 @@ int sysinit_seccomp_load(void)
 				if (action == sydbox->seccomp_action)
 					continue;
 			} else if (mode == SANDBOX_ALLOW) {
+				if (!filter_includes(sysnum))
+					continue;
 				action = SCMP_ACT_ALLOW;
 				if (action == sydbox->seccomp_action)
 					continue;

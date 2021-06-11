@@ -706,26 +706,40 @@
               An integer specifying the level of permitted system calls.
               Level 0 performs no restrictions and every system call is permitted.
               Level 1 is strict and resembles the first version of the Secure
-              Computing Mode. Level 2 is less strict and is designated for common
-              use. Level 3 is identical to Level 2 except it only permits read-only
-              open calls.
+              Computing Mode. Level 2 is less strict than Level 1. Both Level 1
+              and Level 2 permit only read access to the filesystem. Level 3 is
+              identical to Level 2 except it permits write access to the filesystem.
             </para>
             <para>
               The list of permitted system calls in Level 1 are
-              <function>read</function><manvolnum>2</manvolnum>,
-              <function>write</function><manvolnum>2</manvolnum>,
+              <function>close</function><manvolnum>2</manvolnum>,
+              <function>dup</function><manvolnum>2</manvolnum>,
+              <function>dup2</function><manvolnum>2</manvolnum>,
+              <function>execve</function><manvolnum>2</manvolnum>,
+              <function>execveat</function><manvolnum>2</manvolnum>,
               <function>exit</function><manvolnum>2</manvolnum>,
               <function>exit_group</function><manvolnum>2</manvolnum>,
-              <function>sigreturn</function><manvolnum>2</manvolnum>,
+              <function>arch_prctl</function><manvolnum>2</manvolnum>,
+              <function>set_tid_address</function><manvolnum>2</manvolnum>,
+              <function>read</function><manvolnum>2</manvolnum>,
+              <function>readv</function><manvolnum>2</manvolnum>,
+              <function>preadv</function><manvolnum>2</manvolnum>,
+              <function>preadv2</function><manvolnum>2</manvolnum>,
+              <function>write</function><manvolnum>2</manvolnum>,
+              <function>writev</function><manvolnum>2</manvolnum>,
+              <function>pwritev</function><manvolnum>2</manvolnum>,
+              <function>pwritev2</function><manvolnum>2</manvolnum>,
               <function>open</function><manvolnum>2</manvolnum>,
               <function>openat</function><manvolnum>2</manvolnum>,
               <function>stat</function><manvolnum>2</manvolnum>,
+              <function>fstat</function><manvolnum>2</manvolnum>,
               <function>lstat</function><manvolnum>2</manvolnum>,
               <function>newfstatat</function><manvolnum>2</manvolnum>,
-              <function>execve</function><manvolnum>2</manvolnum>,
-              <function>execveat</function><manvolnum>2</manvolnum>,
-              <function>arch_prctl</function><manvolnum>2</manvolnum>, and
-              <function>set_tid_address</function><manvolnum>2</manvolnum>.
+              <function>sigreturn</function><manvolnum>2</manvolnum>,
+              <function>brk</function><manvolnum>2</manvolnum>,
+              <function>mmap</function><manvolnum>2</manvolnum>,
+              <function>mmap2</function><manvolnum>2</manvolnum>, and
+              <function>munmap</function><manvolnum>2</manvolnum>.
               Only
               read-only <function>open</function> calls are permitted.
             </para>
@@ -737,15 +751,19 @@
               <function>close</function><manvolnum>2</manvolnum>,
               <function>clone</function><manvolnum>2</manvolnum>,
               <function>dup</function><manvolnum>2</manvolnum>,
+              <function>dup2</function><manvolnum>2</manvolnum>,
               <function>execve</function><manvolnum>2</manvolnum>,
               <function>execveat</function><manvolnum>2</manvolnum>,
               <function>epoll_create</function><manvolnum>2</manvolnum>,
               <function>epoll_wait</function><manvolnum>2</manvolnum>,
               <function>epoll_pwait</function><manvolnum>2</manvolnum>,
               <function>eventfd2</function><manvolnum>2</manvolnum>,
-              <function>pipe2</function><manvolnum>2</manvolnum>,
+              <function>fork</function><manvolnum>2</manvolnum>,
+              <function>vfork</function><manvolnum>2</manvolnum>,
+              <function>clone</function><manvolnum>2</manvolnum>,
+              <function>clone3</function><manvolnum>2</manvolnum>,
               <function>pipe</function><manvolnum>2</manvolnum>,
-              <function>fchmod</function><manvolnum>2</manvolnum>,
+              <function>pipe2</function><manvolnum>2</manvolnum>,
               <function>fcntl</function><manvolnum>2</manvolnum>,
               <function>fstat</function><manvolnum>2</manvolnum>,
               <function>fsync</function><manvolnum>2</manvolnum>,
@@ -765,9 +783,9 @@
               <function>lseek</function><manvolnum>2</manvolnum>,
               <function>_llseek</function><manvolnum>2</manvolnum>,
               <function>lstat</function><manvolnum>2</manvolnum>,
-              <function>mkdir</function><manvolnum>2</manvolnum>,
               <function>mlockall</function><manvolnum>2</manvolnum>,
               <function>mmap</function><manvolnum>2</manvolnum>,
+              <function>mmap2</function><manvolnum>2</manvolnum>,
               <function>munmap</function><manvolnum>2</manvolnum>,
               <function>nanosleep</function><manvolnum>2</manvolnum>,
               <function>newfstatat</function><manvolnum>2</manvolnum>,
@@ -809,14 +827,49 @@
               <function>recvmsg</function><manvolnum>2</manvolnum>,
               <function>recvfrom</function><manvolnum>2</manvolnum>,
               <function>sendto</function><manvolnum>2</manvolnum>,
-              <function>unlink</function><manvolnum>2</manvolnum>,
-              <function>unlinkat</function><manvolnum>2</manvolnum>,
+              <function>readlink</function><manvolnum>2</manvolnum>,
+              <function>readlinkat</function><manvolnum>2</manvolnum>,
+              <function>select</function><manvolnum>2</manvolnum>,
+              <function>pselect6</function><manvolnum>2</manvolnum>,
               <function>poll</function><manvolnum>2</manvolnum>,
               <function>arch_prctl</function><manvolnum>2</manvolnum>,
               <function>membarrier</function><manvolnum>2</manvolnum>, and
               <function>set_tid_address</function><manvolnum>2</manvolnum>.
-              In addition, Level 2 permits the
-              <function>openat2</function><manvolnum>2</manvolnum> system call
+              In addition, Level 3 permits the system calls
+              <function>chmod</function><manvolnum>2</manvolnum>,
+              <function>fchmod</function><manvolnum>2</manvolnum>,
+              <function>fchmodat</function><manvolnum>2</manvolnum>,
+              <function>chown</function><manvolnum>2</manvolnum>,
+              <function>chown32</function><manvolnum>2</manvolnum>,
+              <function>lchown</function><manvolnum>2</manvolnum>,
+              <function>lchown32</function><manvolnum>2</manvolnum>,
+              <function>fchownat</function><manvolnum>2</manvolnum>,
+              <function>creat</function><manvolnum>2</manvolnum>,
+              <function>mkdir</function><manvolnum>2</manvolnum>,
+              <function>mkdirat</function><manvolnum>2</manvolnum>,
+              <function>mknod</function><manvolnum>2</manvolnum>,
+              <function>mknodat</function><manvolnum>2</manvolnum>,
+              <function>rmdir</function><manvolnum>2</manvolnum>,
+              <function>truncate</function><manvolnum>2</manvolnum>,
+              <function>truncate64</function><manvolnum>2</manvolnum>,
+              <function>link</function><manvolnum>2</manvolnum>,
+              <function>linkat</function><manvolnum>2</manvolnum>,
+              <function>unlink</function><manvolnum>2</manvolnum>,
+              <function>unlinkat</function><manvolnum>2</manvolnum>,
+              <function>rename</function><manvolnum>2</manvolnum>,
+              <function>renameat</function><manvolnum>2</manvolnum>,
+              <function>renameat2</function><manvolnum>2</manvolnum>,
+              <function>symlink</function><manvolnum>2</manvolnum>,
+              <function>symlinkat</function><manvolnum>2</manvolnum>,
+              <function>utime</function><manvolnum>2</manvolnum>,
+              <function>utimes</function><manvolnum>2</manvolnum>,
+              <function>utimensat</function><manvolnum>2</manvolnum>,
+              <function>futimesat</function><manvolnum>2</manvolnum>,
+              <function>setxattr</function><manvolnum>2</manvolnum>,
+              <function>lsetxattr</function><manvolnum>2</manvolnum>,
+              <function>removexattr</function><manvolnum>2</manvolnum>,
+              <function>lremovexattr</function><manvolnum>2</manvolnum>, and
+              <function>openat2</function><manvolnum>2</manvolnum>
               as well.
             </para>
           </listitem>
@@ -862,6 +915,7 @@
               The list of permitted <function>ioctl</function> requests are
               <constant>TCGETS</constant>,
               <constant>TIOCGWINSZ</constant>,
+              <constant>TIOCSWINSZ</constant>,
               <constant>TIOCGPGRP</constant>, and
               <constant>TIOCSPGRP</constant>.
             </para>

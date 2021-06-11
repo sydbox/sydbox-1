@@ -24,26 +24,66 @@
 # include "seccomp_old.h"
 #endif
 
-static int filter_gen_level1[] = {
-	SCMP_SYS(read),
-	SCMP_SYS(write),
+static const int filter_gen_level1[] = {
+	SCMP_SYS(close),
+	SCMP_SYS(dup),
+#ifdef __NR_dup2
+	SCMP_SYS(dup2),
+#endif
 	SCMP_SYS(exit),
 	SCMP_SYS(exit_group),
-	SCMP_SYS(sigreturn),
-	SCMP_SYS(stat),
-	SCMP_SYS(lstat),
-#ifdef __NR_newfstatat
-	SCMP_SYS(newfstatat),
-#endif
 	SCMP_SYS(execve),
 #ifdef __NR_execveat
 	SCMP_SYS(execveat),
 #endif
 	SCMP_SYS(arch_prctl),
 	SCMP_SYS(set_tid_address),
+	SCMP_SYS(read),
+#ifdef __NR_readv
+	SCMP_SYS(readv),
+#endif
+#ifdef __NR_preadv
+	SCMP_SYS(preadv),
+#endif
+#ifdef __NR_preadv2
+	SCMP_SYS(preadv2),
+#endif
+	SCMP_SYS(write),
+#ifdef __NR_writev
+	SCMP_SYS(writev),
+#endif
+#ifdef __NR_pwritev
+	SCMP_SYS(pwritev),
+#endif
+#ifdef __NR_pwritev2
+	SCMP_SYS(pwritev2),
+#endif
+	SCMP_SYS(sigreturn),
+	SCMP_SYS(stat),
+#ifdef __NR_stat64
+	SCMP_SYS(stat64),
+#endif
+	SCMP_SYS(fstat),
+#ifdef __NR_fstat64
+	SCMP_SYS(fstat64),
+#endif
+	SCMP_SYS(lstat),
+#ifdef __NR_newfstatat
+	SCMP_SYS(newfstatat),
+#endif
+	SCMP_SYS(brk),
+#ifdef __NR_mmap
+	SCMP_SYS(mmap),
+#endif
+#ifdef __NR_mmap2
+	SCMP_SYS(mmap2),
+#endif
+#ifdef __NR_munmap
+	SCMP_SYS(munmap),
+#endif
 };
 
-static int filter_gen_level2[] = {
+static const int filter_gen_level2[] = {
 	SCMP_SYS(arch_prctl),
 	SCMP_SYS(access),
 	SCMP_SYS(brk),
@@ -51,6 +91,9 @@ static int filter_gen_level2[] = {
 	SCMP_SYS(close),
 	SCMP_SYS(clone),
 	SCMP_SYS(dup),
+#ifdef __NR_dup2
+	SCMP_SYS(dup2),
+#endif
 	SCMP_SYS(epoll_create),
 	SCMP_SYS(epoll_wait),
 #ifdef __NR_epoll_pwait
@@ -62,17 +105,20 @@ static int filter_gen_level2[] = {
 #endif
 	SCMP_SYS(exit),
 	SCMP_SYS(exit_group),
-#ifdef HAVE_EVENTFD
+	SCMP_SYS(fork),
+	SCMP_SYS(vfork),
+	SCMP_SYS(clone),
+#ifdef __NR_clone3
+	SCMP_SYS(clone3),
+#endif
+#ifdef __NR_eventfd2
 	SCMP_SYS(eventfd2),
 #endif
-#ifdef HAVE_PIPE2
+#ifdef __NR_pipe2
 	SCMP_SYS(pipe2),
 #endif
-#ifdef HAVE_PIPE
+#ifdef __NR_pipe
 	SCMP_SYS(pipe),
-#endif
-#ifdef __NR_fchmod
-	SCMP_SYS(fchmod),
 #endif
 	SCMP_SYS(fcntl),
 	SCMP_SYS(fstat),
@@ -114,12 +160,16 @@ static int filter_gen_level2[] = {
 #endif
 	// glob uses this..
 	SCMP_SYS(lstat),
-	SCMP_SYS(mkdir),
 	SCMP_SYS(mlockall),
 #ifdef __NR_mmap
 	SCMP_SYS(mmap),
 #endif
+#ifdef __NR_mmap2
+	SCMP_SYS(mmap2),
+#endif
+#ifdef __NR_munmap
 	SCMP_SYS(munmap),
+#endif
 #ifdef __NR_nanosleep
 	SCMP_SYS(nanosleep),
 #endif
@@ -131,6 +181,12 @@ static int filter_gen_level2[] = {
 	SCMP_SYS(openat2),
 #endif
 */
+#ifdef __NR_preadv
+	SCMP_SYS(preadv),
+#endif
+#ifdef __NR_preadv2
+	SCMP_SYS(preadv2),
+#endif
 #ifdef __NR_prlimit
 	SCMP_SYS(prlimit),
 #endif
@@ -139,6 +195,9 @@ static int filter_gen_level2[] = {
 #endif
 	SCMP_SYS(pselect6),
 	SCMP_SYS(read),
+#ifdef __NR_readv
+	SCMP_SYS(readv),
+#endif
 	SCMP_SYS(rt_sigaction),
 	SCMP_SYS(rt_sigprocmask),
 	SCMP_SYS(rt_sigreturn),
@@ -163,7 +222,15 @@ static int filter_gen_level2[] = {
 	SCMP_SYS(uname),
 	SCMP_SYS(wait4),
 	SCMP_SYS(write),
+#ifdef __NR_writev
 	SCMP_SYS(writev),
+#endif
+#ifdef __NR_pwritev
+	SCMP_SYS(pwritev),
+#endif
+#ifdef __NR_pwritev2
+	SCMP_SYS(pwritev2),
+#endif
 	SCMP_SYS(exit_group),
 	SCMP_SYS(exit),
 
@@ -203,14 +270,30 @@ static int filter_gen_level2[] = {
 	SCMP_SYS(recvmsg),
 	SCMP_SYS(recvfrom),
 	SCMP_SYS(sendto),
+#ifdef __NR_readlink
+	SCMP_SYS(readlink),
+#endif
+#ifdef __NR_readlinkat
+	SCMP_SYS(readlinkat),
+#endif
 	SCMP_SYS(unlink),
 #ifdef __NR_unlinkat
 	SCMP_SYS(unlinkat),
 #endif
-	SCMP_SYS(poll)
+	SCMP_SYS(select),
+#ifdef __NR_pselect6
+	SCMP_SYS(pselect6),
+#endif
+	SCMP_SYS(poll),
+#ifdef __NR_readlink
+	SCMP_SYS(readlink),
+#endif
+#ifdef __NR_readlinkat
+	SCMP_SYS(readlinkat),
+#endif
 };
 
-static int filter_gen_level3[] = {
+static const int filter_gen_level3[] = {
 	SCMP_SYS(arch_prctl),
 	SCMP_SYS(access),
 	SCMP_SYS(brk),
@@ -218,6 +301,9 @@ static int filter_gen_level3[] = {
 	SCMP_SYS(close),
 	SCMP_SYS(clone),
 	SCMP_SYS(dup),
+#ifdef __NR_dup2
+	SCMP_SYS(dup2),
+#endif
 	SCMP_SYS(epoll_create),
 	SCMP_SYS(epoll_wait),
 #ifdef __NR_epoll_pwait
@@ -229,6 +315,12 @@ static int filter_gen_level3[] = {
 #endif
 	SCMP_SYS(exit),
 	SCMP_SYS(exit_group),
+	SCMP_SYS(fork),
+	SCMP_SYS(vfork),
+	SCMP_SYS(clone),
+#ifdef __NR_clone3
+	SCMP_SYS(clone3),
+#endif
 #ifdef __NR_eventfd2
 	SCMP_SYS(eventfd2),
 #endif
@@ -237,9 +329,6 @@ static int filter_gen_level3[] = {
 #endif
 #ifdef __NR_pipe
 	SCMP_SYS(pipe),
-#endif
-#ifdef __NR_fchmod
-	SCMP_SYS(fchmod),
 #endif
 	SCMP_SYS(fcntl),
 	SCMP_SYS(fstat),
@@ -281,14 +370,26 @@ static int filter_gen_level3[] = {
 #endif
 	// glob uses this..
 	SCMP_SYS(lstat),
-	SCMP_SYS(mkdir),
 	SCMP_SYS(mlockall),
 #ifdef __NR_mmap
 	SCMP_SYS(mmap),
 #endif
+#ifdef __NR_mmap2
+	SCMP_SYS(mmap2),
+#endif
+#ifdef __NR_munmap
 	SCMP_SYS(munmap),
+#endif
 #ifdef __NR_nanosleep
 	SCMP_SYS(nanosleep),
+#endif
+	SCMP_SYS(open),
+	SCMP_SYS(openat),
+#ifdef __NR_preadv
+	SCMP_SYS(preadv),
+#endif
+#ifdef __NR_preadv2
+	SCMP_SYS(preadv2),
 #endif
 #ifdef __NR_prlimit
 	SCMP_SYS(prlimit),
@@ -298,6 +399,9 @@ static int filter_gen_level3[] = {
 #endif
 	SCMP_SYS(pselect6),
 	SCMP_SYS(read),
+#ifdef __NR_readv
+	SCMP_SYS(readv),
+#endif
 	SCMP_SYS(rt_sigaction),
 	SCMP_SYS(rt_sigprocmask),
 	SCMP_SYS(rt_sigreturn),
@@ -322,7 +426,15 @@ static int filter_gen_level3[] = {
 	SCMP_SYS(uname),
 	SCMP_SYS(wait4),
 	SCMP_SYS(write),
+#ifdef __NR_writev
 	SCMP_SYS(writev),
+#endif
+#ifdef __NR_pwritev
+	SCMP_SYS(pwritev),
+#endif
+#ifdef __NR_pwritev2
+	SCMP_SYS(pwritev2),
+#endif
 	SCMP_SYS(exit_group),
 	SCMP_SYS(exit),
 
@@ -362,12 +474,115 @@ static int filter_gen_level3[] = {
 	SCMP_SYS(recvmsg),
 	SCMP_SYS(recvfrom),
 	SCMP_SYS(sendto),
+#ifdef __NR_readlink
+	SCMP_SYS(readlink),
+#endif
+#ifdef __NR_readlinkat
+	SCMP_SYS(readlinkat),
+#endif
 	SCMP_SYS(unlink),
 #ifdef __NR_unlinkat
 	SCMP_SYS(unlinkat),
 #endif
-	SCMP_SYS(poll)
+	SCMP_SYS(select),
+#ifdef __NR_pselect6
+	SCMP_SYS(pselect6),
+#endif
+	SCMP_SYS(poll),
+#ifdef __NR_readlink
+	SCMP_SYS(readlink),
+#endif
+#ifdef __NR_readlinkat
+	SCMP_SYS(readlinkat),
+#endif
+	/* Level 3 additions */
+	SCMP_SYS(chmod),
+#ifdef __NR_fchmod
+	SCMP_SYS(fchmod),
+#endif
+#ifdef __NR_fchmodat
+	SCMP_SYS(fchmodat),
+#endif
+	SCMP_SYS(chown),
+#ifdef __NR_chown32
+	SCMP_SYS(chown32),
+#endif
+	SCMP_SYS(lchown),
+#ifdef __NR_lchown32
+	SCMP_SYS(lchown32),
+#endif
+#ifdef __NR_fchownat
+	SCMP_SYS(fchownat),
+#endif
+	SCMP_SYS(creat),
+	SCMP_SYS(mkdir),
+	SCMP_SYS(mkdirat),
+	SCMP_SYS(mknod),
+	SCMP_SYS(mknodat),
+	SCMP_SYS(rmdir),
+	SCMP_SYS(truncate),
+#ifdef __NR_truncate64
+	SCMP_SYS(truncate64),
+#endif
+	SCMP_SYS(link),
+	SCMP_SYS(linkat),
+	SCMP_SYS(unlink),
+	SCMP_SYS(unlinkat),
+	SCMP_SYS(rename),
+	SCMP_SYS(renameat),
+#ifdef __NR_renameat2
+	SCMP_SYS(renameat2),
+#endif
+	SCMP_SYS(symlink),
+	SCMP_SYS(symlinkat),
+	SCMP_SYS(utime),
+	SCMP_SYS(utimes),
+#ifdef __NR_utimensat
+	SCMP_SYS(utimensat),
+#endif
+#ifdef __NR_futimesat
+	SCMP_SYS(futimesat),
+#endif
+	SCMP_SYS(setxattr),
+	SCMP_SYS(lsetxattr),
+	SCMP_SYS(removexattr),
+	SCMP_SYS(lremovexattr),
+/*
+ * TODO: This does not work with libseccomp-2.5.1
+#ifdef __NR_openat2
+	SCMP_SYS(openat2),
+#endif
+*/
 };
+
+bool filter_includes(int sysnum)
+{
+	size_t max;
+	const int *filter;
+	switch (sydbox->config.restrict_general) {
+	case 0:
+		return false;
+	case 1:
+		filter = filter_gen_level1;
+		max = ELEMENTSOF(filter_gen_level1);
+		break;
+	case 2:
+		filter = filter_gen_level2;
+		max = ELEMENTSOF(filter_gen_level2);
+		break;
+	case 3:
+		filter = filter_gen_level3;
+		max = ELEMENTSOF(filter_gen_level3);
+		break;
+	default:
+		assert_not_reached();
+	}
+
+	for (size_t i = 0; i < max; i++)
+		if (sysnum == filter[i])
+			return true;
+	return false;
+}
 
 static int filter_open_readonly()
 {
