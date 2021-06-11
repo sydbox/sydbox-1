@@ -456,6 +456,7 @@ int sysinit_seccomp_load(void)
 			return r;
 	}
 
+	sandbox_t *box = box_current(NULL);
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		if (syscall_entries[i].name)
 			sysnum = seccomp_syscall_resolve_name(syscall_entries[i].name);
@@ -470,7 +471,6 @@ int sysinit_seccomp_load(void)
 			continue;
 		}
 
-		sandbox_t *box = box_current(NULL);
 		int open_flag = syscall_entries[i].open_flag;
 		if (open_flag) {
 			enum sandbox_mode mode_r = box->mode.sandbox_read;
@@ -650,13 +650,12 @@ int sysinit_seccomp_load(void)
 		}
 	}
 
+	static const char *const calls[] = {
+		"execve", "execveat",
+		"clone", "fork", "vfork", "clone3",
+		"chdir", "fchdir",
+	};
 	if (user_notified) {
-		sandbox_t *box = box_current(NULL);
-		const char *calls[] = {
-			"execve", "execveat",
-			"clone", "fork", "vfork", "clone3",
-			"chdir", "fchdir",
-		};
 		for (unsigned short i = 0; i < 8; i++) {
 			if (i < 2 && box->mode.sandbox_exec != SANDBOX_OFF)
 				continue; /* execve* already added */
@@ -672,7 +671,7 @@ int sysinit_seccomp_load(void)
 			if ((r = rule_add_action(SCMP_ACT_NOTIFY, sysnum)) < 0) {
 				errno = -r;
 				say_errno("can't add notify for %s, continuing...",
-				    calls[i]);
+					  calls[i]);
 				continue;
 			}
 		}

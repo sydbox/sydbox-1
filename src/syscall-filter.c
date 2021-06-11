@@ -576,15 +576,16 @@ static int filter_general_level_3(void)
 int filter_general(void)
 {
 	int r;
+	static const int allow_calls[] = {
+		SCMP_SYS(exit),
+		SCMP_SYS(exit_group),
+		SCMP_SYS(arch_prctl),
+		SCMP_SYS(membarrier),
+		SCMP_SYS(set_tid_address),
+		SCMP_SYS(rt_sigprocmask),
+	};
+
 	if (sydbox->seccomp_action != SCMP_ACT_ALLOW) {
-		int allow_calls[] = {
-			SCMP_SYS(exit),
-			SCMP_SYS(exit_group),
-			SCMP_SYS(arch_prctl),
-			SCMP_SYS(membarrier),
-			SCMP_SYS(set_tid_address),
-			SCMP_SYS(rt_sigprocmask),
-		};
 		for (unsigned int i = 0; i < ELEMENTSOF(allow_calls); i++)
 			if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
 						  allow_calls[i], 0)) < 0)

@@ -639,6 +639,16 @@ extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 #define sysdeny(p) ((p)->retval)
 #define hasparent(p) ((p)->ppid >= 0)
 
+#define SANDBOX_OFF(box) (!!(sydbox->config.box_static.mode.sandbox_ ## box == SANDBOX_OFF))
+#define SANDBOX_OFF_READ() (SANDBOX_OFF(read))
+#define SANDBOX_OFF_WRITE() (SANDBOX_OFF(write))
+#define SANDBOX_OFF_EXEC() (SANDBOX_OFF(exec))
+#define SANDBOX_OFF_NETWORK() (SANDBOX_OFF(network))
+#define SANDBOX_OFF_ALL() (SANDBOX_OFF_READ() &&\
+			   SANDBOX_OFF_WRITE() &&\
+			   SANDBOX_OFF_EXEC() &&\
+			   SANDBOX_OFF_NETWORK())
+
 #define sandbox_allow(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_ALLOW))
 #define sandbox_deny(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_DENY))
 #define sandbox_off(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_OFF))

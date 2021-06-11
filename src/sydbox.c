@@ -1827,20 +1827,6 @@ int main(int argc, char **argv)
 	if (optind == argc)
 		usage(stderr, 1);
 
-#if 0
-	if (test_pidfd(false) || test_seccomp(false, false)) {
-		say("Neither pidfd interface nor seccomp functional");
-		say("Do not know how to sandbox, exiting.");
-		exit(EXIT_FAILURE);
-	}
-	if (test_cross_memory_attach(false) && test_proc_mem(false)) {
-		say("warning: Neither cross memory attach nor /proc/pid/mem "
-			"interface is available.");
-		say("warning: Sandboxing is only supported with bpf mode.");
-		sydbox->bpf_only = true;
-	}
-#endif
-
 	if ((env = getenv(SYDBOX_CONFIG_ENV)))
 		config_parse_spec(env);
 
@@ -1849,7 +1835,18 @@ int main(int argc, char **argv)
 	systable_init();
 	sysinit();
 
-	/* Initialize Secure Computing */
+	/* Late validations for options */
+	if (!sydbox->config.restrict_general &&
+	    !sydbox->config.restrict_fcntl &&
+	    !sydbox->config.restrict_ioctl &&
+	    !sydbox->config.restrict_mmap &&
+	    !sydbox->config.restrict_shm_wr &&
+	    SANDBOX_OFF_ALL()) {
+		say("All restrict and sandbox options are off.");
+		die("Refusing to run the program `%s'.", argv[optind]);
+	}
+
+	/* initialize Secure Computing */
 	if (sydbox->config.restrict_general > 0)
 		sydbox->seccomp_action = SCMP_ACT_ERRNO(EPERM);
 	else
