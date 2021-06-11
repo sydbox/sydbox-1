@@ -524,7 +524,6 @@ struct sydbox {
 	bool bpf_only;
 	int seccomp_fd;
 	int notify_fd;
-	bool seccomp_user_notify;
 	scmp_filter_ctx ctx;
 	struct filter *filter;
 	struct seccomp_notif *request;
@@ -632,7 +631,7 @@ extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 #endif
 
 #define tracing() (0)
-#define use_notify() (!sydbox->bpf_only)
+#define bpf_only() (sydbox->bpf_only)
 
 #define detached(p) (!((p)->flags & SYD_IN_SYSCALL))
 #define entering(p) (!((p)->flags & SYD_IN_SYSCALL))
@@ -819,6 +818,32 @@ static inline void free_sandbox(sandbox_t *box)
 {
 	reset_sandbox(box);
 	free(box);
+}
+
+static inline bool use_notify(void)
+{
+	if (sydbox->bpf_only)
+		return false;
+
+	sandbox_t *box = box_current(NULL);
+	enum sandbox_mode mode[] = {
+		box->mode.sandbox_read,
+		box->mode.sandbox_write,
+		box->mode.sandbox_exec,
+		box->mode.sandbox_network,
+	};
+
+	for (unsigned short i = 0; i < ELEMENTSOF(mode); i++) {
+		switch (mode[i]) {
+		case SANDBOX_ALLOW:
+		case SANDBOX_DENY:
+			return true;
+		default:
+			continue;
+		}
+	}
+
+	return false;
 }
 
 void systable_init(void);
