@@ -578,8 +578,18 @@ static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
 		pid_task = p_task->pid;
 	}
 
+	/* Step 2: Check /proc/$pid/status
+	 * TODO: Two things to consider here:
+	 * 1. Is it correct to always prefer Tgid over Ppid?
+	 * 2. Is it more reliable to switch steps 2 & 3?
+	 */
+	if (!proc_parents(pid_task, &tgid, &ppid) &&
+			((parent_node = lookup_process(tgid)) ||
+			 (tgid != ppid && (parent_node = lookup_process(ppid)))))
+		return parent_node;
+
 	/*
-	 * Step 2: Check for IN_CLONE|IN_EXECVE flags and /proc/$pid/task
+	 * Step 3: Check for IN_CLONE|IN_EXECVE flags and /proc/$pid/task
 	 * We need IN_EXECVE for threaded exec -> leader lost case.
 	 */
 	parent_count = 0;
@@ -596,16 +606,6 @@ static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
 
 	if (parent_count == 1)
 		/* We have the suspect! */
-		return parent_node;
-
-	/* Step 3: Check /proc/$pid/status
-	 * TODO: Two things to consider here:
-	 * 1. Is it correct to always prefer Tgid over Ppid?
-	 * 2. Is it more reliable to switch steps 2 & 3?
-	 */
-	if (!proc_parents(pid_task, &tgid, &ppid) &&
-			((parent_node = lookup_process(tgid)) ||
-			 (tgid != ppid && (parent_node = lookup_process(ppid)))))
 		return parent_node;
 
 	return NULL;
