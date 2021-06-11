@@ -395,7 +395,9 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 			/* Bad directory for non-absolute path! */
 			r = deny(current, EBADF);
 			if (sydbox->config.violation_raise_fail)
-				violation(current, "%s()", current->sysname);
+				violation(current, "%s(`%s')",
+					  current->sysname,
+					  path);
 			goto out;
 		}
 	}
@@ -405,7 +407,9 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 				  pid, info->rmode, &abspath)) < 0) {
 		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
-			violation(current, "%s()", current->sysname);
+			violation(current, "%s(`%s')",
+				  current->sysname,
+				  path);
 		goto out;
 	}
 
