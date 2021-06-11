@@ -56,7 +56,9 @@ enum dump {
 #if SYDBOX_DUMP
 # define INSPECT_DEFAULT INSPECT_DUMP_ALL
 #elif SYDBOX_HAVE_DUMP_BUILTIN
-#define INSPECT_DEFAULT (INSPECT_DUMP_STARTUP | INSPECT_DUMP_SYSENT)
+# define INSPECT_DEFAULT (INSPECT_DUMP_STARTUP | INSPECT_DUMP_SYSENT)
+#else
+# error do not know how to define INSPECT_DEFAULT
 #endif
 
 extern unsigned long dump_inspect;
