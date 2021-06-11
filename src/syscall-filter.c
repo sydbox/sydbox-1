@@ -644,26 +644,31 @@ int filter_open(void)
 int filter_openat(void)
 {
 	int r;
+	uint32_t action;
 
 	if (!sydbox->config.restrict_fcntl)
 		return 0;
 
+	action = SCMP_ACT_ERRNO(EPERM);
+	if (action == sydbox->seccomp_action)
+		return 0;
+
 	/* O_ASYNC */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL), SCMP_SYS(openat),
+	r = seccomp_rule_add(sydbox->ctx, action, SCMP_SYS(openat),
 			     1,
 			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_ASYNC, O_ASYNC ));
 	if (r < 0)
 		return r;
 
 	/* O_DIRECT */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL), SCMP_SYS(openat),
+	r = seccomp_rule_add(sydbox->ctx, action, SCMP_SYS(openat),
 			     1,
 			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_DIRECT, O_DIRECT ));
 	if (r < 0)
 		return r;
 
 	/* O_SYNC */
-	r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL), SCMP_SYS(openat),
+	r = seccomp_rule_add(sydbox->ctx, action, SCMP_SYS(openat),
 			     1,
 			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_SYNC, O_SYNC ));
 	if (r < 0)
