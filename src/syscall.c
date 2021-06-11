@@ -19,6 +19,23 @@
 #include <seccomp.h>
 
 static int rule_add_action(uint32_t action, int sysnum);
+
+static int rule_add_access_rd(uint32_t action, int sysnum, int access_mode);
+static int rule_add_access_wr(uint32_t action, int sysnum, int access_mode);
+static int rule_add_access_ex(uint32_t action, int sysnum, int access_mode);
+#define rule_add_access_rd_eperm(sysnum, access_mode) \
+	(rule_add_access_rd(SCMP_ACT_ERRNO(EPERM), (sysnum), (access_mode)))
+#define rule_add_access_wr_eperm(sysnum, access_mode) \
+	(rule_add_access_wr(SCMP_ACT_ERRNO(EPERM), (sysnum), (access_mode)))
+#define rule_add_access_ex_eperm(sysnum, access_mode) \
+	(rule_add_access_ex(SCMP_ACT_ERRNO(EPERM), (sysnum), (access_mode)))
+#define rule_add_access_rd_notify(sysnum, access_mode) \
+	(rule_add_access_rd(SCMP_ACT_NOTIFY, (sysnum), (access_mode)))
+#define rule_add_access_wr_notify(sysnum, access_mode) \
+	(rule_add_access_wr(SCMP_ACT_NOTIFY, (sysnum), (access_mode)))
+#define rule_add_access_ex_notify(sysnum, access_mode) \
+	(rule_add_access_wr(SCMP_ACT_NOTIFY, (sysnum), (access_mode)))
+
 static int rule_add_open_rd(uint32_t action, int sysnum, int open_flag);
 static int rule_add_open_wr(uint32_t action, int sysnum, int open_flag);
 #define rule_add_open_rd_eperm(sysnum, open_flag) \
@@ -90,16 +107,25 @@ static const sysentry_t syscall_entries[] = {
 		.name = "access",
 		.notify = sys_access,
 		.sandbox_read = true,
+		.sandbox_write = true,
+		.sandbox_exec = true,
+		.access_mode = 1,
 	},
 	{
 		.name = "faccessat",
 		.notify = sys_faccessat,
 		.sandbox_read = true,
+		.sandbox_write = true,
+		.sandbox_exec = true,
+		.access_mode = 2,
 	},
 	{
 		.name = "faccessat2",
 		.notify = sys_faccessat,
 		.sandbox_read = true,
+		.sandbox_write = true,
+		.sandbox_exec = true,
+		.access_mode = 2,
 	},
 
 	{
@@ -479,115 +505,106 @@ int sysinit_seccomp_load(void)
 			continue;
 		}
 
-		int open_flag = syscall_entries[i].open_flag;
-		if (open_flag) {
+		int flag;
+		bool is_open = false, is_access = false;
+		if (syscall_entries[i].access_mode) {
+			is_access = true;
+			flag = syscall_entries[i].access_mode;
+		} else if (syscall_entries[i].open_flag) {
+			is_open = true;
+			flag = syscall_entries[i].open_flag;
+		}
+		if (is_access) {
+			enum sandbox_mode mode_r = box->mode.sandbox_read;
+			enum sandbox_mode mode_w = box->mode.sandbox_write;
+			enum sandbox_mode mode_x = box->mode.sandbox_exec;
+
+			if (mode_r == SANDBOX_BPF &&
+			    (r = rule_add_access_rd_eperm(sysnum,
+							  flag)) < 0)
+					return r;
+			if (use_notify() &&
+			    (mode_r == SANDBOX_ALLOW || mode_r == SANDBOX_DENY)) {
+				r = rule_add_access_rd_notify(sysnum,
+							      flag);
+				if (r < 0)
+					return r;
+				user_notified = true;
+			} else if (mode_r == SANDBOX_DENY &&
+			    (r = rule_add_access_rd_eperm(sysnum,
+							  flag)) < 0) {
+					return r;
+			}
+
+			if (mode_w == SANDBOX_BPF &&
+			    (r = rule_add_access_wr_eperm(sysnum,
+							  flag)) < 0)
+					return r;
+			if (use_notify() &&
+			    (mode_w == SANDBOX_ALLOW || mode_w == SANDBOX_DENY)) {
+				r = rule_add_access_wr_notify(sysnum,
+							      flag);
+				if (r < 0)
+					return r;
+				user_notified = true;
+			} else if (mode_w == SANDBOX_DENY &&
+			    (r = rule_add_access_wr_eperm(sysnum,
+							  flag)) < 0) {
+					return r;
+			}
+
+			if (mode_x == SANDBOX_BPF &&
+			    (r = rule_add_access_ex_eperm(sysnum,
+							  flag)) < 0)
+					return r;
+			if (use_notify() &&
+			    (mode_x == SANDBOX_ALLOW || mode_x == SANDBOX_DENY)) {
+				r = rule_add_access_ex_notify(sysnum,
+							      flag);
+				if (r < 0)
+					return r;
+				user_notified = true;
+			} else if (mode_x == SANDBOX_DENY &&
+			    (r = rule_add_access_ex_eperm(sysnum,
+							  flag)) < 0) {
+					return r;
+			}
+		} else if (is_open) {
 			enum sandbox_mode mode_r = box->mode.sandbox_read;
 			enum sandbox_mode mode_w = box->mode.sandbox_write;
 
-			//struct sock_filter *item = NULL;
 			if (mode_r == SANDBOX_BPF &&
-			    mode_w == SANDBOX_BPF) {
-				if ((r = rule_add_open_rd_eperm(sysnum,
-								open_flag)) < 0)
-				{
-					errno = -r;
-					die_errno("rule_add_open_rd_eperm");
-				}
-				if ((r = rule_add_open_wr_eperm(sysnum,
-								open_flag)) < 0)
-				{
-					errno = -r;
-					die_errno("rule_add_open_wr_eperm");
-				}
-			} else if (mode_r == SANDBOX_BPF &&
-				   mode_w == SANDBOX_OFF) {
-				if ((r = rule_add_open_rd_eperm(sysnum,
-								open_flag)) < 0) {
-					errno = -r;
-					die_errno("rule_add_open_rd_eperm");
-				}
-			} else if (mode_r == SANDBOX_OFF &&
-				   mode_w == SANDBOX_BPF) {
-				if ((r = rule_add_open_wr_eperm(sysnum,
-								open_flag)) < 0)
-				{
-					errno = -r;
-					die_errno("rule_add_open_wr_eperm");
-				}
-			} else if (mode_r == SANDBOX_OFF &&
-				   mode_w == SANDBOX_OFF) {
-#if 0
-				if (use_notify())
-					action = SCMP_ACT_NOTIFY;
-				else /* no need to do anything */
-					continue;
-				r = seccomp_rule_add(sydbox->ctx, action, sysnum, 0);
+			    (r = rule_add_open_rd_eperm(sysnum,
+							flag)) < 0)
+					return r;
+			if (use_notify() &&
+			    (mode_r == SANDBOX_ALLOW || mode_r == SANDBOX_DENY)) {
+				r = rule_add_open_rd_notify(sysnum,
+							    flag);
 				if (r < 0)
 					return r;
-#endif
-				;
-			} else if (mode_r == SANDBOX_ALLOW &&
-				   mode_w == SANDBOX_OFF) {
-				if (use_notify()) {
-					r = rule_add_open_rd_notify(sysnum,
-								    open_flag);
-					if (r < 0)
-						return r;
-					user_notified = true;
-				} /* else no need to do anything. */
-			} else if (mode_r == SANDBOX_OFF &&
-				   (mode_w == SANDBOX_ALLOW ||
-				    mode_w == SANDBOX_DENY)) {
-				if (use_notify()) {
-					r = rule_add_open_wr_notify(sysnum,
-								    open_flag);
-					user_notified = true;
-				} else {
-					r = rule_add_open_wr_eperm(sysnum,
-								   open_flag);
-				}
-				if (r < 0)
-					return 0;
-			} else if (mode_r == SANDBOX_ALLOW &&
-				   mode_w == SANDBOX_ALLOW) {
-				if (use_notify()) {
-					r = rule_add_action(SCMP_ACT_NOTIFY,
-							    sysnum);
-					if (r < 0)
-						return r;
-					user_notified = true;
-				} /* else { ; } no need to do anything here. */
+				user_notified = true;
 			} else if (mode_r == SANDBOX_DENY &&
-				   mode_w == SANDBOX_OFF) {
-				if (use_notify()) {
-					r = rule_add_open_rd_notify(sysnum,
-								    open_flag);
-					user_notified = true;
-				} else {
-					r = rule_add_open_rd_eperm(sysnum,
-								   open_flag);
-				}
+			    (r = rule_add_open_rd_eperm(sysnum,
+							flag)) < 0) {
+					return r;
+			}
+
+			if (mode_w == SANDBOX_BPF &&
+			    (r = rule_add_open_wr_eperm(sysnum,
+							flag)) < 0)
+					return r;
+			if (use_notify() &&
+			    (mode_w == SANDBOX_ALLOW || mode_w == SANDBOX_DENY)) {
+				r = rule_add_open_wr_notify(sysnum,
+							    flag);
 				if (r < 0)
 					return r;
-			} else if (mode_r == SANDBOX_DENY &&
-				   mode_w == SANDBOX_DENY) {
-				if (use_notify()) {
-					r = rule_add_action(SCMP_ACT_NOTIFY,
-							    sysnum);
-					user_notified = true;
-				} /* else no need to do anything. */
-			} else if (mode_r == SANDBOX_DENY &&
-				   mode_w == SANDBOX_BPF) {
-				if (use_notify()) {
-					r = rule_add_open_rd_notify(sysnum,
-								    open_flag);
-					if (r < 0)
-						return r;
-					user_notified = true;
-				}
-				r = rule_add_open_wr_eperm(sysnum, open_flag);
-				if (r < 0)
-					return r;
+				user_notified = true;
+			} else if (mode_w == SANDBOX_DENY &&
+				   (r = rule_add_open_wr_eperm(sysnum,
+							       flag)) < 0) {
+				return r;
 			}
 		} else {
 			int mode;
@@ -777,6 +794,59 @@ static int
 rule_add_action(uint32_t action, int sysnum)
 {
 	return seccomp_rule_add(sydbox->ctx, action, sysnum, 0);
+}
+
+static int rule_add_access(uint32_t action, int sysnum,
+			   int access_mode, int access_flag)
+{
+	int r;
+
+	if (action == sydbox->seccomp_action)
+		return 0;
+
+	/*
+	 * TODO: For simplicity we ignore bitwise OR'ed modes here,
+	 * e.g: R_OK|W_OK
+	 */
+	if ((r = seccomp_rule_add(sydbox->ctx, action,
+				  sysnum, 1,
+				  SCMP_CMP( access_mode,
+					    SCMP_CMP_EQ,
+					    access_flag, access_flag ))) < 0)
+		return r;
+
+	return 0;
+}
+
+static int rule_add_access_rd(uint32_t action, int sysnum, int access_mode)
+{
+	int r;
+
+	if ((r = rule_add_access(action, sysnum, access_mode, F_OK)) < 0 ||
+	    (r = rule_add_access(action, sysnum, access_mode, R_OK)) < 0)
+		return r;
+
+	return 0;
+}
+
+static int rule_add_access_wr(uint32_t action, int sysnum, int access_mode)
+{
+	int r;
+
+	if ((r = rule_add_access(action, sysnum, access_mode, W_OK)) < 0)
+		return r;
+
+	return 0;
+}
+
+static int rule_add_access_ex(uint32_t action, int sysnum, int access_mode)
+{
+	int r;
+
+	if ((r = rule_add_access(action, sysnum, access_mode, X_OK)) < 0)
+		return r;
+
+	return 0;
 }
 
 static int

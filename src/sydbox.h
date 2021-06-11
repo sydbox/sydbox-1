@@ -561,10 +561,16 @@ struct sysentry {
 	sysfilter_t filter;
 
 	/*
+	 * If this is >0 this system call is an f?access*() system call with
+	 * `access_mode' member below pointing to the index of the flags argument.
+	 */
+	unsigned short access_mode;
+
+	/*
 	 * If this is >0 this system call is an open*() system call with
 	 * `open_flag' member below pointing to the index of the flags argument.
 	 */
-	int open_flag;
+	unsigned short open_flag;
 
 	/*
 	 * The sandbox group of the given system call.
