@@ -19,8 +19,16 @@
 #include <seccomp.h>
 
 static int rule_add_action(uint32_t action, int sysnum);
-static int rule_add_open_rd_eperm(int sysnum, int open_flag);
-static int rule_add_open_wr_eperm(int sysnum, int open_flag);
+static int rule_add_open_rd(uint32_t action, int sysnum, int open_flag);
+static int rule_add_open_wr(uint32_t action, int sysnum, int open_flag);
+#define rule_add_open_rd_eperm(sysnum, open_flag) \
+	(rule_add_open_rd(SCMP_ACT_ERRNO(EPERM), (sysnum), (open_flag)))
+#define rule_add_open_wr_eperm(sysnum, open_flag) \
+	(rule_add_open_wr(SCMP_ACT_ERRNO(EPERM), (sysnum), (open_flag)))
+#define rule_add_open_rd_notify(sysnum, open_flag) \
+	(rule_add_open_rd(SCMP_ACT_NOTIFY, (sysnum), (open_flag)))
+#define rule_add_open_wr_notify(sysnum, open_flag) \
+	(rule_add_open_wr(SCMP_ACT_NOTIFY, (sysnum), (open_flag)))
 
 /*
  * 1. Order matters! Put more hot system calls above.
@@ -518,22 +526,21 @@ int sysinit_seccomp_load(void)
 					return r;
 #endif
 				;
-			} else if ((mode_r == SANDBOX_OFF &&
-				    mode_w == SANDBOX_ALLOW) ||
-				   (mode_r == SANDBOX_ALLOW &&
-				    mode_w == SANDBOX_OFF)) {
+			} else if (mode_r == SANDBOX_ALLOW &&
+				   mode_w == SANDBOX_OFF) {
 				if (use_notify()) {
-					r = rule_add_action(SCMP_ACT_NOTIFY,
-							    sysnum);
+					r = rule_add_open_rd_notify(sysnum,
+								    open_flag);
 					if (r < 0)
 						return r;
 					user_notified = true;
 				} /* else no need to do anything. */
 			} else if (mode_r == SANDBOX_OFF &&
-				   mode_w == SANDBOX_DENY) {
+				   (mode_w == SANDBOX_ALLOW ||
+				    mode_w == SANDBOX_DENY)) {
 				if (use_notify()) {
-					r = rule_add_action(SCMP_ACT_NOTIFY,
-							    sysnum);
+					r = rule_add_open_wr_notify(sysnum,
+								    open_flag);
 					user_notified = true;
 				} else {
 					r = rule_add_open_wr_eperm(sysnum,
@@ -541,15 +548,6 @@ int sysinit_seccomp_load(void)
 				}
 				if (r < 0)
 					return 0;
-			} else if (mode_r == SANDBOX_OFF &&
-				   mode_w == SANDBOX_ALLOW) {
-				if (use_notify()) {
-					r = rule_add_action(SCMP_ACT_NOTIFY,
-							    sysnum);
-					if (r < 0)
-						return 0;
-					user_notified = true;
-				} /* else { ; } no need to do anything here. */
 			} else if (mode_r == SANDBOX_ALLOW &&
 				   mode_w == SANDBOX_ALLOW) {
 				if (use_notify()) {
@@ -562,8 +560,8 @@ int sysinit_seccomp_load(void)
 			} else if (mode_r == SANDBOX_DENY &&
 				   mode_w == SANDBOX_OFF) {
 				if (use_notify()) {
-					r = rule_add_action(SCMP_ACT_NOTIFY,
-							    sysnum);
+					r = rule_add_open_rd_notify(sysnum,
+								    open_flag);
 					user_notified = true;
 				} else {
 					r = rule_add_open_rd_eperm(sysnum,
@@ -572,19 +570,22 @@ int sysinit_seccomp_load(void)
 				if (r < 0)
 					return r;
 			} else if (mode_r == SANDBOX_DENY &&
-				   (mode_w == SANDBOX_BPF ||
-				    mode_w == SANDBOX_DENY)) {
+				   mode_w == SANDBOX_DENY) {
 				if (use_notify()) {
 					r = rule_add_action(SCMP_ACT_NOTIFY,
 							    sysnum);
 					user_notified = true;
-				} else if (sydbox->seccomp_action != SCMP_ACT_ERRNO(EPERM)) {
-					r = seccomp_rule_add(sydbox->ctx,
-							     SCMP_ACT_ERRNO(EPERM),
-							     sysnum, 0);
-				} else {
-					continue;
+				} /* else no need to do anything. */
+			} else if (mode_r == SANDBOX_DENY &&
+				   mode_w == SANDBOX_BPF) {
+				if (use_notify()) {
+					r = rule_add_open_rd_notify(sysnum,
+								    open_flag);
+					if (r < 0)
+						return r;
+					user_notified = true;
 				}
+				r = rule_add_open_wr_eperm(sysnum, open_flag);
 				if (r < 0)
 					return r;
 			}
@@ -779,10 +780,9 @@ rule_add_action(uint32_t action, int sysnum)
 }
 
 static int
-rule_add_open_rd_eperm(int sysnum, int open_flag)
+rule_add_open_rd(uint32_t action, int sysnum, int open_flag)
 {
 	int r;
-	uint32_t action = SCMP_ACT_ERRNO(EPERM);
 
 	if (action == sydbox->seccomp_action)
 		return 0;
@@ -803,10 +803,9 @@ rule_add_open_rd_eperm(int sysnum, int open_flag)
 }
 
 static int
-rule_add_open_wr_eperm(int sysnum, int open_flag)
+rule_add_open_wr(uint32_t action, int sysnum, int open_flag)
 {
 	int r;
-	uint32_t action = SCMP_ACT_ERRNO(EPERM);
 
 	if (action == sydbox->seccomp_action)
 		return 0;
