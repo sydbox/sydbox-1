@@ -53,30 +53,43 @@ int sys_bind(syd_process_t *current)
 	r = box_check_socket(current, &info);
 	if (r < 0)
 		goto out;
-	if (sydbox->config.whitelist_successful_bind && psa &&
-	    (psa->family == AF_UNIX || psa->family == AF_INET
-#if PINK_HAVE_IPV6
-	     || psa->family == AF_INET6
-#endif
-	    )) {
-		/* Access granted.
-		 * Read the file descriptor, for use in exit.
-		 */
-		unsigned long long inode;
+	if (!sydbox->config.whitelist_successful_bind || !psa)
+		goto out;
+	if (psa->family != AF_UNIX && psa->family != AF_INET &&
+	    psa->family != AF_INET6)
+		goto out;
 
-		r = syd_read_socket_argument(current, 0, &fd);
-		if (r < 0)
-			goto out;
-		if ((r = proc_socket_inode(current->pid,
-					   current->args[0], &inode)) < 0)
-			goto out;
-		struct sockinfo *si = xmalloc(sizeof(struct sockinfo));
-		si->path = unix_abspath;
-		si->addr = psa;
-		sockmap_add(&P_SOCKMAP(current), inode, si);
-		return 0;
-	}
+	/*
+	 * Access granted.
+	 */
+	unsigned long long inode;
 
+	r = syd_read_socket_argument(current, 0, &fd);
+	if (r < 0)
+		goto out;
+	if ((r = proc_socket_inode(current->pid,
+				   current->args[0], &inode)) < 0)
+		goto out;
+	struct sockinfo *si = xmalloc(sizeof(struct sockinfo));
+	si->path = unix_abspath;
+	si->addr = psa;
+
+	if ((si->addr->family == AF_INET &&
+	     si->addr->u.sa_in.sin_port == 0) ||
+	    (si->addr->family == AF_INET6 &&
+	     si->addr->u.sa6.sin6_port == 0))
+		goto zero;
+
+	/* whitelist socket address */
+	struct acl_node *node = xcalloc(1, sizeof(struct acl_node));
+	struct sockmatch *match = sockmatch_new(si);
+	node->action = ACL_ACTION_WHITELIST;
+	node->match = match;
+	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
+	return 0;
+zero:
+	sockmap_add(&P_SOCKMAP(current), inode, si);
+	return 0;
 out:
 	if (sydbox->config.whitelist_successful_bind) {
 		if (unix_abspath)
@@ -210,20 +223,3 @@ int sys_socketcall(syd_process_t *current)
 		return 0;
 	}
 }
-
-#if 0
-int sysx_socketcall(syd_process_t *current)
-{
-	if (sandbox_off_network(current))
-		return 0;
-
-	switch (current->subcall) {
-	case PINK_SOCKET_SUBCALL_BIND:
-		return sysx_bind(current);
-	case PINK_SOCKET_SUBCALL_GETSOCKNAME:
-		return sysx_getsockname(current);
-	default:
-		return 0;
-	}
-}
-#endif
