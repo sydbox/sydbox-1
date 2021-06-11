@@ -267,10 +267,11 @@ static const char *const sys_access_mode_table[] = {
 };
 DEFINE_STRING_TABLE_LOOKUP(sys_access_mode, int)
 
-enum syd_step {
-	SYD_STEP_NOT_SET,	/**< Special value indicating to use default. */
-	SYD_STEP_SYSCALL,	/**< Step with pink_trace_syscall() */
-	SYD_STEP_RESUME,	/**< Step with pink_trace_resume() */
+enum sydbox_export_mode {
+	SYDBOX_EXPORT_NUL,
+	SYDBOX_EXPORT_BPF,
+	SYDBOX_EXPORT_PFC,
+	SYDBOX_EXPORT_MAX,
 };
 
 struct sandbox_mode_struct {
@@ -531,6 +532,7 @@ struct sydbox {
 	uint32_t seccomp_action;
 
 	bool permissive;
+	enum sydbox_export_mode export;
 
 	/* Program invocation name (for the child) */
 	char *program_invocation_name;
@@ -624,8 +626,7 @@ extern sydbox_t *sydbox;
 extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 
 #if SYDBOX_HAVE_DUMP_BUILTIN
-// # define inspecting() ((sydbox)->config.violation_decision == VIOLATION_NOOP)
-# define inspecting() (1)
+# define inspecting() ((sydbox->dump_fd) != 0)
 #else
 # define inspecting() (0)
 #endif

@@ -691,8 +691,18 @@ int sysinit_seccomp(void)
 		say_errno("sysinit_seccomp_load");
 		return r;
 	}
-	if (getenv("EXPORT") && (r = seccomp_export_pfc(sydbox->ctx, 2)) < 0)
-		say("seccomp_export_pfc: %d %s", -r, strerror(-r));
+	switch (sydbox->export) {
+	case SYDBOX_EXPORT_BPF:
+		if ((r = seccomp_export_bpf(sydbox->ctx, 2)) < 0)
+			say_errno("seccomp_export_bpf");
+		break;
+	case SYDBOX_EXPORT_PFC:
+		if ((r = seccomp_export_pfc(sydbox->ctx, 2)) < 0)
+			say_errno("seccomp_export_pfc");
+		break;
+	default:
+		break;
+	}
 	if ((r = seccomp_load(sydbox->ctx)) < 0)
 		return -r;
 	if (use_notify()) {

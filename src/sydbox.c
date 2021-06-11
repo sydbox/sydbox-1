@@ -105,23 +105,24 @@ usage: "PACKAGE" [-hvb] [-d <fd|path|tmp>] [-a arch...] \n\
                      [-E var=val...] {command [arg...]}\n\
        "PACKAGE" --dry-run [-d <fd|path|tmp>] {command [arg...]}\n\
        "PACKAGE" --test\n\
--h               -- Show usage and exit\n\
--v               -- Show version and exit\n\
--c pathspec      -- Path spec to the configuration file, may be repeated\n\
--m magic         -- Run a magic command during init, may be repeated\n\
--E var=val       -- Put var=val in the environment for command, may be repeated\n\
--E var           -- Remove var from the environment for command, may be repeated\n\
--a <arch>        -- Filter system calls for the given architecture, may be repeated\n\
-                    native,x86_64,x86,x86,x32,arm,aarch64,mips,mips64,ppc,ppc64\n\
-                           ppc64le,s390,s390x,parisc,parisc64,riscv64\n\
-                    default: native\n\
--b               -- Run in bpf only mode, no seccomp user notifications\n\
--d <fd|path|tmp> -- Dump system call information to the given file descriptor\n\
-                    Use a number to dump to a file descriptor,\n\
-                    use a string to dump to a path, and\n\
-                    use `tmp' to dump to a temporary file.\n\
---dry-run        -- Run under inspection without denying system calls\n\
---test           -- Test if various runtime requirements are functional\n\
+-h                 -- Show usage and exit\n\
+-v                 -- Show version and exit\n\
+-c pathspec        -- Path spec to the configuration file, may be repeated\n\
+-m magic           -- Run a magic command during init, may be repeated\n\
+-E var=val         -- Put var=val in the environment for command, may be repeated\n\
+-E var             -- Remove var from the environment for command, may be repeated\n\
+-a <arch>          -- Filter system calls for the given architecture, may be repeated\n\
+                      native,x86_64,x86,x86,x32,arm,aarch64,mips,mips64,ppc,ppc64\n\
+                             ppc64le,s390,s390x,parisc,parisc64,riscv64\n\
+                      default: native\n\
+-b                 -- Run in bpf only mode, no seccomp user notifications\n\
+-d <fd|path|tmp>   -- Dump system call information to the given file descriptor\n\
+                      Use a number to dump to a file descriptor,\n\
+                      use a string to dump to a path, and\n\
+                      use `tmp' to dump to a temporary file.\n\
+--dry-run          -- Run under inspection without denying system calls\n\
+--export <bpf|pfc> -- Export the seccomp filters to standard error on startup\n\
+--test             -- Test if various runtime requirements are functional and exit\n\
 \n\
 Hey you, out there beyond the wall,\n\
 Breaking bottles in the hall,\n\
@@ -1108,7 +1109,7 @@ static void init_early(void)
 	sydbox->seccomp_fd = -1;
 	sydbox->notify_fd = -1;
 #if SYDBOX_HAVE_DUMP_BUILTIN
-	sydbox->dump_fd = -1;
+	sydbox->dump_fd = 0;
 #endif
 	sydbox->permissive = false;
 	config_init();
@@ -1679,6 +1680,7 @@ int main(int argc, char **argv)
 		{"version",	no_argument,		NULL,	'v'},
 		{"profile",	required_argument,	NULL,	0},
 		{"dry-run",	no_argument,		NULL,	0},
+		{"export",	required_argument,	NULL,	0},
 		{"arch",	required_argument,	NULL,	'a'},
 		{"bpf",		no_argument,		NULL,	'b'},
 		{"test",	no_argument,		NULL,	't'},
@@ -1689,13 +1691,25 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "a:bhd:vc:m:E:t", long_options,
+	while ((opt = getopt_long(argc, argv, "a:bhd:e:vc:m:E:t", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
-			if (streq(long_options[options_index].name, "dry-run")) {
+			if (streq(long_options[options_index].name,
+				  "dry-run")) {
 				sydbox->permissive = true;
 				break;
+			} else if (streq(long_options[options_index].name,
+					 "export")) {
+				if (streq(optarg, "bpf")) {
+					sydbox->export = SYDBOX_EXPORT_BPF;
+					break;
+				} else if (streq(optarg, "pfc")) {
+					sydbox->export = SYDBOX_EXPORT_PFC;
+					break;
+				} else {
+					say("Invalid argument to --export");
+				}
 			} else if (optarg &&
 				   streq(long_options[options_index].name, "profile")) {
 				/* special case for backwards compatibility */
