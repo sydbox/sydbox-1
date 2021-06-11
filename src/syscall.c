@@ -19,12 +19,8 @@
 #include <seccomp.h>
 
 static int rule_add_action(uint32_t action, int sysnum);
-static int rule_add_open_rd(int sysnum, int open_flag);
-static int rule_add_open_wr(int sysnum, int open_flag);
-static int rule_add_open_rd_eperm(int sysnum);
-static int rule_add_openat_rd_eperm(int sysnum);
-static int rule_add_open_wr_eperm(int sysnum);
-static int rule_add_openat_wr_eperm(int sysnum);
+static int rule_add_open_rd_eperm(int sysnum, int open_flag);
+static int rule_add_open_wr_eperm(int sysnum, int open_flag);
 
 /*
  * 1. Order matters! Put more hot system calls above.
@@ -483,27 +479,30 @@ int sysinit_seccomp_load(void)
 			//struct sock_filter *item = NULL;
 			if (mode_r == SANDBOX_BPF &&
 			    mode_w == SANDBOX_BPF) {
-				if ((r = rule_add_open_rd(sysnum,
-							  open_flag)) < 0) {
+				if ((r = rule_add_open_rd_eperm(sysnum,
+								open_flag)) < 0)
+				{
 					errno = -r;
 					die_errno("rule_add_open_rd_eperm");
 				}
-				if ((r = rule_add_open_wr(sysnum,
-							  open_flag)) < 0) {
+				if ((r = rule_add_open_wr_eperm(sysnum,
+								open_flag)) < 0)
+				{
 					errno = -r;
 					die_errno("rule_add_open_wr_eperm");
 				}
 			} else if (mode_r == SANDBOX_BPF &&
 				   mode_w == SANDBOX_OFF) {
-				if ((r = rule_add_open_rd(sysnum,
-							  open_flag)) < 0) {
+				if ((r = rule_add_open_rd_eperm(sysnum,
+								open_flag)) < 0) {
 					errno = -r;
 					die_errno("rule_add_open_rd_eperm");
 				}
 			} else if (mode_r == SANDBOX_OFF &&
 				   mode_w == SANDBOX_BPF) {
-				if ((r = rule_add_open_wr(sysnum,
-							  open_flag)) < 0) {
+				if ((r = rule_add_open_wr_eperm(sysnum,
+								open_flag)) < 0)
+				{
 					errno = -r;
 					die_errno("rule_add_open_wr_eperm");
 				}
@@ -537,7 +536,8 @@ int sysinit_seccomp_load(void)
 							    sysnum);
 					user_notified = true;
 				} else {
-					r = rule_add_open_wr(sysnum, open_flag);
+					r = rule_add_open_wr_eperm(sysnum,
+								   open_flag);
 				}
 				if (r < 0)
 					return 0;
@@ -566,7 +566,8 @@ int sysinit_seccomp_load(void)
 							    sysnum);
 					user_notified = true;
 				} else {
-					r = rule_add_open_rd(sysnum, open_flag);
+					r = rule_add_open_rd_eperm(sysnum,
+								   open_flag);
 				}
 				if (r < 0)
 					return r;
@@ -775,147 +776,52 @@ rule_add_action(uint32_t action, int sysnum)
 }
 
 static int
-rule_add_open_rd(int sysnum, int open_flag)
+rule_add_open_rd_eperm(int sysnum, int open_flag)
 {
-	switch (open_flag) {
-	case 1:
-		return rule_add_open_rd_eperm(sysnum);
-	case 2:
-		return rule_add_openat_rd_eperm(sysnum);
-	default:
-		return -EINVAL;
+	int r;
+	uint32_t action = SCMP_ACT_ERRNO(EPERM);
+
+	if (action == sydbox->seccomp_action)
+		return 0;
+
+	/* FIXME: duplication with syscall-filter.c:filter_open_readonly() */
+	for (unsigned i = 0; i < ELEMENTSOF(open_readonly_flags); i++) {
+		r = seccomp_rule_add(sydbox->ctx, action,
+				     sysnum, 1,
+				     SCMP_CMP( open_flag,
+					       SCMP_CMP_EQ,
+					       open_readonly_flags[i],
+					       open_readonly_flags[i] ));
+		if (r < 0)
+			return r;
 	}
 
 	return 0;
 }
 
 static int
-rule_add_open_wr(int sysnum, int open_flag)
+rule_add_open_wr_eperm(int sysnum, int open_flag)
 {
-	switch (open_flag) {
-	case 1:
-		return rule_add_open_wr_eperm(sysnum);
-	case 2:
-		return rule_add_openat_wr_eperm(sysnum);
-	default:
-		return -EINVAL;
+	int r;
+	uint32_t action = SCMP_ACT_ERRNO(EPERM);
+
+	if (action == sydbox->seccomp_action)
+		return 0;
+
+	const int flag[] = {
+		O_WRONLY,
+		O_RDWR,
+		O_CREAT,
+	};
+
+	for (unsigned int i = 0; i < ELEMENTSOF(flag); i++) {
+		r = seccomp_rule_add(sydbox->ctx, action, sysnum,
+				     1,
+				     SCMP_CMP( open_flag, SCMP_CMP_MASKED_EQ,
+					       flag[i], flag[i]));
+		if (r < 0)
+			return r;
 	}
-}
-
-static int
-rule_add_open_rd_eperm(int sysnum)
-{
-	int r;
-	uint32_t action = SCMP_ACT_ERRNO(EPERM);
-
-	if (action == sydbox->seccomp_action)
-		return 0;
-
-	/* O_RDONLY */
-	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
-			     1,
-			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_RDONLY, O_RDONLY ));
-	if (r < 0)
-		return r;
-
-	/* O_RDWR */
-	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
-			     1,
-			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_RDWR, O_RDWR ));
-	if (r < 0)
-		return r;
-
-	return 0;
-}
-
-static int
-rule_add_open_wr_eperm(int sysnum)
-{
-	int r;
-	uint32_t action = SCMP_ACT_ERRNO(EPERM);
-
-	if (action == sydbox->seccomp_action)
-		return 0;
-
-	/* O_WRONLY */
-	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
-			     1,
-			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_WRONLY, O_WRONLY ));
-	if (r < 0)
-		return r;
-
-	/* O_RDWR */
-	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
-			     1,
-			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_RDWR, O_RDWR ));
-	if (r < 0)
-		return r;
-
-	/* O_CREAT */
-	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
-			     1,
-			     SCMP_A1( SCMP_CMP_MASKED_EQ, O_CREAT, O_CREAT ));
-	if (r < 0)
-		return r;
-
-	return 0;
-}
-
-static int
-rule_add_openat_rd_eperm(int sysnum)
-{
-	int r;
-	uint32_t action = SCMP_ACT_ERRNO(EPERM);
-
-	if (action == sydbox->seccomp_action)
-		return 0;
-
-	/* O_RDONLY */
-	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
-			     1,
-			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_RDONLY, O_RDONLY ));
-	if (r < 0)
-		return r;
-
-	/* O_RDWR */
-	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
-			     1,
-			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_RDWR, O_RDWR ));
-	if (r < 0)
-		return r;
-
-	return 0;
-}
-
-static int
-rule_add_openat_wr_eperm(int sysnum)
-{
-	int r;
-	uint32_t action = SCMP_ACT_ERRNO(EPERM);
-
-	if (action == sydbox->seccomp_action)
-		return 0;
-
-	/* O_WRONLY */
-	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
-			     1,
-			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_WRONLY, O_WRONLY ));
-	if (r < 0)
-		return r;
-
-	/* O_RDWR */
-	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
-			     1,
-			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_RDWR, O_RDWR ));
-	if (r < 0)
-		return r;
-
-	/* O_CREAT */
-	r = seccomp_rule_add(sydbox->ctx, action, sysnum,
-			     1,
-			     SCMP_A2( SCMP_CMP_MASKED_EQ, O_CREAT, O_CREAT ));
-	if (r < 0)
-		return r;
 
 	return 0;
 }

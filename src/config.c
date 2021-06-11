@@ -48,14 +48,9 @@ void config_init(void)
 	sydbox->config.violation_exit_code = -1;
 	sydbox->config.box_static.magic_lock = LOCK_UNSET;
 
-	/* Iitialize default sandbox modes:
-	 *
-	 * Default to SANDBOX_OFF for read & exec sandboxing.
-	 * Default to SANDBOX_BPF for bpf-only mode and
-	 * Default to SANDBOX_DENY for write & network sandboxing.
-	 */
-	sydbox->config.box_static.mode.sandbox_read = SANDBOX_OFF;
+	/* initialize default sandbox modes */
 	sydbox->config.box_static.mode.sandbox_exec = SANDBOX_OFF;
+	sydbox->config.box_static.mode.sandbox_read = SANDBOX_OFF;
 	sydbox->config.box_static.mode.sandbox_write = SANDBOX_BPF;
 	sydbox->config.box_static.mode.sandbox_network = SANDBOX_BPF;
 
