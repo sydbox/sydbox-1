@@ -335,7 +335,7 @@ static int write_stat(syd_process_t *current, unsigned int buf_index, bool exten
 		errno = -r;
 		say_errno("syd_write_stat");
 	}
-	(void)syd_proc_mem_write(current->memfd, addr, bufaddr, bufsize);
+	(void)syd_write_vm_data(current, addr, bufaddr, bufsize);
 
 	return true;
 }

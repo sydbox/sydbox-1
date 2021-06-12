@@ -139,13 +139,17 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 		addr &= (1ul << 8 * wsize) - 1;
 #endif
 
+	int r;
 #if PINK_HAVE_PROCESS_VM_READV
 	static bool cross_memory_attach_works = true;
 
 	if (!cross_memory_attach_works) {
-		return syd_proc_mem_read(current->memfd, addr, buf, count);
+		int memfd;
+		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
+			return memfd;
+		r = syd_proc_mem_read(memfd, addr, buf, count);
+		close(memfd);
 	} else {
-		int r;
 		struct iovec local[1], remote[1];
 		local[0].iov_base = buf;
 		remote[0].iov_base = (void *)addr;
@@ -154,11 +158,15 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 		r = process_vm_readv(current->pid, local, 1, remote, 1, /*flags:*/0);
 		if (errno == ENOSYS || errno == EPERM)
 			cross_memory_attach_works = false;
-		return r;
 	}
 #else
-	return syd_proc_mem_read(current->memfd, addr, buf, count);
+	int memfd;
+	if ((memfd = syd_proc_mem_open(pid)) < 0)
+		return memfd;
+	r = syd_proc_mem_read(memfd, addr, buf, count);
+	close(memfd);
 #endif
+	return r;
 }
 
 static int process_vm_write(syd_process_t *current, long addr, const void *buf,
@@ -172,13 +180,17 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 		addr &= (1ul << 8 * wsize) - 1;
 #endif
 
+	int r;
 #if PINK_HAVE_PROCESS_VM_WRITEV
 	static bool cross_memory_attach_works = true;
 
 	if (!cross_memory_attach_works) {
-		return syd_proc_mem_write(current->memfd, addr, buf, count);
+		int memfd;
+		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
+			return memfd;
+		r = syd_proc_mem_write(memfd, addr, buf, count);
+		close(memfd);
 	} else {
-		int r;
 		struct iovec local[1], remote[1];
 		local[0].iov_base = (void *)buf;
 		remote[0].iov_base = (void *)addr;
@@ -187,11 +199,15 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 		r = process_vm_writev(current->pid, local, 1, remote, 1, /*flags:*/0);
 		if (errno == ENOSYS || errno == EPERM)
 			cross_memory_attach_works = false;
-		return r;
 	}
 #else
-	return syd_proc_mem_write(current->memfd, addr, buf, count);
+	int memfd;
+	if ((memfd = syd_proc_mem_open(pid)) < 0)
+		return memfd;
+	r = syd_proc_mem_write(memfd, addr, buf, count);
+	close(memfd);
 #endif
+	return r;
 }
 
 int syd_kill(pid_t pid, pid_t tgid, int sig)

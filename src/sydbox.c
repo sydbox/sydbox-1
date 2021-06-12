@@ -198,13 +198,6 @@ static int process_proc(struct syd_process *p)
 		p->pidfd = -1;
 		r = -errno;
 	}
-	if (p->memfd < 0 &&
-	    (p->memfd = syd_proc_mem_open(p->pid)) < 0) {
-		errno = -p->memfd;
-		r = -errno;
-		say_errno("memfd_open(%d)", p->pid);
-		p->memfd = -1;
-	}
 
 	return r;
 }
@@ -255,7 +248,6 @@ static syd_process_t *new_thread(pid_t pid)
 	thread->ppid = SYD_PPID_NONE;
 	thread->tgid = SYD_TGID_NONE;
 	thread->pidfd = -1;
-	thread->memfd = -1;
 	process_proc(thread);
 	process_add(thread);
 
@@ -471,10 +463,6 @@ void bury_process(syd_process_t *p)
 	if (p->pidfd >= 0) {
 		close(p->pidfd);
 		p->pidfd = -1;
-	}
-	if (p->memfd >= 0) {
-		close(p->memfd);
-		p->memfd = -1;
 	}
 	if (p->abspath) {
 		free(p->abspath);

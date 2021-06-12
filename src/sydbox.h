@@ -346,9 +346,6 @@ struct syd_process {
 	/* Pid file descriptor */
 	int pidfd;
 
-	/* /proc/$pid/mem file descriptor */
-	int memfd;
-
 	/* System call ABI */
 	uint32_t arch;
 
