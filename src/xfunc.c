@@ -6,6 +6,7 @@
  */
 
 #include "sydconf.h"
+#include "errno2name.h"
 #include "xfunc.h"
 #include "dump.h"
 
@@ -164,7 +165,8 @@ void say_errno(const char *fmt, ...)
 	va_start(ap, fmt);
 	vsay(stderr, fmt, ap);
 	va_end(ap);
-	say(" (errno:%d|%s| %s)", save_errno, pink_name_errno(save_errno, 0), strerror(save_errno));
+	say(" (errno:%d|%s| %s)", save_errno, errno2name(save_errno),
+	    strerror(save_errno));
 
 	errno = save_errno;
 }
@@ -177,7 +179,8 @@ void die_errno(const char *fmt, ...)
 	va_start(ap, fmt);
 	vsay(stderr, fmt, ap);
 	va_end(ap);
-	say(" (errno:%d|%s| %s)", save_errno, pink_name_errno(save_errno, 0), strerror(save_errno));
+	say(" (errno:%d|%s| %s)", save_errno, errno2name(save_errno),
+	    strerror(save_errno));
 
 	syd_abort(SIGTERM);
 }

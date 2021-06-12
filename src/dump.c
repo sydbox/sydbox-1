@@ -26,6 +26,7 @@
 #include <arpa/inet.h>
 
 #include "dump.h"
+#include "errno2name.h"
 #include "path.h"
 #include "proc.h"
 #include "bsd-compat.h"
@@ -74,7 +75,7 @@ static void dump_errno(int err_no)
 		J(errno)"%d,"
 		J(errno_name)"\"%s\""
 		"}",
-		err_no, pink_name_errno(err_no, 0));
+		err_no, errno2name(err_no));
 }
 
 static void dump_format(void)

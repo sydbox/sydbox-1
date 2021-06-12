@@ -38,6 +38,7 @@ noinst_HEADERS+= \
 		 arch.h \
 		 asyd.h \
 		 dump.h \
+		 errno2name.h \
 		 file.h \
 		 macro.h \
 		 path.h \
@@ -60,6 +61,7 @@ noinst_HEADERS+= \
 sydbox_SOURCES= \
 		 $(noinst_HEADERS) \
 		 arch.c \
+		 errno2name.c \
 		 file.c \
 		 filter.c \
 		 path.c \
