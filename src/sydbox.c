@@ -527,6 +527,10 @@ void remove_process_node(syd_process_t *p)
 		/* Let's wait for the children before the funeral. */
 		if (sydbox->config.whitelist_per_process_directories)
 			procdrop(&sydbox->config.hh_proc_pid_auto, p->pid);
+		if (p->pidfd >= 0) {
+			close(p->pidfd);
+			p->pidfd = -1;
+		}
 		p->flags |= SYD_KILLED;
 	} else if (!(p->flags & SYD_KILLED)) {
 		bury_process(p);
