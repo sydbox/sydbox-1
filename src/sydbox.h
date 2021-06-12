@@ -1034,6 +1034,7 @@ int sys_socketcall(syd_process_t *current);
 int sys_bind(syd_process_t *current);
 int sys_connect(syd_process_t *current);
 int sys_sendto(syd_process_t *current);
+int sys_listen(syd_process_t *current);
 int sys_accept(syd_process_t *current);
 
 int sysx_chdir(syd_process_t *current);

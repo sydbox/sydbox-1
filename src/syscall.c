@@ -350,6 +350,11 @@ static const sysentry_t syscall_entries[] = {
 		.sandbox_network = true,
 	},
 	{
+		.name = "listen",
+		.notify = sys_listen,
+		.sandbox_network = true,
+	},
+	{
 		.name = "accept",
 		.notify = sys_accept,
 		.sandbox_network = true,

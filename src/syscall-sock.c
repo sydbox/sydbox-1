@@ -61,6 +61,7 @@ int sys_bind(syd_process_t *current)
 
 	/*
 	 * Access granted.
+	 * Read the inode for use in listen() or accept().
 	 */
 	unsigned long long inode;
 
@@ -70,24 +71,10 @@ int sys_bind(syd_process_t *current)
 	if ((r = proc_socket_inode(current->pid,
 				   current->args[0], &inode)) < 0)
 		goto out;
+
 	struct sockinfo *si = xmalloc(sizeof(struct sockinfo));
 	si->path = unix_abspath;
 	si->addr = psa;
-
-	if ((si->addr->family == AF_INET &&
-	     si->addr->u.sa_in.sin_port == 0) ||
-	    (si->addr->family == AF_INET6 &&
-	     si->addr->u.sa6.sin6_port == 0))
-		goto zero;
-
-	/* whitelist socket address */
-	struct acl_node *node = xcalloc(1, sizeof(struct acl_node));
-	struct sockmatch *match = sockmatch_new(si);
-	node->action = ACL_ACTION_WHITELIST;
-	node->match = match;
-	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
-	return 0;
-zero:
 	sockmap_add(&P_SOCKMAP(current), inode, si);
 	return 0;
 out:
@@ -132,17 +119,7 @@ static int sys_connect_or_sendto(syd_process_t *current, unsigned arg_index)
 	return box_check_socket(current, &info);
 }
 
-int sys_connect(syd_process_t *current)
-{
-	return sys_connect_or_sendto(current, 1);
-}
-
-int sys_sendto(syd_process_t *current)
-{
-	return sys_connect_or_sendto(current, 4);
-}
-
-int sys_accept(syd_process_t *current)
+static int sys_listen_or_accept(syd_process_t *current, bool read_net_tcp)
 {
 	int r, port;
 	unsigned long long inode;
@@ -161,23 +138,31 @@ int sys_accept(syd_process_t *current)
 	info = sockmap_find(&P_SOCKMAP(current), inode);
 	if (!info)
 		return 0;
-	match = sockmatch_new(info);
 
-	switch (match->family) {
+	switch (info->addr->family) {
 	case AF_UNIX:
+		match = sockmatch_new(info);
 		break;
 	case AF_INET:
 		port = ntohs(info->addr->u.sa_in.sin_port);
 		/* whitelist bind(0 -> port) for connect() */
-		if (!port && (r = proc_socket_port(inode, true, &port)) < 0)
+		if (!port &&
+		    (!read_net_tcp || (r = proc_socket_port(inode,
+							    true,
+							    &port)) < 0))
 			return 0;
+		match = sockmatch_new(info);
 		match->addr.sa_in.port[0] = match->addr.sa_in.port[1] = port;
 		break;
 	case AF_INET6:
 		port = ntohs(info->addr->u.sa6.sin6_port);
 		/* whitelist bind(0 -> port) for connect() */
-		if (!port && (r = proc_socket_port(inode, false, &port)) < 0)
+		if (!port &&
+		    (!read_net_tcp || (r = proc_socket_port(inode,
+							    false,
+							    &port)) < 0))
 			return 0;
+		match = sockmatch_new(info);
 		match->addr.sa6.port[0] = match->addr.sa6.port[1] = port;
 		break;
 	default:
@@ -193,6 +178,26 @@ int sys_accept(syd_process_t *current)
 	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
 
 	return 0;
+}
+
+int sys_connect(syd_process_t *current)
+{
+	return sys_connect_or_sendto(current, 1);
+}
+
+int sys_sendto(syd_process_t *current)
+{
+	return sys_connect_or_sendto(current, 4);
+}
+
+int sys_listen(syd_process_t *current)
+{
+	return sys_listen_or_accept(current, false);
+}
+
+int sys_accept(syd_process_t *current)
+{
+	return sys_listen_or_accept(current, true);
 }
 
 int sys_socketcall(syd_process_t *current)
@@ -216,6 +221,8 @@ int sys_socketcall(syd_process_t *current)
 		return sys_connect(current);
 	case PINK_SOCKET_SUBCALL_SENDTO:
 		return sys_sendto(current);
+	case PINK_SOCKET_SUBCALL_LISTEN:
+		return sys_listen(current);
 	case PINK_SOCKET_SUBCALL_ACCEPT:
 	case PINK_SOCKET_SUBCALL_ACCEPT4:
 		return sys_accept(current);
