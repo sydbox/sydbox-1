@@ -49,6 +49,8 @@ enum dump {
 #define INSPECT_DUMP_SYSENT (1ULL << DUMP_SYSENT)
 	DUMP_EXIT, /* sydbox->exit_code was set */
 #define INSPECT_DUMP_EXIT (1ULL << DUMP_EXIT)
+	DUMP_CHDIR, /* process changed directory */
+#define INSPECT_DUMP_CHDIR (1ULL << DUMP_CHDIR)
 	DUMP_EXECVE_MT, /* multithreaded execve, leader switch */
 #define INSPECT_DUMP_EXECVE_MT (1ULL << DUMP_EXECVE_MT)
 };
@@ -58,6 +60,7 @@ enum dump {
 #elif SYDBOX_HAVE_DUMP_BUILTIN
 # define INSPECT_DEFAULT (INSPECT_DUMP_STARTUP |\
 			  INSPECT_DUMP_SYSENT |\
+			  INSPECT_DUMP_CHDIR |\
 			  INSPECT_DUMP_EXECVE_MT)
 #else
 # error do not know how to define INSPECT_DEFAULT
