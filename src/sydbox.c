@@ -500,6 +500,9 @@ static void tweak_execve_thread(syd_process_t *execve_thread,
 		close(execve_thread->pidfd);
 	process_remove(execve_thread);
 
+	if (magic_query_violation_raise_safe(leader))
+		say("multithreaded execve: %d superseded by execve in pid %d",
+		    leader->pid, execve_thread->pid);
 	dump(DUMP_EXECVE_MT, execve_thread->pid, leader->pid);
 
 	execve_thread->pid = leader->pid;
