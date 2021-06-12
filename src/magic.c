@@ -188,14 +188,6 @@ static const struct key key_table[] = {
 		.set    = magic_set_restrict_general,
 		.query  = magic_query_restrict_general,
 	},
-	[MAGIC_KEY_CORE_RESTRICT_FILE_CONTROL] = {
-		.name   = "file_control",
-		.lname  = "core.restrict.file_control",
-		.parent = MAGIC_KEY_CORE_RESTRICT,
-		.type   = MAGIC_TYPE_BOOLEAN,
-		.set    = magic_set_restrict_fcntl,
-		.query  = magic_query_restrict_fcntl,
-	},
 	[MAGIC_KEY_CORE_RESTRICT_IO_CONTROL] = {
 		.name   = "io_control",
 		.lname  = "core.restrict.io_control",

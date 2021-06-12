@@ -385,9 +385,6 @@
             <link linkend="core-restrict-general">core/restrict/general</link>
           </para></listitem>
           <listitem><para>
-            <link linkend="core-restrict-fcntl">core/restrict/file_control</link>
-          </para></listitem>
-          <listitem><para>
             <link linkend="core-restrict-ioctl">core/restrict/io_control</link>
           </para></listitem>
           <listitem><para>
@@ -871,32 +868,6 @@
               <function>lremovexattr</function><manvolnum>2</manvolnum>, and
               <function>openat2</function><manvolnum>2</manvolnum>
               as well.
-            </para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="core-restrict-fcntl">core/restrict/file_control</option></term>
-          <listitem>
-            <para>type: <type>boolean</type></para>
-            <para>default: <varname>false</varname></para>
-            <para>
-              A boolean specifying whether potentially dangerous options to
-              <function>open</function><manvolnum>2</manvolnum> and
-              <function>fcntl</function><manvolnum>2</manvolnum> should be forbidden.
-              These options include <constant>O_ASYNC</constant>, <constant>O_DIRECT</constant> and
-              <constant>O_SYNC</constant>. In addition <emphasis>all</emphasis>
-              <function>fcntl</function><manvolnum>2</manvolnum> commands <emphasis>except</emphasis>
-              <constant>F_GETFL</constant>,
-              <constant>F_SETFL</constant>,
-              <constant>F_SETOWN</constant>,
-              <constant>F_SETLK</constant>,
-              <constant>F_SETLKW</constant>,
-              <constant>F_SETLK64</constant>,
-              <constant>F_SETLKW64</constant>,
-              <constant>F_SETFD</constant>,
-              <constant>F_GETFD</constant> and
-              <constant>F_DUPFD</constant> are forbidden as well.
             </para>
           </listitem>
         </varlistentry>

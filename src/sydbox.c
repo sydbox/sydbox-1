@@ -49,7 +49,7 @@
 # define NR_OPEN 1024
 #endif
 
-#define switch_execve_flags(f) ((f) & ~(SYD_IN_CLONE|SYD_IN_EXECVE|SYD_IN_SYSCALL|SYD_KILLED))
+#define switch_execve_flags(f) ((f) & ~(SYD_IN_CLONE|SYD_IN_EXECVE|SYD_KILLED))
 
 sydbox_t *sydbox;
 static unsigned os_release;
@@ -208,6 +208,7 @@ static void new_shared_memory_clone_thread(struct syd_process *p)
 
 	p->shm.clone_thread = xmalloc(sizeof(struct syd_process_shared_clone_thread));
 	p->shm.clone_thread->refcnt = 1;
+	p->shm.clone_thread->execve_pid = 0;
 	if ((r = new_sandbox(&p->shm.clone_thread->box)) < 0) {
 		free(p->shm.clone_thread);
 		errno = -r;
@@ -303,7 +304,6 @@ void reset_process(syd_process_t *p)
 	p->sysname = NULL;
 	p->subcall = 0;
 	p->retval = 0;
-	p->flags &= ~SYD_STOP_AT_SYSEXIT;
 
 	memset(p->args, 0, sizeof(p->args));
 	for (unsigned short i = 0; i < PINK_MAX_ARGS; i++) {
@@ -383,6 +383,8 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 		new_shared_memory_clone_thread(current);
 		copy_sandbox(P_BOX(current), box_current(parent));
 	}
+	if (share_thread)
+		P_EXECVE_PID(current) = P_EXECVE_PID(parent);
 
 	if (share_fs) {
 		current->shm.clone_fs = parent->shm.clone_fs;
@@ -489,19 +491,24 @@ void bury_process(syd_process_t *p)
 }
 
 /* Drop leader, switch to the thread, reusing leader's tid */
-static void tweak_execve_thread(syd_process_t *execve_thread, pid_t leader_pid, int flags)
+static void tweak_execve_thread(syd_process_t *execve_thread,
+				syd_process_t *leader)
 {
 	if (sydbox->config.whitelist_per_process_directories)
 		procdrop(&sydbox->config.hh_proc_pid_auto, execve_thread->pid);
+	if (execve_thread->pidfd >= 0)
+		close(execve_thread->pidfd);
 	process_remove(execve_thread);
 
-	execve_thread->pid = leader_pid;
-	execve_thread->flags = switch_execve_flags(flags);
+	execve_thread->pid = leader->pid;
+	execve_thread->pidfd = leader->pidfd;
+	execve_thread->flags = switch_execve_flags(leader->flags);
 
 	process_add(execve_thread);
 }
 
-static void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_thread)
+static void switch_execve_leader(syd_process_t *leader,
+				 syd_process_t *execve_thread)
 {
 	process_remove(leader);
 
@@ -512,11 +519,13 @@ static void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_th
 	if (execve_thread->abspath)
 		free(execve_thread->abspath);
 
-	tweak_execve_thread(execve_thread, leader->pid, leader->flags);
+	tweak_execve_thread(execve_thread, leader);
 	execve_thread->ppid = leader->ppid;
 	execve_thread->tgid = leader->tgid;
 	execve_thread->clone_flags = leader->clone_flags;
 	execve_thread->abspath = leader->abspath;
+
+	dump(DUMP_EXECVE_MT, execve_thread->pid, leader->pid);
 
 	free(leader);
 }
@@ -842,16 +851,10 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 		fprintf(stderr, "%sIGNORE_ONE_SIGSTOP", (r == 1) ? "|" : "");
 		r = 1;
 	}
-	if (current->flags & SYD_IN_SYSCALL) {
-		fprintf(stderr, "%sIN_SYSCALL", (r == 1) ? "|" : "");
-		r = 1;
-	}
 	if (current->flags & SYD_IN_CLONE) {
 		fprintf(stderr, "%sIN_CLONE", (r == 1) ? "|" : "");
 		r = 1;
 	}
-	if (current->flags & SYD_STOP_AT_SYSEXIT)
-		fprintf(stderr, "%sSTOP_AT_SYSEXIT", (r == 1) ? "|" : "");
 	fprintf(stderr, "%s\n", CN);
 	if (current->clone_flags) {
 		fprintf(stderr, "\t%sClone flags: ", CN);
@@ -1261,6 +1264,9 @@ static int event_exec(syd_process_t *current)
 		P_BOX(current)->magic_lock = LOCK_SET;
 	}
 
+	current->flags |= SYD_IN_EXECVE;
+	P_EXECVE_PID(current) = current->pid;
+
 	if (!current->abspath) /* nothing left to do */
 		return 0;
 
@@ -1286,7 +1292,6 @@ static int event_exec(syd_process_t *current)
 	free(current->abspath);
 	current->abspath = NULL;
 
-	current->flags |= SYD_IN_EXECVE;
 	return r;
 }
 
@@ -1294,32 +1299,6 @@ static int event_syscall(syd_process_t *current)
 {
 	return sysnotify(current);
 }
-
-#if SYDBOX_HAVE_SECCOMP
-static int event_seccomp(syd_process_t *current)
-{
-	int r;
-
-	if (sydbox->execve_wait)
-		return 0; /* execve() seccomp trap */
-
-	if ((r = syd_regset_fill(current)) < 0)
-		return r; /* process dead */
-	r = sysenter(current);
-	if (current->flags & SYD_STOP_AT_SYSEXIT) {
-		/* step using PTRACE_SYSCALL until we hit sysexit.
-		 * Appearently the order we receive the ptrace events
-		 * changed in Linux-4.8.0 so we need a conditional here.
-		 */
-		if (os_release >= KERNEL_VERSION(4,8,0))
-			current->flags |= SYD_IN_SYSCALL;
-		else
-			current->flags &= ~SYD_IN_SYSCALL;
-		current->trace_step = SYD_STEP_SYSCALL;
-	}
-	return r;
-}
-#endif
 
 static int notify_loop(syd_process_t *current)
 {
@@ -1435,31 +1414,19 @@ notify_receive:
 		for (unsigned short idx = 0; idx < 6; idx++)
 			current->args[idx] = sydbox->request->data.args[idx];
 
-		if (current->execve_pid) {
-			if (pid != current->execve_pid) {
+		pid_t execve_pid = P_EXECVE_PID(current);
+		if (execve_pid) {
+			if (pid != execve_pid) {
 				syd_process_t *execve_thread;
 
-				execve_thread = lookup_process(current->execve_pid);
+				execve_thread = lookup_process(execve_pid);
 				assert(execve_thread);
 
-				if (current)
-					switch_execve_leader(current, execve_thread);
-				else
-					tweak_execve_thread(execve_thread, pid,
-							    execve_thread->flags);
+				switch_execve_leader(current, execve_thread);
 				current = execve_thread;
 			}
-			/* Drop all threads except this one */
-			syd_process_t *node, *tmp;
-			process_iter(node, tmp) {
-				if (current->pid != node->pid &&
-				    current->tgid == node->tgid &&
-				    current->shm.clone_thread == node->shm.clone_thread) {
-					/* process_iter is delete-safe. */
-					remove_process_node(node);
-				}
-			}
-			current->execve_pid = 0;
+			P_EXECVE_PID(current) = 0;
+			reap_zombies(NULL, -1);
 		}
 		if (current->update_cwd) {
 			r = sysx_chdir(current);
@@ -1477,20 +1444,15 @@ notify_receive:
 		} else if (!strcmp(name, "clone3")) {
 			event_clone(current, '3');
 		} else if (!strcmp(name, "chdir") || !strcmp(name, "fchdir")) {
+			current->flags &= ~SYD_IN_CLONE;
 			current->update_cwd = true;
 		} else if ((!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
-			int ew = sydbox->execve_wait;
-
+			if (sydbox->execve_wait) /* allow the initial exec */
+				sydbox->execve_wait = false;
+			else
+				event_syscall(current);
 			current->flags &= ~SYD_IN_CLONE;
-
-			sydbox->execve_wait = false;
-			sydbox->execve_pid = pid;
 			event_exec(current);
-			if (!ew) { /* allow the initial exec */
-				sandbox_t *box = box_current(current);
-				if (box->mode.sandbox_exec != SANDBOX_OFF)
-					event_syscall(current);
-			}
 		} else {
 			current->flags &= ~SYD_IN_CLONE;
 			event_syscall(current);
@@ -1746,7 +1708,7 @@ int main(int argc, char **argv)
 					usage(stderr, 1);
 				} else if (end != strchr(optarg, '\0')) {
 					dump_fd = open(optarg, O_WRONLY|O_CREAT|
-						       O_EXCL);
+						       O_EXCL, 0600);
 					if (dump_fd < 0)
 						die_errno("Failed to open dump file "
 							  "`%s'", optarg);
@@ -1833,7 +1795,6 @@ int main(int argc, char **argv)
 
 	/* Late validations for options */
 	if (!sydbox->config.restrict_general &&
-	    !sydbox->config.restrict_fcntl &&
 	    !sydbox->config.restrict_ioctl &&
 	    !sydbox->config.restrict_mmap &&
 	    !sydbox->config.restrict_shm_wr &&

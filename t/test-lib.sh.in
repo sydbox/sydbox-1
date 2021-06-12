@@ -18,6 +18,9 @@
 # Keep the original TERM for say_color
 ORIGINAL_TERM=$TERM
 
+# Timeouts for tests that need them.
+TIMEOUT_DURATION=60
+
 # Test the binaries we have just built.  The tests are kept in
 # t/ subdirectory and are run in 'trash directory' subdirectory.
 if test -z "$TEST_DIRECTORY"
@@ -439,20 +442,6 @@ test_eval_ () {
 }
 
 test_run_ () {
-	if test -n "$test_sydbox_options"
-	then
-		save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
-		if test -n "$use_seize"
-		then
-			SYDBOX_TEST_OPTIONS="-m core/trace/use_seize:$use_seize $SYDBOX_TEST_OPTIONS"
-		fi
-		if test -n "$use_seccomp"
-		then
-			SYDBOX_TEST_OPTIONS="-m core/trace/use_seccomp:$use_seccomp $SYDBOX_TEST_OPTIONS"
-		fi
-		export SYDBOX_TEST_OPTIONS
-	fi
-
 	test_cleanup=:
 	expecting_failure=$2
 	setup_malloc_check
@@ -733,8 +722,9 @@ test x"@SYDBOX_HAVE_NEWFSTATAT@" = x"0" || test_set_prereq HAVE_NEWFSTATAT
 # root user. Let's set a prereq to catch such cases and skip tests as necessary.
 test x"`id -u`" = x"0" || test_set_prereq NOT_ROOT
 
-# dig & perl are used to test network sandboxing.
+test x"`which diff`" = x"" || test_set_prereq DIFF
 test x"`which dig`" = x"" || test_set_prereq DIG
+test x"`which jq`" = x"" || test_set_prereq JQ
 test x"`which python`" != x"" && python --version | grep -iq 'Python 3' && test_set_prereq PY3
 
 # Check if we're running on buildhost.

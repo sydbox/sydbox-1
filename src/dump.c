@@ -126,8 +126,15 @@ static void dump_process(pid_t pid)
 		dump_null();
 	}
 
-	fprintf(fp, ","J(cwd));
 	p = lookup_process(pid);
+
+	fprintf(fp, ","J(execve_pid));
+	if (p->shm.clone_thread && p->shm.clone_thread->execve_pid)
+		fprintf(fp, "%d", p->shm.clone_thread->execve_pid);
+	else
+		dump_null();
+
+	fprintf(fp, ","J(cwd));
 	if (!p) {
 		dump_null();
 		fprintf(fp, "}");
@@ -330,6 +337,24 @@ void dump(enum dump what, ...)
 			current->repr[3] ? current->repr[3] : "",
 			current->repr[4] ? current->repr[4] : "",
 			current->repr[5] ? current->repr[5] : "");
+	} else if (what == DUMP_EXECVE_MT) {
+		pid_t execve_thread, leader;
+
+		execve_thread = va_arg(ap, pid_t);
+		leader = va_arg(ap, pid_t);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(ts)"%llu,"
+			J(event)"{\"id\":%u,\"name\":\"execve_mt\"}",
+			id++, (unsigned long long)now,
+			what);
+
+		fprintf(fp, ","J(leader_thread));
+		dump_process(leader);
+		fprintf(fp, ","J(execve_thread));
+		dump_process(execve_thread);
+		fprintf(fp, "}");
 	} else {
 		abort();
 	}

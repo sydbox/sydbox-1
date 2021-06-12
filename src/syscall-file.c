@@ -272,11 +272,13 @@ out:
 	return r;
 }
 
-static int restrict_open_flags(syd_process_t *current, unsigned long flags)
+static inline int restrict_open_flags(syd_process_t *current, unsigned long flags)
 {
+#if 0
 	if (sydbox->config.restrict_fcntl &&
 	    (flags & (O_ASYNC|O_DIRECT|O_SYNC)))
 		return deny(current, EPERM);
+#endif
 	return 0;
 }
 
@@ -288,7 +290,7 @@ int sys_open(syd_process_t *current)
 	syscall_info_t info;
 	struct open_info open_info;
 
-	strict = sydbox->config.restrict_fcntl;
+	strict = false; /* sydbox->config.restrict_fcntl; */
 
 	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
@@ -319,7 +321,7 @@ int sys_openat(syd_process_t *current)
 	syscall_info_t info;
 	struct open_info open_info;
 
-	strict = sydbox->config.restrict_fcntl;
+	strict = false; /* sydbox->config.restrict_fcntl; */
 
 	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
@@ -352,7 +354,7 @@ int sys_openat2(syd_process_t *current)
 	syscall_info_t info;
 	struct open_info open_info;
 
-	strict = sydbox->config.restrict_fcntl;
+	strict = false; /* sydbox->config.restrict_fcntl; */
 
 	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;

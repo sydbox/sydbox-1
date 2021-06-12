@@ -76,7 +76,6 @@ parts which are of particular interest to read are:
 
 - [Sandboxing](https://dev.exherbo.org/~alip/sydbox/sydbox.html#sandboxing)
 - [core/restrict/general](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-restrict-general)
-- [core/restrict/file_control](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-restrict-fcntl)
 - [core/restrict/io_control](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-restrict-ioctl)
 - [core/restrict/memory_map](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-restrict-mmap)
 - [core/restrict/shared_memory_writable](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-restrict-shm-wr)

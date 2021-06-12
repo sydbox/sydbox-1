@@ -130,7 +130,6 @@ static const sysentry_t syscall_entries[] = {
 
 	{
 		.name = "open",
-		.filter = filter_open,
 		.notify = sys_open,
 		.open_flag = 1,
 		.sandbox_read = true,
@@ -138,7 +137,6 @@ static const sysentry_t syscall_entries[] = {
 	},
 	{
 		.name = "openat",
-		.filter = filter_openat,
 		.notify = sys_openat,
 		.open_flag = 2,
 		.sandbox_read = true,
@@ -157,19 +155,6 @@ static const sysentry_t syscall_entries[] = {
 		.name = "creat",
 		.notify = sys_creat,
 		.sandbox_write = true,
-	},
-
-	{
-		.name = "fcntl",
-		.filter = filter_fcntl,
-		.notify = sys_fcntl,
-		.sandbox_read = true,
-	},
-	{
-		.name = "fcntl64",
-		.filter = filter_fcntl,
-		.notify = sys_fcntl,
-		.sandbox_read = true,
 	},
 
 	{
@@ -769,8 +754,6 @@ int sysnotify(syd_process_t *current)
 	current->retval = 0;
 	if (entry->notify)
 		r = entry->notify(current);
-	if (entry->exit)
-		current->flags |= SYD_STOP_AT_SYSEXIT;
 
 	return r;
 }

@@ -60,12 +60,10 @@
 /* Process flags */
 #define SYD_STARTUP		00001 /* process attached, needs to be set up */
 #define SYD_IGNORE_ONE_SIGSTOP	00002 /* initial sigstop is to be ignored */
-#define SYD_IN_SYSCALL		00004 /* process is in system call */
-#define SYD_STOP_AT_SYSEXIT	00010 /* seccomp: stop at system call exit */
-#define SYD_IN_CLONE		00020 /* process called clone(2) */
-#define SYD_IN_EXECVE		00040 /* process called execve(2) */
-#define SYD_KILLED		00100 /* process is dead, keeping entry for child. */
-#define SYD_DETACHED		00200 /* process is detached, not sandboxed. */
+#define SYD_IN_CLONE		00004 /* process called clone(2) */
+#define SYD_IN_EXECVE		00010 /* process called execve(2) */
+#define SYD_KILLED		00020 /* process is dead, keeping entry for child. */
+#define SYD_DETACHED		00040 /* process is detached, not sandboxed. */
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
 #define SYD_TGID_NONE		0      /* no thread group ID (yet) */
@@ -171,7 +169,6 @@ enum magic_key {
 
 	MAGIC_KEY_CORE_RESTRICT,
 	MAGIC_KEY_CORE_RESTRICT_GENERAL,
-	MAGIC_KEY_CORE_RESTRICT_FILE_CONTROL,
 	MAGIC_KEY_CORE_RESTRICT_IO_CONTROL,
 	MAGIC_KEY_CORE_RESTRICT_MEMORY_MAP,
 	MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE,
@@ -298,6 +295,9 @@ struct syd_process_shared_clone_thread {
 	/* Per-process sandbox */
 	sandbox_t *box;
 
+	/* Execve process ID */
+	pid_t execve_pid;
+
 	/* Reference count */
 	unsigned refcnt;
 };
@@ -339,9 +339,6 @@ struct syd_process {
 
 	/* Thread group ID */
 	pid_t tgid;
-
-	/* Execve process ID */
-	pid_t execve_pid;
 
 	/* Pid file descriptor */
 	int pidfd;
@@ -391,6 +388,7 @@ struct syd_process {
 typedef struct syd_process syd_process_t;
 
 #define P_BOX(p) ((p)->shm.clone_thread->box)
+#define P_EXECVE_PID(p) ((p)->shm.clone_thread->execve_pid)
 #define P_CLONE_THREAD_REFCNT(p) ((p)->shm.clone_thread->refcnt)
 #define P_CLONE_THREAD_RETAIN(p) ((p)->shm.clone_thread->refcnt++)
 #define P_CLONE_THREAD_RELEASE(p) \
@@ -468,7 +466,6 @@ struct config {
 	bool whitelist_unsupported_socket_families;
 
 	/* restrict knobs are not inherited, they're global config */
-	bool restrict_fcntl;
 	bool restrict_ioctl;
 	bool restrict_mmap;
 	bool restrict_shm_wr;
@@ -636,9 +633,6 @@ extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 #define tracing() (0)
 #define bpf_only() (sydbox->bpf_only)
 
-#define detached(p) (!((p)->flags & SYD_IN_SYSCALL))
-#define entering(p) (!((p)->flags & SYD_IN_SYSCALL))
-#define exiting(p) ((p)->flags & SYD_IN_SYSCALL)
 #define sysdeny(p) ((p)->retval)
 #define hasparent(p) ((p)->ppid >= 0)
 
@@ -893,8 +887,6 @@ int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current);
 int magic_query_trace_use_toolong_hack(syd_process_t *current);
 int magic_set_restrict_general(const void *val, syd_process_t *current);
 int magic_query_restrict_general(syd_process_t *current);
-int magic_set_restrict_fcntl(const void *val, syd_process_t *current);
-int magic_query_restrict_fcntl(syd_process_t *current);
 int magic_set_restrict_mmap(const void *val, syd_process_t *current);
 int magic_query_restrict_mmap(syd_process_t *current);
 int magic_set_restrict_ioctl(const void *val, syd_process_t *current);
@@ -965,7 +957,6 @@ bool filter_includes(int sysnum);
 int filter_general(void);
 int filter_open(void);
 int filter_openat(void);
-int filter_fcntl(void);
 int filter_mmap(void);
 int filter_mmap2(void);
 int filter_mprotect(void);
@@ -1016,7 +1007,6 @@ int sys_lremovexattr(syd_process_t *current);
 
 int sys_dup(syd_process_t *current);
 int sys_dup3(syd_process_t *current);
-int sys_fcntl(syd_process_t *current);
 
 int sys_fork(syd_process_t *current);
 int sys_vfork(syd_process_t *current);
@@ -1035,11 +1025,5 @@ int sys_listen(syd_process_t *current);
 int sys_accept(syd_process_t *current);
 
 int sysx_chdir(syd_process_t *current);
-#if 0
-int sysx_fcntl(syd_process_t *current);
-int sysx_socketcall(syd_process_t *current);
-int sysx_bind(syd_process_t *current);
-int sysx_getsockname(syd_process_t *current);
-#endif
 
 #endif

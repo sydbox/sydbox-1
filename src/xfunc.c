@@ -102,7 +102,6 @@ void bug_on(const char *expr, const char *func, const char *file, size_t line,
 #ifndef SYDBOX_NDUMP
 	dump(DUMP_CLOSE);
 #endif
-	pause();
 	assert_(expr, func, file, line);
 }
 
