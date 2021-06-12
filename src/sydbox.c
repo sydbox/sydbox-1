@@ -518,8 +518,13 @@ static void switch_execve_leader(syd_process_t *leader,
 	process_remove(leader);
 
 	P_CLONE_THREAD_RELEASE(leader);
-	P_CLONE_FS_RELEASE(leader);
 	P_CLONE_FILES_RELEASE(leader);
+	if (magic_query_violation_raise_safe(leader))
+		say("clone_fs[pid:%d]=%d",
+		    leader->pid,
+		    P_CLONE_FS_REFCNT(leader));
+	if (P_CLONE_FS_REFCNT(leader) > 1)
+		P_CLONE_FS_RELEASE(leader);
 
 	if (execve_thread->abspath)
 		free(execve_thread->abspath);
@@ -1405,9 +1410,12 @@ notify_receive:
 			syd_process_t *parent;
 			parent = parent_process(pid, current);
 			if (parent) {
+				say("new process: %d of parent %d",
+				    pid, parent->pid);
 				current = clone_process(parent, pid);
 				parent->clone_flags &= ~SYD_IN_CLONE;
 			} else {
+				say("new process: %d with no parent", pid);
 				current = new_process(pid);
 			}
 			reap_zombies(NULL, -1);
