@@ -9,6 +9,14 @@
 test_description='test execve() handling of sydbox'
 . ./test-lib.sh
 
+save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
+SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS
+    -m core/violation/raise_safe:1
+    -m core/sandbox/write:deny
+"
+export SYDBOX_TEST_OPTIONS
+
+
 # FIXME: Add DUMP prereq!
 test_expect_success DIFF,JQ 'multithreaded execve leader switch' '
     # Due to probabilistic nature of the test, try it several times.
@@ -21,7 +29,6 @@ test_expect_success DIFF,JQ 'multithreaded execve leader switch' '
         rm -f "$f" &&
         sydbox \
             -d "$f" \
-            -m core/sandbox/write:deny \
             "$SYDBOX_BUILD_DIR"/t/test-bin/threads_execve > "$OUT" || r=1 &&
         test $r = 1 && break
         test -s "$f" &&
@@ -30,17 +37,16 @@ test_expect_success DIFF,JQ 'multithreaded execve leader switch' '
         echo >&2 "--" &&
         jq -r \
             ". |\
-                select(.event.name==\"execve_mt\") |\
+                select(.event.name==\"exec_mt\") |\
                 [.execve_thread.pid,.leader_thread.pid] | join(\" \")"  < "$f" > "$EXP"
         echo >&2 EXP &&
         cat >&2 "$EXP" &&
         echo >&2 "--" &&
         diff -u -- "$EXP" "$OUT" >&2
-        cmp "$EXP" "$OUT" && break
+        cmp "$EXP" "$OUT" && r=0
         echo >&2 "--"
         s1="$(date +%s)"
-        if [ "$(($s1-$s0))" -gt "$(($TIMEOUT_DURATION/10))" ]; then
-            r=1
+        if [ "$(($s1-$s0))" -gt "$(($TIMEOUT_DURATION/3))" ]; then
             break
         fi
     done

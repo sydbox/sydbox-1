@@ -7,7 +7,7 @@
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
  *   Copyright (c) 1993, 1994, 1995, 1996 Rick Sladkey <jrs@world.std.com>
  *   Copyright (c) 1996-1999 Wichert Akkerman <wichert@cistron.nl>
- * SPDX-License-Identifier: BSD-3-Clause
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #include "sydbox.h"
@@ -64,6 +64,8 @@ static void sig_usr(int sig);
 static void sig_alrm(int sig);
 
 static inline bool process_is_alive(pid_t pid, pid_t tgid);
+static inline pid_t process_find_exec(pid_t pid);
+static inline syd_process_t *process_init(pid_t pid, syd_process_t *parent);
 
 static void about(void)
 {
@@ -500,14 +502,11 @@ static void tweak_execve_thread(syd_process_t *execve_thread,
 		close(execve_thread->pidfd);
 	process_remove(execve_thread);
 
-	if (magic_query_violation_raise_safe(leader))
-		say("multithreaded execve: %d superseded by execve in pid %d",
-		    leader->pid, execve_thread->pid);
-	dump(DUMP_EXECVE_MT, execve_thread->pid, leader->pid);
-
 	execve_thread->pid = leader->pid;
 	execve_thread->pidfd = leader->pidfd;
 	execve_thread->flags = switch_execve_flags(leader->flags);
+	if (!P_CWD(execve_thread))
+		P_CWD(execve_thread) = P_CWD(leader);
 
 	process_add(execve_thread);
 }
@@ -517,19 +516,24 @@ static void switch_execve_leader(syd_process_t *leader,
 {
 	process_remove(leader);
 
+	if (magic_query_violation_raise_safe(leader)) {
+		say("multithreaded execve: %d superseded by execve "
+		    "in pid clone_fs[pid:%d]=%d",
+		    leader->pid, execve_thread->pid,
+		    P_CLONE_FS_REFCNT(leader));
+		dump(DUMP_EXEC_MT, execve_thread->pid, leader->pid,
+		     execve_thread->abspath);
+	}
+
 	P_CLONE_THREAD_RELEASE(leader);
 	P_CLONE_FILES_RELEASE(leader);
-	if (magic_query_violation_raise_safe(leader))
-		say("clone_fs[pid:%d]=%d",
-		    leader->pid,
-		    P_CLONE_FS_REFCNT(leader));
 	if (P_CLONE_FS_REFCNT(leader) > 1)
 		P_CLONE_FS_RELEASE(leader);
 
+	tweak_execve_thread(execve_thread, leader);
 	if (execve_thread->abspath)
 		free(execve_thread->abspath);
 
-	tweak_execve_thread(execve_thread, leader);
 	execve_thread->ppid = leader->ppid;
 	execve_thread->tgid = leader->tgid;
 	execve_thread->clone_flags = leader->clone_flags;
@@ -1072,6 +1076,40 @@ static inline bool process_is_alive(pid_t pid, pid_t tgid)
 	return true;
 }
 
+static inline pid_t process_find_exec(pid_t exec_pid)
+{
+	syd_process_t *node, *tmp;
+
+	process_iter(node, tmp) {
+		if (proc_has_task(node->pid, exec_pid) &&
+		    node->pid == node->tgid)
+			return node->pid;
+	}
+
+	return 0;
+}
+
+static syd_process_t *process_init(pid_t pid, syd_process_t *parent)
+{
+	syd_process_t *current;
+
+	if (parent) {
+		current = clone_process(parent, pid);
+		parent->clone_flags &= ~SYD_IN_CLONE;
+		if (magic_query_violation_raise_safe(current))
+			say("new process: %d of parent %d", pid, parent->pid);
+	} else {
+		current = new_process(pid);
+		new_shared_memory_clone_fs(current);
+		sysx_chdir(current);
+		if (magic_query_violation_raise_safe(current))
+			say("new process: %d with no parent", pid);
+	}
+	reap_zombies(NULL, -1);
+
+	return current;
+}
+
 static int wait_for_notify_fd(void)
 {
 	int r;
@@ -1237,7 +1275,8 @@ static int check_interrupt(void)
 	return r;
 }
 
-static int event_clone(syd_process_t *current, const char clone_type)
+static int event_clone(syd_process_t *current, const char clone_type,
+		       int clone_flags)
 {
 	assert(current);
 
@@ -1246,7 +1285,7 @@ static int event_clone(syd_process_t *current, const char clone_type)
 		case 'f':
 		case 'v':
 		case 'c':
-			current->new_clone_flags = current->args[2];
+			current->new_clone_flags = clone_flags;
 			break;
 		case '3': /* Cannot decode argument, treat as non-thread */
 			current->new_clone_flags = SIGCHLD;
@@ -1267,13 +1306,15 @@ static int event_exec(syd_process_t *current)
 
 	assert(current);
 
-	if (P_BOX(current)->magic_lock == LOCK_PENDING) {
+	if (current->shm.clone_thread &&
+	    P_BOX(current)->magic_lock == LOCK_PENDING) {
 		/* magic commands are locked */
 		P_BOX(current)->magic_lock = LOCK_SET;
 	}
 
 	current->flags |= SYD_IN_EXECVE;
-	P_EXECVE_PID(current) = current->pid;
+	if (current->shm.clone_thread)
+		P_EXECVE_PID(current) = current->pid;
 
 	if (!current->abspath) /* nothing left to do */
 		return 0;
@@ -1296,6 +1337,11 @@ static int event_exec(syd_process_t *current)
 		return -ESRCH;
 	}
 	/* execve path does not match if_match patterns */
+
+	if (magic_query_violation_raise_safe(current)) {
+		say("execve: %d executed `%s'", current->pid, current->abspath);
+		dump(DUMP_EXEC, current->pid, current->abspath);
+	}
 
 	free(current->abspath);
 	current->abspath = NULL;
@@ -1323,6 +1369,7 @@ static int notify_loop(syd_process_t *current)
 	for (;;) {
 		char *name = NULL;
 		bool jump = false;
+		syd_process_t *parent;
 
 		pid = sydbox->execve_pid;
 wait_for_notify_fd:
@@ -1406,39 +1453,63 @@ notify_receive:
 			goto notify_respond;
 		}
 
-		if (!current) {
-			syd_process_t *parent;
-			parent = parent_process(pid, current);
-			if (parent) {
-				say("new process: %d of parent %d",
-				    pid, parent->pid);
-				current = clone_process(parent, pid);
-				parent->clone_flags &= ~SYD_IN_CLONE;
-			} else {
-				say("new process: %d with no parent", pid);
-				current = new_process(pid);
+		/* Search early for execve before getting a process entry. */
+		if ((!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
+			if (sydbox->execve_wait) { /* allow the initial exec */
+				sydbox->execve_wait = false;
+				goto notify_respond;
 			}
-			reap_zombies(NULL, -1);
+			pid_t execve_pid = 0;
+			pid_t leader_pid;
+
+			leader_pid = process_find_exec(pid);
+			parent = lookup_process(leader_pid);
+			current = process_init(pid, parent);
+			assert(current);
+			execve_pid = P_EXECVE_PID(current);
+			if (execve_pid == 0 && pid != leader_pid) {
+				execve_pid = leader_pid;
+				current->sysnum = sydbox->request->data.nr;
+				current->sysname = name;
+			}
+
+			if (execve_pid) {
+				if (pid != execve_pid) {
+					syd_process_t *execve_thread;
+
+					execve_thread = lookup_process(execve_pid);
+					assert(execve_thread);
+
+					current = lookup_process(pid);
+					assert(current);
+
+					//current->flags &= ~SYD_IN_CLONE;
+					//event_clone(current
+
+					switch_execve_leader(execve_thread,
+							     current);
+					current = execve_thread;
+					new_shared_memory_clone_thread(current);
+					new_shared_memory_clone_fs(current);
+				}
+				if (current->shm.clone_thread)
+					P_EXECVE_PID(current) = 0;
+				reap_zombies(NULL, -1);
+			}
+			current->flags &= ~SYD_IN_CLONE;
+			event_exec(current);
+		}
+
+		if (!current) {
+			parent = parent_process(pid, NULL);
+			current = process_init(pid, parent);
+			assert(current);
 		}
 		current->sysnum = sydbox->request->data.nr;
 		current->sysname = name;
 		for (unsigned short idx = 0; idx < 6; idx++)
 			current->args[idx] = sydbox->request->data.args[idx];
 
-		pid_t execve_pid = P_EXECVE_PID(current);
-		if (execve_pid) {
-			if (pid != execve_pid) {
-				syd_process_t *execve_thread;
-
-				execve_thread = lookup_process(execve_pid);
-				assert(execve_thread);
-
-				switch_execve_leader(current, execve_thread);
-				current = execve_thread;
-			}
-			P_EXECVE_PID(current) = 0;
-			reap_zombies(NULL, -1);
-		}
 		if (current->update_cwd) {
 			r = sysx_chdir(current);
 			if (r < 0)
@@ -1447,24 +1518,17 @@ notify_receive:
 		}
 
 		if (!strcmp(name, "clone")) {
-			event_clone(current, 'c');
+			event_clone(current, 'c', current->args[2]);
 		} else if (!strcmp(name, "fork")) {
-			event_clone(current, 'f');
+			event_clone(current, 'f', 0);
 		} else if (!strcmp(name, "vfork")) {
-			event_clone(current, 'v');
+			event_clone(current, 'v', 0);
 		} else if (!strcmp(name, "clone3")) {
-			event_clone(current, '3');
+			event_clone(current, '3', 0);
 		} else if (!strcmp(name, "chdir") || !strcmp(name, "fchdir")) {
 			current->flags &= ~SYD_IN_CLONE;
 			current->update_cwd = true;
-		} else if ((!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
-			if (sydbox->execve_wait) /* allow the initial exec */
-				sydbox->execve_wait = false;
-			else
-				event_syscall(current);
-			current->flags &= ~SYD_IN_CLONE;
-			event_exec(current);
-		} else {
+		} else { /* all system calls including exec end up here. */
 			current->flags &= ~SYD_IN_CLONE;
 			event_syscall(current);
 		}

@@ -29,6 +29,7 @@ struct proc_statinfo {
 };
 
 int proc_cwd(pid_t pid, bool use_toolong_hack, char **buf);
+bool proc_has_task(pid_t pid, pid_t task);
 int proc_parents(pid_t pid, pid_t *tgid, pid_t *ppid);
 int proc_stat(pid_t pid, struct proc_statinfo *info);
 

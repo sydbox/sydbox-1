@@ -145,6 +145,57 @@ static void dump_process(pid_t pid)
 	else
 		dump_null();
 
+	fprintf(fp, ","J(rec));
+	if (p) {
+		fprintf(fp, "{"
+			J(flag_STARTUP)"%s,"
+			J(flag_IGNORE_ONE_SIGSTOP)"%s,"
+			J(flag_IN_CLONE)"%s,"
+			J(flag_IN_EXECVE)"%s,"
+			J(flag_KILLED)"%s,"
+			J(flag_DETACHED)"%s,"
+			J(ref_CLONE_THREAD)"%d,"
+			J(ref_CLONE_FS)"%d,"
+			J(ref_CLONE_FILES)"%d,"
+			J(ppid)"%d,"
+			J(tgid)"%d,"
+			J(syscall_no)"%lu,"
+			J(syscall_arch)"%u",
+			J_BOOL(p->flags & SYD_STARTUP),
+			J_BOOL(p->flags & SYD_IGNORE_ONE_SIGSTOP),
+			J_BOOL(p->flags & SYD_IN_CLONE),
+			J_BOOL(p->flags & SYD_IN_EXECVE),
+			J_BOOL(p->flags & SYD_KILLED),
+			J_BOOL(p->flags & SYD_DETACHED),
+			p->shm.clone_thread ? p->shm.clone_thread->refcnt : 0,
+			p->shm.clone_fs ? p->shm.clone_fs->refcnt : 0,
+			p->shm.clone_files ? p->shm.clone_files->refcnt : 0,
+			p->ppid,
+			p->tgid,
+			p->sysnum,
+			p->arch
+			);
+		if (p->sysname)
+			fprintf(fp, ","J(syscall_name)"\"%s\"", p->sysname);
+
+		fprintf(fp, "}");
+	} else {
+		dump_null();
+	}
+
+	/*
+	fprintf(fp, ","J(clone_flags));
+	dump_clone_flags(p->clone_flags);
+	fprintf(fp, ","J(new_clone_flags));
+	dump_clone_flags(p->new_clone_flags);
+
+	fprintf(fp, ","J(sandbox)"");
+	if (!(flags & DUMPF_SANDBOX) || !p->shm.clone_thread)
+		dump_null();
+	else
+		dump_sandbox(p->shm.clone_thread->box);
+	*/
+
 	fprintf(fp, "}");
 }
 
@@ -337,18 +388,46 @@ void dump(enum dump what, ...)
 			current->repr[3] ? current->repr[3] : "",
 			current->repr[4] ? current->repr[4] : "",
 			current->repr[5] ? current->repr[5] : "");
-	} else if (what == DUMP_EXECVE_MT) {
-		pid_t execve_thread, leader;
-
-		execve_thread = va_arg(ap, pid_t);
-		leader = va_arg(ap, pid_t);
+	} else if (what == DUMP_EXEC) {
+		pid_t execve_pid = va_arg(ap, pid_t);
+		const char *prog = va_arg(ap, const char *);
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"{\"id\":%u,\"name\":\"execve_mt\"}",
+			J(event)"{\"id\":%u,\"name\":\"exec\"}",
 			id++, (unsigned long long)now,
 			what);
+
+		fprintf(fp, ","J(process));
+		dump_process(execve_pid);
+
+		fprintf(fp, ","J(prog));
+		if (prog)
+			fprintf(fp, "\"%s\"", prog);
+		else
+			dump_null();
+
+		fprintf(fp, "}");
+	} else if (what == DUMP_EXEC_MT) {
+		pid_t execve_thread, leader;
+
+		execve_thread = va_arg(ap, pid_t);
+		leader = va_arg(ap, pid_t);
+		const char *prog = va_arg(ap, const char *);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(ts)"%llu,"
+			J(event)"{\"id\":%u,\"name\":\"exec_mt\"}",
+			id++, (unsigned long long)now,
+			what);
+
+		fprintf(fp, ","J(prog));
+		if (prog)
+			fprintf(fp, "\"%s\"", prog);
+		else
+			dump_null();
 
 		fprintf(fp, ","J(leader_thread));
 		dump_process(leader);

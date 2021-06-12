@@ -77,7 +77,7 @@ int sysx_chdir(syd_process_t *current)
 		say("chdir done, updating current working directory of "
 		    "pid:%d to `%s', was `%s'",
 		    current->pid, newcwd, P_CWD(current));
-	dump(DUMP_CHDIR, current->pid, newcwd, P_CWD(current));
+	//dump(DUMP_CHDIR, current->pid, newcwd, P_CWD(current));
 	if (P_CWD(current))
 		free(P_CWD(current));
 	P_CWD(current) = newcwd;

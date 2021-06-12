@@ -208,6 +208,7 @@ int proc_comm(pid_t pid, char **name)
 
 	return 0;
 }
+#endif
 
 bool proc_has_task(pid_t pid, pid_t task)
 {
@@ -242,7 +243,6 @@ out:
 	closedir(dir);
 	return r;
 }
-#endif
 
 /* read Tgid: and PPid: from /proc/$pid/status */
 int proc_parents(pid_t pid, pid_t *tgid, pid_t *ppid)

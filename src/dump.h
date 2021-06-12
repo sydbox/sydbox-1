@@ -51,8 +51,10 @@ enum dump {
 #define INSPECT_DUMP_EXIT (1ULL << DUMP_EXIT)
 	DUMP_CHDIR, /* process changed directory */
 #define INSPECT_DUMP_CHDIR (1ULL << DUMP_CHDIR)
-	DUMP_EXECVE_MT, /* multithreaded execve, leader switch */
-#define INSPECT_DUMP_EXECVE_MT (1ULL << DUMP_EXECVE_MT)
+	DUMP_EXEC, /* process executed another program */
+#define INSPECT_DUMP_EXEC (1ULL << DUMP_EXEC)
+	DUMP_EXEC_MT, /* multithreaded execve, leader switch */
+#define INSPECT_DUMP_EXEC_MT (1ULL << DUMP_EXEC_MT)
 };
 
 #if SYDBOX_DUMP
@@ -61,7 +63,8 @@ enum dump {
 # define INSPECT_DEFAULT (INSPECT_DUMP_STARTUP |\
 			  INSPECT_DUMP_SYSENT |\
 			  INSPECT_DUMP_CHDIR |\
-			  INSPECT_DUMP_EXECVE_MT)
+			  INSPECT_DUMP_EXEC |\
+			  INSPECT_DUMP_EXEC_MT)
 #else
 # error do not know how to define INSPECT_DEFAULT
 #endif
