@@ -2,10 +2,9 @@
 
 <img src="https://dev.exherbo.org/~alip/images/sydbox160.png" alt="SydBox" title="img: That cat's something I can't explain!"/>
 
-SydBox is a [ptrace](http://man7.org/linux/man-pages/man2/ptrace.2.html) &amp;
-[seccomp](http://man7.org/linux/man-pages/man2/seccomp.2.html) based sandbox for
-modern [Linux](https://kernel.org) machines to sandbox unwanted process access to
-filesystem and network resources.
+SydBox is a [seccomp](http://man7.org/linux/man-pages/man2/seccomp.2.html) based
+sandbox for modern [Linux](https://kernel.org) machines to sandbox unwanted process
+access to filesystem and network resources.
 
 See: https://sydbox.exherbo.org
 
@@ -54,6 +53,11 @@ For more information about these requirements, check the following links:
 ### PinkTrace
 
 SydBox requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/api/c/)
+
+**NOTE: SydBox.git does not use ptrace() but seccomp user notify facilities in
+recent Linux kernels 5.6 and newer. However, SydBox still uses some utility
+functions part of PinkTrace. It is a work in progress to import these remaining
+little helpers to SydBox code and remove the PinkTrace dependeny.**
 
 See: https://pinktrace.exherbo.org
 
