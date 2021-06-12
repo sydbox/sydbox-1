@@ -1007,10 +1007,12 @@ static void reap_zombies(syd_process_t *current, pid_t pid)
 
 	syd_process_t *node, *tmp;
 	process_iter(node, tmp) { /* process_iter is delete-safe. */
-		if (((node->flags & SYD_KILLED) &&
-		     !(node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE))) ||
-		    !process_is_alive(node->pid, node->tgid))
+		if (node->flags & SYD_KILLED) {
+			if (!(node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE)))
+				remove_process_node(node);
+		} else if (!process_is_alive(node->pid, node->tgid)) {
 			remove_process_node(node);
+		}
 	}
 }
 
