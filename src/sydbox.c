@@ -500,6 +500,8 @@ static void tweak_execve_thread(syd_process_t *execve_thread,
 		close(execve_thread->pidfd);
 	process_remove(execve_thread);
 
+	dump(DUMP_EXECVE_MT, execve_thread->pid, leader->pid);
+
 	execve_thread->pid = leader->pid;
 	execve_thread->pidfd = leader->pidfd;
 	execve_thread->flags = switch_execve_flags(leader->flags);
@@ -524,8 +526,6 @@ static void switch_execve_leader(syd_process_t *leader,
 	execve_thread->tgid = leader->tgid;
 	execve_thread->clone_flags = leader->clone_flags;
 	execve_thread->abspath = leader->abspath;
-
-	dump(DUMP_EXECVE_MT, execve_thread->pid, leader->pid);
 
 	free(leader);
 }

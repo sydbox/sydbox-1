@@ -126,21 +126,21 @@ static void dump_process(pid_t pid)
 		dump_null();
 	}
 
+	/* Query SydBox process record */
 	p = lookup_process(pid);
 
 	fprintf(fp, ","J(execve_pid));
-	if (p->shm.clone_thread && p->shm.clone_thread->execve_pid)
+	if (!p)
+		dump_null();
+	else if (p->shm.clone_thread && p->shm.clone_thread->execve_pid)
 		fprintf(fp, "%d", p->shm.clone_thread->execve_pid);
 	else
 		dump_null();
 
 	fprintf(fp, ","J(cwd));
-	if (!p) {
+	if (!p)
 		dump_null();
-		fprintf(fp, "}");
-		return;
-	}
-	if (p->shm.clone_fs && p->shm.clone_fs->cwd)
+	else if (p->shm.clone_fs && p->shm.clone_fs->cwd)
 		fprintf(fp, "\"%s\"", p->shm.clone_fs->cwd);
 	else
 		dump_null();
