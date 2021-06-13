@@ -614,7 +614,7 @@ int sysinit_seccomp_load(void)
 			}
 		} else {
 			int mode;
-			enum lock_state lock;
+			enum lock_state lock = LOCK_UNSET;
 			if (syscall_entries[i].sandbox_network) {
 				mode = box->mode.sandbox_network;
 			} else if (syscall_entries[i].sandbox_exec) {

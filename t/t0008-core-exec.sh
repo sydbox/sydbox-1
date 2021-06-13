@@ -16,6 +16,11 @@ SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS
 "
 export SYDBOX_TEST_OPTIONS
 
+if test -n "$SYDBOX_TEST_INSTALLED"; then
+    threads_execve="${LIBEXECDIR}/sydbox/t/test-bin/threads_execve"
+else
+    threads_execve="${SYDBOX_BUILD_DIR}/t/test-bin/threads_execve"
+fi
 
 # FIXME: Add DUMP prereq!
 test_expect_success DIFF,JQ 'multithreaded execve leader switch' '
@@ -29,7 +34,7 @@ test_expect_success DIFF,JQ 'multithreaded execve leader switch' '
         rm -f "$f" &&
         sydbox \
             -d "$f" \
-            "$SYDBOX_BUILD_DIR"/t/test-bin/threads_execve > "$OUT" || r=1 &&
+            "'${threads_execve}'" > "$OUT" || r=1 &&
         test $r = 1 && break ||
         test -s "$f" &&
         echo >&2 DUMP &&

@@ -763,7 +763,7 @@ ssize_t syd_write_vm_data(syd_process_t *current, long addr, const char *src,
 int test_cross_memory_attach(bool report);
 int test_proc_mem(bool report);
 int test_pidfd(bool report);
-int test_seccomp(bool report, bool test_seccomp_load);
+int test_seccomp(bool report);
 
 void reset_process(syd_process_t *p);
 void bury_process(syd_process_t *p);

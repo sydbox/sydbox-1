@@ -20,10 +20,9 @@ test-lib.sh: test-lib.sh.in
 	$(AM_V_GEN)
 	$(AM_V_at)$(SED) \
 		-e "s:@TOP_BUILDDIR@:$(abs_top_builddir):g" \
-		-e "s:@PTRACE_SEIZE@:$(PINKTRACE_HAVE_SEIZE):g" \
-		-e "s:@PTRACE_SECCOMP@:$(SYDBOX_HAVE_SECCOMP):g" \
-		-e "s:@PINK_HAVE_IPV6@:$(PINK_HAVE_IPV6):g" \
 		-e "s:@SYDBOX_HAVE_NEWFSTATAT@:$(HAVE_NEWFSTATAT):g" \
+		-e 's:@BINDIR@:$(bindir):g' \
+		-e 's:@LIBEXECDIR@:$(libexecdir):g' \
 		$< > $@
 CLEANFILES+= test-lib.sh
 EXTRA_DIST+= test-lib.sh.in
@@ -48,7 +47,7 @@ TESTS= \
 check_SCRIPTS+= $(TESTS)
 
 syddir=$(libexecdir)/$(PACKAGE)/t
-syd_SCRIPTS= aggregate-results.sh check-non-portable-shell.pl $(check_SCRIPTS)
+syd_SCRIPTS= aggregate-results.sh check-non-portable-shell.pl chainlint.sed $(check_SCRIPTS)
 syd_DATA= README
 EXTRA_DIST+= $(syd_SCRIPTS) $(syd_DATA)
 

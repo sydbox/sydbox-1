@@ -20,7 +20,10 @@
 #include "compiler.h"
 #include "pink.h"
 #include "syd.h"
+#include "util.h"
 #include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -729,18 +732,24 @@ out:
 	return r;
 }
 
-int test_seccomp(bool report, bool test_seccomp_load)
+int test_seccomp(bool report)
 {
+	int r = 0;
 	pid_t pid;
+	int pfd[2];
 
+	if (pipe2(pfd, O_CLOEXEC|O_DIRECT) < 0) {
+		r = -errno;
+		say_errno("can't pipe");
+		goto out;
+	}
 	pid = fork();
 	if (pid < 0) {
 		die_errno("fork");
 	} else if (pid == 0) {
-		int r;
 		scmp_filter_ctx ctx;
 
-		r = 0;
+		close(pfd[0]);
 		if ((ctx = seccomp_init(SCMP_ACT_ALLOW)) == NULL) {
 			r = -errno;
 			say_errno("seccomp_init");
@@ -754,10 +763,44 @@ int test_seccomp(bool report, bool test_seccomp_load)
 			goto out;
 		}
 
-		if (test_seccomp_load && (r = seccomp_load(ctx)) < 0) {
+		if ((r = seccomp_rule_add(ctx, SCMP_ACT_NOTIFY,
+					  SCMP_SYS(gettid), 0)) < 0) {
+			errno = -r;
+			say_errno("seccomp_rule_add");
+			goto out;
+		}
+
+		if ((r = seccomp_load(ctx)) < 0) {
 			errno = -r;
 			say_errno("seccomp_load");
+			goto out;
 		}
+
+		int fd;
+		ssize_t count;
+
+		if ((fd = seccomp_notify_fd(ctx)) < 0) {
+			r = fd;
+			errno = -fd;
+			say_errno("seccomp_notify_fd");
+			goto out;
+		}
+
+		errno = 0;
+		count = atomic_write(pfd[1], &fd, sizeof(int));
+		if (count != sizeof(int)) {
+			if (!errno)
+				errno = EINVAL;
+			r = -errno;
+			say_errno("can't write int to pipe: %zu != %zu", count,
+				  sizeof(int));
+			goto out;
+		}
+		kill(getpid(), SIGSTOP);
+
+		pid_t tid = syscall(__NR_gettid);
+		if (tid >= 0)
+			r = 0;
 
 		seccomp_release(ctx);
 out:
@@ -767,6 +810,120 @@ out:
 		else if (report)
 			say("[*] seccomp filters are functional.");
 		_exit(-r);
+	}
+
+	int fd;
+	ssize_t count;
+
+	close(pfd[1]);
+	errno = 0;
+	count = atomic_read(pfd[0], &fd, sizeof(int));
+	if (!count && count != sizeof(int)) { /* count=0 is EOF */
+		if (!errno)
+			errno = EINVAL;
+		r = -errno;
+		say_errno("failed to read int from pipe: %zu != %zu",
+			  count, sizeof(int));
+		goto out;
+	} else if (count < 0) {
+		say_errno("failed to load seccomp filters");
+		r = -EINVAL;
+		goto out;
+	}
+	close(pfd[0]);
+
+	int pidfd = syscall(__NR_pidfd_open, pid, 0);
+	if (pidfd < 0) {
+		r = -errno;
+		say_errno("pidfd_open(%d)", pid);
+		goto out;
+	}
+	if ((fd = syscall(__NR_pidfd_getfd, pidfd, fd, 0)) < 0) {
+		r = -errno;
+		say_errno("pidfd_getfd(%d)", pid);
+		goto out;
+	}
+	kill(pid, SIGCONT);
+
+	struct pollfd pollfd;
+	pollfd.fd = fd;
+	pollfd.events = POLLIN;
+	errno = 0;
+restart_poll:
+	if ((r = poll(&pollfd, 1, 1000)) < 0) {
+		if (!errno || errno == EINTR)
+			goto restart_poll;
+		r = -errno;
+		goto out;
+	}
+	short revents = pollfd.revents;
+	if (!r && !revents)
+		goto restart_poll;
+	if (revents & POLLIN) {
+		struct seccomp_notif *request;
+		struct seccomp_notif_resp *response;
+
+		if ((r = seccomp_notify_alloc(&request, &response)) < 0) {
+			errno = -r;
+			say_errno("seccomp_notify_alloc");
+			goto out;
+		}
+		memset(request, 0, sizeof(struct seccomp_notif));
+		memset(response, 0, sizeof(struct seccomp_notif_resp));
+notify_receive:
+		if ((r = seccomp_notify_receive(fd, request)) < 0) {
+			if (r == -ECANCELED || r == -EINTR) {
+				goto notify_receive;
+			} else if (r == -ENOENT) {
+				/* If we didn't find a notification,
+				 * it could be that the task was
+				 * interrupted by a fatal signal between
+				 * the time we were woken and
+				 * when we were able to acquire the rw lock.
+				 */
+				errno = -r;
+				say_errno("seccomp_notify_receive");
+				goto out;
+			} else {
+				errno = -r;
+				say_errno("seccomp_notify_receive");
+				goto out;
+			}
+		}
+		if (request->id == 0 && request->pid == 0)
+			goto restart_poll;
+		response->id = request->id;
+		response->flags |= SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+		response->error = 0;
+		response->val = 0;
+notify_respond:
+		/* 0 if valid, ENOENT if not */
+		if ((r = seccomp_notify_id_valid(fd, request->id)) < 0 ||
+		    (r = seccomp_notify_respond(fd, response)) < 0) {
+			if (r == -ECANCELED || r == -EINTR) {
+				goto notify_respond;
+			} else if (r == -ENOENT) {
+				/* If we didn't find a notification,
+				 * it could be that the task was
+				 * interrupted by a fatal signal between
+				 * the time we were woken and
+				 * when we were able to acquire the rw lock.
+				 */
+				errno = -r;
+				say_errno("seccomp_notify_respond");
+				goto out;
+			} else {
+				errno = -r;
+				say_errno("seccomp_notify_respond");
+				goto out;
+			}
+		}
+	} else if (revents & POLLHUP || revents & POLLERR) {
+		r = -ESRCH;
+		goto out;
+	} else if (revents & POLLNVAL) {
+		r = -EINVAL;
+		goto out;
 	}
 
 	int wstatus;

@@ -1110,7 +1110,7 @@ static inline bool process_is_alive(pid_t pid, pid_t tgid)
 	if (!process_kill(pid, tgid, 0)) {
 		return false;
 	} else if ((r = proc_stat(pid, &info)) < 0) {
-		if (r != -ENOENT)
+		if (r != -ENOENT && r != -ESRCH)
 			say_errno("proc_stat(%d)", pid);
 		return false;
 	} else if (info.state == 'Z') {
@@ -1856,7 +1856,7 @@ int main(int argc, char **argv)
 			opt_t[0] = test_cross_memory_attach(true);
 			opt_t[1] = test_proc_mem(true);
 			opt_t[2] = test_pidfd(true);
-			opt_t[3] = test_seccomp(true, true);
+			opt_t[3] = test_seccomp(true);
 			r = 0;
 			for (i = 0; i < 4; i++) {
 				if (opt_t[i] != 0) {

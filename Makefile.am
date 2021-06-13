@@ -99,6 +99,7 @@ upload:
 .PHONY: upload-release
 upload-release: upload $(SHA1_FILE) $(GPG_FILE)
 	rsync --partial --progress -ave ssh $(TAR_FILE) $(SHA1_FILE) $(GPG_FILE) strauss.exherbo.org:public_html/sydbox/
+	rsync --partial --progress -ave ssh $(TAR_FILE) $(SHA1_FILE) $(GPG_FILE) strauss.exherbo.org:/srv/www/dev.exherbo.org/distfiles/sydbox
 
 .PHONY: jenkins
 jenkins:
