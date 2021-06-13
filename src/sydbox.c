@@ -649,11 +649,13 @@ static void sig_chld(int sig, siginfo_t *info, void *ucontext)
 		break;
 	case CLD_KILLED:
 	case CLD_DUMPED:
+	case CLD_STOPPED:
+	case CLD_TRAPPED:
 		if (pid == sydbox->execve_pid)
 			save_exit_signal(info->si_status);
 		break;
 	case CLD_CONTINUED:
-		break;
+		SYD_GCC_ATTR((fallthrough));
 	default:
 		break;
 	}
@@ -661,7 +663,7 @@ static void sig_chld(int sig, siginfo_t *info, void *ucontext)
 	for (;;) {
 		int status;
 restart_waitpid:
-		pid = waitpid(-1, &status, __WALL);
+		pid = waitpid(-1, &status, __WALL|WNOHANG);
 		if (pid < 0) {
 			if (errno == EINTR)
 				goto restart_waitpid;
@@ -1616,6 +1618,7 @@ static pid_t startup_child(char **argv)
 				errno = EINVAL;
 			die_errno("seccomp load failed");
 		}
+		pause();
 		execv(pathname, argv);
 		fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
 			pathname, errno, strerror(errno));

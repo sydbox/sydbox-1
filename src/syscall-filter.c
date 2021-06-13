@@ -37,6 +37,7 @@ static const int filter_gen_level1[] = {
 #endif
 	SCMP_SYS(arch_prctl),
 	SCMP_SYS(set_tid_address),
+	SCMP_SYS(pause),
 	SCMP_SYS(read),
 #ifdef __NR_readv
 	SCMP_SYS(readv),
@@ -180,6 +181,7 @@ static const int filter_gen_level2[] = {
 	SCMP_SYS(openat2),
 #endif
 */
+	SCMP_SYS(pause),
 #ifdef __NR_preadv
 	SCMP_SYS(preadv),
 #endif
@@ -194,6 +196,7 @@ static const int filter_gen_level2[] = {
 #endif
 	SCMP_SYS(pselect6),
 	SCMP_SYS(read),
+	SCMP_SYS(pause),
 #ifdef __NR_readv
 	SCMP_SYS(readv),
 #endif

@@ -16,6 +16,7 @@
  */
 
 #include "sydbox.h"
+#include "bsd-compat.h"
 #include "compiler.h"
 #include "pink.h"
 #include "syd.h"
@@ -200,7 +201,7 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 	size_t wsize;
 
 #if SIZEOF_LONG > 4
-	wsize = abi_wordsize(SCMP_ARCH_NATIVE);
+	wsize = abi_wordsize(current->arch);
 	if (wsize < sizeof(addr))
 		addr &= (1ul << 8 * wsize) - 1;
 #endif

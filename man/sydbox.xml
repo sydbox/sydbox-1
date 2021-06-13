@@ -872,6 +872,12 @@
               <function>openat2</function><manvolnum>2</manvolnum>
               as well.
             </para>
+            <note>
+              <para>
+                In addition, the <function>pause</function> system call is
+                permitted in all levels.
+              </para>
+            </note>
           </listitem>
         </varlistentry>
 

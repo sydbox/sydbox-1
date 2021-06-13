@@ -1558,18 +1558,6 @@ build_option () {
 	sed -e 's|yes|1|' -e 's|no|0|'
 }
 
-
-
-
-
-
-# Support for certain ptrace() options
-test x"@PTRACE_SEIZE@" = x"0" || test_set_prereq PTRACE_SEIZE
-test x"@PTRACE_SECCOMP@" = x"0" || test_set_prereq PTRACE_SECCOMP
-
-# Support for IPv6
-test x"@PINK_HAVE_IPV6@" = x"0" || test_set_prereq HAVE_IPV6
-
 # Support for new system calls
 test x"@SYDBOX_HAVE_NEWFSTATAT@" = x"0" || test_set_prereq HAVE_NEWFSTATAT
 
