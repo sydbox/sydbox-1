@@ -195,6 +195,7 @@ AC_CHECK_HEADERS_ONCE(m4_flatten([
 	sys/wait.h
 	asm/ptrace.h
 	asm/unistd.h
+	sys/syscall.h
 	linux/ptrace.h
 	linux/openat2.h
 	linux/unistd.h
@@ -339,6 +340,9 @@ dnl check for pidfd_open and pidfd_getfd.
 m4_define([include_pidfd_headers], [
 	   #ifdef HAVE_ASM_UNISTD_H
 	   #include <asm/unistd.h>
+	   #endif
+	   #ifdef HAVE_SYS_SYSCALL_H
+	   #include <sys/syscall.h>
 	   #endif
 	   #ifdef HAVE_LINUX_UNISTD_H
 	   #include <linux/unistd.h>
