@@ -516,14 +516,15 @@ static void switch_execve_leader(syd_process_t *leader,
 {
 	process_remove(leader);
 
+	/*
 	if (magic_query_violation_raise_safe(leader)) {
 		say("multithreaded execve: %d superseded by execve "
 		    "in pid clone_fs[pid:%d]=%d",
 		    leader->pid, execve_thread->pid,
 		    P_CLONE_FS_REFCNT(leader));
-		dump(DUMP_EXEC_MT, execve_thread->pid, leader->pid,
-		     execve_thread->abspath);
-	}
+	} */
+	dump(DUMP_EXEC_MT, execve_thread->pid, leader->pid,
+	     execve_thread->abspath);
 
 	P_CLONE_THREAD_RELEASE(leader);
 	P_CLONE_FILES_RELEASE(leader);
@@ -1096,14 +1097,14 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent)
 	if (parent) {
 		current = clone_process(parent, pid);
 		parent->clone_flags &= ~SYD_IN_CLONE;
-		if (magic_query_violation_raise_safe(current))
-			say("new process: %d of parent %d", pid, parent->pid);
+		//if (magic_query_violation_raise_safe(current))
+		//	say("new process: %d of parent %d", pid, parent->pid);
 	} else {
 		current = new_process(pid);
 		new_shared_memory_clone_fs(current);
 		sysx_chdir(current);
-		if (magic_query_violation_raise_safe(current))
-			say("new process: %d with no parent", pid);
+		//if (magic_query_violation_raise_safe(current))
+		//	say("new process: %d with no parent", pid);
 	}
 	reap_zombies(NULL, -1);
 
