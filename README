@@ -52,10 +52,12 @@ For more information about these requirements, check the following links:
 
 ### PinkTrace
 
-SydBox requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/api/c/)
+If you do not have a very recent Linux version, you may use Sydbox-1.2.1 which
+requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/api/c/)
 
-**NOTE: SydBox.git does not use ptrace() but seccomp user notify facilities in
-recent Linux kernels 5.6 and newer. Hence, PinkTrace is no longer a dependency.**
+**NOTE: SydBox-2.0.0 and newer do not use ptrace() but use seccomp user notify
+facilities in recent Linux kernels 5.6 and newer. Hence, PinkTrace is no longer a
+dependency.**
 
 See: https://pinktrace.exherbo.org
 
@@ -85,11 +87,11 @@ parts which are of particular interest to read are:
 ## SydBox and Pandora
 
 **NOTE:** Pandora is in its early stages of development. To be able to use Pandora
-you need **Sydbox-1.2.1** or later.
+you need **Sydbox-2.0.0** or later.
 
-- Tar: https://dev.exherbo.org/~alip/sydbox/sydbox-1.2.1.tar.bz2
-- SHA: https://dev.exherbo.org/~alip/sydbox/sydbox-1.2.1.tar.bz2.sha1sum
-- GPG: https://dev.exherbo.org/~alip/sydbox/sydbox-1.2.1.tar.bz2.sha1sum.asc
+- Tar: https://dev.exherbo.org/~alip/sydbox/sydbox-2.0.0.tar.bz2
+- SHA: https://dev.exherbo.org/~alip/sydbox/sydbox-2.0.0.tar.bz2.sha1sum
+- GPG: https://dev.exherbo.org/~alip/sydbox/sydbox-2.0.0.tar.bz2.sha1sum.asc
 - Git: https://git.exherbo.org/git/sydbox-1.git
 
 - Browse: https://git.exherbo.org/sydbox-1.git/

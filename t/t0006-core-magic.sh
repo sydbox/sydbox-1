@@ -9,20 +9,22 @@ save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
 SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS -mcore/sandbox/read:allow"
 export SYDBOX_TEST_OPTIONS
 
-test_expect_success 'magic /dev/sydbox API is 1' '
-    sydbox -- sh -c "test -e /dev/sydbox/1" &&
+test_expect_success 'magic /dev/sydbox API is 2' '
+    sydbox -- sh -c "test -e /dev/sydbox/2" &&
     sydbox -- sh -c "test -e /dev/sydbox" &&
+    test_expect_code 1 sydbox -- sh -c "test -e /dev/sydbox/1" &&
     test_expect_code 1 sydbox -- sh -c "test -e /dev/sydbox/0"
 '
 
-test_expect_success HAVE_NEWFSTATAT 'magic /dev/sydbox API is 1 using fstatat' '
+test_expect_success HAVE_NEWFSTATAT 'magic /dev/sydbox API is 2 using fstatat' '
     sydbox -- syd-fstatat cwd /dev/sydbox &&
-    sydbox -- syd-fstatat cwd /dev/sydbox/1 &&
+    sydbox -- syd-fstatat cwd /dev/sydbox/2 &&
     sydbox -- syd-fstatat null /dev/sydbox &&
-    sydbox -- syd-fstatat null /dev/sydbox/1 &&
+    sydbox -- syd-fstatat null /dev/sydbox/2 &&
     sydbox -- syd-fstatat /dev /dev/sydbox &&
-    sydbox -- syd-fstatat /dev /dev/sydbox/1 &&
-    test_expect_code 22 sydbox -- syd-fstatat cwd /dev/sydbox/0 # EINVAL
+    sydbox -- syd-fstatat /dev /dev/sydbox/2 &&
+    test_expect_code 22 sydbox -- syd-fstatat cwd /dev/sydbox/1 && # EINVAL
+    test_expect_code 22 sydbox -- syd-fstatat cwd /dev/sydbox/0    # ""
 '
 
 test_expect_failure 'magic /dev/sydbox boolean checking works with write:off' '
