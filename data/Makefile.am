@@ -4,6 +4,7 @@ EXTRA_DIST=
 sydboxsharedir= $(datadir)/$(PACKAGE)
 sydboxshare_DATA= \
 		  paludis.syd-1 \
+		  paludis.syd-2 \
 		  sydbox.supp
 EXTRA_DIST+= $(sydboxshare_DATA)
 
