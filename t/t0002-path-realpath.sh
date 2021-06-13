@@ -45,7 +45,7 @@ test_expect_success SYMLINKS 'too many symbolic links for file (RPATH_NOLAST|RPA
 '
 
 test_expect_success SYMLINKS 'self referencing symbolic link -> ELOOP' '
-    realpath_mode-1 ELOOP "${HOMER}"/self/foo existing NULL
+    realpath_mode-1 ELOOP "${HOMER}"/self/foo existing NULL &&
     realpath_mode-1 ELOOP "${HOMER}"/self existing NULL
 '
 
@@ -60,12 +60,12 @@ test_expect_success 'component not a directory -> ENOTDIR' '
 '
 
 test_expect_success SYMLINKS 'symlink component not pointing to a directory -> ENOTDIR' '
-    mkdir -p foo && touch foo/bak && ln -sf bak foo/ban
+    mkdir -p foo && touch foo/bak && ln -sf bak foo/ban &&
     realpath_mode-1 ENOTDIR "${HOMER}"/foo/ban/baz existing NULL
 '
 
 test_expect_success SYMLINKS 'symlink component not pointing to a directory (NOFOLLOW) -> ENOTDIR' '
-    mkdir -p foo && touch foo/bak && ln -sf bak foo/ban
+    mkdir -p foo && touch foo/bak && ln -sf bak foo/ban &&
     realpath_mode-1 ENOTDIR "${HOMER}"/foo/ban/baz "existing|nofollow" NULL
 '
 
@@ -75,7 +75,7 @@ test_expect_success 'realpath ., .., intermediate // handling' '
 '
 
 test_expect_success 'realpath non-directory with trailing slash yields NULL' '
-    touch non-directory-slash
+    touch non-directory-slash &&
     realpath_mode-1 ENOTDIR "$HOMER/non-directory-slash/" "existing" NULL
 '
 
@@ -96,7 +96,7 @@ test_expect_success SYMLINKS 'symlinks to a file can be resolved' '
 '
 
 test_expect_success SYMLINKS 'symlinks to a directory can be resolved' '
-    mkdir -p resolve-to-this-dir
+    mkdir -p resolve-to-this-dir &&
     ln -sf resolve-to-this-dir resolve-from-this-link-to-this-dir &&
     ln -sf resolve-from-this-link-to-this-dir resolve-from-this-link-to-that-link &&
     realpath_mode-1 0 "$HOMER/resolve-from-this-link-to-that-link" "existing" "$HOMER"/resolve-to-this-dir
@@ -115,8 +115,8 @@ test_expect_success SYMLINKS 'non-directory symlink with a trailing slash yields
 '
 
 test_expect_success SYMLINKS 'recovers from missing directory via symlink' '
-    rm -fr resolve-to-no-such-dir-in-the-sky
-    ln -sf resolve-to-no-such-dir-in-the-sky resolve-from-this-link-to-no-such-dir-in-the-sky
+    rm -fr resolve-to-no-such-dir-in-the-sky &&
+    ln -sf resolve-to-no-such-dir-in-the-sky resolve-from-this-link-to-no-such-dir-in-the-sky &&
     realpath_mode-1 0 "$HOMER/resolve-from-this-link-to-no-such-dir-in-the-sky/.." existing "$HOMER"
 '
 
@@ -134,7 +134,7 @@ test_expect_success SYMLINKS 'alternate modes can resolve symlink basenames' '
 '
 
 test_expect_success 'alternate modes can handle missing dirnames' '
-    rm -fr dir-dont-exist
+    rm -fr dir-dont-exist &&
     realpath_mode-1 0 "$HOMER/dir-dont-exist/nofile" nolast "$HOMER"/dir-dont-exist/nofile
 '
 

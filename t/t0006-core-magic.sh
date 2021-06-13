@@ -16,12 +16,12 @@ test_expect_success 'magic /dev/sydbox API is 1' '
 '
 
 test_expect_success HAVE_NEWFSTATAT 'magic /dev/sydbox API is 1 using fstatat' '
-    sydbox -- syd-fstatat cwd /dev/sydbox
+    sydbox -- syd-fstatat cwd /dev/sydbox &&
     sydbox -- syd-fstatat cwd /dev/sydbox/1 &&
     sydbox -- syd-fstatat null /dev/sydbox &&
     sydbox -- syd-fstatat null /dev/sydbox/1 &&
     sydbox -- syd-fstatat /dev /dev/sydbox &&
-    sydbox -- syd-fstatat /dev /dev/sydbox/1
+    sydbox -- syd-fstatat /dev /dev/sydbox/1 &&
     test_expect_code 22 sydbox -- syd-fstatat cwd /dev/sydbox/0 # EINVAL
 '
 
@@ -63,10 +63,9 @@ test_expect_success 'magic core/violation/exit_code:0 works' '
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- sh && <<EOF
+        -- sh <<EOF && test_path_is_missing "$f"
 : > "$f"
 EOF
-    test_path_is_missing "$f"
 '
 
 test_expect_success 'magic core/violation/raise_fail:1 works' '
@@ -76,10 +75,9 @@ test_expect_success 'magic core/violation/raise_fail:1 works' '
     test_must_violate sydbox \
         -m core/violation/raise_fail:1 \
         -m core/sandbox/write:deny \
-        -- sh && <<EOF
+        -- sh <<EOF && test_path_is_missing "$d"/"$f"
 : > "$d"/"$f"
 EOF
-    test_path_is_missing "$d"/"$f"
 '
 
 test_expect_success TODO 'magic core/violation/raise_safe:1 works' '

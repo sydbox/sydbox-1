@@ -30,7 +30,7 @@ test_expect_success DIFF,JQ 'multithreaded execve leader switch' '
         sydbox \
             -d "$f" \
             "$SYDBOX_BUILD_DIR"/t/test-bin/threads_execve > "$OUT" || r=1 &&
-        test $r = 1 && break
+        test $r = 1 && break ||
         test -s "$f" &&
         echo >&2 DUMP &&
         cat >&2 "$f" &&
@@ -42,14 +42,14 @@ test_expect_success DIFF,JQ 'multithreaded execve leader switch' '
         echo >&2 EXP &&
         cat >&2 "$EXP" &&
         echo >&2 "--" &&
-        diff -u -- "$EXP" "$OUT" >&2
-        cmp "$EXP" "$OUT" && r=0
-        echo >&2 "--"
-        s1="$(date +%s)"
+        diff -u -- "$EXP" "$OUT" >&2 || r=1 &&
+        cmp "$EXP" "$OUT" && r=0 &&
+        echo >&2 "--" &&
+        s1="$(date +%s)" &&
         if [ "$(($s1-$s0))" -gt "$(($TIMEOUT_DURATION/3))" ]; then
             break
         fi
-    done
+    done &&
     test $r = 0
 '
 

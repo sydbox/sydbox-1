@@ -403,7 +403,7 @@ void dump(enum dump what, ...)
 		fprintf(fp, ","J(process));
 		dump_process(pid);
 
-		fprintf(fp, ","J(cwd)":{");
+		fprintf(fp, ","J(cwd)"{");
 
 		fprintf(fp, J(new));
 		if (newcwd)

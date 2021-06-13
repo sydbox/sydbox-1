@@ -493,8 +493,8 @@ void bury_process(syd_process_t *p)
 }
 
 /* Drop leader, switch to the thread, reusing leader's tid */
-static void tweak_execve_thread(syd_process_t *execve_thread,
-				syd_process_t *leader)
+static void tweak_execve_thread(syd_process_t *leader,
+				syd_process_t *execve_thread)
 {
 	if (sydbox->config.whitelist_per_process_directories)
 		procdrop(&sydbox->config.hh_proc_pid_auto, execve_thread->pid);
@@ -537,7 +537,7 @@ static void switch_execve_leader(syd_process_t *leader,
 	}
 	P_CLONE_FILES_RELEASE(leader);
 
-	tweak_execve_thread(execve_thread, leader);
+	tweak_execve_thread(leader, execve_thread);
 	if (execve_thread->abspath)
 		free(execve_thread->abspath);
 
@@ -548,10 +548,10 @@ static void switch_execve_leader(syd_process_t *leader,
 
 	if (!clone_thread)
 		new_shared_memory_clone_thread(execve_thread);
-	if (!clone_fs) {
+	if (!clone_fs)
 		new_shared_memory_clone_fs(execve_thread);
-		execve_thread->update_cwd = true;
-	}
+	if (!P_CWD(execve_thread))
+		sysx_chdir(execve_thread);
 
 	free(leader);
 }
@@ -1536,11 +1536,9 @@ notify_receive:
 					current = lookup_process(pid);
 					assert(current);
 
-					//current->flags &= ~SYD_IN_CLONE;
-					//event_clone(current
-
 					switch_execve_leader(execve_thread,
 							     current);
+					goto notify_respond;
 				}
 				if (current->shm.clone_thread)
 					P_EXECVE_PID(current) = 0;
@@ -2003,7 +2001,7 @@ int main(int argc, char **argv)
 			exit_code = sydbox->config.violation_exit_code;
 		else if (sydbox->config.violation_exit_code == 0 &&
 			 sydbox->exit_code < 128)
-			exit_code = 128 + sydbox->exit_code;
+			exit_code = 128 /* + sydbox->exit_code */;
 	}
 	cleanup();
 	return exit_code;
