@@ -38,15 +38,24 @@ void systable_init(void)
 	;
 }
 
+static inline void free_systable(struct systable *tbl)
+{
+	HASH_CLEAR(hh, tbl);
+}
+
+static inline void free_systable_entry(struct systable *tbl, struct systable *ent)
+{
+	HASH_DEL(tbl, ent);
+	free(ent);
+}
+
 void systable_free(void)
 {
 	for (short abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
 		struct systable *s, *tmp;
-		HASH_ITER(hh, systable[abi], s, tmp) {
-			HASH_DEL(systable[abi], s);
-			free(s);
-		}
-		HASH_CLEAR(hh, systable[abi]);
+		HASH_ITER(hh, systable[abi], s, tmp)
+			free_systable_entry(systable[abi], s);
+		free_systable(systable[abi]);
 	}
 }
 

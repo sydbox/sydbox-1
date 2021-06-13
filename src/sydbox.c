@@ -1632,6 +1632,11 @@ notify_respond:
 	return r;
 }
 
+static inline void free_pathlookup(char *pathname)
+{
+	free(pathname);
+}
+
 static pid_t startup_child(char **argv)
 {
 	int r, pfd[2];
@@ -1667,7 +1672,7 @@ static pid_t startup_child(char **argv)
 	/* write end of the pipe is not used. */
 	close(pfd[1]);
 
-	free(pathname);
+	free_pathlookup(pathname);
 
 	sydbox->execve_pid = pid;
 	sydbox->execve_wait = true;
@@ -1703,6 +1708,18 @@ static pid_t startup_child(char **argv)
 	return pid;
 }
 
+static inline void free_program_invocation_name(char *name)
+{
+	if (name)
+		free(name);
+}
+
+static inline void free_sydbox(sydbox_t **syd)
+{
+	free(*syd);
+	*syd = NULL;
+}
+
 void cleanup(void)
 {
 	struct acl_node *node;
@@ -1724,10 +1741,8 @@ void cleanup(void)
 		close(sydbox->seccomp_fd);
 	if (sydbox->notify_fd >= 0)
 		close(sydbox->notify_fd);
-	if (sydbox->program_invocation_name)
-		free(sydbox->program_invocation_name);
-	free(sydbox);
-	sydbox = NULL;
+	free_program_invocation_name(sydbox->program_invocation_name);
+	free_sydbox(&sydbox);
 
 	systable_free();
 }

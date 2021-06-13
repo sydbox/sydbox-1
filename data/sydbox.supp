@@ -60,6 +60,50 @@
    fun:main
 }
 
+{
+   Addr-Rw-Mapped-File-5
+   Memcheck:Free
+   fun:free
+   fun:free_pathlookup
+   fun:startup_child
+   fun:main
+}
+
+{
+   Addr-Rw-Mapped-File-6
+   Memcheck:Free
+   fun:free
+   fun:free_program_invocation_name
+   fun:cleanup
+   fun:main
+}
+
+{
+   Addr-Rw-Mapped-File-7
+   Memcheck:Free
+   fun:free
+   fun:free_sydbox
+   fun:cleanup
+   fun:main
+}
+
+{
+   Addr-Rw-Mapped-File-8
+   Memcheck:Free
+   fun:free
+   fun:arch_filter_rule_add
+   fun:_db_col_rule_add
+   fun:db_col_rule_add
+   fun:seccomp_rule_add_array
+   fun:seccomp_rule_add
+   fun:rule_add_access
+   fun:rule_add_access_wr
+   fun:sysinit_seccomp_load
+   fun:sysinit_seccomp
+   fun:startup_child
+   fun:main
+}
+
 #############################
 #############################
 #############################
@@ -577,4 +621,64 @@
    fun:event_syscall
    fun:notify_loop
    fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-38
+   Memcheck:Free
+   fun:free
+   fun:filter_free
+   fun:cleanup
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-39
+   Memcheck:Free
+   fun:free
+   fun:free_systable_entry
+   fun:systable_free
+   fun:cleanup
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-40
+   Memcheck:Free
+   fun:free
+   fun:free_systable
+   fun:systable_free
+   fun:cleanup
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-41
+   Memcheck:Free
+   fun:free
+   fun:fclose
+   obj:*
+   obj:*
+   obj:*
+   fun:dump_close
+   obj:*libc.so
+   fun:__funcs_on_exit
+   obj:*
+}
+
+{
+   Addr-Rw-Anon-Segment-42
+   Memcheck:Free
+   fun:free
+   fun:arch_filter_rule_add
+   fun:_db_col_rule_add
+   fun:db_col_transaction_commit
+   fun:db_col_rule_add
+   fun:seccomp_rule_add_array
+   fun:seccomp_rule_add
+   fun:rule_add_access
+   fun:rule_add_access_wr
+   fun:sysinit_seccomp_load
+   fun:sysinit_seccomp
+   fun:startup_child
 }

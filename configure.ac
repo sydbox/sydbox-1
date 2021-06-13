@@ -398,6 +398,7 @@ if test x"$enable_static" = x"yes"; then
 	SYDBOX_LDFLAGS="-all-static"
 fi
 AC_SUBST([SYDBOX_LDFLAGS])
+AM_CONDITIONAL([ENABLE_STATIC], test x"$enable_static" = x"yes")
 
 dnl check for xsltproc
 AC_PATH_PROG([XSLTPROC], [xsltproc])

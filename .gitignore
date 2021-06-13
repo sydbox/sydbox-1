@@ -140,6 +140,7 @@ tests/t[0-9][0-9][0-9]*
 /t/test-bin/sockmatchtest
 /t/test-bin/wildtest
 /t/valgrind/bin/*
+/t/valgrind/valgrind.sh
 
 /t/sb/*-0
 
