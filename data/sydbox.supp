@@ -1,0 +1,238 @@
+# SydBox supression rules for MemCheck
+# Generated on 2021.06.13
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+{
+   Addr-Rw-Mapped-File-0
+   Memcheck:Free
+   fun:free
+   fun:pathmatch_expand
+   fun:acl_append_pathmatch
+   fun:magic_edit_acl
+   fun:magic_append_whitelist_write
+   fun:config_parse_file
+   fun:config_parse_spec
+   fun:main
+}
+
+{
+   Addr-Rw-Mapped-File-1
+   Memcheck:Free
+   fun:free
+   fun:acl_append_pathmatch
+   fun:magic_edit_acl
+   fun:magic_append_whitelist_write
+   fun:config_parse_file
+   fun:config_parse_spec
+   fun:main
+}
+
+{
+   Addr-Rw-Mapped-File-2
+   Memcheck:Free
+   fun:free
+   fun:__putenv
+}
+
+{
+   Addr-Rw-Mapped-File-3
+   Memcheck:Free
+   fun:free
+   fun:arch_filter_rule_add
+   fun:_db_col_rule_add
+   fun:db_col_rule_add
+   fun:seccomp_rule_add_array
+   fun:seccomp_rule_add
+   fun:rule_add_action
+   fun:sysinit_seccomp_load
+   fun:sysinit_seccomp
+   fun:startup_child
+   fun:main
+}
+
+{
+   Addr-Rw-Mapped-File-4
+   Memcheck:Free
+   fun:free
+   fun:proc_cwd
+   fun:init_shareable_data
+   fun:init_process_data
+   fun:main
+}
+
+
+
+# These are too broad:
+# sydbox.c:1804 is
+# free(profile_name);
+# ==551271== Invalid free() / delete / delete[] / realloc()
+# ==551271==    at 0x48C105B: free (vg_replace_malloc.c:755)
+# ==551271==    by 0x10D8AE: main (sydbox.c:1804)
+# ==551271==  Address 0x48f6db0 is in a rw- mapped file /usr/lib/libpinktrace_1.0.so.100.0.0 segment
+# ==551271==
+#
+#{
+#   Addr-Rw-Mapped-File-2
+#   Memcheck:Free
+#   fun:free
+#   fun:main
+#}
+#==551271== Invalid free() / delete / delete[] / realloc()
+#==551271==    at 0x48C105B: free (vg_replace_malloc.c:755)
+#==551271==    by 0x10DDBF: startup_child (sydbox.c:1667)
+#==551271==    by 0x10DDBF: main (sydbox.c:1987)
+#==551271==  Address 0x48cf560 is in a rw- mapped file /usr/x86_64-pc-linux-musl/libexec/valgrind/vgpreload_memcheck-amd64-linux.so segment
+#==551271==
+#{
+#   <insert_a_suppression_name_here>
+#   Memcheck:Free
+#   fun:free
+#   fun:startup_child
+#   fun:main
+#}
+
+{
+   Addr-Rw-Anon-Segment-0
+   Memcheck:Free
+   fun:free
+   fun:sockmatch_parse_ip.isra.0
+   fun:sockmatch_parse
+   fun:acl_append_sockmatch
+   fun:magic_edit_acl
+   fun:magic_append_whitelist_network_bind
+   fun:config_parse_file
+   fun:config_parse_spec
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-1
+   Memcheck:Free
+   fun:free
+   fun:acl_append_sockmatch
+   fun:magic_edit_acl
+   fun:magic_append_whitelist_network_bind
+   fun:config_parse_file
+   fun:config_parse_spec
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-2
+   Memcheck:Free
+   fun:free
+   fun:pathmatch_expand
+   fun:acl_append_sockmatch
+   fun:magic_edit_acl
+   fun:magic_append_whitelist_network_connect
+   fun:config_parse_file
+   fun:config_parse_spec
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-3
+   Memcheck:Free
+   fun:free
+   fun:fclose
+   obj:*
+   obj:*
+   obj:*
+   fun:config_parse_file
+   fun:config_parse_spec
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-4
+   Memcheck:Free
+   fun:realloc
+   fun:__putenv
+}
+
+{
+   Addr-Rw-Anon-Segment-5
+   Memcheck:Free
+   fun:free
+   fun:arch_filter_rule_add
+   fun:_db_col_rule_add
+   fun:db_col_transaction_commit
+   fun:db_col_rule_add
+   fun:seccomp_rule_add_array
+   fun:seccomp_rule_add
+   fun:rule_add_action
+   fun:sysinit_seccomp_load
+   fun:sysinit_seccomp
+   fun:startup_child
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-6
+   Memcheck:Free
+   fun:free
+   fun:_db_reset
+   fun:_db_snap_release
+   fun:db_col_release.part.0
+   fun:sysinit_seccomp
+   fun:startup_child
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-7
+   Memcheck:Free
+   fun:free
+   fun:fclose
+   obj:*
+   obj:*
+   obj:*
+   fun:proc_parents
+   fun:clone_process
+   fun:process_init
+   fun:notify_loop
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-8
+   Memcheck:Free
+   fun:free
+   fun:proc_stat
+   fun:process_is_alive
+   fun:reap_zombies
+   fun:process_init
+   fun:notify_loop
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-9
+   Memcheck:Free
+   fun:free
+   fun:fclose
+   obj:*
+   obj:*
+   obj:*
+   fun:proc_stat
+   fun:process_is_alive
+   fun:reap_zombies
+   fun:process_init
+   fun:notify_loop
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-10
+   Memcheck:Free
+   fun:free
+   fun:fclose
+   obj:*
+   obj:*
+   obj:*
+   fun:proc_parents
+   fun:clone_process
+   fun:process_init
+   fun:notify_loop
+   fun:main
+}
