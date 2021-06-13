@@ -388,6 +388,35 @@ void dump(enum dump what, ...)
 			current->repr[3] ? current->repr[3] : "",
 			current->repr[4] ? current->repr[4] : "",
 			current->repr[5] ? current->repr[5] : "");
+	} else if (what == DUMP_CHDIR) {
+		pid_t pid = va_arg(ap, pid_t);
+		const char *newcwd = va_arg(ap, const char *);
+		const char *oldcwd = va_arg(ap, const char *);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(ts)"%llu,"
+			J(event)"{\"id\":%u,\"name\":\"chdir\"}",
+			id++, (unsigned long long)now,
+			what);
+
+		fprintf(fp, ","J(process));
+		dump_process(pid);
+
+		fprintf(fp, ","J(cwd)":{");
+
+		fprintf(fp, J(new));
+		if (newcwd)
+			fprintf(fp, "\"%s\"", newcwd);
+		else
+			dump_null();
+		fprintf(fp, ","J(old));
+		if (oldcwd)
+			fprintf(fp, "\"%s\"", oldcwd);
+		else
+			dump_null();
+
+		fprintf(fp, "}}");
 	} else if (what == DUMP_EXEC) {
 		pid_t execve_pid = va_arg(ap, pid_t);
 		const char *prog = va_arg(ap, const char *);
