@@ -656,17 +656,14 @@ static void sig_chld(int sig, siginfo_t *info, void *ucontext)
 	case CLD_EXITED:
 		if (pid == sydbox->execve_pid)
 			save_exit_code(info->si_status);
-		remove_process(pid, 0);
 		break;
 	case CLD_KILLED:
 		if (pid == sydbox->execve_pid)
 			save_exit_signal(info->si_status);
-		remove_process(pid, 0);
 		break;
 	case CLD_DUMPED:
 		if (pid == sydbox->execve_pid)
 			save_exit_signal(SIGABRT);
-		remove_process(pid, 0);
 		break;
 	case CLD_CONTINUED:
 		break;
