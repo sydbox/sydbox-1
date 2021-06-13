@@ -1622,6 +1622,7 @@ notify_respond:
 			return sydbox->exit_code;
 	}
 
+	seccomp_notify_free(sydbox->request, sydbox->response);
 	close(sydbox->notify_fd);
 	sydbox->notify_fd = -1;
 	r = sydbox->exit_code;
