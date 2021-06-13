@@ -4,6 +4,14 @@
  * pinktrace wrapper functions
  *
  * Copyright (c) 2013, 2014, 2015, 2018 Ali Polatel <alip@exherbo.org>
+ * Based in part upon strace which is:
+ *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
+ *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
+ *   Copyright (c) 1993, 1994, 1995, 1996 Rick Sladkey <jrs@world.std.com>
+ *   Copyright (c) 1996-2000 Wichert Akkerman <wichert@cistron.nl>
+ *   Copyright (c) 2005-2016 Dmitry V. Levin <ldv@strace.io>
+ *   Copyright (c) 2016-2021 The strace developers.
+ * All rights reserved.
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
@@ -14,6 +22,22 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+
+/* For definitions of struct msghdr and struct mmsghdr. */
+#include <sys/socket.h>
+/* UNIX_PATH_MAX */
+#include <sys/un.h>
+#define sockaddr_un sockaddr_un_tmp
+#include <linux/un.h>
+#undef sockaddr_un
+
+#ifndef HAVE_STRUCT_MMSGHDR
+struct mmsghdr {
+	struct msghdr msg_hdr;
+	unsigned msg_len;
+};
+#endif
+typedef struct msghdr struct_msghdr;
 
 #define SYD_RETURN_IF_DETACHED(current) do { \
 	if (current->flags & SYD_DETACHED) { \
@@ -242,7 +266,7 @@ int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argv
 	ssize_t l;
 
 	errno = 0;
-	l = syd_read_vm_data(current, addr, (char *)argval, sizeof(long));
+	l = syd_read_vm_data(current, addr, (char *)argval, sizeof(*argval));
 	if (l < 0)
 		return -errno;
 	if (sizeof(long) != (size_t)l)
@@ -344,8 +368,10 @@ int syd_read_socket_subcall(syd_process_t *current, long *subcall)
 	return 0;
 }
 
-PINK_GCC_ATTR((nonnull(1,4)))
-int syd_read_socket_address(syd_process_t *current, unsigned arg_index, int *fd,
+PINK_GCC_ATTR((nonnull(1)))
+int syd_read_socket_address(syd_process_t *current,
+			    bool sockaddr_in_msghdr,
+			    unsigned arg_index, int *fd,
 			    struct pink_sockaddr *sockaddr)
 {
 	int r;
@@ -361,24 +387,110 @@ int syd_read_socket_address(syd_process_t *current, unsigned arg_index, int *fd,
 	}
 	if ((r = syd_read_socket_argument(current, arg_index, &addr)) < 0)
 		return r;
-	if ((r = syd_read_socket_argument(current, arg_index + 1, &addrlen)) < 0)
-		return r;
-
 	if (addr == 0) {
 		sockaddr->family = -1;
 		sockaddr->length = 0;
 		return 0;
 	}
-	if (addrlen < 2 || addrlen > sizeof(sockaddr->u))
-		addrlen = sizeof(sockaddr->u);
 
-	memset(&sockaddr->u, 0, sizeof(sockaddr->u));
-	if ((r = process_vm_read(current, addr, sockaddr->u.pad, addrlen)) < 0)
-		return r;
-	sockaddr->u.pad[sizeof(sockaddr->u.pad) - 1] = '\0';
+	if (!sockaddr_in_msghdr) {
+		if ((r = syd_read_socket_argument(current, arg_index + 1,
+						  &addrlen)) < 0)
+			return r;
+		if (addrlen < 2 || addrlen > sizeof(sockaddr->u))
+			addrlen = sizeof(sockaddr->u);
 
-	sockaddr->family = sockaddr->u.sa.sa_family;
-	sockaddr->length = addrlen;
+		memset(&sockaddr->u, 0, sizeof(sockaddr->u));
+		if ((r = process_vm_read(current, addr, sockaddr->u.pad, addrlen)) < 0)
+			return r;
+		sockaddr->u.pad[sizeof(sockaddr->u.pad) - 1] = '\0';
+
+		sockaddr->family = sockaddr->u.sa.sa_family;
+		sockaddr->length = addrlen;
+	} else {
+		struct msghdr msg;
+		struct msghdr *const msg_native = &msg;
+		struct_msghdr msg_compat;
+
+		if (sizeof(*msg_native) == sizeof(msg_compat)) {
+			r = syd_read_vm_data_full(current, addr, (void *)&msg);
+			if (r < 0)
+				return r;
+			addrlen = sizeof(*msg_native);
+		} else {
+			r = syd_read_vm_data_full(current, addr,
+						  (void *)&msg_compat);
+			if (r < 0)
+				return r;
+			msg_native->msg_name = (void *)(unsigned
+							long)msg_compat.msg_name;
+			msg_native->msg_namelen = msg_compat.msg_namelen;
+			addrlen = sizeof(msg_compat);
+		}
+		addr = (unsigned long)msg_native->msg_name;
+
+		if (addrlen < 2) {
+			sockaddr->family = -1;
+			sockaddr->length = 0;
+			return 0;
+		}
+
+		union {
+			struct sockaddr sa;
+			struct sockaddr_un sa_un;
+			struct sockaddr_in sa_in;
+			struct sockaddr_in6 sa6;
+#if PINK_HAVE_NETLINK
+			struct sockaddr_nl nl;
+#endif
+			struct sockaddr_storage storage;
+			char pad[sizeof(struct sockaddr_storage) + 1];
+		} addrbuf;
+
+		if ((unsigned) addrlen > sizeof(addrbuf.storage))
+			addrlen = sizeof(addrbuf.storage);
+
+		if ((r = process_vm_read(current, addr, addrbuf.pad, addrlen)) < 0)
+			return r;
+		memset(&addrbuf.pad[addrlen], 0, sizeof(addrbuf.pad) - addrlen);
+
+		sockaddr->length = addrlen;
+		memset(&sockaddr->u, 0, sizeof(sockaddr->u));
+		sockaddr->family = addrbuf.sa.sa_family;
+		switch (sockaddr->family) {
+		case AF_UNIX:
+			sockaddr->u.sa_un.sun_family = AF_UNIX;
+			strlcpy(sockaddr->u.sa_un.sun_path,
+				addrbuf.sa_un.sun_path,
+				UNIX_PATH_MAX);
+			break;
+		case AF_INET:
+			sockaddr->u.sa_in.sin_family = AF_INET;
+			sockaddr->u.sa_in.sin_port = addrbuf.sa_in.sin_port;
+			memcpy(&sockaddr->u.sa_in.sin_addr,
+			       &addrbuf.sa_in.sin_addr,
+			       sizeof(struct in_addr));
+			break;
+		case AF_INET6:
+			sockaddr->u.sa6.sin6_family = AF_INET6;
+			sockaddr->u.sa6.sin6_port = addrbuf.sa6.sin6_port;
+			memcpy(&sockaddr->u.sa6.sin6_addr,
+			       &addrbuf.sa6.sin6_addr,
+			       sizeof(struct in6_addr));
+			break;
+#if PINK_HAVE_NETLINK
+		case AF_NETLINK:
+			sockaddr->u.nl.nl_family = AF_NETLINK;
+			sockaddr->u.nl.nl_pad = addrbuf.nl.nl_pad;
+			sockaddr->u.nl.nl_pid = addrbuf.nl.nl_pid;
+			sockaddr->u.nl.nl_groups = addrbuf.nl.nl_groups;
+			break;
+#endif
+		default:
+			sockaddr->length = 0;
+			break;
+		}
+	}
 
 	return 0;
 }

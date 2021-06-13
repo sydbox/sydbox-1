@@ -20,19 +20,22 @@ test_expect_success DIG 'network sandboxing = allow' '
     test -s "$cdir"/out
 '
 
-# TODO should be test_must_violate rather than test_must_fail
 test_expect_success DIG 'network sandboxing = deny' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
-    test_must_fail sydbox \
+    test_must_violate sydbox \
         -m core/sandbox/read:off \
         -m core/sandbox/write:off \
         -m core/sandbox/exec:off \
         -m core/sandbox/network:deny \
-        dig +noall +answer dev.chessmuse.com
+        -m whitelist/network/bind+inet:0.0.0.0@0 \
+        -m whitelist/network/bind+LOOPBACK6@0 \
+        -m whitelist/network/bind+LOOPBACK@0 \
+        -m core/violation/exit_code:0 \
+        dig +retry=1 +ignore +noall +answer dev.chessmuse.com
 '
 
 test_expect_success PY3 'network sandboxing for connect works to deny IPv4 address' '

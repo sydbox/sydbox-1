@@ -88,12 +88,17 @@ out:
 	return r;
 }
 
-static int sys_connect_or_sendto(syd_process_t *current, unsigned arg_index)
+static int sys_connect_call(syd_process_t *current, bool sockaddr_in_msghdr,
+			    unsigned arg_index)
 {
 	syscall_info_t info;
 
 #define sub_connect(p, i)	((i) == 1 && \
 				 (p)->subcall == PINK_SOCKET_SUBCALL_CONNECT)
+#define sub_recvmsg(p, i)	((i) == 1 && \
+				 (p)->subcall == PINK_SOCKET_SUBCALL_RECVMSG)
+#define sub_sendmsg(p, i)	((i) == 1 && \
+				 (p)->subcall == PINK_SOCKET_SUBCALL_SENDMSG)
 #define sub_sendto(p, i)	((i) == 4 && \
 				 (p)->subcall == PINK_SOCKET_SUBCALL_SENDTO)
 
@@ -111,15 +116,17 @@ static int sys_connect_or_sendto(syd_process_t *current, unsigned arg_index)
 	info.rmode = RPATH_NOLAST;
 	info.arg_index = arg_index;
 	info.deny_errno = ECONNREFUSED;
-	if (sub_connect(current, arg_index) || sub_sendto(current, arg_index))
+	if (sub_connect(current, arg_index) || sub_sendto(current, arg_index) ||
+	    sub_recvmsg(current, arg_index) || sub_sendmsg(current, arg_index))
 		info.decode_socketcall = true;
 #undef sub_connect
 #undef sub_sendto
+	info.sockaddr_in_msghdr = sockaddr_in_msghdr;
 
 	return box_check_socket(current, &info);
 }
 
-static int sys_listen_or_accept(syd_process_t *current, bool read_net_tcp)
+static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 {
 	int r, port;
 	unsigned long long inode;
@@ -182,22 +189,37 @@ static int sys_listen_or_accept(syd_process_t *current, bool read_net_tcp)
 
 int sys_connect(syd_process_t *current)
 {
-	return sys_connect_or_sendto(current, 1);
+	return sys_connect_call(current, false, 1);
 }
 
 int sys_sendto(syd_process_t *current)
 {
-	return sys_connect_or_sendto(current, 4);
+	return sys_connect_call(current, false, 4);
+}
+
+int sys_recvmsg(syd_process_t *current)
+{
+	return sys_connect_call(current, true, 1);
+}
+
+int sys_sendmsg(syd_process_t *current)
+{
+	return sys_connect_call(current, true, 1);
 }
 
 int sys_listen(syd_process_t *current)
 {
-	return sys_listen_or_accept(current, false);
+	return sys_socket_inode_lookup(current, false);
 }
 
 int sys_accept(syd_process_t *current)
 {
-	return sys_listen_or_accept(current, true);
+	return sys_socket_inode_lookup(current, true);
+}
+
+int sys_getsockname(syd_process_t *current)
+{
+	return sys_socket_inode_lookup(current, true);
 }
 
 int sys_socketcall(syd_process_t *current)
@@ -226,6 +248,12 @@ int sys_socketcall(syd_process_t *current)
 	case PINK_SOCKET_SUBCALL_ACCEPT:
 	case PINK_SOCKET_SUBCALL_ACCEPT4:
 		return sys_accept(current);
+	case PINK_SOCKET_SUBCALL_GETSOCKNAME:
+		return sys_getsockname(current);
+	case PINK_SOCKET_SUBCALL_RECVMSG:
+		return sys_recvmsg(current);
+	case PINK_SOCKET_SUBCALL_SENDMSG:
+		return sys_sendmsg(current);
 	default:
 		return 0;
 	}

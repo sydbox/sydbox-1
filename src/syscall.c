@@ -349,6 +349,21 @@ static const sysentry_t syscall_entries[] = {
 		.notify = sys_accept,
 		.sandbox_network = true,
 	},
+	{
+		.name = "getsockname",
+		.notify = sys_getsockname,
+		.sandbox_network = true,
+	},
+	{
+		.name = "sendmsg",
+		.notify = sys_sendmsg,
+		.sandbox_network = true,
+	},
+	{
+		.name = "recvmsg",
+		.notify = sys_recvmsg,
+		.sandbox_network = true,
+	},
 
 	{
 		.name = "listxattr",

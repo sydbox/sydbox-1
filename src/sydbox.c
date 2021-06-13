@@ -637,7 +637,50 @@ static void sig_alrm(int sig)
 
 static void sig_chld(int sig, siginfo_t *info, void *ucontext)
 {
-	child_notified = info->si_pid;
+	pid_t pid = info->si_pid;
+
+	switch (info->si_code) {
+	case CLD_EXITED:
+		if (pid == sydbox->execve_pid)
+			save_exit_code(info->si_status);
+		remove_process(pid, 0);
+		break;
+	case CLD_KILLED:
+		if (pid == sydbox->execve_pid)
+			save_exit_signal(info->si_status);
+		remove_process(pid, 0);
+		break;
+	case CLD_DUMPED:
+		if (pid == sydbox->execve_pid)
+			save_exit_signal(SIGABRT);
+		remove_process(pid, 0);
+		break;
+	case CLD_CONTINUED:
+		break;
+	default:
+		break;
+	}
+
+	for (;;) {
+		int status;
+restart_waitpid:
+		pid = waitpid(-1, &status, WNOHANG);
+		if (pid < 0) {
+			if (errno == EINTR)
+				goto restart_waitpid;
+			else if (errno != ECHILD)
+				say_errno("waitpid");
+			break;
+		} else if (pid == sydbox->execve_pid) {
+			if (WIFEXITED(status)) {
+				sydbox->exit_code = WEXITSTATUS(status);
+			} else if (WIFSIGNALED(status)) {
+				sydbox->exit_code = 128 + WTERMSIG(status);
+			} else {
+				sydbox->exit_code = 128;
+			}
+		}
+	}
 }
 
 static unsigned get_os_release(void)
@@ -1061,19 +1104,19 @@ static bool process_kill(pid_t pid, pid_t tgid, int sig)
 
 static inline bool process_is_alive(pid_t pid, pid_t tgid)
 {
-	int r;
-	struct proc_statinfo info;
+	//int r;
+	//struct proc_statinfo info;
 
 	if (!process_kill(pid, tgid, 0)) {
 		return false;
-	} else if ((r = proc_stat(pid, &info)) < 0) {
-		if (r != -ENOENT)
-			say_errno("proc_stat(%d)", pid);
+	} /*else if ((r = proc_stat(pid, &info)) < 0) {
+		// if (r != -ENOENT)
+		//	say_errno("proc_stat(%d)", pid);
 		return false;
 	} else if (info.state == 'Z') {
-		/* Zombie process, not alive. */
+		// Zombie process, not alive.
 		return false;
-	}
+	}*/
 	return true;
 }
 
@@ -1116,15 +1159,12 @@ static int wait_for_notify_fd(void)
 	int r;
 	struct pollfd pollfd;
 
-poll_begin:
 	pollfd.fd = sydbox->notify_fd;
 	pollfd.events = POLLIN;
 	errno = 0;
 	if ((r = poll(&pollfd, 1, 1000)) < 0) {
-		if (!errno)
+		if (!errno || errno == EINTR)
 			return -ETIMEDOUT;
-		else if (errno == EINTR)
-			goto poll_begin;
 		return -errno;
 	}
 	short revents = pollfd.revents;
@@ -1193,6 +1233,8 @@ static void init_signals(void)
 	sigaddset(&blocked_set, SIGUSR1);
 	sigaddset(&blocked_set, SIGUSR2);
 
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
 	sa.sa_handler = interrupt;
 	x_sigaction(SIGHUP, &sa, NULL);
 	x_sigaction(SIGINT, &sa, NULL);
@@ -1203,10 +1245,14 @@ static void init_signals(void)
 	x_sigaction(SIGUSR1, &sa, NULL);
 	x_sigaction(SIGUSR2, &sa, NULL);
 
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
 	sa.sa_handler = sig_alrm;
 	x_sigaction(SIGALRM, &sa, NULL);
 
+	sigemptyset(&sa.sa_mask);
 	sa.sa_sigaction = sig_chld;
+	sa.sa_flags = 0;
 	x_sigaction(SIGCHLD, &sa, NULL);
 
 #undef x_sigaction
@@ -1376,11 +1422,6 @@ static int notify_loop(syd_process_t *current)
 wait_for_notify_fd:
 		if ((r = wait_for_notify_fd()) < 0) {
 			if (r == -ETIMEDOUT) {
-				if (child_notified) {
-					pid = child_notified;
-					child_notified = 0;
-					remove_process(pid, 0);
-				}
 				reap_zombies(NULL, -1);
 				if (!process_count_alive())
 					break;
@@ -1445,8 +1486,8 @@ notify_receive:
 
 		/* Search early for exit before getting a process entry. */
 		if ((!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
-			if (pid == sydbox->execve_pid)
-				sydbox->exit_code = sydbox->request->data.args[0];
+			//if (pid == sydbox->execve_pid)
+			//	sydbox->exit_code = sydbox->request->data.args[0];
 			reap_zombies(current, -1);
 			int count = process_count_alive();
 			if (!count)
@@ -1929,30 +1970,16 @@ int main(int argc, char **argv)
 	/* All ready, initialize dump */
 	dump(DUMP_INIT);
 
-	/* STARTUP_CHILD must be called before the signal handlers get
-	   installed below as they are inherited into the spawned process.
-	   Also we do not need to be protected by them as during interruption
-	   in the STARTUP_CHILD mode we kill the spawned process anyway.  */
+	/* STARTUP_CHILD must not be called before the signal handlers get
+	   installed below as they are inherited into the spawned process. */
+	init_signals();
 	pid_t pid = startup_child(&argv[optind]);
-	int exit_code = -1;
+	int exit_code;
 	if (use_notify()) {
 		syd_process_t *current = new_process_or_kill(pid);
 		init_process_data(current, NULL);
 		dump(DUMP_STARTUP, pid);
-		init_signals();
-		exit_code = notify_loop(current);
-	}
-	int wstatus;
-restart_waitpid:
-	if (waitpid(-1, &wstatus, __WALL) < 0) {
-		if (errno == EINTR)
-			goto restart_waitpid;
-		else if (errno != ECHILD)
-			say_errno("waitpid");
-	} else if (WIFEXITED(wstatus)) {
-		sydbox->exit_code = WEXITSTATUS(wstatus);
-	} else if (WIFSIGNALED(wstatus)) {
-		sydbox->exit_code = 128 + WTERMSIG(wstatus);
+		(void)notify_loop(current);
 	}
 	exit_code = sydbox->exit_code;
 	if (sydbox->violation) {

@@ -590,6 +590,8 @@ struct syscall_info {
 	bool safe;
 	/* Decode socketcall() into subcall */
 	bool decode_socketcall;
+	/* Socket address is in msg_name member of struct msg_hdr */
+	bool sockaddr_in_msghdr;
 	/* Mode for realpath_mode() */
 	unsigned rmode;
 	/* Stat mode */
@@ -700,7 +702,8 @@ ssize_t syd_write_data(syd_process_t *current, long addr, const void *buf, size_
 int syd_read_socket_argument(syd_process_t *current, unsigned arg_index,
 			     unsigned long *argval);
 int syd_read_socket_subcall(syd_process_t *current, long *subcall);
-int syd_read_socket_address(syd_process_t *current, unsigned arg_index, int *fd,
+int syd_read_socket_address(syd_process_t *current, bool sockaddr_in_msghdr,
+			    unsigned arg_index, int *fd,
 			    struct pink_sockaddr *sockaddr);
 int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len);
 int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argval);
@@ -1023,6 +1026,9 @@ int sys_connect(syd_process_t *current);
 int sys_sendto(syd_process_t *current);
 int sys_listen(syd_process_t *current);
 int sys_accept(syd_process_t *current);
+int sys_getsockname(syd_process_t *current);
+int sys_sendmsg(syd_process_t *current);
+int sys_recvmsg(syd_process_t *current);
 
 int sysx_chdir(syd_process_t *current);
 

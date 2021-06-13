@@ -213,6 +213,7 @@ AC_CHECK_TYPES([sig_atomic_t], [], AC_MSG_ERROR([I need sigatomic_t]), [#include
 AC_CHECK_TYPES([sighandler_t, sig_t, __sighandler_t],,,[#include <signal.h>])
 AC_CHECK_TYPES([struct open_how],,,[#include <linux/openat2.h>])
 AC_CHECK_TYPES([struct statx],,,[#include <sys/stat.h>])
+AC_CHECK_TYPES([struct mmsghdr],,, [#include <sys/socket.h>])
 
 HAVE_NEWFSTATAT=
 AC_CHECK_DECL([SYS_newfstatat],

@@ -364,10 +364,13 @@
 
       <para>This sandboxing exposes a way to prevent unwanted network calls. The filtered system calls are:
       <function>bind</function><manvolnum>2</manvolnum>,
-      <function>connect</function><manvolnum>2</manvolnum>, and
-      <function>sendto</function><manvolnum>2</manvolnum>. To increase usability, these system calls are
+      <function>connect</function><manvolnum>2</manvolnum>,
+      <function>sendto</function><manvolnum>2</manvolnum>,
+      <function>recvmsg</function><manvolnum>2</manvolnum>, and
+      <function>sendmsg</function><manvolnum>2</manvolnum>.
+      To increase usability, these system calls are
       filtered  in two groups: <emphasis>bind</emphasis> and <emphasis>connect</emphasis>.
-      <function>bind</function><manvolnum>2</manvolnum> belongs to the first group, whereas the other two
+      <function>bind</function><manvolnum>2</manvolnum> belongs to the first group, whereas the other
       system calls belong to the <emphasis>connect</emphasis> group.
       </para>
     </refsect2>
@@ -1057,15 +1060,18 @@
             <para>
               A boolean specifying whether the socket address arguments of successful
               <function>bind</function><manvolnum>2</manvolnum> calls should be whitelisted
-              for <function>connect</function><manvolnum>2</manvolnum> and
-              <function>sendto</function><manvolnum>2</manvolnum> system calls.
+              for <function>connect</function><manvolnum>2</manvolnum>,
+              <function>sendto</function><manvolnum>2</manvolnum>,
+              <function>recvmsg</function><manvolnum>2</manvolnum>, and
+              <function>sendmsg</function><manvolnum>2</manvolnum>
+              system calls.
             </para>
             <note>
               <para>
                 These socket addresses are whitelisted globally and not per-process for
                 usability reasons. Thus, for example, a process which forks to call
                 <function>bind</function><manvolnum>2</manvolnum> will have its socket
-                address whitelisted for her parent as well.
+                address whitelisted for their parent as well.
               </para>
             </note>
           </listitem>
