@@ -236,3 +236,76 @@
    fun:notify_loop
    fun:main
 }
+
+{
+   Addr-Rw-Anon-Segment-11
+   Memcheck:Free
+   fun:free
+   fun:acl_append_sockmatch
+   fun:magic_edit_acl
+   fun:magic_append_whitelist_network_connect
+   fun:config_parse_file
+   fun:config_parse_spec
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-12
+   Memcheck:Free
+   fun:free
+   fun:proc_stat
+   fun:process_is_alive
+   fun:reap_zombies
+   fun:notify_loop
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-13
+   Memcheck:Free
+   fun:free
+   fun:fclose
+   obj:*
+   obj:*
+   obj:*
+   fun:proc_stat
+   fun:process_is_alive
+   fun:reap_zombies
+   fun:notify_loop
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-14
+   Memcheck:Free
+   fun:free
+   fun:box_resolve_path
+   fun:box_check_path
+   fun:check_open
+   fun:sys_open
+   fun:event_syscall
+   fun:notify_loop
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-15
+   Memcheck:Free
+   fun:free
+   fun:box_check_path
+   fun:check_open
+   fun:sys_open
+   fun:event_syscall
+   fun:notify_loop
+   fun:main
+}
+
+{
+   Addr-Rw-Anon-Segment-16
+   Memcheck:Free
+   fun:free
+   fun:proc_parents
+   fun:parent_process
+   fun:notify_loop
+   fun:main
+}
