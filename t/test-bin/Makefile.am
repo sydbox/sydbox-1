@@ -44,7 +44,8 @@ sockmatchtest_CFLAGS= $(AM_CFLAGS) -DSYDBOX_NDUMP
 
 threads_execve_SOURCES= threads_execve.c \
 			$(top_srcdir)/src/errno2name.c
-threads_execve_CFLAGS= $(AM_CFLAGS)
+threads_execve_CFLAGS= $(AM_CFLAGS) $(PTHREAD_CFLAGS)
+threads_execve_LDADD= $(PTHREAD_LIBS)
 
 syddir=$(libexecdir)/$(PACKAGE)/t/test-bin
 syd_PROGRAMS= wildtest realpath_mode-1 sockmatchtest \

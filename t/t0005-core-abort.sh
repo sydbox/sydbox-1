@@ -61,7 +61,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is termina
     test_expect_code 143 sydbox -- syd-abort-fork-static 64 15 # SIGTERM
 '
 
-test_expect_success TODO 'return 128 + $SIGNUM if tracee is terminated (PTHREAD)' '
+test_expect_success 'return 128 + $SIGNUM if tracee is terminated (PTHREAD)' '
     test_expect_code 130 sydbox -- syd-abort-pthread 8 2 && # SIGINT
     test_expect_code 131 sydbox -- syd-abort-pthread 8 3 && # SIGQUIT
     test_expect_code 132 sydbox -- syd-abort-pthread 8 4 && # SIGILL

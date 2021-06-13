@@ -648,12 +648,9 @@ static void sig_chld(int sig, siginfo_t *info, void *ucontext)
 			save_exit_code(info->si_status);
 		break;
 	case CLD_KILLED:
-		if (pid == sydbox->execve_pid)
-			save_exit_signal(info->si_status);
-		break;
 	case CLD_DUMPED:
 		if (pid == sydbox->execve_pid)
-			save_exit_signal(SIGABRT);
+			save_exit_signal(info->si_status);
 		break;
 	case CLD_CONTINUED:
 		break;
@@ -664,7 +661,7 @@ static void sig_chld(int sig, siginfo_t *info, void *ucontext)
 	for (;;) {
 		int status;
 restart_waitpid:
-		pid = waitpid(-1, &status, WNOHANG);
+		pid = waitpid(-1, &status, __WALL);
 		if (pid < 0) {
 			if (errno == EINTR)
 				goto restart_waitpid;
@@ -1253,7 +1250,7 @@ static void init_signals(void)
 
 	sigemptyset(&sa.sa_mask);
 	sa.sa_sigaction = sig_chld;
-	sa.sa_flags = 0;
+	sa.sa_flags = SA_RESTART | SA_SIGINFO;
 	x_sigaction(SIGCHLD, &sa, NULL);
 
 #undef x_sigaction
@@ -1272,40 +1269,6 @@ static int handle_interrupt(int sig)
 		dump(DUMP_CLOSE);
 		return 128 + sig;
 	}
-}
-
-SYD_GCC_ATTR((unused))
-static int setup_alarm(int time_sec)
-{
-	struct itimerval it_val;
-
-	alarmed = false;
-
-	it_val.it_value.tv_sec = time_sec;
-	it_val.it_value.tv_usec = 0;
-	it_val.it_interval.tv_sec = 0;
-	it_val.it_interval.tv_usec = 0;
-
-	if (setitimer(ITIMER_REAL, &it_val, NULL) < 0)
-		die_errno("setup_alarm(%dsec)", time_sec);
-
-	return 0;
-}
-
-SYD_GCC_ATTR((unused))
-static int disarm_alarm(void)
-{
-	struct itimerval it_val;
-
-	it_val.it_value.tv_sec = 0;
-	it_val.it_value.tv_usec = 0;
-	it_val.it_interval.tv_sec = 0;
-	it_val.it_interval.tv_usec = 0;
-
-	if (setitimer(ITIMER_REAL, &it_val, NULL) < 0)
-		die_errno("setup_alarm");
-
-	return 0;
 }
 
 SYD_GCC_ATTR((unused))
@@ -2002,7 +1965,33 @@ int main(int argc, char **argv)
 		init_process_data(current, NULL);
 		dump(DUMP_STARTUP, pid);
 		(void)notify_loop(current);
+	} else {
+		int status;
+		for (;;) {
+			errno = 0;
+			pid = waitpid(-1, &status, __WALL);
+			switch (errno) {
+			case 0:
+				if (pid == sydbox->execve_pid) {
+					if (WIFEXITED(status))
+						sydbox->exit_code =
+							WEXITSTATUS(status);
+					else if (WIFSIGNALED(status))
+						sydbox->exit_code = 128 +
+							WTERMSIG(status);
+				}
+				break;
+			case EINTR:
+				continue;
+			case ECHILD:
+				goto out;
+			default:
+				say_errno("waitpid");
+				goto out;
+			}
+		}
 	}
+out:
 	exit_code = sydbox->exit_code;
 	if (sydbox->violation) {
 		if (sydbox->config.violation_exit_code > 0)
