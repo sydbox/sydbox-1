@@ -33,13 +33,18 @@ nodist_syd_SCRIPTS= $(nodist_check_SCRIPTS)
 TEST_EXTENSIONS= .sh
 SH_LOG_COMPILER= $(srcdir)/test-runner.sh
 TESTS= \
-       t0000-basic.sh \
-       t0001-path-wildmatch.sh \
-       t0002-path-realpath.sh \
-       t0003-core-basic.sh \
-       t0004-core-chdir.sh \
-       t0005-net-match.sh \
-       t0006-net-sandbox.sh
+	t0000-basic.sh \
+	t0001-path-wildmatch.sh \
+	t0002-path-realpath.sh \
+	t0003-core-basic.sh \
+	t0004-core-exit.sh \
+	t0005-core-abort.sh \
+	t0006-core-magic.sh \
+	t0007-core-exec.sh \
+	t0007-core-open-read.sh \
+	t0008-core-chdir.sh \
+	t0009-net-match.sh \
+	t0010-net-sandbox.sh
 check_SCRIPTS+= $(TESTS)
 
 syddir=$(libexecdir)/$(PACKAGE)/t
