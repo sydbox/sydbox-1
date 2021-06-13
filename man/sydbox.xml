@@ -712,6 +712,7 @@
             </para>
             <para>
               The list of permitted system calls in Level 1 are
+              <function>arch_prctl</function><manvolnum>2</manvolnum>,
               <function>close</function><manvolnum>2</manvolnum>,
               <function>dup</function><manvolnum>2</manvolnum>,
               <function>dup2</function><manvolnum>2</manvolnum>,
@@ -719,7 +720,7 @@
               <function>execveat</function><manvolnum>2</manvolnum>,
               <function>exit</function><manvolnum>2</manvolnum>,
               <function>exit_group</function><manvolnum>2</manvolnum>,
-              <function>arch_prctl</function><manvolnum>2</manvolnum>,
+              <function>getpid</function><manvolnum>2</manvolnum>,
               <function>set_tid_address</function><manvolnum>2</manvolnum>,
               <function>read</function><manvolnum>2</manvolnum>,
               <function>readv</function><manvolnum>2</manvolnum>,
@@ -874,8 +875,8 @@
             </para>
             <note>
               <para>
-                In addition, the <function>pause</function> system call is
-                permitted in all levels.
+                In addition, the <function>kill</function> system call with
+                the <constant>SIGSTOP</constant> argument permitted in all levels.
               </para>
             </note>
           </listitem>

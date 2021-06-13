@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include "pink.h"
@@ -738,6 +739,7 @@ int sysinit_seccomp(void)
 			return -errno;
 		if (parent_write_int(fd))
 			return -errno;
+		kill(getpid(), SIGSTOP);
 	}
 
 	seccomp_release(sydbox->ctx);
