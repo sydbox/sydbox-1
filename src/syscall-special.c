@@ -352,7 +352,9 @@ static int do_stat(syd_process_t *current, const char *path,
 		/* no magic */
 		return 0;
 	} else if (MAGIC_ERROR(r)) {
-		say("failed to cast magic=`%s': %s", path, magic_strerror(r));
+		if (r != MAGIC_RET_INVALID_KEY)
+			say("failed to cast magic=`%s': %s", path,
+			    magic_strerror(r));
 		if (r == MAGIC_RET_PROCESS_TERMINATED) {
 			r = -ESRCH;
 		} else {
