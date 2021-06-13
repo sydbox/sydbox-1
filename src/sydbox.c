@@ -1534,6 +1534,7 @@ notify_receive:
 					current = execve_thread;
 					new_shared_memory_clone_thread(current);
 					new_shared_memory_clone_fs(current);
+					current->update_cwd = true;
 				}
 				if (current->shm.clone_thread)
 					P_EXECVE_PID(current) = 0;
