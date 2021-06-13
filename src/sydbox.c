@@ -1117,19 +1117,19 @@ static bool process_kill(pid_t pid, pid_t tgid, int sig)
 
 static inline bool process_is_alive(pid_t pid, pid_t tgid)
 {
-	//int r;
-	//struct proc_statinfo info;
+	int r;
+	struct proc_statinfo info;
 
 	if (!process_kill(pid, tgid, 0)) {
 		return false;
-	} /*else if ((r = proc_stat(pid, &info)) < 0) {
-		// if (r != -ENOENT)
-		//	say_errno("proc_stat(%d)", pid);
+	} else if ((r = proc_stat(pid, &info)) < 0) {
+		if (r != -ENOENT)
+			say_errno("proc_stat(%d)", pid);
 		return false;
 	} else if (info.state == 'Z') {
 		// Zombie process, not alive.
 		return false;
-	}*/
+	}
 	return true;
 }
 
