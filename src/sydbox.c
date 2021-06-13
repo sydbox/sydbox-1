@@ -1544,7 +1544,6 @@ notify_receive:
 
 					switch_execve_leader(execve_thread,
 							     current);
-					current = execve_thread;
 				}
 				if (current->shm.clone_thread)
 					P_EXECVE_PID(current) = 0;
