@@ -104,8 +104,24 @@ You can check the build options using `sydbox --version`:
 ```
 $ sydbox --version
 sydbox-2.0.1
-Options: dump:yes seccomp:no ipv6:yes netlink:yes
+Options: dump:yes seccomp:yes ipv6:yes netlink:yes
 ```
+
+To see if your system is supported by **SydBox**, use `sydbox ---test`:
+
+```
+$ sydbox --test
+sydbox: Linux/chesswob 5.12.10
+sydbox: [>] Checking for requirements...
+sydbox: [*] cross memory attach is functional.
+sydbox: [*] /proc/pid/mem interface is functional.
+sydbox: [*] pidfd interface is functional.
+sydbox: [*] seccomp filters are functional.
+sydbox: [>] SydBox is supported on this system!
+```
+
+To verify **SydBox** is working correctly, either use `make -j check` during
+installation or use the helper utility `sydtest` to run the installed tests.
 
 # Pandora
 
@@ -129,10 +145,10 @@ Browse using firefox for a while, let pandora gather data. The browser is runnin
 under a tracer so it'll run noticably slower.
 
 - use --bin /path/to/sydbox, if sydbox is not in PATH
-- use --output firefox.syd-1 to specify an alternative output path for profile.
+- use --output firefox.syd-2 to specify an alternative output path for profile.
 
 ```
-$ $EDITOR out.syd-1
+$ $EDITOR out.syd-2
 ```
 
 Inspect what the browser has been doing.
@@ -154,7 +170,7 @@ Check [SydBox manual page](https://dev.exherbo.org/~alip/sydbox/sydbox.html#addr
 learn more on how **ADDRESS MATCHING** works.
 
 ```
-$ pandora box -c out.syd-1 firefox
+$ pandora box -c out.syd-2 firefox
 ```
 
 - Run the browser under secure computing with full protection.
@@ -181,7 +197,7 @@ sydbox: >8 --
 ```
 
 This sounds like you're trying to play some audio on your browser. In this case, you
-should add an allowlist to your profile `.syd-1` file and restart your browser under
+should add an allowlist to your profile `.syd-2` file and restart your browser under
 this new profile.
 
 ```
@@ -198,7 +214,7 @@ Last but not least,
 
 Here is a Firefox profile edited by yours truly:
 
-https://git.exherbo.org/sydbox-1.git/plain/data/firefox.syd-1
+https://git.exherbo.org/sydbox-1.git/plain/data/firefox.syd-2
 
 # Bugs
 Read [BUGS](https://git.exherbo.org/sydbox-1.git/plain/BUGS).
