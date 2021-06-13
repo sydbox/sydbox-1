@@ -623,7 +623,7 @@ struct sysentry {
 	bool sandbox_write:1;
 	bool sandbox_exec:1;
 	bool sandbox_network:1;
-	bool sandbox_pseudo:1; /* use for stat() etc. */
+	bool magic_lock_off:1; /* used for magic stat() */
 };
 typedef struct sysentry sysentry_t;
 

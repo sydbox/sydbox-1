@@ -75,33 +75,33 @@ static const sysentry_t syscall_entries[] = {
 	{
 		.name = "stat",
 		.notify = sys_stat,
-		.sandbox_pseudo = true,
+		.magic_lock_off = true,
 	},
 	{
 		.name = "lstat",
 		.user_notif = true,
 		.notify = sys_stat,
-		.sandbox_pseudo = true,
+		.magic_lock_off = true,
 	},
 	{
 		.name = "statx",
 		.notify = sys_statx,
-		.sandbox_pseudo = true,
+		.magic_lock_off = true,
 	},
 	{
 		.name = "stat64",
 		.notify = sys_stat,
-		.sandbox_pseudo = true,
+		.magic_lock_off = true,
 	},
 	{
 		.name = "lstat64",
 		.notify = sys_stat,
-		.sandbox_pseudo = true,
+		.magic_lock_off = true,
 	},
 	{
 		.name = "newfstatat",
 		.notify = sys_fstatat,
-		.sandbox_pseudo = true,
+		.magic_lock_off = true,
 	},
 
 	{
@@ -614,6 +614,7 @@ int sysinit_seccomp_load(void)
 			}
 		} else {
 			int mode;
+			enum lock_state lock;
 			if (syscall_entries[i].sandbox_network) {
 				mode = box->mode.sandbox_network;
 			} else if (syscall_entries[i].sandbox_exec) {
@@ -622,16 +623,21 @@ int sysinit_seccomp_load(void)
 				mode = box->mode.sandbox_write;
 			} else if (syscall_entries[i].sandbox_read) {
 				mode = box->mode.sandbox_read;
-			} else if (syscall_entries[i].sandbox_pseudo) {
+			} else if (syscall_entries[i].magic_lock_off) {
+				lock = sydbox->config.box_static.magic_lock;
 				mode = -1;
 			} else {
 				continue;
 			}
 
-			if (syscall_entries[i].sandbox_pseudo && use_notify()) {
+			if (syscall_entries[i].magic_lock_off && use_notify()) {
+				if (lock == LOCK_SET)
+					continue;
 				action = SCMP_ACT_NOTIFY;
 				user_notified = true;
-			} else if (syscall_entries[i].sandbox_pseudo) {
+			} else if (syscall_entries[i].magic_lock_off) {
+				if (lock == LOCK_SET)
+					continue;
 				action = SCMP_ACT_ALLOW;
 				if (action == sydbox->seccomp_action)
 					continue;
@@ -664,11 +670,11 @@ int sysinit_seccomp_load(void)
 				say("seccomp system call inconsistency "
 				    "detected.");
 				say("name:%s mode=%d bpf_only=%s "
-				    "pseudo:%s use_notify=%s",
+				    "lock:%s use_notify=%s",
 				    entry.name,
 				    mode,
 				    sydbox->bpf_only ? "t" : "f",
-				    entry.sandbox_pseudo ? "t" : "f",
+				    entry.magic_lock_off ? "t" : "f",
 				    use_notify() ? "t" : "f");
 				assert_not_reached();
 			}

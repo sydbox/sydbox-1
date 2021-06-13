@@ -91,4 +91,11 @@ test_expect_success TODO 'magic core/violation/raise_safe:1 works' '
         -- emily access -e EACCES -w "$f"
 '
 
+test_expect_success 'no magic stat if magic lock is set via core config' '
+    test_expect_code 1 sydbox \
+        -m core/trace/magic_lock:on \
+        -m core/sandbox/read:allow \
+        stat /dev/sydbox/2
+'
+
 test_done
