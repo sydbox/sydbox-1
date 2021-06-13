@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include "compiler.h"
 #include "pink.h"
 #include "xfunc.h"
 
@@ -65,15 +66,10 @@ int kill_one(syd_process_t *node, int fatal_sig)
 	if ((r = wait_one(node)) == -ESRCH)
 		return r;
 
-	const char *name;
-
-	name = pink_name_signal(fatal_sig, 0);
 	r = syd_proc_comm(node->pid, comm, sizeof(comm));
-
-	fprintf(stderr, "sydbox: %s -> %d <%s> ", name,
+	fprintf(stderr, "sydbox: SIG<%d> -> %d <%s> ", fatal_sig,
 		node->pid, r == 0 ? comm : "?");
-
-	r = pink_trace_kill(node->pid, 0, fatal_sig);
+	r = kill(node->pid, fatal_sig);
 
 	for (i = 0; i < 3; i++) {
 		usleep(10000);
@@ -109,7 +105,7 @@ void kill_all(int fatal_sig)
 	exit(fatal_sig);
 }
 
-PINK_GCC_ATTR((format (printf, 2, 0)))
+SYD_GCC_ATTR((format (printf, 2, 0)))
 static void report(syd_process_t *current, const char *fmt, va_list ap)
 {
 	int r;

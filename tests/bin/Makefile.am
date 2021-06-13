@@ -38,7 +38,6 @@ AM_CFLAGS= \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
 	   -I$(top_srcdir)/src \
-	   $(pinktrace_CFLAGS) \
 	   @SYDBOX_CFLAGS@
 
 noinst_HEADERS+= \
@@ -58,8 +57,7 @@ realpath_test_CFLAGS= \
 		      -I$(top_builddir) \
 		      -I$(top_srcdir) \
 		      -I$(top_srcdir)/src
-realpath_test_LDADD= \
-		     $(pinktrace_LIBS)
+realpath_test_LDADD=
 realpath_test_LDFLAGS= -no-install
 
 emily_SOURCES= \
@@ -82,8 +80,7 @@ emily_CFLAGS= \
 	      -I$(top_builddir) \
 	      -I$(top_srcdir) \
 	      -I$(top_srcdir)/src
-emily_LDADD= \
-	     $(pinktrace_LIBS)
+emily_LDADD=
 emily_LDFLAGS= -no-install
 
 unlink_simple_SOURCES= \

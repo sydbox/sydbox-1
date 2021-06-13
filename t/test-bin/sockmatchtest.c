@@ -6,7 +6,7 @@
 
 #include <errno.h>
 #include <stdlib.h>
-#include <pinktrace/pink.h>
+#include "pink.h"
 #include "sockmatch.h"
 #include "util.h"
 
@@ -47,14 +47,12 @@ int main(int argc, char *argv[])
 		       sizeof(struct in_addr));
 		addr.u.sa_in.sin_port = htons(needle->addr.sa_in.port[0]);
 		break;
-#if PINK_HAVE_IPV6
 	case AF_INET6:
 		memcpy(&addr.u.sa6.sin6_addr,
 		       &needle->addr.sa6.addr,
 		       sizeof(struct in6_addr));
 		addr.u.sa6.sin6_port = htons(needle->addr.sa6.port[0]);
 		break;
-#endif
 	default:
 		return EAFNOSUPPORT; /* 97 */
 	}

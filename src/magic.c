@@ -12,6 +12,7 @@
 
 #include "pink.h"
 
+#include "compiler.h"
 #include "macro.h"
 #include "util.h"
 
@@ -438,7 +439,7 @@ enum magic_ret magic_check_call(int rval)
 		if (errno != EAFNOSUPPORT)
 			return MAGIC_RET_OK;
 		/* fall through (for cases like --disable-ipv6) */
-		PINK_GCC_ATTR((fallthrough));
+		SYD_GCC_ATTR((fallthrough));
 	case EAFNOSUPPORT:
 		return MAGIC_RET_NOT_SUPPORTED;
 	default:

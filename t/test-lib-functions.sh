@@ -587,7 +587,7 @@ test_must_fail_acceptable () {
 	fi
 
 	case "$1" in
-	git|__git*|test-tool|test_terminal)
+	syd*|shoebox|pandora|test-tool|test_terminal)
 		return 0
 		;;
 	*)
@@ -639,7 +639,7 @@ test_must_fail () {
 	esac
 	if ! test_must_fail_acceptable "$@"
 	then
-		echo >&7 "test_must_fail: only 'git' is allowed: $*"
+		echo >&7 "test_must_fail: only 'sydbox' is allowed: $*"
 		return 1
 	fi
 	"$@" 2>&7

@@ -8,6 +8,7 @@
  */
 
 #include "sydconf.h"
+#include "compiler.h"
 
 #ifdef PACKAGE
 # undef PACKAGE
@@ -41,7 +42,7 @@ static void about(void)
 	printf(PACKAGE"-"VERSION GITVERSION"\n");
 }
 
-PINK_GCC_ATTR((noreturn))
+SYD_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\

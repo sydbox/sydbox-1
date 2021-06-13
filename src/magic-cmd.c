@@ -105,8 +105,6 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 			_exit(-r);
 		if (chdir(P_CWD(current)) < 0)
 			_exit(errno);
-		if (pink_trace_me() < 0)
-			_exit(errno);
 		execvp(argv[0], argv);
 		_exit(errno);
 	}
@@ -120,9 +118,6 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 	}
 	if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
 		/* execve successful, detach from pid */
-		if (pink_trace_detach(childpid, 0) < 0)
-			say("detach from pid:%u failed (errno:%d %s)",
-			    childpid, errno, strerror(errno));
 		r = 0;
 	} else if (WIFEXITED(status)) {
 		/* execve() failed */
@@ -130,7 +125,8 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 		r = -err_no;
 	} else if (WIFSIGNALED(status)) {
 		/* execve() process terminated, inject the signal */
-		pink_trace_kill(current->pid, current->ppid, WTERMSIG(status));
+		syscall(__NR_tgkill, current->pid, current->ppid,
+			WTERMSIG(status));
 		r = MAGIC_RET_PROCESS_TERMINATED;
 	} else {
 		r = -ENOEXEC;

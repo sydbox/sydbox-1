@@ -11,7 +11,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <pinktrace/compiler.h>
+#include "compiler.h"
 
 extern void syd_abort_func(void (*func)(int));
 
@@ -55,44 +55,44 @@ extern void syd_abort_func(void (*func)(int));
 #endif
 
 extern void vsay(FILE *f, const char *fmt, va_list ap)
-	PINK_GCC_ATTR((format (printf, 2, 0)))
-	PINK_GCC_ATTR((nonnull(1, 2)));
+	SYD_GCC_ATTR((format (printf, 2, 0)))
+	SYD_GCC_ATTR((nonnull(1, 2)));
 extern void say(const char *fmt, ...)
-	PINK_GCC_ATTR((format (printf, 1, 2)));
+	SYD_GCC_ATTR((format (printf, 1, 2)));
 void say_errno(const char *fmt, ...)
-	PINK_GCC_ATTR((format (printf, 1, 2)));
+	SYD_GCC_ATTR((format (printf, 1, 2)));
 
 extern void bug_on(const char *expr,
 		   const char *func, const char *file, size_t line,
 		   const char *fmt, ...)
-	PINK_GCC_ATTR((noreturn, format (printf, 5, 6)));
+	SYD_GCC_ATTR((noreturn, format (printf, 5, 6)));
 extern void warn_on(const char *expr,
 		    const char *func, const char *file, size_t line,
 		    const char *fmt, ...)
-	PINK_GCC_ATTR((format (printf, 5, 6)));
+	SYD_GCC_ATTR((format (printf, 5, 6)));
 
 extern void assert_warn_(const char *expr, const char *func, const char *file, size_t line);
 extern void assert_(const char *expr, const char *func, const char *file, size_t line)
-	PINK_GCC_ATTR((noreturn));
+	SYD_GCC_ATTR((noreturn));
 extern void assert_not_reached_(const char *func, const char *file, size_t line)
-	PINK_GCC_ATTR((noreturn));
+	SYD_GCC_ATTR((noreturn));
 
 extern void die(const char *fmt, ...)
-	PINK_GCC_ATTR((noreturn, format (printf, 1, 2)));
+	SYD_GCC_ATTR((noreturn, format (printf, 1, 2)));
 extern void die_errno(const char *fmt, ...)
-	PINK_GCC_ATTR((noreturn, format (printf, 1, 2)));
+	SYD_GCC_ATTR((noreturn, format (printf, 1, 2)));
 
 extern void *xmalloc(size_t size)
-	PINK_GCC_ATTR((malloc));
+	SYD_GCC_ATTR((malloc));
 extern void *xcalloc(size_t nmemb, size_t size)
-	PINK_GCC_ATTR((malloc));
+	SYD_GCC_ATTR((malloc));
 extern void *xrealloc(void *ptr, size_t size);
 
 extern char *xstrdup(const char *src);
 extern char *xstrndup(const char *src, size_t n);
 
 extern int xasprintf(char **strp, const char *fmt, ...)
-	PINK_GCC_ATTR((format (printf, 2, 3)));
+	SYD_GCC_ATTR((format (printf, 2, 3)));
 
 extern char *xgetcwd(void);
 

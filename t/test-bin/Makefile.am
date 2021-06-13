@@ -12,12 +12,10 @@ AM_CPPFLAGS = $(DEFS) \
 	      -I$(top_builddir) -I$(top_srcdir) -I$(top_srcdir)/src \
 	      @SYDBOX_CFLAGS@ -DNDEBUG
 AM_CFLAGS = \
-	    `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_CFLAGS)` \
-	    `expr $@ : .*-static >/dev/null || echo $(pinktrace_CFLAGS)`
+	    `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_CFLAGS)`
 AM_LDFLAGS = \
 	     `expr $@ : .*-static >/dev/null && echo -all-static` \
-	     `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_LIBS)` \
-	     `expr $@ : .*-static >/dev/null || echo $(pinktrace_LIBS)`
+	     `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_LIBS)`
 
 wildtest_SOURCES= tap.h wildtest.c
 wildtest_CFLAGS= \

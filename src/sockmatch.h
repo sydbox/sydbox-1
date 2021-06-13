@@ -46,13 +46,11 @@ struct sockmatch {
 			struct in_addr addr;
 		} sa_in;
 
-#if PINK_HAVE_IPV6
 		struct {
 			unsigned netmask;
 			unsigned port[2];
 			struct in6_addr addr;
 		} sa6;
-#endif
 	} addr;
 
 	/* The actual pattern, useful for removals */

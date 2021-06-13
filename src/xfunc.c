@@ -6,6 +6,7 @@
  */
 
 #include "sydconf.h"
+#include "compiler.h"
 #include "errno2name.h"
 #include "xfunc.h"
 #include "dump.h"
@@ -18,8 +19,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include <pinktrace/pink.h>
-
 /* ANSI colour codes */
 #define ANSI_NORMAL		"[00;00m"
 #define ANSI_MAGENTA		"[00;35m"
@@ -31,7 +30,7 @@
 /* abort function. */
 static void (*abort_func)(int sig);
 
-PINK_GCC_ATTR((noreturn))
+SYD_GCC_ATTR((noreturn))
 static void syd_abort(int how) /* SIGTERM == exit(1), SIGABRT == abort() */
 {
 	if (abort_func)

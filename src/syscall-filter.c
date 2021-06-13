@@ -15,6 +15,7 @@
 #include "sydbox.h"
 
 #include <errno.h>
+#include <signal.h>
 #include <stdint.h>
 #include <fcntl.h>
 #include <sys/kd.h>

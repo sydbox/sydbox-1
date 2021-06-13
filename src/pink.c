@@ -16,6 +16,7 @@
  */
 
 #include "sydbox.h"
+#include "compiler.h"
 #include "pink.h"
 #include "syd.h"
 #include <errno.h>
@@ -44,7 +45,7 @@ typedef struct msghdr struct_msghdr;
 		return 0; \
 	}} while (0)
 
-#if PINK_HAVE_PROCESS_VM_READV
+#if HAVE_PROCESS_VM_READV
 static ssize_t _pink_process_vm_readv(pid_t pid,
 				      const struct iovec *local_iov,
 				      unsigned long liovcnt,
@@ -79,8 +80,8 @@ static ssize_t _pink_process_vm_readv(pid_t pid,
 # define process_vm_readv(...) (errno = ENOSYS, -1)
 #endif
 
-#if PINK_HAVE_PROCESS_VM_WRITEV
-PINK_GCC_ATTR((unused))
+#if HAVE_PROCESS_VM_WRITEV
+SYD_GCC_ATTR((unused))
 static ssize_t _pink_process_vm_writev(pid_t pid,
 				       const struct iovec *local_iov,
 				       unsigned long liovcnt,
@@ -164,7 +165,7 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 #endif
 
 	int r;
-#if PINK_HAVE_PROCESS_VM_READV
+#if HAVE_PROCESS_VM_READV
 	static bool cross_memory_attach_works = true;
 
 	if (!cross_memory_attach_works) {
@@ -185,7 +186,7 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 	}
 #else
 	int memfd;
-	if ((memfd = syd_proc_mem_open(pid)) < 0)
+	if ((memfd = syd_proc_mem_open(current->pid)) < 0)
 		return memfd;
 	r = syd_proc_mem_read(memfd, addr, buf, count);
 	close(memfd);
@@ -205,7 +206,7 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 #endif
 
 	int r;
-#if PINK_HAVE_PROCESS_VM_WRITEV
+#if HAVE_PROCESS_VM_WRITEV
 	static bool cross_memory_attach_works = true;
 
 	if (!cross_memory_attach_works) {
@@ -226,7 +227,7 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 	}
 #else
 	int memfd;
-	if ((memfd = syd_proc_mem_open(pid)) < 0)
+	if ((memfd = syd_proc_mem_open(current->pid)) < 0)
 		return memfd;
 	r = syd_proc_mem_write(memfd, addr, buf, count);
 	close(memfd);
@@ -247,20 +248,20 @@ int syd_kill(pid_t pid, pid_t tgid, int sig)
 	return r;
 }
 
-PINK_GCC_ATTR((nonnull(1,3)))
+SYD_GCC_ATTR((nonnull(1,3)))
 int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len)
 {
 	return process_vm_read(current, addr, dest, len);
 }
 
-PINK_GCC_ATTR((nonnull(1,3)))
+SYD_GCC_ATTR((nonnull(1,3)))
 ssize_t syd_write_vm_data(syd_process_t *current, long addr, const char *src,
 			  size_t len)
 {
 	return process_vm_write(current, addr, src, len);
 }
 
-PINK_GCC_ATTR((nonnull(1,3)))
+SYD_GCC_ATTR((nonnull(1,3)))
 int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argval)
 {
 	ssize_t l;
@@ -354,7 +355,7 @@ int syd_read_socket_argument(syd_process_t *current, unsigned arg_index,
 	return 0;
 }
 
-PINK_GCC_ATTR((nonnull(1,2)))
+SYD_GCC_ATTR((nonnull(1,2)))
 int syd_read_socket_subcall(syd_process_t *current, long *subcall)
 {
 	SYD_RETURN_IF_DETACHED(current);
@@ -368,7 +369,7 @@ int syd_read_socket_subcall(syd_process_t *current, long *subcall)
 	return 0;
 }
 
-PINK_GCC_ATTR((nonnull(1)))
+SYD_GCC_ATTR((nonnull(1)))
 int syd_read_socket_address(syd_process_t *current,
 			    bool sockaddr_in_msghdr,
 			    unsigned arg_index, int *fd,
@@ -440,9 +441,7 @@ int syd_read_socket_address(syd_process_t *current,
 			struct sockaddr_un sa_un;
 			struct sockaddr_in sa_in;
 			struct sockaddr_in6 sa6;
-#if PINK_HAVE_NETLINK
 			struct sockaddr_nl nl;
-#endif
 			struct sockaddr_storage storage;
 			char pad[sizeof(struct sockaddr_storage) + 1];
 		} addrbuf;
@@ -478,14 +477,12 @@ int syd_read_socket_address(syd_process_t *current,
 			       &addrbuf.sa6.sin6_addr,
 			       sizeof(struct in6_addr));
 			break;
-#if PINK_HAVE_NETLINK
 		case AF_NETLINK:
 			sockaddr->u.nl.nl_family = AF_NETLINK;
 			sockaddr->u.nl.nl_pad = addrbuf.nl.nl_pad;
 			sockaddr->u.nl.nl_pid = addrbuf.nl.nl_pid;
 			sockaddr->u.nl.nl_groups = addrbuf.nl.nl_groups;
 			break;
-#endif
 		default:
 			sockaddr->length = 0;
 			break;
@@ -495,7 +492,7 @@ int syd_read_socket_address(syd_process_t *current,
 	return 0;
 }
 
-PINK_GCC_ATTR((nonnull(1)))
+SYD_GCC_ATTR((nonnull(1)))
 int syd_write_retval(syd_process_t *current, long retval, int error)
 {
 	SYD_RETURN_IF_DETACHED(current);

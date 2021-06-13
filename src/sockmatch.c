@@ -59,7 +59,6 @@ struct sockmatch *sockmatch_xdup(const struct sockmatch *src)
 		memcpy(&match->addr.sa_in.addr, &src->addr.sa_in.addr,
 		       sizeof(struct in_addr));
 		break;
-#if PINK_HAVE_IPV6
 	case AF_INET6:
 		match->addr.sa6.netmask = src->addr.sa6.netmask;
 		match->addr.sa6.port[0] = src->addr.sa6.port[0];
@@ -67,7 +66,6 @@ struct sockmatch *sockmatch_xdup(const struct sockmatch *src)
 		memcpy(&match->addr.sa6.addr, &src->addr.sa6.addr,
 		       sizeof(struct in6_addr));
 		break;
-#endif
 	default:
 		assert_not_reached();
 	}
@@ -160,7 +158,6 @@ struct sockmatch *sockmatch_new(const struct sockinfo *src)
 		memcpy(&match->addr.sa_in.addr, &src->addr->u.sa_in.sin_addr,
 		       sizeof(struct in_addr));
 		break;
-#if PINK_HAVE_IPV6
 	case AF_INET6:
 		port = ntohs(src->addr->u.sa6.sin6_port);
 		match->addr.sa6.port[0] = port;
@@ -169,7 +166,6 @@ struct sockmatch *sockmatch_new(const struct sockinfo *src)
 		memcpy(&match->addr.sa6.addr, &src->addr->u.sa6.sin6_addr,
 		       sizeof(struct in6_addr));
 		break;
-#endif
 	default:
 		assert_not_reached();
 	}
@@ -218,9 +214,7 @@ static int sockmatch_parse_ip(int family, const char *src,
 	char *ip, *range, *delim, *slash;
 	struct sockmatch *match;
 	struct in_addr addr;
-#if PINK_HAVE_IPV6
 	struct in6_addr addr6;
-#endif
 
 	match = *buf;
 
@@ -228,11 +222,9 @@ static int sockmatch_parse_ip(int family, const char *src,
 	case AF_INET:
 		p = src + STRLEN_LITERAL(MATCH_INET);
 		break;
-#if PINK_HAVE_IPV6
 	case AF_INET6:
 		p = src + STRLEN_LITERAL(MATCH_INET6);
 		break;
-#endif
 	default:
 		return -EINVAL;
 	}
@@ -286,17 +278,13 @@ static int sockmatch_parse_ip(int family, const char *src,
 	}
 
 	errno = 0;
-#if PINK_HAVE_IPV6
 	if (family == AF_INET) {
-#endif
 		if (inet_pton(AF_INET, ip, &addr) != 1)
 			r = errno ? -errno : -EINVAL;
-#if PINK_HAVE_IPV6
 	} else /* if (family == AF_INET6) */ {
 		if (inet_pton(AF_INET6, ip, &addr6) != 1)
 			r = errno ? -errno : -EINVAL;
 	}
-#endif
 out:
 	free(ip);
 
@@ -308,14 +296,10 @@ out:
 
 		match->addr.sa_in.netmask = netmask;
 
-#if PINK_HAVE_IPV6
 		if (family == AF_INET)
-#endif
 			match->addr.sa_in.addr = addr;
-#if PINK_HAVE_IPV6
 		else /* if (family == AF_INET6) */
 			match->addr.sa6.addr = addr6;
-#endif
 	}
 
 	return r;
@@ -343,15 +327,9 @@ int sockmatch_parse(const char *src, struct sockmatch **buf)
 		if (r < 0)
 			goto fail;
 	} else if (startswith(src, MATCH_INET6)) {
-#if !PINK_HAVE_IPV6
-		errno = EAFNOSUPPORT;
-		r = 0;
-		goto fail;
-#else
 		r = sockmatch_parse_ip(AF_INET6, src, &match);
 		if (r < 0)
 			goto fail;
-#endif
 	} else {
 		r = -EAFNOSUPPORT;
 		goto fail;
@@ -395,7 +373,6 @@ int sockmatch(const struct sockmatch *haystack, const struct pink_sockaddr *need
 		pmax = haystack->addr.sa_in.port[1];
 		port = ntohs(needle->u.sa_in.sin_port);
 		break;
-#if PINK_HAVE_IPV6
 	case AF_INET6:
 		bits = haystack->addr.sa6.netmask;
 		ip1 = (const void *)&needle->u.sa6.sin6_addr;
@@ -404,7 +381,6 @@ int sockmatch(const struct sockmatch *haystack, const struct pink_sockaddr *need
 		pmax = haystack->addr.sa6.port[1];
 		port = ntohs(needle->u.sa6.sin6_port);
 		break;
-#endif
 	default:
 		return 0;
 	}

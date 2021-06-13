@@ -20,7 +20,6 @@ AM_CFLAGS= \
 	   -I$(top_srcdir)/syd \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
-	   $(pinktrace_CFLAGS) \
 	   $(libseccomp_CFLAGS) \
 	   @SYDBOX_CFLAGS@
 if WANT_DEBUG
@@ -37,6 +36,7 @@ noinst_HEADERS+= \
 		 acl-queue.h \
 		 arch.h \
 		 asyd.h \
+		 compiler.h \
 		 dump.h \
 		 errno2name.h \
 		 file.h \
@@ -131,7 +131,6 @@ sydbox_LDADD= \
 	      -L$(top_builddir)/syd/.libs \
 	      -lsyd_@LIBSYD_PC_SLOT@ \
 	      @SYDBOX_LDFLAGS@ \
-	      $(pinktrace_LIBS) \
 	      $(libseccomp_LIBS)
 if WANT_DEBUG
 sydbox_LDADD+= $(libunwind_LIBS)
@@ -222,7 +221,6 @@ splint:
 			-nullret \
 			-I$(top_builddir) -I$(top_builddir)/syd \
 			-I$(top_srcdir) -I$(top_srcdir)/syd \
-			$(pinktrace_CFLAGS) \
 			$(libseccomp_CFLAGS) \
 			$$path; \
 	done 2>&1 |\

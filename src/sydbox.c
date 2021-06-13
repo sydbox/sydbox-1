@@ -11,6 +11,7 @@
  */
 
 #include "sydbox.h"
+#include "compiler.h"
 #include "dump.h"
 
 #include <time.h>
@@ -70,16 +71,6 @@ static inline syd_process_t *process_init(pid_t pid, syd_process_t *parent);
 static void about(void)
 {
 	printf(PACKAGE"-"VERSION GITVERSION);
-	printf(" (pinktrace-%d.%d.%d",
-	       PINKTRACE_VERSION_MAJOR,
-	       PINKTRACE_VERSION_MINOR,
-	       PINKTRACE_VERSION_MICRO);
-
-	if (STRLEN_LITERAL(PINKTRACE_VERSION_SUFFIX) > 0)
-		fputs(PINKTRACE_VERSION_SUFFIX, stdout);
-	if (STRLEN_LITERAL(PINKTRACE_GIT_HEAD) > 0)
-		printf(" git:%s", PINKTRACE_GIT_HEAD);
-	puts(")");
 
 	printf("Options:");
 #if SYDBOX_HAVE_DUMP_BUILTIN
@@ -92,12 +83,12 @@ static void about(void)
 #else
 	printf(" seccomp:no");
 #endif
-	printf(" ipv6:%s", PINK_HAVE_IPV6 ? "yes" : "no");
-	printf(" netlink:%s", PINK_HAVE_NETLINK ? "yes" : "no");
+	printf(" ipv6:yes");
+	printf(" netlink:yes");
 	fputc('\n', stdout);
 }
 
-PINK_GCC_ATTR((noreturn))
+SYD_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
@@ -308,7 +299,7 @@ void reset_process(syd_process_t *p)
 	p->retval = 0;
 
 	memset(p->args, 0, sizeof(p->args));
-	for (unsigned short i = 0; i < PINK_MAX_ARGS; i++) {
+	for (unsigned short i = 0; i < 6; i++) {
 		if (p->repr[i]) {
 			free(p->repr[i]);
 			p->repr[i] = NULL;
@@ -472,7 +463,7 @@ void bury_process(syd_process_t *p)
 		free(p->abspath);
 		p->abspath = NULL;
 	}
-	for (unsigned short i = 0; i < PINK_MAX_ARGS; i++) {
+	for (unsigned short i = 0; i < 6; i++) {
 		if (p->repr[i]) {
 			free(p->repr[i]);
 			p->repr[i] = NULL;
@@ -1048,7 +1039,7 @@ static void sig_usr(int sig)
 	fprintf(stderr, "Tracing %u process%s\n", count, count > 1 ? "es" : "");
 }
 
-PINK_GCC_ATTR((unused))
+SYD_GCC_ATTR((unused))
 static int proc_info(pid_t pid) {
 	char *cmd;
 
@@ -1283,7 +1274,7 @@ static int handle_interrupt(int sig)
 	}
 }
 
-PINK_GCC_ATTR((unused))
+SYD_GCC_ATTR((unused))
 static int setup_alarm(int time_sec)
 {
 	struct itimerval it_val;
@@ -1301,7 +1292,7 @@ static int setup_alarm(int time_sec)
 	return 0;
 }
 
-PINK_GCC_ATTR((unused))
+SYD_GCC_ATTR((unused))
 static int disarm_alarm(void)
 {
 	struct itimerval it_val;
@@ -1317,7 +1308,7 @@ static int disarm_alarm(void)
 	return 0;
 }
 
-PINK_GCC_ATTR((unused))
+SYD_GCC_ATTR((unused))
 static int check_interrupt(void)
 {
 	int r = 0;

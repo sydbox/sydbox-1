@@ -34,6 +34,7 @@
 #include "util.h"
 #include "xfunc.h"
 #include "arch.h"
+#include "compiler.h"
 
 /* Definitions */
 #ifdef KERNEL_VERSION
@@ -90,6 +91,55 @@ static const char *const sandbox_mode_table[] = {
 	[SANDBOX_ALLOW] = "allow",
 };
 DEFINE_STRING_TABLE_LOOKUP(sandbox_mode, int)
+
+static const char *const addrfams_table[] = {
+	"AF_UNSPEC",
+	"AF_UNIX",
+	"AF_INET",
+	"AF_AX25",
+	"AF_IPX",
+	"AF_APPLETALK",
+	"AF_NETROM",
+	"AF_BRIDGE",
+	"AF_ATMPVC",
+	"AF_X25",
+	"AF_INET6",
+	"AF_ROSE",
+	"AF_DECnet",
+	"AF_NETBEUI",
+	"AF_SECURITY",
+	"AF_KEY",
+	"AF_NETLINK",
+	"AF_PACKET",
+	"AF_ASH",
+	"AF_ECONET",
+	"AF_ATMSVC",
+	"AF_RDS",
+	"AF_SNA",
+	"AF_IRDA",
+	"AF_PPPOX",
+	"AF_WANPIPE",
+	"AF_LLC",
+	"AF_IB",
+	"AF_MPLS",
+	"AF_CAN",
+	"AF_TIPC",
+	"AF_BLUETOOTH",
+	"AF_IUCV",
+	"AF_RXRPC",
+	"AF_ISDN",
+	"AF_PHONET",
+	"AF_IEEE802154",
+	"AF_CAIF",
+	"AF_ALG",
+	"AF_NFC",
+	"AF_VSOCK",
+	"AF_KCM",
+	"AF_QIPCRTR",
+	"AF_SMC",
+	"AF_XDP",
+};
+DEFINE_STRING_TABLE_LOOKUP(addrfams, int)
 
 enum lock_state {
 	LOCK_UNSET,
@@ -374,10 +424,10 @@ struct syd_process {
 	char *abspath;
 
 	/* Arguments of last system call */
-	long args[PINK_MAX_ARGS];
+	long args[6];
 
 	/* String representation of arguments, used by dump. */
-	char *repr[PINK_MAX_ARGS];
+	char *repr[6];
 
 	/* Per-thread shared data */
 	struct syd_process_shared shm;
@@ -738,7 +788,7 @@ int deny(syd_process_t *current, int err_no);
 int restore(syd_process_t *current);
 int panic(syd_process_t *current);
 int violation(syd_process_t *current, const char *fmt, ...)
-	PINK_GCC_ATTR((format (printf, 2, 3)));
+	SYD_GCC_ATTR((format (printf, 2, 3)));
 
 int filter_init(void);
 int filter_free(void);
@@ -746,8 +796,8 @@ int filter_push(struct filter filter);
 
 void config_init(void);
 void config_done(void);
-void config_parse_file(const char *filename) PINK_GCC_ATTR((nonnull(1)));
-void config_parse_spec(const char *filename) PINK_GCC_ATTR((nonnull(1)));
+void config_parse_file(const char *filename) SYD_GCC_ATTR((nonnull(1)));
+void config_parse_spec(const char *filename) SYD_GCC_ATTR((nonnull(1)));
 
 void callback_init(void);
 
@@ -858,10 +908,10 @@ static inline bool use_notify(void)
 
 void systable_init(void);
 void systable_free(void);
-void systable_add_full(long no, short abi, const char *name,
+void systable_add_full(long no, uint32_t arch, const char *name,
 		       sysfunc_t fenter, sysfunc_t fexit);
 void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit);
-const sysentry_t *systable_lookup(long no, short abi);
+const sysentry_t *systable_lookup(long no, uint32_t arch);
 
 size_t syscall_entries_max(void);
 void sysinit(void);

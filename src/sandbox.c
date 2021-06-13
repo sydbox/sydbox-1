@@ -99,14 +99,12 @@ static char *box_name_violation_sock(syd_process_t *current,
 			     ip, ntohs(paddr->u.sa_in.sin_port)) < 0)
 			repr = NULL;
 		break;
-#if PINK_HAVE_IPV6
 	case AF_INET6:
 		inet_ntop(AF_INET6, &paddr->u.sa6.sin6_addr, ip, sizeof(ip));
 		if (asprintf(&repr, "inet6:%s@%d",
 			     ip, ntohs(paddr->u.sa6.sin6_port)) < 0)
 			repr = NULL;
 		break;
-#endif
 	default:
 		repr = NULL;
 		break;
@@ -134,15 +132,13 @@ static void box_report_violation_sock(syd_process_t *current,
 			  info->ret_fd ? *info->ret_fd : -1,
 			  current->repr[info->arg_index]);
 		break;
-#if PINK_HAVE_IPV6
 	case AF_INET6:
 		violation(current, "%s(%d, %s)", name,
 			  info->ret_fd ? *info->ret_fd : -1,
 			  current->repr[info->arg_index]);
 		break;
-#endif
 	default:
-		f = pink_name_socket_family(paddr->family);
+		f = addrfams_to_string(paddr->family);
 		violation(current, "%s(-1, ?:%s)", name, f ? f : "AF_???");
 		break;
 	}
@@ -526,9 +522,7 @@ int box_check_socket(syd_process_t *current, syscall_info_t *info)
 	switch (psa->family) {
 	case AF_UNIX:
 	case AF_INET:
-#if PINK_HAVE_IPV6
 	case AF_INET6:
-#endif
 		break;
 	case -1: /* NULL! */
 		/*

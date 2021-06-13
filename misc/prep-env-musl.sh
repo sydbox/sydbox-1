@@ -1,14 +1,15 @@
 #!/bin/sh -x
 
-CC='/usr/musl/bin/musl-gcc'
+#CC='/usr/musl/bin/musl-gcc'
+CC=/usr/host/bin/gcc
 if [[ ! -x "$CC" ]]; then
     echo >&2 "musl-gcc not found under: $CC"
-    exit 1
+    return 1
 fi
 export CC
 
 CFLAGS="-D__ALIP_WAS_HERE"
-CFLAGS="${CFLAGS} -pedantic -W -Wall -Wextra -Wshadow -Wno-unused-parameter"
+CFLAGS="${CFLAGS} -pedantic -W -Wall -Wextra -Wshadow -Wno-unused-parameter -Wno-missing-field-initializers"
 CFLAGS="${CFLAGS} -O0 -g -ggdb3"
 CFLAGS="${CFLAGS} -Wall"
 CFLAGS="${CFLAGS} -Werror=implicit-function-declaration"

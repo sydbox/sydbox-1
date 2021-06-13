@@ -420,7 +420,7 @@ size_t syscall_entries_max(void)
 
 void sysinit(void)
 {
-	for (unsigned i = 0; i < ELEMENTSOF(syscall_entries); i++) {
+	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		if (syscall_entries[i].filter)
 			continue;
 
@@ -429,9 +429,9 @@ void sysinit(void)
 				     syscall_entries[i].notify,
 				     syscall_entries[i].exit);
 		} else {
-			for (int abi = 0; abi < PINK_ABIS_SUPPORTED; abi++)
+			for (size_t j = 0; j < ABIS_SUPPORTED; j++)
 				systable_add_full(syscall_entries[i].no,
-						  abi, NULL,
+						  abi[j], NULL,
 						  syscall_entries[i].notify,
 						  syscall_entries[i].exit);
 		}

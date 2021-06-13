@@ -17,20 +17,26 @@ struct systable {
 	UT_hash_handle hh;
 };
 
-static struct systable *systable[PINK_ABIS_SUPPORTED];
+static struct systable *systable[ABIS_SUPPORTED];
 
-void systable_add_full(long no, short abi, const char *name,
+void systable_add_full(long no, uint32_t arch, const char *name,
 		       sysfunc_t fnotify, sysfunc_t fexit)
 {
-	struct systable *s;
+	int abi_idx = 0;
+	for (size_t i = 0; i < ABIS_SUPPORTED; i++) {
+		if (abi[i] == arch) {
+			abi_idx = i;
+			break;
+		}
+	}
 
-	s = xmalloc(sizeof(struct systable));
+	struct systable *s = xmalloc(sizeof(struct systable));
 	s->no = no;
 	s->entry.name = name;
 	s->entry.notify = fnotify;
 	s->entry.exit = fexit;
 
-	HASH_ADD_INT(systable[abi], no, s);
+	HASH_ADD_INT(systable[abi_idx], no, s);
 }
 
 void systable_init(void)
@@ -40,31 +46,36 @@ void systable_init(void)
 
 void systable_free(void)
 {
-	for (short abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
+	for (size_t i = 0; i < ABIS_SUPPORTED; i++) {
 		struct systable *s, *tmp;
-		HASH_ITER(hh, systable[abi], s, tmp) {
-			HASH_DEL(systable[abi], s);
+		HASH_ITER(hh, systable[i], s, tmp) {
+			HASH_DEL(systable[i], s);
 			free(s);
 		}
-		HASH_CLEAR(hh, systable[abi]);
+		HASH_CLEAR(hh, systable[i]);
 	}
 }
 
 void systable_add(const char *name, sysfunc_t fnotify, sysfunc_t fexit)
 {
-	long no;
+	int no;
 
-	for (short abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
-		no = pink_lookup_syscall(name, abi);
-		if (no != -1)
-			systable_add_full(no, abi, name, fnotify, fexit);
+	for (size_t i = 0; i < ABIS_SUPPORTED; i++) {
+		no = seccomp_syscall_resolve_name_arch(abi[i], name);
+		if (no >= 0)
+			systable_add_full(no, abi[i], name, fnotify, fexit);
 	}
 }
 
-const sysentry_t *systable_lookup(long no, short abi)
+const sysentry_t *systable_lookup(long no, uint32_t arch)
 {
 	struct systable *s;
+	size_t abi_idx;
 
-	HASH_FIND_INT(systable[abi], &no, s);
+	for (abi_idx = 0; abi_idx < ABIS_SUPPORTED; abi_idx++)
+		if (arch == abi[abi_idx])
+			break;
+
+	HASH_FIND_INT(systable[abi_idx], &no, s);
 	return s ? &(s->entry) : NULL;
 }

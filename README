@@ -55,9 +55,7 @@ For more information about these requirements, check the following links:
 SydBox requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/api/c/)
 
 **NOTE: SydBox.git does not use ptrace() but seccomp user notify facilities in
-recent Linux kernels 5.6 and newer. However, SydBox still uses some utility
-functions part of PinkTrace. It is a work in progress to import these remaining
-little helpers to SydBox code and remove the PinkTrace dependeny.**
+recent Linux kernels 5.6 and newer. Hence, PinkTrace is no longer a dependency.**
 
 See: https://pinktrace.exherbo.org
 

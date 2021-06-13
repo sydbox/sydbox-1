@@ -293,7 +293,6 @@ void dump(enum dump what, ...)
 			expr, file, line, func);
 	} else if (what == DUMP_INTERRUPT) {
 		int sig = va_arg(ap, int);
-		const char *name;
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
@@ -302,13 +301,6 @@ void dump(enum dump what, ...)
 			J(signal)"%d",
 			id++, (unsigned long long)now,
 			DUMP_INTERRUPT, "interrupt", sig);
-
-		fprintf(fp, ","J(signal_name));
-		name = pink_name_signal(sig, 0);
-		if (name == NULL)
-			dump_null();
-		else
-			fprintf(fp, "\"%s\"", name);
 
 		fprintf(fp, "}");
 	} else if (what == DUMP_THREAD_NEW || what == DUMP_THREAD_FREE) {

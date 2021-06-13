@@ -293,22 +293,6 @@ LIBSECCOMP_REQUIRED=2.4.3
 PKG_CHECK_MODULES([libseccomp], [libseccomp >= $LIBSECCOMP_REQUIRED],,
 		  AC_MSG_ERROR([sydbox requires libseccomp-$LIBSECCOMP_REQUIRED or newer]))
 
-dnl check for pinktrace
-PINKTRACE_REQUIRED=0.9
-
-PKG_CHECK_MODULES([pinktrace], [pinktrace >= $PINKTRACE_REQUIRED],,
-		  AC_MSG_ERROR([sydbox requires pinktrace-$PINKTRACE_REQUIRED or newer]))
-
-AC_MSG_CHECKING([whether pinktrace supports PTRACE_SEIZE])
-PINKTRACE_HAVE_SEIZE=`${PKG_CONFIG} --variable=PINK_HAVE_SEIZE pinktrace`
-if test x"$PINKTRACE_HAVE_SEIZE" = x"1"; then
-	AC_MSG_RESULT([yes])
-else
-	PINKTRACE_HAVE_SEIZE=0
-	AC_MSG_RESULT([no])
-fi
-AC_SUBST([PINKTRACE_HAVE_SEIZE])
-
 dnl check for debugging support (requires libunwind)
 LIBUNWIND_REQUIRED=1.1
 
@@ -331,19 +315,25 @@ AC_SUBST([SYDBOX_DEBUG])
 
 dnl check for process_vm_readv, process_vm_writev
 AC_CHECK_FUNCS([process_vm_readv],
-	       [PINK_HAVE_PROCESS_VM_READV=1],
+	       [HAVE_PROCESS_VM_READV=1],
 	       [AC_CHECK_DECL([__NR_process_vm_readv],
-			      [PINK_HAVE_PROCESS_VM_READV=1],
-			      [PINK_HAVE_PROCESS_VM_READV=0],
+			      [HAVE_PROCESS_VM_READV=1],
+			      [HAVE_PROCESS_VM_READV=0],
 			      [#include <asm/unistd.h>])])
 AC_CHECK_FUNCS([process_vm_writev],
-	       [PINK_HAVE_PROCESS_VM_WRITEV=1],
+	       [HAVE_PROCESS_VM_WRITEV=1],
 	       [AC_CHECK_DECL([__NR_process_vm_writev],
-			      [PINK_HAVE_PROCESS_VM_WRITEV=1],
-			      [PINK_HAVE_PROCESS_VM_WRITEV=0],
+			      [HAVE_PROCESS_VM_WRITEV=1],
+			      [HAVE_PROCESS_VM_WRITEV=0],
 			      [#include <asm/unistd.h>])])
-AC_SUBST([PINK_HAVE_PROCESS_VM_READV])
-AC_SUBST([PINK_HAVE_PROCESS_VM_WRITEV])
+AC_SUBST([HAVE_PROCESS_VM_READV])
+AC_SUBST([HAVE_PROCESS_VM_WRITEV])
+AC_DEFINE_UNQUOTED([HAVE_PROCESS_VM_READV],
+		   [$HAVE_PROCESS_VM_READV],
+		   ['Use process_vm_readv, needs CONFIG_CROSS_MEMORY_ATTACH with fallback to /proc/pid/mem'])
+AC_DEFINE_UNQUOTED([HAVE_PROCESS_VM_WRITEV],
+		   [$HAVE_PROCESS_VM_WRITEV],
+		   ['Use process_vm_writev, needs CONFIG_CROSS_MEMORY_ATTACH with fallback to /proc/pid/mem'])
 
 dnl check for pidfd_open and pidfd_getfd.
 m4_define([include_pidfd_headers], [
@@ -384,7 +374,7 @@ AC_DEFINE_UNQUOTED([SYDBOX_HAVE_DUMP_BUILTIN], [$SYDBOX_WANT_DUMP_BUILTIN], [Ena
 AC_SUBST([SYDBOX_WANT_DUMP_BUILTIN])
 
 dnl extra CFLAGS
-SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wno-unused-parameter"
+SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wno-unused-parameter -Wno-missing-field-initializers"
 for flag in $SYDBOX_WANTED_CFLAGS ; do
 	AX_CHECK_COMPILER_FLAGS([$flag], [SYDBOX_CFLAGS="$SYDBOX_CFLAGS $flag"],)
 done

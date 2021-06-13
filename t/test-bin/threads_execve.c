@@ -11,30 +11,30 @@
  */
 
 #include "sydconf.h"
+#include "compiler.h"
 #include "errno2name.h"
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
 #include <asm/unistd.h>
-#include <pinktrace/pink.h>
 
 static void perror_msg_and_fail(const char *, ...)
-	PINK_GCC_ATTR((format(printf, 1, 2)))
-	PINK_GCC_ATTR((noreturn));
+	SYD_GCC_ATTR((format(printf, 1, 2)))
+	SYD_GCC_ATTR((noreturn));
 /* Print message to stderr, then exit(1). */
 static void error_msg_and_fail(const char *, ...)
-	PINK_GCC_ATTR((format(printf, 1, 2)))
-	PINK_GCC_ATTR((noreturn));
+	SYD_GCC_ATTR((format(printf, 1, 2)))
+	SYD_GCC_ATTR((noreturn));
 #if 0
 /* Print message to stderr, then exit(77). */
 static void error_msg_and_skip(const char *, ...)
-	PINK_GCC_ATTR((format(printf, 1, 2)))
-	PINK_GCC_ATTR((noreturn));
+	SYD_GCC_ATTR((format(printf, 1, 2)))
+	SYD_GCC_ATTR((noreturn));
 #endif
 /* Print message and strerror(errno) to stderr, then exit(77). */
 static void perror_msg_and_skip(const char *, ...)
-	PINK_GCC_ATTR((format(printf, 1, 2)))
-	PINK_GCC_ATTR((noreturn));
+	SYD_GCC_ATTR((format(printf, 1, 2)))
+	SYD_GCC_ATTR((noreturn));
 
 enum sprintrc_fmt {
 	SPRINTRC_FMT_RAW,

@@ -18,7 +18,6 @@ packages:
 - bash
 - vim
 sources:
-- https://git.sr.ht/~alip/pinktrace
 - https://git.sr.ht/~alip/sydbox
 tasks:
 - init: |
@@ -37,17 +36,7 @@ tasks:
     bzip2 --version || true
     xsltproc --version
     dig -v
-- pinktrace_conf: |
     mkdir root
-    cd pinktrace
-    ./autogen.sh
-    ./configure --prefix=$(readlink -f ../root) --enable-ipv6 --disable-python
-- pinktrace_make: |
-    cd pinktrace
-    make -j V=1
-- pinktrace_inst: |
-    cd pinktrace
-    make -j install
 - conf: |
     cd sydbox
     ./autogen.sh

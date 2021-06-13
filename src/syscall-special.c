@@ -31,7 +31,8 @@
 
 #include <fcntl.h>
 #include <sys/stat.h>
-#if PINK_ARCH_X86_64
+
+#if defined(__x86_64__)
 /* These might be macros. */
 # ifdef st_atime
 #  undef st_atime
@@ -58,7 +59,7 @@ struct stat32 { /* for 32bit emulation */
 	unsigned int st_mtime;
 	unsigned int st_ctime;
 };
-#elif !PINK_ARCH_AARCH64 && PINK_ABIS_SUPPORTED > 1
+#elif !defined(__aarch64__) && ABIS_SUPPORTED > 1
 # warning do not know the size of stat buffer for non-default ABIs
 #endif
 
@@ -274,20 +275,20 @@ static int write_stat(syd_process_t *current, unsigned int buf_index, bool exten
 		say("skipped statx() buffer write");
 		return false;
 	}
-#elif PINK_ARCH_I386
+#elif defined(__i386__)
 	if (extended) { /* TODO */
 		say("statx system call on i386 abi, can not encode!");
 		say("skipped statx() buffer write");
 		return false;
 	}
-#elif PINK_ARCH_ARM
+#elif defined(__arm__)
 	if (extended) { /* TODO */
 		say("statx system call on arm abi, can not encode!");
 		say("skipped statx() buffer write");
 		return false;
 	}
 #else
-	if (current->abi != PINK_ABI_DEFAULT) {
+	if (current->abi != ABI_DEFAULT) {
 		say("don't know the size of stat buffer for ABI %d", current->abi);
 		say("skipped stat() buffer write");
 		return false;
