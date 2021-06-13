@@ -19,9 +19,9 @@ core/sandbox/network:deny
 core/restrict/file_control:false
 core/restrict/shared_memory_writable:false
 
-core/whitelist/per_process_directories:true
-core/whitelist/successful_bind:true
-core/whitelist/unsupported_socket_families:true
+core/allowlist/per_process_directories:true
+core/allowlist/successful_bind:true
+core/allowlist/unsupported_socket_families:true
 
 core/violation/decision:deny
 core/violation/exit_code:-1
@@ -38,41 +38,41 @@ core/match/case_sensitive:true
 core/match/no_wildcard:literal
 
 # Safe defaults for system paths
-whitelist/write+/dev/stdout
-whitelist/write+/dev/stderr
-whitelist/write+/dev/zero
-whitelist/write+/dev/null
-whitelist/write+/dev/full
-whitelist/write+/dev/console
-whitelist/write+/dev/random
-whitelist/write+/dev/urandom
-whitelist/write+/dev/ptmx
-whitelist/write+/dev/fd/***
-whitelist/write+/dev/tty*
-whitelist/write+/dev/pty*
-whitelist/write+/dev/tts
-whitelist/write+/dev/pts
-whitelist/write+/dev/pts/***
-whitelist/write+/dev/shm/***
-whitelist/write+/selinux/context/***
-whitelist/write+/proc/self/attr/***
-whitelist/write+/proc/self/fd/***
-whitelist/write+/proc/self/task/***
-whitelist/write+/tmp/***
-whitelist/write+/var/tmp/***
+allowlist/write+/dev/stdout
+allowlist/write+/dev/stderr
+allowlist/write+/dev/zero
+allowlist/write+/dev/null
+allowlist/write+/dev/full
+allowlist/write+/dev/console
+allowlist/write+/dev/random
+allowlist/write+/dev/urandom
+allowlist/write+/dev/ptmx
+allowlist/write+/dev/fd/***
+allowlist/write+/dev/tty*
+allowlist/write+/dev/pty*
+allowlist/write+/dev/tts
+allowlist/write+/dev/pts
+allowlist/write+/dev/pts/***
+allowlist/write+/dev/shm/***
+allowlist/write+/selinux/context/***
+allowlist/write+/proc/self/attr/***
+allowlist/write+/proc/self/fd/***
+allowlist/write+/proc/self/task/***
+allowlist/write+/tmp/***
+allowlist/write+/var/tmp/***
 
 # Safe defaults for local network
 # This allows bind to all loopback ports.
-# Each successful bind is automatically whitelisted for connect with
-# core/whitelist/successful_bind:true
-whitelist/network/bind+LOOPBACK@0
-whitelist/network/bind+LOOPBACK@1024-65535
-whitelist/network/bind+LOOPBACK6@0
-whitelist/network/bind+LOOPBACK6@1024-65535
+# Each successful bind is automatically allowlisted for connect with
+# core/allowlist/successful_bind:true
+allowlist/network/bind+LOOPBACK@0
+allowlist/network/bind+LOOPBACK@1024-65535
+allowlist/network/bind+LOOPBACK6@0
+allowlist/network/bind+LOOPBACK6@1024-65535
 
-whitelist/network/connect+unix:/var/run/nscd/socket
-whitelist/network/connect+unix:/run/nscd/socket
-whitelist/network/connect+unix:/var/lib/sss/pipes/nss
+allowlist/network/connect+unix:/var/run/nscd/socket
+allowlist/network/connect+unix:/run/nscd/socket
+allowlist/network/connect+unix:/var/lib/sss/pipes/nss
 ###
 
 ###
@@ -81,30 +81,30 @@ whitelist/network/connect+unix:/var/lib/sss/pipes/nss
 # Command Line: `sydbox --dry-run -m core/sandbox/read:deny -m core/sandbox/write:deny -m core/sandbox/exec:deny -m core/sandbox/network:deny -m core/restrict/file_control:0 -m core/restrict/shared_memory_writable:0 -d 4 -- firefox '
 ###
 
-whitelist/network/connect+inet:127.0.0.1@9050
-whitelist/network/connect+unix-abstract:/tmp/.ICE-unix/*
-whitelist/network/connect+unix-abstract:/tmp/.X11-unix/X0
-whitelist/network/connect+unix:/run/dbus/system_bus_socket
-whitelist/network/connect+unix:/run/nscd/socket
-whitelist/network/connect+unix:/run/user/*/***
-whitelist/network/connect+unix:/tmp/.X11-unix/X*
-whitelist/exec+/usr/bin/lsb_release
-whitelist/exec+/usr/bin/which
-whitelist/exec+/usr/lib*/firefox/firefox
-whitelist/write+/dev/dri/card*
-whitelist/write+/dev/null
-whitelist/write+/home/*/.cache/mesa_shader_cache/index
-whitelist/write+/home/*/.cache/mozilla/firefox
-whitelist/write+/home/*/.cache/mozilla/firefox/***
-whitelist/write+/home/*/.config/ibus/bus
-whitelist/write+/home/*/.mozilla/extensions
-whitelist/write+/home/*/.mozilla/firefox/***
-whitelist/write+/home/*/.mozilla/systemextensionsdev
-whitelist/write+/run/user/*/pulse
-whitelist/write+/tmp/.X11-unix/X*
-whitelist/write+/tmp/Temp-*/***
-whitelist/write+/tmp/firefox/***
-whitelist/write+/usr/lib/firefox/fonts/.uuid.TMP-*
+allowlist/network/connect+inet:127.0.0.1@9050
+allowlist/network/connect+unix-abstract:/tmp/.ICE-unix/*
+allowlist/network/connect+unix-abstract:/tmp/.X11-unix/X0
+allowlist/network/connect+unix:/run/dbus/system_bus_socket
+allowlist/network/connect+unix:/run/nscd/socket
+allowlist/network/connect+unix:/run/user/*/***
+allowlist/network/connect+unix:/tmp/.X11-unix/X*
+allowlist/exec+/usr/bin/lsb_release
+allowlist/exec+/usr/bin/which
+allowlist/exec+/usr/lib*/firefox/firefox
+allowlist/write+/dev/dri/card*
+allowlist/write+/dev/null
+allowlist/write+/home/*/.cache/mesa_shader_cache/index
+allowlist/write+/home/*/.cache/mozilla/firefox
+allowlist/write+/home/*/.cache/mozilla/firefox/***
+allowlist/write+/home/*/.config/ibus/bus
+allowlist/write+/home/*/.mozilla/extensions
+allowlist/write+/home/*/.mozilla/firefox/***
+allowlist/write+/home/*/.mozilla/systemextensionsdev
+allowlist/write+/run/user/*/pulse
+allowlist/write+/tmp/.X11-unix/X*
+allowlist/write+/tmp/Temp-*/***
+allowlist/write+/tmp/firefox/***
+allowlist/write+/usr/lib/firefox/fonts/.uuid.TMP-*
 
 # Lock configuration
 core/trace/magic_lock:on

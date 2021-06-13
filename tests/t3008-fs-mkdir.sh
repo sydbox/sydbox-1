@@ -32,29 +32,29 @@ test_expect_success_foreach_option 'deny mkdir() for existant directory' '
         -- emily mkdir -e EEXIST "$d"
 '
 
-test_expect_success_foreach_option 'whitelist mkdir()' '
+test_expect_success_foreach_option 'allowlist mkdir()' '
     d="no-$(unique_dir)" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily mkdir -e ERRNO_0 "$d" &&
     test_path_is_dir "$d"
 '
 
-test_expect_success_foreach_option 'whitelist mkdir() for existant directory' '
+test_expect_success_foreach_option 'allowlist mkdir() for existant directory' '
     d="$(unique_dir)" &&
     mkdir "$d" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily mkdir -e EEXIST "$d"
 '
 
-test_expect_success_foreach_option 'blacklist mkdir()' '
+test_expect_success_foreach_option 'denylist mkdir()' '
     d="no-$(unique_dir)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily mkdir -e EPERM "$d" &&
     test_path_is_missing "$d"
 '
@@ -64,7 +64,7 @@ test_expect_success_foreach_option 'deny mkdir() for existant directory' '
     mkdir "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily mkdir -e EEXIST "$d"
 '
 

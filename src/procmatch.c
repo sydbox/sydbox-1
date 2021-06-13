@@ -1,7 +1,7 @@
 /*
  * sydbox/procmatch.c
  *
- * match & store proc/$pid whitelists efficiently
+ * match & store proc/$pid allowlists efficiently
  *
  * Copyright (c) 2014, 2021 Ali Polatel <alip@exherbo.org>
  * SPDX-License-Identifier: GPL-2.0-only

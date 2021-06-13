@@ -30,31 +30,31 @@ test_expect_success_foreach_option SYMLINKS 'deny creat() for dangling symbolic 
     test_path_is_missing "$f"
 '
 
-test_expect_success_foreach_option 'whitelist creat()' '
+test_expect_success_foreach_option 'allowlist creat()' '
     f="no-$(unique_file)" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily creat -e ERRNO_0 "$f" "3" &&
     test_path_is_non_empty "$f"
 '
 
-test_expect_success_foreach_option 'blacklist creat()' '
+test_expect_success_foreach_option 'denylist creat()' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily creat -e EPERM "$f" &&
     test_path_is_missing "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist creat() for dangling symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'denylist creat() for dangling symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily creat -e EPERM "$l" &&
     test_path_is_missing "$f"
 '

@@ -43,8 +43,8 @@ struct open_info {
 static inline void sysinfo_read_access(syd_process_t *current, syscall_info_t *info)
 {
 	info->access_mode = sandbox_deny_read(current)
-			    ? ACCESS_WHITELIST
-			    : ACCESS_BLACKLIST;
+			    ? ACCESS_ALLOWLIST
+			    : ACCESS_DENYLIST;
 	info->access_list = &P_BOX(current)->acl_read;
 	info->access_filter = &sydbox->config.filter_read;
 }
@@ -499,7 +499,7 @@ int sys_close(syd_process_t *current)
 	current->args[0] = -1;
 
 	if (sandbox_off_network(current) ||
-	    !sydbox->config.whitelist_successful_bind)
+	    !sydbox->config.allowlist_successful_bind)
 		return 0;
 
 	if ((r = syd_read_argument(current, 0, &fd)) < 0)
@@ -516,7 +516,7 @@ int sysx_close(syd_process_t *current)
 	long retval;
 
 	if (sandbox_off_network(current) ||
-	    !sydbox->config.whitelist_successful_bind ||
+	    !sydbox->config.allowlist_successful_bind ||
 	    current->args[0] < 0)
 		return 0;
 

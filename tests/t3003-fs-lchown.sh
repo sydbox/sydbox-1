@@ -33,7 +33,7 @@ test_expect_success_foreach_option SYMLINKS 'deny lchown($nofile)' '
         -- emily lchown -e ENOENT "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist lchown($symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'denylist lchown($symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -43,21 +43,21 @@ test_expect_success_foreach_option SYMLINKS 'blacklist lchown($symlink-file)' '
         -- emily lchown -e EPERM "$l"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist lchown($nofile)' '
+test_expect_success_foreach_option SYMLINKS 'denylist lchown($nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily lchown -e ENOENT "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'whitelist lchown($symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'allowlist lchown($symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily lchown -e ERRNO_0 "$l"
 '
 

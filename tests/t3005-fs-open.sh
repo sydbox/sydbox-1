@@ -30,7 +30,7 @@ test_expect_success_foreach_option SYMLINKS 'deny open(symlink-file, O_RDONLY|O_
     sydbox -- emily open -e ELOOP -m rdonly -F "$l"
 '
 
-test_expect_success_foreach_option 'whitelist O_RDONLY' '
+test_expect_success_foreach_option 'allowlist O_RDONLY' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
@@ -38,7 +38,7 @@ test_expect_success_foreach_option 'whitelist O_RDONLY' '
         -- emily open -e ERRNO_0 -m rdonly "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'whitelist O_RDONLY for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'allowlist O_RDONLY for symbolic link' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -175,40 +175,40 @@ test_expect_success_foreach_option 'deny O_WRONLY|O_CREAT|O_EXCL for existing fi
     test_path_is_empty "$f"
 '
 
-test_expect_success_foreach_option 'whitelist O_WRONLY' '
+test_expect_success_foreach_option 'allowlist O_WRONLY' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily open -e ERRNO_0 -m wronly "$f" "3" &&
     test_path_is_non_empty "$f"
 '
 
-test_expect_success_foreach_option 'whitelist O_WRONLY|O_CREAT' '
+test_expect_success_foreach_option 'allowlist O_WRONLY|O_CREAT' '
     f="no-$(unique_file)" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily open -e ERRNO_0 -m wronly -c "$f" &&
     test_path_is_file "$f"
 '
 
-test_expect_success_foreach_option 'whitelist O_WRONLY|O_CREAT|O_EXCL' '
+test_expect_success_foreach_option 'allowlist O_WRONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily open -e ERRNO_0 -m wronly -cx "$f" &&
     test_path_is_file "$f"
 '
 
-test_expect_success_foreach_option 'whitelist O_WRONLY|O_CREAT|O_EXCL for existing file' '
+test_expect_success_foreach_option 'allowlist O_WRONLY|O_CREAT|O_EXCL for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily open -e EEXIST -m wronly -cx "$f"
 '
 
@@ -246,180 +246,180 @@ test_expect_success_foreach_option 'deny O_RDWR|O_CREAT|O_EXCL for existing file
     test_path_is_empty "$f"
 '
 
-test_expect_success_foreach_option 'whitelist O_RDWR' '
+test_expect_success_foreach_option 'allowlist O_RDWR' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily open -e ERRNO_0 -m rdwr "$f" "3" &&
     test_path_is_non_empty "$f"
 '
 
-test_expect_success_foreach_option 'whitelist O_RDWR|O_CREAT' '
+test_expect_success_foreach_option 'allowlist O_RDWR|O_CREAT' '
     f="no-$(unique_file)" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily open -e ERRNO_0 -m rdwr -c "$f" &&
     test_path_is_file "$f"
 '
 
-test_expect_success_foreach_option 'whitelist O_RDWR|O_CREAT|O_EXCL' '
+test_expect_success_foreach_option 'allowlist O_RDWR|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
     sydbox \
         -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily open -e ERRNO_0 -m rdwr -cx "$f" &&
     test_path_is_file "$f"
 '
 
-test_expect_success_foreach_option 'whitelist O_RDWR|O_CREAT|O_EXCL for existing file' '
+test_expect_success_foreach_option 'allowlist O_RDWR|O_CREAT|O_EXCL for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily open -e EEXIST -m rdwr -cx "$f"
 '
 
-test_expect_success_foreach_option 'blacklist O_RDONLY|O_CREAT' '
+test_expect_success_foreach_option 'denylist O_RDONLY|O_CREAT' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EPERM -m rdonly -c "$f" &&
     test_path_is_missing "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist O_RDONLY|O_CREAT for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'denylist O_RDONLY|O_CREAT for symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EPERM -m rdonly -c "$l" &&
     test_path_is_missing "$f"
 '
 
-test_expect_success_foreach_option 'blacklist O_RDONLY|O_CREAT|O_EXCL' '
+test_expect_success_foreach_option 'denylist O_RDONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EPERM -m rdonly -cx "$f" &&
     test_path_is_missing "$f"
 '
 
-test_expect_success_foreach_option 'blacklist O_RDONLY|O_CREAT|O_EXCL for existing file' '
+test_expect_success_foreach_option 'denylist O_RDONLY|O_CREAT|O_EXCL for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EEXIST -m rdonly -cx "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'denylist O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EEXIST -m rdonly -cx "$l" &&
     test_path_is_missing "$f"
 '
 
-test_expect_success_foreach_option 'blacklist O_WRONLY' '
+test_expect_success_foreach_option 'denylist O_WRONLY' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EPERM -m wronly "$f" "3" &&
     test_path_is_empty "$f"
 '
 
-test_expect_success_foreach_option 'blacklist O_WRONLY for non-existant file' '
+test_expect_success_foreach_option 'denylist O_WRONLY for non-existant file' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e ENOENT -m wronly "$f" &&
     test_path_is_missing "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist O_WRONLY for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'denylist O_WRONLY for symbolic link' '
     f="$(unique_file)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EPERM -m wronly "$l" "3" &&
     test_path_is_empty "$f"
 '
 
-test_expect_success_foreach_option 'blacklist O_WRONLY|O_CREAT' '
+test_expect_success_foreach_option 'denylist O_WRONLY|O_CREAT' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EPERM -m wronly -c "$f" &&
     test_path_is_missing "$f"
 '
 
-test_expect_success_foreach_option 'blacklist O_WRONLY|O_CREAT for existing file' '
+test_expect_success_foreach_option 'denylist O_WRONLY|O_CREAT for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EPERM -m wronly -c "$f" "3" &&
     test_path_is_empty "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist O_WRONLY|O_CREAT for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'denylist O_WRONLY|O_CREAT for symbolic link' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EPERM -m wronly -c "$l" "3" &&
     test_path_is_empty "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist O_WRONLY|O_CREAT for dangling symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'denylist O_WRONLY|O_CREAT for dangling symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EPERM -m wronly -c "$l" "3" &&
     test_path_is_missing "$f"
 '
 
-test_expect_success_foreach_option 'blacklist O_WRONLY|O_CREAT|O_EXCL' '
+test_expect_success_foreach_option 'denylist O_WRONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EPERM -m wronly -cx "$f" &&
     test_path_is_missing "$f"
 '
 
-test_expect_success_foreach_option 'blacklist O_WRONLY|O_CREAT|O_EXCL for existing file' '
+test_expect_success_foreach_option 'denylist O_WRONLY|O_CREAT|O_EXCL for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily open -e EEXIST -m wronly -cx "$f" "3" &&
     test_path_is_empty "$f"
 '

@@ -66,9 +66,9 @@ static const struct key key_table[] = {
 		.parent = MAGIC_KEY_CORE,
 		.type   = MAGIC_TYPE_OBJECT,
 	},
-	[MAGIC_KEY_CORE_WHITELIST] = {
-		.name   = "whitelist",
-		.lname  = "core.whitelist",
+	[MAGIC_KEY_CORE_ALLOWLIST] = {
+		.name   = "allowlist",
+		.lname  = "core.allowlist",
 		.parent = MAGIC_KEY_CORE,
 		.type   = MAGIC_TYPE_OBJECT,
 	},
@@ -99,29 +99,29 @@ static const struct key key_table[] = {
 		.type   = MAGIC_TYPE_OBJECT,
 	},
 
-	[MAGIC_KEY_WHITELIST] = {
-		.name   = "whitelist",
-		.lname  = "whitelist",
+	[MAGIC_KEY_ALLOWLIST] = {
+		.name   = "allowlist",
+		.lname  = "allowlist",
 		.parent = MAGIC_KEY_NONE,
 		.type   = MAGIC_TYPE_OBJECT,
 	},
-	[MAGIC_KEY_WHITELIST_NETWORK] = {
+	[MAGIC_KEY_ALLOWLIST_NETWORK] = {
 		.name   = "network",
-		.lname  = "whitelist.network",
-		.parent = MAGIC_KEY_WHITELIST,
+		.lname  = "allowlist.network",
+		.parent = MAGIC_KEY_ALLOWLIST,
 		.type   = MAGIC_TYPE_OBJECT,
 	},
 
-	[MAGIC_KEY_BLACKLIST] = {
-		.name   = "blacklist",
-		.lname  = "blacklist",
+	[MAGIC_KEY_DENYLIST] = {
+		.name   = "denylist",
+		.lname  = "denylist",
 		.parent = MAGIC_KEY_NONE,
 		.type   = MAGIC_TYPE_OBJECT,
 	},
-	[MAGIC_KEY_BLACKLIST_NETWORK] = {
+	[MAGIC_KEY_DENYLIST_NETWORK] = {
 		.name   = "network",
-		.lname  = "blacklist.network",
-		.parent = MAGIC_KEY_BLACKLIST,
+		.lname  = "denylist.network",
+		.parent = MAGIC_KEY_DENYLIST,
 		.type   = MAGIC_TYPE_OBJECT,
 	},
 
@@ -214,29 +214,29 @@ static const struct key key_table[] = {
 		.query  = magic_query_restrict_shm_wr,
 	},
 
-	[MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES] = {
+	[MAGIC_KEY_CORE_ALLOWLIST_PER_PROCESS_DIRECTORIES] = {
 		.name   = "per_process_directories",
-		.lname  = "core.whitelist.per_process_directories",
-		.parent = MAGIC_KEY_CORE_WHITELIST,
+		.lname  = "core.allowlist.per_process_directories",
+		.parent = MAGIC_KEY_CORE_ALLOWLIST,
 		.type   = MAGIC_TYPE_BOOLEAN,
-		.set    = magic_set_whitelist_ppd,
-		.query  = magic_query_whitelist_ppd,
+		.set    = magic_set_allowlist_ppd,
+		.query  = magic_query_allowlist_ppd,
 	},
-	[MAGIC_KEY_CORE_WHITELIST_SUCCESSFUL_BIND] = {
+	[MAGIC_KEY_CORE_ALLOWLIST_SUCCESSFUL_BIND] = {
 		.name   = "successful_bind",
-		.lname  = "core.whitelist.successful_bind",
-		.parent = MAGIC_KEY_CORE_WHITELIST,
+		.lname  = "core.allowlist.successful_bind",
+		.parent = MAGIC_KEY_CORE_ALLOWLIST,
 		.type   = MAGIC_TYPE_BOOLEAN,
-		.set    = magic_set_whitelist_sb,
-		.query  = magic_query_whitelist_sb,
+		.set    = magic_set_allowlist_sb,
+		.query  = magic_query_allowlist_sb,
 	},
-	[MAGIC_KEY_CORE_WHITELIST_UNSUPPORTED_SOCKET_FAMILIES] = {
+	[MAGIC_KEY_CORE_ALLOWLIST_UNSUPPORTED_SOCKET_FAMILIES] = {
 		.name   = "unsupported_socket_families",
-		.lname  = "core.whitelist.unsupported_socket_families",
-		.parent = MAGIC_KEY_CORE_WHITELIST,
+		.lname  = "core.allowlist.unsupported_socket_families",
+		.parent = MAGIC_KEY_CORE_ALLOWLIST,
 		.type   = MAGIC_TYPE_BOOLEAN,
-		.set    = magic_set_whitelist_usf,
-		.query  = magic_query_whitelist_usf,
+		.set    = magic_set_allowlist_usf,
+		.query  = magic_query_allowlist_usf,
 	},
 
 	[MAGIC_KEY_CORE_VIOLATION_DECISION] = {
@@ -303,86 +303,86 @@ static const struct key key_table[] = {
 		.remove = magic_remove_exec_resume_if_match,
 	},
 
-	[MAGIC_KEY_WHITELIST_EXEC] = {
+	[MAGIC_KEY_ALLOWLIST_EXEC] = {
 		.name   = "exec",
-		.lname  = "whitelist.exec",
-		.parent = MAGIC_KEY_WHITELIST,
+		.lname  = "allowlist.exec",
+		.parent = MAGIC_KEY_ALLOWLIST,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.append = magic_append_whitelist_exec,
-		.remove = magic_remove_whitelist_exec,
+		.append = magic_append_allowlist_exec,
+		.remove = magic_remove_allowlist_exec,
 	},
-	[MAGIC_KEY_WHITELIST_READ] = {
+	[MAGIC_KEY_ALLOWLIST_READ] = {
 		.name   = "read",
-		.lname  = "whitelist.read",
-		.parent = MAGIC_KEY_WHITELIST,
+		.lname  = "allowlist.read",
+		.parent = MAGIC_KEY_ALLOWLIST,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.append = magic_append_whitelist_read,
-		.remove = magic_remove_whitelist_read,
+		.append = magic_append_allowlist_read,
+		.remove = magic_remove_allowlist_read,
 	},
-	[MAGIC_KEY_WHITELIST_WRITE] = {
+	[MAGIC_KEY_ALLOWLIST_WRITE] = {
 		.name   = "write",
-		.lname  = "whitelist.write",
-		.parent = MAGIC_KEY_WHITELIST,
+		.lname  = "allowlist.write",
+		.parent = MAGIC_KEY_ALLOWLIST,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.append = magic_append_whitelist_write,
-		.remove = magic_remove_whitelist_write,
+		.append = magic_append_allowlist_write,
+		.remove = magic_remove_allowlist_write,
 	},
-	[MAGIC_KEY_WHITELIST_NETWORK_BIND] = {
+	[MAGIC_KEY_ALLOWLIST_NETWORK_BIND] = {
 		.name   = "bind",
-		.lname  = "whitelist.network.bind",
-		.parent = MAGIC_KEY_WHITELIST_NETWORK,
+		.lname  = "allowlist.network.bind",
+		.parent = MAGIC_KEY_ALLOWLIST_NETWORK,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.append = magic_append_whitelist_network_bind,
-		.remove = magic_remove_whitelist_network_bind,
+		.append = magic_append_allowlist_network_bind,
+		.remove = magic_remove_allowlist_network_bind,
 	},
-	[MAGIC_KEY_WHITELIST_NETWORK_CONNECT] = {
+	[MAGIC_KEY_ALLOWLIST_NETWORK_CONNECT] = {
 		.name   = "connect",
-		.lname  = "whitelist.network.connect",
-		.parent = MAGIC_KEY_WHITELIST_NETWORK,
+		.lname  = "allowlist.network.connect",
+		.parent = MAGIC_KEY_ALLOWLIST_NETWORK,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.append = magic_append_whitelist_network_connect,
-		.remove = magic_remove_whitelist_network_connect,
+		.append = magic_append_allowlist_network_connect,
+		.remove = magic_remove_allowlist_network_connect,
 	},
 
-	[MAGIC_KEY_BLACKLIST_EXEC] = {
+	[MAGIC_KEY_DENYLIST_EXEC] = {
 		.name   = "exec",
-		.lname  = "blacklist.exec",
-		.parent = MAGIC_KEY_BLACKLIST,
+		.lname  = "denylist.exec",
+		.parent = MAGIC_KEY_DENYLIST,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.append = magic_append_blacklist_exec,
-		.remove = magic_remove_blacklist_exec,
+		.append = magic_append_denylist_exec,
+		.remove = magic_remove_denylist_exec,
 	},
-	[MAGIC_KEY_BLACKLIST_READ] = {
+	[MAGIC_KEY_DENYLIST_READ] = {
 		.name   = "read",
-		.lname  = "blacklist.read",
-		.parent = MAGIC_KEY_BLACKLIST,
+		.lname  = "denylist.read",
+		.parent = MAGIC_KEY_DENYLIST,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.append = magic_append_blacklist_read,
-		.remove = magic_remove_blacklist_read,
+		.append = magic_append_denylist_read,
+		.remove = magic_remove_denylist_read,
 	},
-	[MAGIC_KEY_BLACKLIST_WRITE] = {
+	[MAGIC_KEY_DENYLIST_WRITE] = {
 		.name   = "write",
-		.lname  = "blacklist.write",
-		.parent = MAGIC_KEY_BLACKLIST,
+		.lname  = "denylist.write",
+		.parent = MAGIC_KEY_DENYLIST,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.append = magic_append_blacklist_write,
-		.remove = magic_remove_blacklist_write,
+		.append = magic_append_denylist_write,
+		.remove = magic_remove_denylist_write,
 	},
-	[MAGIC_KEY_BLACKLIST_NETWORK_BIND] = {
+	[MAGIC_KEY_DENYLIST_NETWORK_BIND] = {
 		.name   = "bind",
-		.lname  = "blacklist.network.bind",
-		.parent = MAGIC_KEY_BLACKLIST_NETWORK,
+		.lname  = "denylist.network.bind",
+		.parent = MAGIC_KEY_DENYLIST_NETWORK,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.append = magic_append_blacklist_network_bind,
-		.remove = magic_remove_blacklist_network_bind,
+		.append = magic_append_denylist_network_bind,
+		.remove = magic_remove_denylist_network_bind,
 	},
-	[MAGIC_KEY_BLACKLIST_NETWORK_CONNECT] = {
+	[MAGIC_KEY_DENYLIST_NETWORK_CONNECT] = {
 		.name   = "connect",
-		.lname  = "blacklist.network.connect",
-		.parent = MAGIC_KEY_BLACKLIST_NETWORK,
+		.lname  = "denylist.network.connect",
+		.parent = MAGIC_KEY_DENYLIST_NETWORK,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.append = magic_append_blacklist_network_connect,
-		.remove = magic_remove_blacklist_network_connect,
+		.append = magic_append_denylist_network_connect,
+		.remove = magic_remove_denylist_network_connect,
 	},
 
 	[MAGIC_KEY_FILTER_EXEC] = {

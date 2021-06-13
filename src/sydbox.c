@@ -399,7 +399,7 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent)
 {
 	init_shareable_data(current, parent);
 
-	if (sydbox->config.whitelist_per_process_directories &&
+	if (sydbox->config.allowlist_per_process_directories &&
 	    (!parent || current->pid != parent->pid)) {
 		procadd(&sydbox->config.hh_proc_pid_auto, current->pid);
 	}
@@ -477,7 +477,7 @@ void bury_process(syd_process_t *p)
 	P_CLONE_FS_RELEASE(p);
 	P_CLONE_FILES_RELEASE(p);
 
-	if (sydbox->config.whitelist_per_process_directories)
+	if (sydbox->config.allowlist_per_process_directories)
 		procdrop(&sydbox->config.hh_proc_pid_auto, pid);
 
 	free(p); /* good bye, good bye, good bye. */
@@ -487,7 +487,7 @@ void bury_process(syd_process_t *p)
 static void tweak_execve_thread(syd_process_t *leader,
 				syd_process_t *execve_thread)
 {
-	if (sydbox->config.whitelist_per_process_directories)
+	if (sydbox->config.allowlist_per_process_directories)
 		procdrop(&sydbox->config.hh_proc_pid_auto, execve_thread->pid);
 	if (execve_thread->pidfd >= 0)
 		close(execve_thread->pidfd);
@@ -550,7 +550,7 @@ void remove_process_node(syd_process_t *p)
 {
 	if (p->flags & SYD_IN_CLONE || p->flags & SYD_IN_EXECVE) {
 		/* Let's wait for the children before the funeral. */
-		if (sydbox->config.whitelist_per_process_directories)
+		if (sydbox->config.allowlist_per_process_directories)
 			procdrop(&sydbox->config.hh_proc_pid_auto, p->pid);
 		if (p->pidfd >= 0) {
 			close(p->pidfd);

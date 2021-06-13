@@ -237,21 +237,21 @@ def eval_ext(expr,
             syd_opts.extend(SYDBOX_OPTIONS)
         else:
             syd_opts.extend([
-                "-mcore/whitelist/per_process_directories:true",
-                "-mcore/whitelist/successful_bind:true",
-                "-mcore/whitelist/unsupported_socket_families:true",
+                "-mcore/allowlist/per_process_directories:true",
+                "-mcore/allowlist/successful_bind:true",
+                "-mcore/allowlist/unsupported_socket_families:true",
                 "-mcore/trace/follow_fork:true",
                 "-mcore/trace/magic_lock:off",
                 "-mcore/sandbox/write:deny",
                 "-mcore/sandbox/network:deny",
-                "-mwhitelist/write+/dev/stdout",
-                "-mwhitelist/write+/dev/stderr",
-                "-mwhitelist/write+/dev/zero",
-                "-mwhitelist/write+/dev/null",
-                "-mwhitelist/write+%s" % os.path.join(os.path.realpath("."), "kingbee.d", "***"),
-                "-mwhitelist/network/bind+LOOPBACK@0",
-                "-mwhitelist/network/connect+unix:/run/nscd/socket",
-                "-mwhitelist/network/connect+unix:/var/run/nscd/socket",])
+                "-mallowlist/write+/dev/stdout",
+                "-mallowlist/write+/dev/stderr",
+                "-mallowlist/write+/dev/zero",
+                "-mallowlist/write+/dev/null",
+                "-mallowlist/write+%s" % os.path.join(os.path.realpath("."), "kingbee.d", "***"),
+                "-mallowlist/network/bind+LOOPBACK@0",
+                "-mallowlist/network/connect+unix:/run/nscd/socket",
+                "-mallowlist/network/connect+unix:/var/run/nscd/socket",])
         args.extend(syd_opts)
         args.append("--")
 

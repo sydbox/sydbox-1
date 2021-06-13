@@ -1,7 +1,7 @@
 /*
  * sydbox/procmatch.h
  *
- * match proc/ whitelists efficiently
+ * match proc/ allowlists efficiently
  *
  * Copyright (c) 2014, 2021 Ali Polatel <alip@exherbo.org>
  * SPDX-License-Identifier: GPL-2.0-only

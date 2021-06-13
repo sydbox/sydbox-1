@@ -81,117 +81,117 @@ test_expect_success_foreach_option SYMLINKS 'deny fchownat($fd, $symlink-file)' 
         -- emily fchownat -e EPERM -d cwd "$l"
 '
 
-test_expect_success_foreach_option 'blacklist fchownat(-1, $abspath)' '
+test_expect_success_foreach_option 'denylist fchownat(-1, $abspath)' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchownat -e EPERM -d null "$HOME_RESOLVED"/"$f"
 '
 
-test_expect_success_foreach_option 'blacklist fchownat(AT_FDCWD, $file)' '
+test_expect_success_foreach_option 'denylist fchownat(AT_FDCWD, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchownat -e EPERM -d cwd "$f"
 '
 
-test_expect_success_foreach_option 'blacklist fchownat(AT_FDCWD, $nofile)' '
+test_expect_success_foreach_option 'denylist fchownat(AT_FDCWD, $nofile)' '
     f="$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchownat -e ENOENT -d cwd "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist fchownat(AT_FDCWD, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'denylist fchownat(AT_FDCWD, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchownat -e EPERM -d cwd "$l"
 '
 
-test_expect_success_foreach_option 'blacklist fchownat($fd, $file)' '
+test_expect_success_foreach_option 'denylist fchownat($fd, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchownat -e EPERM -d "$HOME" "$f"
 '
 
-test_expect_success_foreach_option 'blacklist fchownat($fd, $nofile)' '
+test_expect_success_foreach_option 'denylist fchownat($fd, $nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchownat -e ENOENT -d cwd "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist fchownat($fd, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'denylist fchownat($fd, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchownat -e EPERM -d cwd "$l"
 '
 
-test_expect_success_foreach_option 'whitelist fchownat(-1, $abspath)' '
+test_expect_success_foreach_option 'allowlist fchownat(-1, $abspath)' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily fchownat -e ERRNO_0 -d null "$HOME_RESOLVED"/"$f"
 '
 
-test_expect_success_foreach_option 'whitelist fchownat(AT_FDCWD, $file)' '
+test_expect_success_foreach_option 'allowlist fchownat(AT_FDCWD, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily fchownat -e ERRNO_0 -d cwd "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'whitelist fchownat(AT_FDCWD, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'allowlist fchownat(AT_FDCWD, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily fchownat -e ERRNO_0 -d cwd "$l"
 '
 
-test_expect_success_foreach_option 'whitelist fchownat($fd, $file)' '
+test_expect_success_foreach_option 'allowlist fchownat($fd, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily fchownat -e ERRNO_0 -d "$HOME" "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'whitelist fchownat($fd, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'allowlist fchownat($fd, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily fchownat -e ERRNO_0 -d "$HOME" "$l"
 '
 

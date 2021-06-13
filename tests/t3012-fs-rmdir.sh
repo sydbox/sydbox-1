@@ -101,31 +101,31 @@ test_expect_failure 'deny rmdir() for non-existant directory' '
         -- emily rmdir -e EPERM "$d"
 '
 
-test_expect_failure 'whitelist rmdir()' '
+test_expect_failure 'allowlist rmdir()' '
     d="no-$(unique_dir)" &&
     mkdir "$d" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily rmdir -e ERRNO_0 "$d" &&
     test_path_is_missing "$d"
 '
 
-test_expect_failure 'blacklist rmdir()' '
+test_expect_failure 'denylist rmdir()' '
     d="$(unique_dir)" &&
     mkdir "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily rmdir -e EPERM "$d" &&
     test_path_is_dir "$d"
 '
 
-test_expect_failure 'blacklist rmdir() for non-existant directory' '
+test_expect_failure 'denylist rmdir() for non-existant directory' '
     d="no-$(unique_dir)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily rmdir -e EPERM "$d"
 '
 

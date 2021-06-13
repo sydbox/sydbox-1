@@ -118,26 +118,26 @@ test_expect_success_foreach_option SYMLINKS 'deny chmod($symlink-dangling)' '
         -- emily chmod -e ENOENT -m 000 "$l"
 '
 
-test_expect_success_foreach_option 'blacklist chmod($file)' '
+test_expect_success_foreach_option 'denylist chmod($file)' '
     touch "$f" &&
     chmod 600 "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily chmod -e EPERM -m 000 "$f" &&
     test_path_is_readable "$f" &&
     test_path_is_writable "$f"
 '
 
-test_expect_success_foreach_option 'blacklist chmod($nofile)' '
+test_expect_success_foreach_option 'denylist chmod($nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily chmod -e ENOENT -m 000 "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist chmod($symlink)' '
+test_expect_success_foreach_option SYMLINKS 'denylist chmod($symlink)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -145,36 +145,36 @@ test_expect_success_foreach_option SYMLINKS 'blacklist chmod($symlink)' '
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily chmod -e EPERM -m 000 "$l" &&
     test_path_is_readable "$f" &&
     test_path_is_writable "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist chmod($symlink-dangling)' '
+test_expect_success_foreach_option SYMLINKS 'denylist chmod($symlink-dangling)' '
     f="no-$(unique_file)" &&
     l="bad-$(unique_link)" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily chmod -e ENOENT -m 000 "$l"
 '
 
-test_expect_success_foreach_option 'whitelist chmod($file)' '
+test_expect_success_foreach_option 'allowlist chmod($file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily chmod -e ERRNO_0 -m 000 "$f" &&
     test_path_is_not_readable "$f" &&
     test_path_is_not_writable "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'whitelist chmod($symlink)' '
+test_expect_success_foreach_option SYMLINKS 'allowlist chmod($symlink)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -182,13 +182,13 @@ test_expect_success_foreach_option SYMLINKS 'whitelist chmod($symlink)' '
     ln -sf "$f" "$l" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily chmod -e ERRNO_0 -m 000 "$l" &&
     test_path_is_not_readable "$f" &&
     test_path_is_not_writable "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'deny whitelisted chmod($symlink-outside)' '
+test_expect_success_foreach_option SYMLINKS 'deny allowlisted chmod($symlink-outside)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     d="$(unique_dir)" &&
@@ -198,7 +198,7 @@ test_expect_success_foreach_option SYMLINKS 'deny whitelisted chmod($symlink-out
     ln -sf ../"$f" "$d"/"$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/"$d"/**" \
+        -m "allowlist/write+$HOME_RESOLVED/"$d"/**" \
         -- emily chmod -e EPERM -m 000 "$d"/"$l" &&
     test_path_is_readable "$f" &&
     test_path_is_writable "$f"

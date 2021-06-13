@@ -222,11 +222,11 @@ static bool box_check_access(enum sys_access_mode mode,
 	assert(needle);
 
 	switch (mode) {
-	case ACCESS_WHITELIST: /* deny by default, whitelist entries */
-		acl_mode = ACL_ACTION_WHITELIST;
+	case ACCESS_ALLOWLIST: /* deny by default, allowlist entries */
+		acl_mode = ACL_ACTION_ALLOWLIST;
 		break;
-	case ACCESS_BLACKLIST: /* allow by default, blacklist entries */
-		acl_mode = ACL_ACTION_BLACKLIST;
+	case ACCESS_DENYLIST: /* allow by default, denylist entries */
+		acl_mode = ACL_ACTION_DENYLIST;
 		break;
 	default:
 		assert_not_reached();
@@ -237,9 +237,9 @@ static bool box_check_access(enum sys_access_mode mode,
 		if (r & ACL_MATCH) {
 			r &= ~ACL_MATCH_MASK;
 			switch (r) {
-			case ACL_ACTION_WHITELIST:
+			case ACL_ACTION_ALLOWLIST:
 				return true; /* access granted */
-			case ACL_ACTION_BLACKLIST:
+			case ACL_ACTION_DENYLIST:
 				return false; /* access denied */
 			default:
 				assert_not_reached();
@@ -249,14 +249,14 @@ static bool box_check_access(enum sys_access_mode mode,
 
 	/* No match */
 	switch (mode) {
-	case ACCESS_WHITELIST:
-		if (!sydbox->config.whitelist_per_process_directories)
+	case ACCESS_ALLOWLIST:
+		if (!sydbox->config.allowlist_per_process_directories)
 			return false; /* access denied (default) */
 		else if (procmatch(&sydbox->config.hh_proc_pid_auto, needle))
-			return true; /* access granted (/proc whitelist) */
+			return true; /* access granted (/proc allowlist) */
 		else
 			return false; /* access denied (/proc did not match) */
-	case ACCESS_BLACKLIST:
+	case ACCESS_DENYLIST:
 		return true; /* access granted (default) */
 	default:
 		assert_not_reached();
@@ -424,9 +424,9 @@ check_access:
 	if (info->access_mode != ACCESS_0)
 		access_mode = info->access_mode;
 	else if (sandbox_deny_write(current) || sydbox->permissive)
-		access_mode = ACCESS_WHITELIST;
+		access_mode = ACCESS_ALLOWLIST;
 	else
-		access_mode = ACCESS_BLACKLIST;
+		access_mode = ACCESS_DENYLIST;
 
 	if (info->access_list)
 		access_lists[0] = info->access_list;
@@ -538,7 +538,7 @@ int box_check_socket(syd_process_t *current, syscall_info_t *info)
 		r = 0;
 		goto out;
 	default:
-		if (sydbox->config.whitelist_unsupported_socket_families) {
+		if (sydbox->config.allowlist_unsupported_socket_families) {
 			/* allow unsupported socket family */
 			goto out;
 		}

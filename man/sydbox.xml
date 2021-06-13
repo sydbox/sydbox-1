@@ -256,14 +256,14 @@
       <varlistentry>
         <term><varname>deny</varname></term>
         <listitem>
-          <para>Sandboxing defaults to deny, whitelists can be used to allow access.</para>
+          <para>Sandboxing defaults to deny, allowlists can be used to allow access.</para>
         </listitem>
       </varlistentry>
 
       <varlistentry>
         <term><varname>allow</varname></term>
         <listitem>
-          <para>Sandboxing defaults to allow, blacklists can be used to deny access.</para>
+          <para>Sandboxing defaults to allow, denylists can be used to deny access.</para>
         </listitem>
       </varlistentry>
     </variablelist>
@@ -278,8 +278,8 @@
 
       <para>This sandboxing checks certain system calls for filesystem write access. If a system call tries to write,
       modify or change attributes of a path, this attempt is reported and the system call is denied. There are two
-      ways to customize this behaviour. Sydbox may be configured to "whitelist" some path patterns. If the path
-      argument of the system call which is subject to be modified matches a pattern in the list of whitelisted path
+      ways to customize this behaviour. Sydbox may be configured to "allowlist" some path patterns. If the path
+      argument of the system call which is subject to be modified matches a pattern in the list of allowlisted path
       patterns, this attempt is not denied. Additionally, Sydbox may be configured to "filter" some path patterns. In
       this case a match will prevent Sydbox from reporting a warning about the access violation, the system call is
       still denied though.</para>
@@ -353,7 +353,7 @@
 
         <para>This sandboxing denies <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry>, and
         <citerefentry><refentrytitle>execveat</refentrytitle><manvolnum>2</manvolnum></citerefentry>
-        calls in case the path argument does not match one of the whitelisted patterns. Note, all
+        calls in case the path argument does not match one of the allowlisted patterns. Note, all
         <citerefentry><refentrytitle>exec</refentrytitle><manvolnum>3</manvolnum></citerefentry> family functions are sandboxed
         because these functions are just wrappers of either one of <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry>
         or <citerefentry><refentrytitle>execveat</refentrytitle><manvolnum>2</manvolnum></citerefentry> system calls.</para>
@@ -397,10 +397,10 @@
             <link linkend="core-restrict-shm-wr">core/restrict/shared_memory_writable</link>
           </para></listitem>
           <listitem><para>
-            <link linkend="core-whitelist-sb">core/whitelist/successful_bind</link>
+            <link linkend="core-allowlist-sb">core/allowlist/successful_bind</link>
           </para></listitem>
           <listitem><para>
-            <link linkend="core-whitelist-usf">core/whitelist/unsupported_socket_families</link>
+            <link linkend="core-allowlist-usf">core/allowlist/unsupported_socket_families</link>
           </para></listitem>
           <listitem><para>
             <link linkend="exec-resume_if_match">exec/resume_if_match</link>
@@ -1040,26 +1040,26 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-whitelist-ppd">core/whitelist/per_process_directories</option></term>
+          <term><option id="core-allowlist-ppd">core/allowlist/per_process_directories</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>default: <varname>true</varname></para>
             <para>
               A boolean specifying whether per-process directories like
               <filename class="directory">/proc/<envar>$pid</envar></filename>
-              should automatically be whitelisted.
+              should automatically be allowlisted.
             </para>
           </listitem>
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-whitelist-sb">core/whitelist/successful_bind</option></term>
+          <term><option id="core-allowlist-sb">core/allowlist/successful_bind</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>default: <varname>true</varname></para>
             <para>
               A boolean specifying whether the socket address arguments of successful
-              <function>bind</function><manvolnum>2</manvolnum> calls should be whitelisted
+              <function>bind</function><manvolnum>2</manvolnum> calls should be allowlisted
               for <function>connect</function><manvolnum>2</manvolnum>,
               <function>sendto</function><manvolnum>2</manvolnum>,
               <function>recvmsg</function><manvolnum>2</manvolnum>, and
@@ -1068,17 +1068,17 @@
             </para>
             <note>
               <para>
-                These socket addresses are whitelisted globally and not per-process for
+                These socket addresses are allowlisted globally and not per-process for
                 usability reasons. Thus, for example, a process which forks to call
                 <function>bind</function><manvolnum>2</manvolnum> will have its socket
-                address whitelisted for their parent as well.
+                address allowlisted for their parent as well.
               </para>
             </note>
           </listitem>
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-whitelist-usf">core/whitelist/unsupported_socket_families</option></term>
+          <term><option id="core-allowlist-usf">core/allowlist/unsupported_socket_families</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>default: <varname>true</varname></para>
@@ -1313,48 +1313,48 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="whitelist-exec">whitelist/exec</option></term>
+          <term><option id="allowlist-exec">allowlist/exec</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>default: <literal>[empty array]</literal></para>
             <para>
-              Specifies a list of path patterns to whitelist for <function>execve</function><manvolnum>2</manvolnum>
+              Specifies a list of path patterns to allowlist for <function>execve</function><manvolnum>2</manvolnum>
               sandboxing. See <xref linkend="execve-sandboxing"/> and <xref linkend="pattern-matching"/>.
             </para>
           </listitem>
         </varlistentry>
 
         <varlistentry>
-          <term><option id="whitelist-read">whitelist/read</option></term>
+          <term><option id="allowlist-read">allowlist/read</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>default: <literal>[empty array]</literal></para>
             <para>
-              Specifies a list of path patterns to whitelist for read sandboxing. See <xref linkend="read-sandboxing"/>
+              Specifies a list of path patterns to allowlist for read sandboxing. See <xref linkend="read-sandboxing"/>
               and <xref linkend="pattern-matching"/>.
             </para>
           </listitem>
         </varlistentry>
 
         <varlistentry>
-          <term><option id="whitelist-write">whitelist/write</option></term>
+          <term><option id="allowlist-write">allowlist/write</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>default: <literal>[empty array]</literal></para>
             <para>
-              Specifies a list of path patterns to whitelist for write sandboxing. See
+              Specifies a list of path patterns to allowlist for write sandboxing. See
               <xref linkend="write-sandboxing"/> and <xref linkend="pattern-matching"/>.
             </para>
           </listitem>
         </varlistentry>
 
         <varlistentry>
-          <term><option id="whitelist-network-bind">whitelist/network/bind</option></term>
+          <term><option id="allowlist-network-bind">allowlist/network/bind</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>default: <literal>[empty array]</literal></para>
             <para>
-              Specifies a list of network addresses to whitelist for <function>bind</function><manvolnum>2</manvolnum>
+              Specifies a list of network addresses to allowlist for <function>bind</function><manvolnum>2</manvolnum>
               network sandboxing. See <xref linkend="network-sandboxing"/> and
               <xref linkend="address-matching"/>.
             </para>
@@ -1362,12 +1362,12 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="whitelist-network-connect">whitelist/network/connect</option></term>
+          <term><option id="allowlist-network-connect">allowlist/network/connect</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>default: <literal>[empty array]</literal></para>
             <para>
-              Specifies a list of network addresses to whitelist for
+              Specifies a list of network addresses to allowlist for
               <function>connect</function><manvolnum>2</manvolnum> and
               <function>sendto</function><manvolnum>2</manvolnum> network sandboxing.
               See <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.
@@ -1376,48 +1376,48 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="blacklist-exec">blacklist/exec</option></term>
+          <term><option id="denylist-exec">denylist/exec</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>default: <literal>[empty array]</literal></para>
             <para>
-              Specifies a list of path patterns to blacklist for <function>execve</function><manvolnum>2</manvolnum>
+              Specifies a list of path patterns to denylist for <function>execve</function><manvolnum>2</manvolnum>
               sandboxing. See <xref linkend="execve-sandboxing"/> and <xref linkend="pattern-matching"/>.
             </para>
           </listitem>
         </varlistentry>
 
         <varlistentry>
-          <term><option id="blacklist-read">blacklist/read</option></term>
+          <term><option id="denylist-read">denylist/read</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>default: <literal>[empty array]</literal></para>
             <para>
-              Specifies a list of path patterns to blacklist for read sandboxing.
+              Specifies a list of path patterns to denylist for read sandboxing.
               See <xref linkend="read-sandboxing"/> and <xref linkend="pattern-matching"/>.
             </para>
           </listitem>
         </varlistentry>
 
         <varlistentry>
-          <term><option id="blacklist-write">blacklist/write</option></term>
+          <term><option id="denylist-write">denylist/write</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>default: <literal>[empty array]</literal></para>
             <para>
-              Specifies a list of path patterns to blacklist for write sandboxing. See
+              Specifies a list of path patterns to denylist for write sandboxing. See
               <xref linkend="write-sandboxing"/> and <xref linkend="pattern-matching"/>.
             </para>
           </listitem>
         </varlistentry>
 
         <varlistentry>
-          <term><option id="blacklist-network-bind">blacklist/network/bind</option></term>
+          <term><option id="denylist-network-bind">denylist/network/bind</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>default: <literal>[empty array]</literal></para>
             <para>
-              Specifies a list of network addresses to blacklist for <function>bind</function><manvolnum>2</manvolnum>
+              Specifies a list of network addresses to denylist for <function>bind</function><manvolnum>2</manvolnum>
               network sandboxing. See <xref linkend="network-sandboxing"/> and
               <xref linkend="address-matching"/>.
             </para>
@@ -1425,12 +1425,12 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="blacklist-network-connect">blacklist/network/connect</option></term>
+          <term><option id="denylist-network-connect">denylist/network/connect</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>default: <literal>[empty array]</literal></para>
             <para>
-              Specifies a list of network addresses to blacklist for
+              Specifies a list of network addresses to denylist for
               <function>connect</function><manvolnum>2</manvolnum> and
               <function>connect</function><manvolnum>2</manvolnum> network sandboxing.
               See <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.
@@ -1464,7 +1464,7 @@
   <refsect1 id="pattern-matching">
     <title>Pattern Matching</title>
 
-    <para>Sydbox uses shell-style pattern matching for whitelists and filters. The wildmatching code is borrowed from
+    <para>Sydbox uses shell-style pattern matching for allowlists and filters. The wildmatching code is borrowed from
     rsync and behaves like:</para>
 
     <itemizedlist>
@@ -1601,7 +1601,7 @@
         <programlisting>
           $&gt; sydbox -E LC_ALL=POSIX \
                        -m core/sandbox/read:allow \
-                       -m blacklist/read+/etc/shadow \
+                       -m denylist/read+/etc/shadow \
                        -- /bin/sh -c 'cat /etc/shadow'
           sydbox@3141592653: -- Access Violation! --
           sydbox@3141592653: process id=20926 (abi=0 name:`cat')
@@ -1631,9 +1631,9 @@
         $&gt; sydbox -E LC_ALL=POSIX \
                      -m core/sandbox/read:deny \
                      -m core/sandbox/write:deny \
-                     -m 'whitelist/read+/lib64/***' \
-                     -m whitelist/read+/dev/zero \
-                     -m whitelist/read+/dev/full \
+                     -m 'allowlist/read+/lib64/***' \
+                     -m allowlist/read+/dev/zero \
+                     -m allowlist/read+/dev/full \
                      -- dd if=/dev/zero of=/dev/full count=1
         dd: writing to '/dev/full': No space left on device
         1+0 records in

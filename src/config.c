@@ -41,9 +41,9 @@ void config_init(void)
 	sydbox->config.restrict_general = 0;
 	sydbox->config.restrict_ioctl = false;
 	sydbox->config.restrict_mmap = false;
-	sydbox->config.whitelist_per_process_directories = true;
-	sydbox->config.whitelist_successful_bind = true;
-	sydbox->config.whitelist_unsupported_socket_families = true;
+	sydbox->config.allowlist_per_process_directories = true;
+	sydbox->config.allowlist_successful_bind = true;
+	sydbox->config.allowlist_unsupported_socket_families = true;
 	sydbox->config.violation_decision = VIOLATION_DENY;
 	sydbox->config.violation_exit_code = -1;
 	sydbox->config.box_static.magic_lock = LOCK_UNSET;

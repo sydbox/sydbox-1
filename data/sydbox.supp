@@ -9,7 +9,7 @@
    fun:pathmatch_expand
    fun:acl_append_pathmatch
    fun:magic_edit_acl
-   fun:magic_append_whitelist_write
+   fun:magic_append_allowlist_write
    fun:config_parse_file
    fun:config_parse_spec
    fun:main
@@ -21,7 +21,7 @@
    fun:free
    fun:acl_append_pathmatch
    fun:magic_edit_acl
-   fun:magic_append_whitelist_write
+   fun:magic_append_allowlist_write
    fun:config_parse_file
    fun:config_parse_spec
    fun:main
@@ -148,7 +148,7 @@
    fun:sockmatch_parse
    fun:acl_append_sockmatch
    fun:magic_edit_acl
-   fun:magic_append_whitelist_network_bind
+   fun:magic_append_allowlist_network_bind
    fun:config_parse_file
    fun:config_parse_spec
    fun:main
@@ -160,7 +160,7 @@
    fun:free
    fun:acl_append_sockmatch
    fun:magic_edit_acl
-   fun:magic_append_whitelist_network_bind
+   fun:magic_append_allowlist_network_bind
    fun:config_parse_file
    fun:config_parse_spec
    fun:main
@@ -173,7 +173,7 @@
    fun:pathmatch_expand
    fun:acl_append_sockmatch
    fun:magic_edit_acl
-   fun:magic_append_whitelist_network_connect
+   fun:magic_append_allowlist_network_connect
    fun:config_parse_file
    fun:config_parse_spec
    fun:main
@@ -292,7 +292,7 @@
    fun:free
    fun:acl_append_sockmatch
    fun:magic_edit_acl
-   fun:magic_append_whitelist_network_connect
+   fun:magic_append_allowlist_network_connect
    fun:config_parse_file
    fun:config_parse_spec
    fun:main
@@ -453,7 +453,7 @@
    fun:free
    fun:acl_append_pathmatch
    fun:magic_edit_acl
-   fun:magic_append_whitelist_write
+   fun:magic_append_allowlist_write
    fun:do_stat
    fun:sys_stat
    fun:event_syscall
@@ -467,7 +467,7 @@
    fun:free
    fun:acl_append_pathmatch
    fun:magic_edit_acl
-   fun:magic_append_whitelist_write
+   fun:magic_append_allowlist_write
    fun:do_stat
    fun:sys_stat
    fun:event_syscall
@@ -481,7 +481,7 @@
    fun:free
    fun:acl_append_sockmatch
    fun:magic_edit_acl
-   fun:magic_append_whitelist_network_bind
+   fun:magic_append_allowlist_network_bind
    fun:do_stat
    fun:sys_stat
    fun:event_syscall
@@ -548,7 +548,7 @@
    fun:free
    fun:acl_append_sockmatch
    fun:magic_edit_acl
-   fun:magic_append_whitelist_network_connect
+   fun:magic_append_allowlist_network_connect
    fun:do_stat
    fun:sys_stat
    fun:event_syscall
@@ -562,7 +562,7 @@
    fun:free
    fun:acl_append_sockmatch
    fun:magic_edit_acl
-   fun:magic_append_whitelist_network_connect
+   fun:magic_append_allowlist_network_connect
    fun:do_stat
    fun:sys_stat
    fun:event_syscall
@@ -586,7 +586,7 @@
    fun:pathmatch_expand
    fun:acl_append_sockmatch
    fun:magic_edit_acl
-   fun:magic_append_whitelist_network_bind
+   fun:magic_append_allowlist_network_bind
    fun:do_stat
    fun:sys_stat
    fun:event_syscall
@@ -601,7 +601,7 @@
    fun:pathmatch_expand
    fun:acl_remove_pathmatch
    fun:magic_edit_acl
-   fun:magic_remove_whitelist_write
+   fun:magic_remove_allowlist_write
    fun:do_stat
    fun:sys_stat
    fun:event_syscall
@@ -615,7 +615,7 @@
    fun:free
    fun:acl_remove_pathmatch
    fun:magic_edit_acl
-   fun:magic_remove_whitelist_write
+   fun:magic_remove_allowlist_write
    fun:do_stat
    fun:sys_stat
    fun:event_syscall

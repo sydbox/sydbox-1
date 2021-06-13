@@ -27,31 +27,31 @@ static int magic_edit_acl(int (*edit_func)(enum acl_action, const char *, aclq_t
 	return r;
 }
 
-int magic_append_whitelist_exec(const void *val, syd_process_t *current)
+int magic_append_allowlist_exec(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_WHITELIST, val,
+	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_ALLOWLIST, val,
 			      &box->acl_exec);
 }
 
-int magic_remove_whitelist_exec(const void *val, syd_process_t *current)
+int magic_remove_allowlist_exec(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_WHITELIST, val,
+	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_ALLOWLIST, val,
 			      &box->acl_exec);
 }
 
-int magic_append_blacklist_exec(const void *val, syd_process_t *current)
+int magic_append_denylist_exec(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_BLACKLIST, val,
+	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_DENYLIST, val,
 			      &box->acl_exec);
 }
 
-int magic_remove_blacklist_exec(const void *val, syd_process_t *current)
+int magic_remove_denylist_exec(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_BLACKLIST, val,
+	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_DENYLIST, val,
 			      &box->acl_exec);
 }
 
@@ -67,31 +67,31 @@ int magic_remove_filter_exec(const void *val, syd_process_t *current)
 			      &sydbox->config.filter_exec);
 }
 
-int magic_append_whitelist_read(const void *val, syd_process_t *current)
+int magic_append_allowlist_read(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_WHITELIST, val,
+	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_ALLOWLIST, val,
 			      &box->acl_read);
 }
 
-int magic_remove_whitelist_read(const void *val, syd_process_t *current)
+int magic_remove_allowlist_read(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_WHITELIST, val,
+	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_ALLOWLIST, val,
 			      &box->acl_read);
 }
 
-int magic_append_blacklist_read(const void *val, syd_process_t *current)
+int magic_append_denylist_read(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_BLACKLIST, val,
+	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_DENYLIST, val,
 			      &box->acl_read);
 }
 
-int magic_remove_blacklist_read(const void *val, syd_process_t *current)
+int magic_remove_denylist_read(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_BLACKLIST, val,
+	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_DENYLIST, val,
 			      &box->acl_read);
 }
 
@@ -107,31 +107,31 @@ int magic_remove_filter_read(const void *val, syd_process_t *current)
 			      &sydbox->config.filter_read);
 }
 
-int magic_append_whitelist_write(const void *val, syd_process_t *current)
+int magic_append_allowlist_write(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_WHITELIST, val,
+	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_ALLOWLIST, val,
 			      &box->acl_write);
 }
 
-int magic_remove_whitelist_write(const void *val, syd_process_t *current)
+int magic_remove_allowlist_write(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_WHITELIST, val,
+	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_ALLOWLIST, val,
 			      &box->acl_write);
 }
 
-int magic_append_blacklist_write(const void *val, syd_process_t *current)
+int magic_append_denylist_write(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_BLACKLIST, val,
+	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_DENYLIST, val,
 			      &box->acl_write);
 }
 
-int magic_remove_blacklist_write(const void *val, syd_process_t *current)
+int magic_remove_denylist_write(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_BLACKLIST, val,
+	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_DENYLIST, val,
 			      &box->acl_write);
 }
 
@@ -153,59 +153,59 @@ int magic_remove_filter_write(const void *val, syd_process_t *current)
 			      &sydbox->config.filter_write);
 }
 
-int magic_append_whitelist_network_bind(const void *val, syd_process_t *current)
+int magic_append_allowlist_network_bind(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_WHITELIST, val,
+	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_ALLOWLIST, val,
 			      &box->acl_network_bind);
 }
 
-int magic_remove_whitelist_network_bind(const void *val, syd_process_t *current)
+int magic_remove_allowlist_network_bind(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_WHITELIST, val,
+	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_ALLOWLIST, val,
 			      &box->acl_network_bind);
 }
 
-int magic_append_whitelist_network_connect(const void *val, syd_process_t *current)
+int magic_append_allowlist_network_connect(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_WHITELIST, val,
+	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_ALLOWLIST, val,
 			      &box->acl_network_connect);
 }
 
-int magic_remove_whitelist_network_connect(const void *val, syd_process_t *current)
+int magic_remove_allowlist_network_connect(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_WHITELIST, val,
+	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_ALLOWLIST, val,
 			      &box->acl_network_connect);
 }
 
-int magic_append_blacklist_network_bind(const void *val, syd_process_t *current)
+int magic_append_denylist_network_bind(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_BLACKLIST, val,
+	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_DENYLIST, val,
 			      &box->acl_network_bind);
 }
 
-int magic_remove_blacklist_network_bind(const void *val, syd_process_t *current)
+int magic_remove_denylist_network_bind(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_BLACKLIST, val,
+	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_DENYLIST, val,
 			      &box->acl_network_bind);
 }
 
-int magic_append_blacklist_network_connect(const void *val, syd_process_t *current)
+int magic_append_denylist_network_connect(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_BLACKLIST, val,
+	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_DENYLIST, val,
 			      &box->acl_network_connect);
 }
 
-int magic_remove_blacklist_network_connect(const void *val, syd_process_t *current)
+int magic_remove_denylist_network_connect(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_BLACKLIST, val,
+	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_DENYLIST, val,
 			      &box->acl_network_connect);
 }
 

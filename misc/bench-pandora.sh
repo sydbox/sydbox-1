@@ -48,19 +48,19 @@ hyperfine \
     "\"$pandora\" box -m core/sandbox/read:allow -m core/trace/use_seccomp:0 /bin/sh -c '${bench[0]}'" \
     "\"$pandora\" box -m core/sandbox/read:deny -m core/trace/use_seccomp:1 /bin/sh -c '${bench[0]}'" \
     "\"$pandora\" box -m core/sandbox/read:deny -m core/trace/use_seccomp:0 /bin/sh -c '${bench[0]}'" \
-    "\"$pandora\" box -m core/sandbox/read:deny -m core/trace/use_seccomp:1 -m \"whitelist/read+$tmp\" /bin/sh -c '${bench[0]}'" \
-    "\"$pandora\" box -m core/sandbox/read:deny -m core/trace/use_seccomp:0 -m \"whitelist/read+$tmp\" /bin/sh -c '${bench[0]}'" \
+    "\"$pandora\" box -m core/sandbox/read:deny -m core/trace/use_seccomp:1 -m \"allowlist/read+$tmp\" /bin/sh -c '${bench[0]}'" \
+    "\"$pandora\" box -m core/sandbox/read:deny -m core/trace/use_seccomp:0 -m \"allowlist/read+$tmp\" /bin/sh -c '${bench[0]}'" \
     "\"$pandora\" box -m core/sandbox/write:off -m core/trace/use_seccomp:0 /bin/sh -c '${bench[1]}'" \
     "\"$pandora\" box -m core/sandbox/write:allow -m core/trace/use_seccomp:1 /bin/sh -c  '${bench[1]}'" \
     "\"$pandora\" box -m core/sandbox/write:allow -m core/trace/use_seccomp:0 /bin/sh -c '${bench[1]}'" \
     "\"$pandora\" box -m core/sandbox/write:deny -m core/trace/use_seccomp:1 /bin/sh -c '${bench[1]}'" \
     "\"$pandora\" box -m core/sandbox/write:deny -m core/trace/use_seccomp:0 /bin/sh -c '${bench[1]}'" \
-    "\"$pandora\" box -m core/sandbox/write:deny -m core/trace/use_seccomp:1 -m \"whitelist/write+$tmp\" /bin/sh -c '${bench[1]}'" \
-    "\"$pandora\" box -m core/sandbox/write:deny -m core/trace/use_seccomp:0 -m \"whitelist/write+$tmp\" /bin/sh -c '${bench[1]}'" \
+    "\"$pandora\" box -m core/sandbox/write:deny -m core/trace/use_seccomp:1 -m \"allowlist/write+$tmp\" /bin/sh -c '${bench[1]}'" \
+    "\"$pandora\" box -m core/sandbox/write:deny -m core/trace/use_seccomp:0 -m \"allowlist/write+$tmp\" /bin/sh -c '${bench[1]}'" \
     "\"$pandora\" box -m core/sandbox/network:deny -m core/trace/use_seccomp:0  /bin/sh -c '${bench[2]}'" \
     "\"$pandora\" box -m core/sandbox/network:deny -m core/trace/use_seccomp:1  /bin/sh -c '${bench[2]}'" \
-    "\"$pandora\" box -m core/sandbox/network:deny -m core/trace/use_seccomp:0 -m 'whitelist/network/bind+LOOPBACK@0' -m 'whitelist/network/bind+LOOPBACK6@0' -m 'whitelist/network/bind+inet:0.0.0.0@0' /bin/sh -c '${bench[2]}'" \
-    "\"$pandora\" box -m core/sandbox/network:deny -m core/trace/use_seccomp:1 -m 'whitelist/network/bind+LOOPBACK@0' -m 'whitelist/network/bind+LOOPBACK6@0' -m 'whitelist/network/bind+inet:0.0.0.0@0' /bin/sh -c '${bench[2]}'"
+    "\"$pandora\" box -m core/sandbox/network:deny -m core/trace/use_seccomp:0 -m 'allowlist/network/bind+LOOPBACK@0' -m 'allowlist/network/bind+LOOPBACK6@0' -m 'allowlist/network/bind+inet:0.0.0.0@0' /bin/sh -c '${bench[2]}'" \
+    "\"$pandora\" box -m core/sandbox/network:deny -m core/trace/use_seccomp:1 -m 'allowlist/network/bind+LOOPBACK@0' -m 'allowlist/network/bind+LOOPBACK6@0' -m 'allowlist/network/bind+inet:0.0.0.0@0' /bin/sh -c '${bench[2]}'"
 
 cat>"$out".txt<<EOF
 Date: $(date -u)

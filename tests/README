@@ -55,9 +55,9 @@ You can also run each test individually from command line, like this:
     ok 1 - deny lchown(NULL) with EFAULT
     ok 2 - deny lchown($symlink-file)
     ok 3 - deny lchown($nofile)
-    ok 4 - blacklist lchown($symlink-file)
-    ok 5 - blacklist lchown($nofile)
-    ok 6 - whitelist lchown($symlink-file)
+    ok 4 - denylist lchown($symlink-file)
+    ok 5 - denylist lchown($nofile)
+    ok 6 - allowlist lchown($symlink-file)
     # passed all 6 test(s)
     1..6
 

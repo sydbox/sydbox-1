@@ -79,7 +79,7 @@ sydbox_SOURCES= \
 		 magic-sandbox.c \
 		 magic-trace.c \
 		 magic-restrict.c \
-		 magic-whitelist.c \
+		 magic-allowlist.c \
 		 magic-acl.c \
 		 magic-match.c \
 		 magic-cmd.c \

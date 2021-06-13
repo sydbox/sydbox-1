@@ -5,15 +5,15 @@
 - Finish the rework on tests
 - SIGUSR2 dumps sydcore
 - Use a simpler hashtable instead of using uthash everywhere.
-- provide a list of system calls to whitelist/blacklist on startup to feed
-  to seccomp-bpf filters. A whitelisted system call will be allowed and will
-  further be subject to sandbox restrictions. A blacklisted system call will
+- provide a list of system calls to allowlist/denylist on startup to feed
+  to seccomp-bpf filters. An allowlisted system call will be allowed and will
+  further be subject to sandbox restrictions. A denylisted system call will
   be denied with ENOSYS directly by seccomp. The user may input a list of
   regular expressions to match system calls for restrictions.
-- use allowlist/denylist rather than whitelist/blacklist list in syd-2 profiles
+- use allowlist/denylist rather than allowlist/denylist list in syd-2 profiles
 - rename the master branch to main
-- Currently, the allow sandbox mode uses blacklists and the deny sandbox mode use
-whitelists. However it's better if both modes use both lists and the first matching
+- Currently, the allow sandbox mode uses denylists and the deny sandbox mode use
+allowlists. However it's better if both modes use both lists and the first matching
 pattern wins.
 - Add a UNIX socket interface to receive runtime configuration.
 - Abstract Paludis sandboxing system call hooks away from the core loop.

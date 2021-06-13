@@ -53,35 +53,35 @@ test_expect_failure 'deny utimes() for dangling symbolic link' '
         -- emily utimes symlink-dangling
 '
 
-test_expect_failure 'blacklist utimes()' '
+test_expect_failure 'denylist utimes()' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily utimes file3
 '
 
-test_expect_failure 'blacklist utimes() for non-existant file' '
+test_expect_failure 'denylist utimes() for non-existant file' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily utimes file-non-existant
 '
 
-test_expect_failure 'blacklist utimes() for symbolic link' '
+test_expect_failure 'denylist utimes() for symbolic link' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily utimes symlink-file3
 '
 
-test_expect_failure 'blacklist utimes() for dangling symbolic link' '
+test_expect_failure 'denylist utimes() for dangling symbolic link' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily utimes symlink-dangling
 '
 

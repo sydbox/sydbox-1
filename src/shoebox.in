@@ -12,9 +12,9 @@ core/sandbox/read:off
 core/sandbox/write:deny
 core/sandbox/network:deny
 
-core/whitelist/per_process_directories:true
-core/whitelist/successful_bind:true
-core/whitelist/unsupported_socket_families:true
+core/allowlist/per_process_directories:true
+core/allowlist/successful_bind:true
+core/allowlist/unsupported_socket_families:true
 
 core/violation/decision:deny
 core/violation/exit_code:-1
@@ -432,7 +432,7 @@ def command_tree(args):
         for event in events:
             dump_json(event, args.format)
 
-def whitelist_open(flags):
+def allowlist_open(flags):
     mode  = flags & os.O_ACCMODE
 
     if mode == os.O_RDONLY:
@@ -443,13 +443,13 @@ def whitelist_open(flags):
         return None
 
 def magic_key(magic):
-    if "whitelist/read" in magic:
+    if "allowlist/read" in magic:
         return 100
-    elif "whitelist/exec" in magic:
+    elif "allowlist/exec" in magic:
         return 95
-    elif "whitelist/write" in magic:
+    elif "allowlist/write" in magic:
         return 5
-    elif "whitelist/network" in magic:
+    elif "allowlist/network" in magic:
         return 0
     else:
         return 100
@@ -502,30 +502,30 @@ def command_magic(args):
             if sys_call[0] == 'access':
                 mode = sys_call[2]
                 if mode & os.W_OK:
-                    magic.add('whitelist/write+%s' % sys_call[1])
+                    magic.add('allowlist/write+%s' % sys_call[1])
             elif sys_call[0] in ('open', 'openat'):
                 off = sys_call[0][-2:] == 'at' and 1 or 0
                 dst = sys_call[off + 1]
-                wlist = whitelist_open(sys_call[off + 2])
+                wlist = allowlist_open(sys_call[off + 2])
                 if wlist is not None and type(dst) == str:
                     rule = None
                     if wlist == 'read':
                         if os.path.exists(dst):
-                            rule = '#< whitelist/read+%s' % dst
+                            rule = '#< allowlist/read+%s' % dst
                         else:
-                            rule = '#? whitelist/read+%s' % dst
+                            rule = '#? allowlist/read+%s' % dst
                     else:
-                        rule = 'whitelist/write+%s' % dst
+                        rule = 'allowlist/write+%s' % dst
                     if rule is not None:
                         magic.add(rule)
             # elif sys_call[0] in ('stat', 'lstat'):
 
             elif sys_call[0] == 'execve':
-                magic.add('#! whitelist/exec+%s' % sys_call[1])
+                magic.add('#! allowlist/exec+%s' % sys_call[1])
             elif sys_call[0] == 'bind' and address_ok(sys_call[2]):
-                magic.add('whitelist/network/bind+%s' % sys_call[2])
+                magic.add('allowlist/network/bind+%s' % sys_call[2])
             elif sys_call[0] == 'connect' and address_ok(sys_call[2]):
-                magic.add('whitelist/network/connect+%s' % sys_call[2])
+                magic.add('allowlist/network/connect+%s' % sys_call[2])
             #else:
             #    call = sys_call[0] + '('
             #    if any(sys_call[1:]):

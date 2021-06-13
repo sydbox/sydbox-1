@@ -42,14 +42,14 @@ test_expect_success 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0]' '
         syd-mkdir-p "$cdir"
 '
 
-test_expect_success 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0,WHITELIST]' '
+test_expect_success 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0,ALLOWLIST]' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
     rm -fr "$cdir" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m whitelist/write+"$HOMER"/"${cdir}" \
+        -m allowlist/write+"$HOMER"/"${cdir}" \
         -m core/violation/raise_safe:0 \
         syd-mkdir-p "$cdir"
 '
@@ -87,14 +87,14 @@ test_expect_success 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0]' '
         syd-mkdir-p "$cdir"
 '
 
-test_expect_success 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0,WHITELIST]' '
+test_expect_success 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0,ALLOWLIST]' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
     rm -fr "$cdir" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m whitelist/write+"$HOMER"/"${cdir}" \
+        -m allowlist/write+"$HOMER"/"${cdir}" \
         -m core/violation/raise_safe:0 \
         syd-mkdir-p "$cdir"
 '

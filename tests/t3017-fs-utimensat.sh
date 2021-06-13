@@ -248,37 +248,37 @@ test_expect_success_foreach_option SYMLINKS 'deny utimensat($fd, $symlink-file, 
     test_path_has_mtime "$m" "$f"
 '
 
-test_expect_success_foreach_option 'blacklist utimensat(-1, $abspath, 0s, 0)' '
+test_expect_success_foreach_option 'denylist utimensat(-1, $abspath, 0s, 0)' '
     f="$(unique_file)" &&
     touch "$f" &&
     m=$(stat_mtime "$f") &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily utimensat -e EPERM -d null -t 0 "$HOME_RESOLVED"/"$f" &&
     test_path_has_mtime "$m" "$f"
 '
 
-test_expect_success_foreach_option 'blacklist utimensat(AT_FDCWD, $file, 0s, 0)' '
+test_expect_success_foreach_option 'denylist utimensat(AT_FDCWD, $file, 0s, 0)' '
     f="$(unique_file)" &&
     touch "$f" &&
     m=$(stat_mtime "$f") &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily utimensat -e EPERM -d cwd -t 0 "$f" &&
     test_path_has_mtime "$m" "$f"
 '
 
-test_expect_success_foreach_option 'blacklist utimensat(AT_FDCWD, $nofile, 0s, 0)' '
+test_expect_success_foreach_option 'denylist utimensat(AT_FDCWD, $nofile, 0s, 0)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily utimensat -e ENOENT -d cwd -t 0 no"$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist utimensat(AT_FDCWD, $symlink-file, 0s, 0)' '
+test_expect_success_foreach_option SYMLINKS 'denylist utimensat(AT_FDCWD, $symlink-file, 0s, 0)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -286,31 +286,31 @@ test_expect_success_foreach_option SYMLINKS 'blacklist utimensat(AT_FDCWD, $syml
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily utimensat -e EPERM -d cwd -t 0 "$l" &&
     test_path_has_mtime "$m" "$f"
 '
 
-test_expect_success_foreach_option 'blacklist utimensat($fd, $file, 0s, 0)' '
+test_expect_success_foreach_option 'denylist utimensat($fd, $file, 0s, 0)' '
     f="$(unique_file)" &&
     touch "$f" &&
     m=$(stat_mtime "$f") &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily utimensat -e EPERM -d "$HOME" -t 0 "$f" &&
     test_path_has_mtime "$m" "$f"
 '
 
-test_expect_success_foreach_option 'blacklist utimensat($fd, $nofile, 0s, 0)' '
+test_expect_success_foreach_option 'denylist utimensat($fd, $nofile, 0s, 0)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily utimensat -e ENOENT -d cwd -t 0 no"$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist utimensat($fd, $symlink-file, 0s, 0)' '
+test_expect_success_foreach_option SYMLINKS 'denylist utimensat($fd, $symlink-file, 0s, 0)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -318,61 +318,61 @@ test_expect_success_foreach_option SYMLINKS 'blacklist utimensat($fd, $symlink-f
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily utimensat -e EPERM -d cwd -t 0 "$l" &&
     test_path_has_mtime "$m" "$f"
 '
 
-test_expect_success_foreach_option 'whitelist utimensat(-1, $abspath, 0s, 0)' '
+test_expect_success_foreach_option 'allowlist utimensat(-1, $abspath, 0s, 0)' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily utimensat -e ERRNO_0 -d null -t 0 "$HOME_RESOLVED"/"$f" &&
     test_path_has_mtime 0 "$f"
 '
 
-test_expect_success_foreach_option 'whitelist utimensat(AT_FDCWD, $file, 0s, 0)' '
+test_expect_success_foreach_option 'allowlist utimensat(AT_FDCWD, $file, 0s, 0)' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily utimensat -e ERRNO_0 -d cwd -t 0 "$f" &&
     test_path_has_mtime 0 "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'whitelist utimensat(AT_FDCWD, $symlink-file, 0s, 0)' '
+test_expect_success_foreach_option SYMLINKS 'allowlist utimensat(AT_FDCWD, $symlink-file, 0s, 0)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily utimensat -e ERRNO_0 -d cwd -t 0 "$l" &&
     test_path_has_mtime 0 "$f"
 '
 
-test_expect_success_foreach_option 'whitelist utimensat($fd, $file, 0s, 0)' '
+test_expect_success_foreach_option 'allowlist utimensat($fd, $file, 0s, 0)' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily utimensat -e ERRNO_0 -d "$HOME" -t 0 "$f" &&
     test_path_has_mtime 0 "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'whitelist utimensat($fd, $symlink-file, 0s, 0)' '
+test_expect_success_foreach_option SYMLINKS 'allowlist utimensat($fd, $symlink-file, 0s, 0)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily utimensat -e ERRNO_0 -d "$HOME" -t 0 "$l" &&
     test_path_has_mtime 0 "$f"
 '

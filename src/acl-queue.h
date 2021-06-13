@@ -23,13 +23,13 @@ enum acl_match {
 
 enum acl_action {
 	ACL_ACTION_NONE = 2,
-	ACL_ACTION_WHITELIST = 4,
-	ACL_ACTION_BLACKLIST = 8,
+	ACL_ACTION_ALLOWLIST = 4,
+	ACL_ACTION_DENYLIST = 8,
 };
 static const char *const acl_action_table[] = {
 	[ACL_ACTION_NONE] = "none",
-	[ACL_ACTION_WHITELIST] = "whitelist",
-	[ACL_ACTION_BLACKLIST] = "blacklist",
+	[ACL_ACTION_ALLOWLIST] = "allowlist",
+	[ACL_ACTION_DENYLIST] = "denylist",
 };
 DEFINE_STRING_TABLE_LOOKUP(acl_action, int)
 

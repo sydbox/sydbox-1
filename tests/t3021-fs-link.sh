@@ -21,7 +21,7 @@ test_expect_failure 'deny link()' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/dir0/**" \
+        -m "allowlist/write+$HOME_RESOLVED/dir0/**" \
         -- emily link dir0/file0 file1-non-existant &&
     test_path_is_missing file1-non-existant
 '
@@ -29,16 +29,16 @@ test_expect_failure 'deny link()' '
 test_expect_failure 'allow link()' '
     sydbox -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily link dir0/file0 file2 &&
     test_path_is_file file2
 '
 
-test_expect_failure 'blacklist link()' '
+test_expect_failure 'denylist link()' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily link dir1/file1 file1-non-existant &&
     test_path_is_missing file1-non-existant
 '

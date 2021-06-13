@@ -52,24 +52,24 @@ test_expect_failure SYMLINKS 'deny truncate() for dangling symbolic link' '
         -- emily truncate no"$l"
 '
 
-test_expect_failure 'whitelist truncate()' '
+test_expect_failure 'allowlist truncate()' '
     f="$(unique_file)" &&
     echo hello syd > "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily truncate "$f" &&
     test_path_is_empty "$f"
 '
 
-test_expect_failure SYMLINKS 'whitelist truncate() for symbolic link' '
+test_expect_failure SYMLINKS 'allowlist truncate() for symbolic link' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     echo hello syd > "$f" &&
     ln -sf "$l" "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily truncate -e ERRNO_0 "$l" &&
     test_path_is_empty "$f"
 '

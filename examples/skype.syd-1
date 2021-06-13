@@ -8,9 +8,9 @@ core/sandbox/read:deny
 core/sandbox/write:deny
 core/sandbox/network:deny
 
-core/whitelist/per_process_directories:true
-core/whitelist/successful_bind:true
-core/whitelist/unsupported_socket_families:true
+core/allowlist/per_process_directories:true
+core/allowlist/successful_bind:true
+core/allowlist/unsupported_socket_families:true
 
 core/abort/decision:killall
 core/panic/decision:kill
@@ -34,142 +34,142 @@ core/match/no_wildcard:literal
 #
 # /dev
 #
-whitelist/read+/dev
-whitelist/read+/dev/urandom
-whitelist/read+/dev/stdout
-whitelist/read+/dev/stderr
-whitelist/write+/dev/tty*
-whitelist/write+/dev/pts/***
-whitelist/read+/dev/snd/***
-whitelist/write+/dev/snd/***
-whitelist/read+/dev/video*
-whitelist/write+/dev/video*
+allowlist/read+/dev
+allowlist/read+/dev/urandom
+allowlist/read+/dev/stdout
+allowlist/read+/dev/stderr
+allowlist/write+/dev/tty*
+allowlist/write+/dev/pts/***
+allowlist/read+/dev/snd/***
+allowlist/write+/dev/snd/***
+allowlist/read+/dev/video*
+allowlist/write+/dev/video*
 
 #
 # /proc & /sys
 #
-whitelist/read+/proc/cpuinfo
-whitelist/read+/proc/meminfo
-whitelist/read+/proc/stat
-whitelist/read+/proc/net
-whitelist/read+/proc/net/arp
-whitelist/read+/proc/net/route
-whitelist/read+/proc/net/unix
-whitelist/read+/proc/sys/vm/overcommit_memory
-whitelist/read+/proc/sys/kernel/osrelease
-whitelist/read+/proc/sys/kernel/ostype
-whitelist/read+/sys/devices/system/cpu/online
-whitelist/read+/sys/devices/system/cpu
-whitelist/read+/sys/devices/system/cpu/cpu?/cpufreq/scaling_cur_freq
-whitelist/read+/sys/devices/system/cpu/cpu?/cpufreq/scaling_max_freq
-whitelist/read+/sys/devices/virtual/dmi/id/board_name
-whitelist/read+/sys/devices/virtual/dmi/id/board_version
-whitelist/read+/sys/devices/virtual/dmi/id/board_vendor
-whitelist/read+/sys/devices/virtual/dmi/id/product_name
-whitelist/read+/sys/devices/virtual/dmi/id/product_version
-whitelist/read+/sys/devices/virtual/dmi/id/sys_vendor
-whitelist/read+/sys/devices/*/*/*/power_supply/ACAD/***
-whitelist/read+/sys/devices/*/*/*/*/*/*/modalias
-whitelist/read+/sys/devices/*/*/*/*/*/*/video4linux/video?/dev
-whitelist/read+/sys/devices/*/*/*/*/*/idProduct
-whitelist/read+/sys/devices/*/*/*/*/*/idVendor
-whitelist/read+/sys/devices/*/*/*/*/*/speed
+allowlist/read+/proc/cpuinfo
+allowlist/read+/proc/meminfo
+allowlist/read+/proc/stat
+allowlist/read+/proc/net
+allowlist/read+/proc/net/arp
+allowlist/read+/proc/net/route
+allowlist/read+/proc/net/unix
+allowlist/read+/proc/sys/vm/overcommit_memory
+allowlist/read+/proc/sys/kernel/osrelease
+allowlist/read+/proc/sys/kernel/ostype
+allowlist/read+/sys/devices/system/cpu/online
+allowlist/read+/sys/devices/system/cpu
+allowlist/read+/sys/devices/system/cpu/cpu?/cpufreq/scaling_cur_freq
+allowlist/read+/sys/devices/system/cpu/cpu?/cpufreq/scaling_max_freq
+allowlist/read+/sys/devices/virtual/dmi/id/board_name
+allowlist/read+/sys/devices/virtual/dmi/id/board_version
+allowlist/read+/sys/devices/virtual/dmi/id/board_vendor
+allowlist/read+/sys/devices/virtual/dmi/id/product_name
+allowlist/read+/sys/devices/virtual/dmi/id/product_version
+allowlist/read+/sys/devices/virtual/dmi/id/sys_vendor
+allowlist/read+/sys/devices/*/*/*/power_supply/ACAD/***
+allowlist/read+/sys/devices/*/*/*/*/*/*/modalias
+allowlist/read+/sys/devices/*/*/*/*/*/*/video4linux/video?/dev
+allowlist/read+/sys/devices/*/*/*/*/*/idProduct
+allowlist/read+/sys/devices/*/*/*/*/*/idVendor
+allowlist/read+/sys/devices/*/*/*/*/*/speed
 
 #
 # nscd (glibc)
 #
-whitelist/network/connect+unix:/var/run/nscd/socket
-whitelist/network/connect+unix:/run/nscd/socket
+allowlist/network/connect+unix:/var/run/nscd/socket
+allowlist/network/connect+unix:/run/nscd/socket
 
 #
 # /etc
 #
-whitelist/read+/etc/asound.conf
-whitelist/read+/etc/group
-whitelist/read+/etc/hosts
-whitelist/read+/etc/host.conf
-whitelist/read+/etc/ld.so.cache
-whitelist/read+/etc/ld.so.preload
-whitelist/read+/etc/nsswitch.conf
-whitelist/read+/etc/resolv.conf
-whitelist/read+/etc/ssl/certs/***
-whitelist/read+/etc/fonts/***
-whitelist/read+/etc/gtk-2.0/***
-whitelist/read+/etc/pango/***
+allowlist/read+/etc/asound.conf
+allowlist/read+/etc/group
+allowlist/read+/etc/hosts
+allowlist/read+/etc/host.conf
+allowlist/read+/etc/ld.so.cache
+allowlist/read+/etc/ld.so.preload
+allowlist/read+/etc/nsswitch.conf
+allowlist/read+/etc/resolv.conf
+allowlist/read+/etc/ssl/certs/***
+allowlist/read+/etc/fonts/***
+allowlist/read+/etc/gtk-2.0/***
+allowlist/read+/etc/pango/***
 
 #
 # Libraries
 #
-whitelist/read+/lib*/***
-whitelist/read+/usr/lib*/***
+allowlist/read+/lib*/***
+allowlist/read+/usr/lib*/***
 
 #
 # Share dirs
 #
-whitelist/read+/usr/share/alsa/***
-whitelist/read+/usr/share/ca-certificates/***
-whitelist/read+/usr/share/locale/***
-whitelist/read+/usr/share/zoneinfo/***
-whitelist/read+/usr/share/fonts/***
-whitelist/read+/usr/share/icons/***
-whitelist/read+/usr/share/pixmaps/***
-whitelist/read+/usr/share/texmf-dist/fonts/***
-whitelist/read+/usr/share/X11/***
+allowlist/read+/usr/share/alsa/***
+allowlist/read+/usr/share/ca-certificates/***
+allowlist/read+/usr/share/locale/***
+allowlist/read+/usr/share/zoneinfo/***
+allowlist/read+/usr/share/fonts/***
+allowlist/read+/usr/share/icons/***
+allowlist/read+/usr/share/pixmaps/***
+allowlist/read+/usr/share/texmf-dist/fonts/***
+allowlist/read+/usr/share/X11/***
 
 #
 # Xorg/X11 & dbus
 #
-whitelist/network/connect+unix-abstract:/tmp/.X11-unix/**
-whitelist/network/connect+unix-abstract:/tmp/.ICE-unix/**
-whitelist/network/connect+unix-abstract:/tmp/dbus-*
-whitelist/network/connect+unix:/run/dbus/system_bus_socket
-whitelist/network/connect+unix:/var/run/dbus/system_bus_socket
+allowlist/network/connect+unix-abstract:/tmp/.X11-unix/**
+allowlist/network/connect+unix-abstract:/tmp/.ICE-unix/**
+allowlist/network/connect+unix-abstract:/tmp/dbus-*
+allowlist/network/connect+unix:/run/dbus/system_bus_socket
+allowlist/network/connect+unix:/var/run/dbus/system_bus_socket
 
 #
 # /tmp
 #
-whitelist/read+/tmp/qtsingleapp-*
-whitelist/write+/tmp/qtsingleapp-*
-whitelist/network/bind+unix:/tmp/qtsingleapp-*
-whitelist/network/connect+unix:/tmp/qtsingleapp-*
+allowlist/read+/tmp/qtsingleapp-*
+allowlist/write+/tmp/qtsingleapp-*
+allowlist/network/bind+unix:/tmp/qtsingleapp-*
+allowlist/network/connect+unix:/tmp/qtsingleapp-*
 
 #
 # Skype
 #
-whitelist/read+/etc/Skype.conf
-whitelist/read+/etc/Skype/***
-whitelist/read+/usr/*bin/skype
-whitelist/exec+/usr/*bin/skype
-whitelist/exec+/usr/lib*/skype/skype
-whitelist/exec+/opt/skype/skype
-whitelist/read+/opt/skype/***
-whitelist/read+/usr/share/skype/***
+allowlist/read+/etc/Skype.conf
+allowlist/read+/etc/Skype/***
+allowlist/read+/usr/*bin/skype
+allowlist/exec+/usr/*bin/skype
+allowlist/exec+/usr/lib*/skype/skype
+allowlist/exec+/opt/skype/skype
+allowlist/read+/opt/skype/***
+allowlist/read+/usr/share/skype/***
 
 #
 # Host specific configuration under /home
 #
-whitelist/read+/home/*/.Xauthority
-whitelist/read+/home/*/.ICEauthority
-whitelist/read+/home/*/.gtkrc*
-whitelist/read+/home/*/.config/Trolltech.conf
-whitelist/write+/home/*/.icons/***
+allowlist/read+/home/*/.Xauthority
+allowlist/read+/home/*/.ICEauthority
+allowlist/read+/home/*/.gtkrc*
+allowlist/read+/home/*/.config/Trolltech.conf
+allowlist/write+/home/*/.icons/***
 
 #
 # Skype specific configuration
 #
-whitelist/read+/home/*/.asoundrc
-whitelist/read+/home/*/.config/Skype/***
-whitelist/write+/home/*/.config/Skype/***
-whitelist/read+/home/*/.Skype/***
-whitelist/write+/home/*/.Skype/***
+allowlist/read+/home/*/.asoundrc
+allowlist/read+/home/*/.config/Skype/***
+allowlist/write+/home/*/.config/Skype/***
+allowlist/read+/home/*/.Skype/***
+allowlist/write+/home/*/.Skype/***
 
 #
 # Temporary files & caches
 #
-whitelist/read+/home/*/.cache/fontconfig/***
-whitelist/write+/home/*/.cache/fontconfig/***
-whitelist/read+/home/*/.compose-cache/***
-whitelist/write+/home/*/.compose-cache/***
+allowlist/read+/home/*/.cache/fontconfig/***
+allowlist/write+/home/*/.cache/fontconfig/***
+allowlist/read+/home/*/.compose-cache/***
+allowlist/write+/home/*/.compose-cache/***
 
 #
 # Networking
@@ -179,12 +179,12 @@ whitelist/write+/home/*/.compose-cache/***
 # 	Akamai and Microsoft Corporation together with your contact's IP
 # 	address.
 #
-whitelist/network/bind+LOOPBACK@0
-whitelist/network/connect+inet:0.0.0.0/0@0-65000
-whitelist/network/connect+inet6:::0/0@0-65000
+allowlist/network/bind+LOOPBACK@0
+allowlist/network/connect+inet:0.0.0.0/0@0-65000
+allowlist/network/connect+inet6:::0/0@0-65000
 
 #
 # Allow some external programs
 #
-whitelist/exec+/usr/*bin/xdg-open
+allowlist/exec+/usr/*bin/xdg-open
 exec/resume_if_match+/usr/*bin/xdg-open

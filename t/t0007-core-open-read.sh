@@ -21,7 +21,7 @@ test_expect_success 'read sandboxing for open works' '
         syd-open-static "$cdir"/readme rdonly
 '
 
-test_expect_success 'read sandboxing for open works with whitelist' '
+test_expect_success 'read sandboxing for open works with allowlist' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
@@ -29,7 +29,7 @@ test_expect_success 'read sandboxing for open works with whitelist' '
     touch "$cdir"/readme &&
     sydbox \
         -m core/sandbox/read:deny \
-        -m "whitelist/read+/***" \
+        -m "allowlist/read+/***" \
         syd-open-static "$cdir"/readme rdonly
 '
 

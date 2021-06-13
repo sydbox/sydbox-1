@@ -147,7 +147,7 @@ learn more on how **PATTERN MATCHING** works.
 Enable, disable additional network addresses unless you're using a **SOCKS5 proxy**
 which does remote DNS lookups, e.g:
 
-***whitelist/network/connect+inet:127.0.0.1@9050***
+***allowlist/network/connect+inet:127.0.0.1@9050***
 
 for [Tor](https://www.torproject.org/).
 
@@ -182,12 +182,12 @@ sydbox: >8 --
 ```
 
 This sounds like you're trying to play some audio on your browser. In this case, you
-should add a whitelist to your profile `.syd-1` file and restart your browser under
+should add an allowlist to your profile `.syd-1` file and restart your browser under
 this new profile.
 
 ```
-whitelist/connect/network+unix:/run/pulse/native
-whitelist/connect/network+unix:/var/run/pulse/native
+allowlist/connect/network+unix:/run/pulse/native
+allowlist/connect/network+unix:/var/run/pulse/native
 ```
 
 Note, sometimes you may have to add a symbolic link rather than the file it is

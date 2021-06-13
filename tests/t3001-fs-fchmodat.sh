@@ -246,39 +246,39 @@ test_expect_success_foreach_option SYMLINKS 'deny fchmodat($fd, $symlink-file)' 
     test_path_is_writable "$f"
 '
 
-test_expect_success_foreach_option 'blacklist fchmodat(-1, $abspath)' '
+test_expect_success_foreach_option 'denylist fchmodat(-1, $abspath)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchmodat -e EPERM -d null -m 000 "$HOME_RESOLVED"/"$f" &&
     test_path_is_readable "$f" &&
     test_path_is_writable "$f"
 '
 
-test_expect_success_foreach_option 'blacklist fchmodat(AT_FDCWD, $file)' '
+test_expect_success_foreach_option 'denylist fchmodat(AT_FDCWD, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchmodat -e EPERM -d cwd -m 000 "$f" &&
     test_path_is_readable "$f" &&
     test_path_is_writable "$f"
 '
 
-test_expect_success_foreach_option 'blacklist fchmodat(AT_FDCWD, $nofile)' '
+test_expect_success_foreach_option 'denylist fchmodat(AT_FDCWD, $nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchmodat -e ENOENT -d cwd -m 000 no"$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist fchmodat(AT_FDCWD, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'denylist fchmodat(AT_FDCWD, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -286,33 +286,33 @@ test_expect_success_foreach_option SYMLINKS 'blacklist fchmodat(AT_FDCWD, $symli
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchmodat -e EPERM -d cwd -m 000 "$l" &&
     test_path_is_readable "$f" &&
     test_path_is_writable "$f"
 '
 
-test_expect_success_foreach_option 'blacklist fchmodat($fd, $file)' '
+test_expect_success_foreach_option 'denylist fchmodat($fd, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchmodat -e EPERM -d "$HOME" -m 000 "$f" &&
     test_path_is_readable "$f" &&
     test_path_is_writable "$f"
 '
 
-test_expect_success_foreach_option 'blacklist fchmodat($fd, $nofile)' '
+test_expect_success_foreach_option 'denylist fchmodat($fd, $nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchmodat -e ENOENT -d cwd -m 000 no"$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'blacklist fchmodat($fd, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'denylist fchmodat($fd, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -320,37 +320,37 @@ test_expect_success_foreach_option SYMLINKS 'blacklist fchmodat($fd, $symlink-fi
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily fchmodat -e EPERM -d cwd -m 000 "$l" &&
     test_path_is_readable "$f" &&
     test_path_is_writable "$f"
 '
 
-test_expect_success_foreach_option 'whitelist fchmodat(-1, $abspath)' '
+test_expect_success_foreach_option 'allowlist fchmodat(-1, $abspath)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily fchmodat -e ERRNO_0 -d null -m 000 "$HOME_RESOLVED"/"$f" &&
     test_path_is_not_readable "$f" &&
     test_path_is_not_writable "$f"
 '
 
-test_expect_success_foreach_option 'whitelist fchmodat(AT_FDCWD, $file)' '
+test_expect_success_foreach_option 'allowlist fchmodat(AT_FDCWD, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily fchmodat -e ERRNO_0 -d cwd -m 000 "$f" &&
     test_path_is_not_readable "$f" &&
     test_path_is_not_writable "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'whitelist fchmodat(AT_FDCWD, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'allowlist fchmodat(AT_FDCWD, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -358,25 +358,25 @@ test_expect_success_foreach_option SYMLINKS 'whitelist fchmodat(AT_FDCWD, $symli
     ln -sf "$f" "$l" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily fchmodat -e ERRNO_0 -d cwd -m 000 "$l" &&
     test_path_is_not_readable "$f" &&
     test_path_is_not_writable "$f"
 '
 
-test_expect_success_foreach_option 'whitelist fchmodat($fd, $file)' '
+test_expect_success_foreach_option 'allowlist fchmodat($fd, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily fchmodat -e ERRNO_0 -d "$HOME" -m 000 "$f" &&
     test_path_is_not_readable "$f" &&
     test_path_is_not_writable "$f"
 '
 
-test_expect_success_foreach_option SYMLINKS 'whitelist fchmodat($fd, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'allowlist fchmodat($fd, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -384,7 +384,7 @@ test_expect_success_foreach_option SYMLINKS 'whitelist fchmodat($fd, $symlink-fi
     ln -sf "$f" "$l" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily fchmodat -e ERRNO_0 -d "$HOME" -m 000 "$l" &&
     test_path_is_not_readable "$f" &&
     test_path_is_not_writable "$f"

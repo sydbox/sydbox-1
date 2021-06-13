@@ -39,13 +39,13 @@ int sys_bind(syd_process_t *current)
 	info.rmode = RPATH_NOLAST;
 	info.deny_errno = EADDRNOTAVAIL;
 	if (sandbox_deny_network(current) || sydbox->permissive)
-		info.access_mode = ACCESS_WHITELIST;
+		info.access_mode = ACCESS_ALLOWLIST;
 	else
-		info.access_mode = ACCESS_BLACKLIST;
+		info.access_mode = ACCESS_DENYLIST;
 	info.access_list = &P_BOX(current)->acl_network_bind;
 	info.access_filter = &sydbox->config.filter_network;
 
-	if (sydbox->config.whitelist_successful_bind) {
+	if (sydbox->config.allowlist_successful_bind) {
 		info.ret_abspath = &unix_abspath;
 		info.ret_addr = &psa;
 	}
@@ -53,7 +53,7 @@ int sys_bind(syd_process_t *current)
 	r = box_check_socket(current, &info);
 	if (r < 0)
 		goto out;
-	if (!sydbox->config.whitelist_successful_bind || !psa)
+	if (!sydbox->config.allowlist_successful_bind || !psa)
 		goto out;
 	if (psa->family != AF_UNIX && psa->family != AF_INET &&
 	    psa->family != AF_INET6)
@@ -78,7 +78,7 @@ int sys_bind(syd_process_t *current)
 	sockmap_add(&P_SOCKMAP(current), inode, si);
 	return 0;
 out:
-	if (sydbox->config.whitelist_successful_bind) {
+	if (sydbox->config.allowlist_successful_bind) {
 		if (unix_abspath)
 			free(unix_abspath);
 		if (psa)
@@ -107,9 +107,9 @@ static int sys_connect_call(syd_process_t *current, bool sockaddr_in_msghdr,
 
 	init_sysinfo(&info);
 	if (sandbox_deny_network(current) || sydbox->permissive)
-		info.access_mode = ACCESS_WHITELIST;
+		info.access_mode = ACCESS_ALLOWLIST;
 	else
-		info.access_mode = ACCESS_BLACKLIST;
+		info.access_mode = ACCESS_DENYLIST;
 	info.access_list = &P_BOX(current)->acl_network_connect;
 	info.access_list_global = &sydbox->config.acl_network_connect_auto;
 	info.access_filter = &sydbox->config.filter_network;
@@ -134,7 +134,7 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 	struct sockmatch *match;
 
 	if (sandbox_off_network(current) ||
-	    !sydbox->config.whitelist_successful_bind)
+	    !sydbox->config.allowlist_successful_bind)
 		return 0;
 
 	if ((r = proc_socket_inode(current->pid,
@@ -152,7 +152,7 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 		break;
 	case AF_INET:
 		port = ntohs(info->addr->u.sa_in.sin_port);
-		/* whitelist bind(0 -> port) for connect() */
+		/* allowlist bind(0 -> port) for connect() */
 		if (!port &&
 		    (!read_net_tcp || (r = proc_socket_port(inode,
 							    true,
@@ -163,7 +163,7 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 		break;
 	case AF_INET6:
 		port = ntohs(info->addr->u.sa6.sin6_port);
-		/* whitelist bind(0 -> port) for connect() */
+		/* allowlist bind(0 -> port) for connect() */
 		if (!port &&
 		    (!read_net_tcp || (r = proc_socket_port(inode,
 							    false,
@@ -177,10 +177,10 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 	}
 	sockmap_remove(&P_SOCKMAP(current), inode);
 
-	/* whitelist successful bind. */
+	/* allowlist successful bind. */
 	struct acl_node *node;
 	node = xcalloc(1, sizeof(struct acl_node));
-	node->action = ACL_ACTION_WHITELIST;
+	node->action = ACL_ACTION_ALLOWLIST;
 	node->match = match;
 	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
 

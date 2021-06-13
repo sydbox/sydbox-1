@@ -51,35 +51,35 @@ test_expect_failure SYMLINKS 'deny umount() for dangling symbolic link' '
         -- emily umount symlink-dangling
 '
 
-test_expect_failure 'blacklist umount()' '
+test_expect_failure 'denylist umount()' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily umount mnt3
 '
 
-test_expect_failure 'blacklist umount() for non-existant directory' '
+test_expect_failure 'denylist umount() for non-existant directory' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily umount mnt4-non-existant
 '
 
-test_expect_failure SYMLINKS 'blacklist umount() for symbolic link' '
+test_expect_failure SYMLINKS 'denylist umount() for symbolic link' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily umount symlink-mnt5
 '
 
-test_expect_failure SYMLINKS 'blacklist umount() for dangling symbolic link' '
+test_expect_failure SYMLINKS 'denylist umount() for dangling symbolic link' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily umount symlink-dangling
 '
 

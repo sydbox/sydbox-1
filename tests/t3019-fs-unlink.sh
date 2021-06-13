@@ -34,25 +34,25 @@ test_expect_failure 'deny unlink() for non-existant file' '
 test_expect_failure 'allow unlink()' '
     sydbox -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "allowlist/write+$HOME_RESOLVED/**" \
         -- emily unlink file2 &&
     test_path_is_missing file2
 '
 
-test_expect_failure 'blacklist unlink()' '
+test_expect_failure 'denylist unlink()' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily unlink file3 &&
     test_path_is_file file3
 '
 
-test_expect_failure 'blacklist unlink() for non-existant file' '
+test_expect_failure 'denylist unlink() for non-existant file' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "denylist/write+$HOME_RESOLVED/**" \
         -- emily unlink file4-non-existant
 '
 

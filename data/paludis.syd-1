@@ -7,9 +7,9 @@ core/sandbox/read:off
 core/sandbox/write:deny
 core/sandbox/network:deny
 
-core/whitelist/per_process_directories:true
-core/whitelist/successful_bind:true
-core/whitelist/unsupported_socket_families:true
+core/allowlist/per_process_directories:true
+core/allowlist/successful_bind:true
+core/allowlist/unsupported_socket_families:true
 
 core/violation/decision:deny
 core/violation/exit_code:-1
@@ -35,46 +35,46 @@ core/match/no_wildcard:prefix
 #filter/write+
 #filter/network+
 
-#whitelist/exec+
-#whitelist/read+
-whitelist/write+/dev/stdout
-whitelist/write+/dev/stderr
-whitelist/write+/dev/zero
-whitelist/write+/dev/null
-whitelist/write+/dev/full
-whitelist/write+/dev/console
-whitelist/write+/dev/random
-whitelist/write+/dev/urandom
-whitelist/write+/dev/ptmx
-whitelist/write+/dev/fd/***
-whitelist/write+/dev/tty*
-whitelist/write+/dev/pty*
-whitelist/write+/dev/tts
-whitelist/write+/dev/pts
-whitelist/write+/dev/shm/***
-whitelist/write+/selinux/context/***
-whitelist/write+/proc/self/attr/***
-whitelist/write+/proc/self/fd/***
-whitelist/write+/proc/self/task/***
-whitelist/write+/tmp/***
-whitelist/write+/var/tmp/***
-whitelist/write+/var/cache/***
+#allowlist/exec+
+#allowlist/read+
+allowlist/write+/dev/stdout
+allowlist/write+/dev/stderr
+allowlist/write+/dev/zero
+allowlist/write+/dev/null
+allowlist/write+/dev/full
+allowlist/write+/dev/console
+allowlist/write+/dev/random
+allowlist/write+/dev/urandom
+allowlist/write+/dev/ptmx
+allowlist/write+/dev/fd/***
+allowlist/write+/dev/tty*
+allowlist/write+/dev/pty*
+allowlist/write+/dev/tts
+allowlist/write+/dev/pts
+allowlist/write+/dev/shm/***
+allowlist/write+/selinux/context/***
+allowlist/write+/proc/self/attr/***
+allowlist/write+/proc/self/fd/***
+allowlist/write+/proc/self/task/***
+allowlist/write+/tmp/***
+allowlist/write+/var/tmp/***
+allowlist/write+/var/cache/***
 
-whitelist/network/bind+LOOPBACK@0
-whitelist/network/bind+LOOPBACK@1024-65535
-whitelist/network/bind+LOOPBACK6@0
-whitelist/network/bind+LOOPBACK6@1024-65535
+allowlist/network/bind+LOOPBACK@0
+allowlist/network/bind+LOOPBACK@1024-65535
+allowlist/network/bind+LOOPBACK6@0
+allowlist/network/bind+LOOPBACK6@1024-65535
 
-whitelist/network/connect+unix:/var/run/nscd/socket
-whitelist/network/connect+unix:/run/nscd/socket
-whitelist/network/connect+unix:/var/lib/sss/pipes/nss
+allowlist/network/connect+unix:/var/run/nscd/socket
+allowlist/network/connect+unix:/run/nscd/socket
+allowlist/network/connect+unix:/var/lib/sss/pipes/nss
 
 # Allow getaddrinfo() with AI_ADDRCONFIG on musl systems.
-whitelist/network/connect+LOOPBACK@65535
-whitelist/network/connect+LOOPBACK6@65535
+allowlist/network/connect+LOOPBACK@65535
+allowlist/network/connect+LOOPBACK6@65535
 
-#blacklist/exec+
-#blacklist/read+
-#blacklist/write+
-#blacklist/network/bind+
-#blacklist/network/connect+
+#denylist/exec+
+#denylist/read+
+#denylist/write+
+#denylist/network/bind+
+#denylist/network/connect+

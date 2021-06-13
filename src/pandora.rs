@@ -38,11 +38,11 @@ enum Sandbox {
 impl std::fmt::Display for Sandbox {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Self::Bind => write!(f, "whitelist/network/bind"),
-            Self::Connect => write!(f, "whitelist/network/connect"),
-            Self::Write => write!(f, "whitelist/write"),
-            Self::Exec => write!(f, "whitelist/exec"),
-            Self::Read => write!(f, "#? whitelist/read"),
+            Self::Bind => write!(f, "allowlist/network/bind"),
+            Self::Connect => write!(f, "allowlist/network/connect"),
+            Self::Write => write!(f, "allowlist/write"),
+            Self::Exec => write!(f, "allowlist/exec"),
+            Self::Read => write!(f, "#? allowlist/read"),
         }
     }
 }
@@ -53,9 +53,9 @@ core/sandbox/read:off
 core/sandbox/write:deny
 core/sandbox/network:deny
 
-core/whitelist/per_process_directories:true
-core/whitelist/successful_bind:true
-core/whitelist/unsupported_socket_families:true
+core/allowlist/per_process_directories:true
+core/allowlist/successful_bind:true
+core/allowlist/unsupported_socket_families:true
 
 core/violation/decision:deny
 core/violation/exit_code:-1
@@ -74,37 +74,37 @@ core/restrict/general:0
 core/match/case_sensitive:true
 core/match/no_wildcard:prefix
 
-whitelist/write+/dev/stdout
-whitelist/write+/dev/stderr
-whitelist/write+/dev/zero
-whitelist/write+/dev/null
-whitelist/write+/dev/full
-whitelist/write+/dev/console
-whitelist/write+/dev/random
-whitelist/write+/dev/urandom
-whitelist/write+/dev/ptmx
-whitelist/write+/dev/fd/***
-whitelist/write+/dev/tty*
-whitelist/write+/dev/pty*
-whitelist/write+/dev/tts
-whitelist/write+/dev/pts
-whitelist/write+/dev/shm/***
-whitelist/write+/selinux/context/***
-whitelist/write+/proc/self/attr/***
-whitelist/write+/proc/self/fd/***
-whitelist/write+/proc/self/task/***
-whitelist/write+/tmp/***
-whitelist/write+/var/tmp/***
-whitelist/write+/var/cache/***
+allowlist/write+/dev/stdout
+allowlist/write+/dev/stderr
+allowlist/write+/dev/zero
+allowlist/write+/dev/null
+allowlist/write+/dev/full
+allowlist/write+/dev/console
+allowlist/write+/dev/random
+allowlist/write+/dev/urandom
+allowlist/write+/dev/ptmx
+allowlist/write+/dev/fd/***
+allowlist/write+/dev/tty*
+allowlist/write+/dev/pty*
+allowlist/write+/dev/tts
+allowlist/write+/dev/pts
+allowlist/write+/dev/shm/***
+allowlist/write+/selinux/context/***
+allowlist/write+/proc/self/attr/***
+allowlist/write+/proc/self/fd/***
+allowlist/write+/proc/self/task/***
+allowlist/write+/tmp/***
+allowlist/write+/var/tmp/***
+allowlist/write+/var/cache/***
 
-whitelist/network/bind+LOOPBACK@0
-whitelist/network/bind+LOOPBACK@1024-65535
-whitelist/network/bind+LOOPBACK6@0
-whitelist/network/bind+LOOPBACK6@1024-65535
+allowlist/network/bind+LOOPBACK@0
+allowlist/network/bind+LOOPBACK@1024-65535
+allowlist/network/bind+LOOPBACK6@0
+allowlist/network/bind+LOOPBACK6@1024-65535
 
-whitelist/network/connect+unix:/var/run/nscd/socket
-whitelist/network/connect+unix:/run/nscd/socket
-whitelist/network/connect+unix:/var/lib/sss/pipes/nss
+allowlist/network/connect+unix:/var/run/nscd/socket
+allowlist/network/connect+unix:/run/nscd/socket
+allowlist/network/connect+unix:/var/lib/sss/pipes/nss
 ";
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
@@ -415,7 +415,7 @@ Repository: {}
         let home;
         let mut homeargs = Vec::new();
         if let Ok(s) = std::env::var("HOME") {
-            home = format!("whitelist/write+{}/***", s);
+            home = format!("allowlist/write+{}/***", s);
             homeargs.push("-m");
             homeargs.push(&home);
         }
@@ -507,9 +507,9 @@ core/restrict/io_control:false
 core/restrict/memory_map:false
 core/restrict/shared_memory_writable:false
 
-core/whitelist/per_process_directories:true
-core/whitelist/successful_bind:true
-core/whitelist/unsupported_socket_families:true
+core/allowlist/per_process_directories:true
+core/allowlist/successful_bind:true
+core/allowlist/unsupported_socket_families:true
 
 core/violation/decision:deny
 core/violation/exit_code:-1
@@ -525,41 +525,41 @@ core/match/case_sensitive:true
 core/match/no_wildcard:literal
 
 # Safe defaults for system paths
-whitelist/write+/dev/stdout
-whitelist/write+/dev/stderr
-whitelist/write+/dev/zero
-whitelist/write+/dev/null
-whitelist/write+/dev/full
-whitelist/write+/dev/console
-whitelist/write+/dev/random
-whitelist/write+/dev/urandom
-whitelist/write+/dev/ptmx
-whitelist/write+/dev/fd/***
-whitelist/write+/dev/tty*
-whitelist/write+/dev/pty*
-whitelist/write+/dev/tts
-whitelist/write+/dev/pts
-whitelist/write+/dev/pts/***
-whitelist/write+/dev/shm/***
-whitelist/write+/selinux/context/***
-whitelist/write+/proc/self/attr/***
-whitelist/write+/proc/self/fd/***
-whitelist/write+/proc/self/task/***
-whitelist/write+/tmp/***
-whitelist/write+/var/tmp/***
+allowlist/write+/dev/stdout
+allowlist/write+/dev/stderr
+allowlist/write+/dev/zero
+allowlist/write+/dev/null
+allowlist/write+/dev/full
+allowlist/write+/dev/console
+allowlist/write+/dev/random
+allowlist/write+/dev/urandom
+allowlist/write+/dev/ptmx
+allowlist/write+/dev/fd/***
+allowlist/write+/dev/tty*
+allowlist/write+/dev/pty*
+allowlist/write+/dev/tts
+allowlist/write+/dev/pts
+allowlist/write+/dev/pts/***
+allowlist/write+/dev/shm/***
+allowlist/write+/selinux/context/***
+allowlist/write+/proc/self/attr/***
+allowlist/write+/proc/self/fd/***
+allowlist/write+/proc/self/task/***
+allowlist/write+/tmp/***
+allowlist/write+/var/tmp/***
 
 # Safe defaults for local network
 # This allows bind to all loopback ports.
-# Each successful bind is automatically whitelisted for connect with
-# core/whitelist/successful_bind:true
-whitelist/network/bind+LOOPBACK@0
-whitelist/network/bind+LOOPBACK@1024-65535
-whitelist/network/bind+LOOPBACK6@0
-whitelist/network/bind+LOOPBACK6@1024-65535
+# Each successful bind is automatically allowlisted for connect with
+# core/allowlist/successful_bind:true
+allowlist/network/bind+LOOPBACK@0
+allowlist/network/bind+LOOPBACK@1024-65535
+allowlist/network/bind+LOOPBACK6@0
+allowlist/network/bind+LOOPBACK6@1024-65535
 
-whitelist/network/connect+unix:/var/run/nscd/socket
-whitelist/network/connect+unix:/run/nscd/socket
-whitelist/network/connect+unix:/var/lib/sss/pipes/nss
+allowlist/network/connect+unix:/var/run/nscd/socket
+allowlist/network/connect+unix:/run/nscd/socket
+allowlist/network/connect+unix:/var/lib/sss/pipes/nss
 ###
 
 ###

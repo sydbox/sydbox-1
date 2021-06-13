@@ -223,10 +223,10 @@ enum magic_key {
 	MAGIC_KEY_CORE_RESTRICT_MEMORY_MAP,
 	MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE,
 
-	MAGIC_KEY_CORE_WHITELIST,
-	MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES,
-	MAGIC_KEY_CORE_WHITELIST_SUCCESSFUL_BIND,
-	MAGIC_KEY_CORE_WHITELIST_UNSUPPORTED_SOCKET_FAMILIES,
+	MAGIC_KEY_CORE_ALLOWLIST,
+	MAGIC_KEY_CORE_ALLOWLIST_PER_PROCESS_DIRECTORIES,
+	MAGIC_KEY_CORE_ALLOWLIST_SUCCESSFUL_BIND,
+	MAGIC_KEY_CORE_ALLOWLIST_UNSUPPORTED_SOCKET_FAMILIES,
 
 	MAGIC_KEY_CORE_VIOLATION,
 	MAGIC_KEY_CORE_VIOLATION_DECISION,
@@ -243,21 +243,21 @@ enum magic_key {
 	MAGIC_KEY_EXEC_KILL_IF_MATCH,
 	MAGIC_KEY_EXEC_RESUME_IF_MATCH,
 
-	MAGIC_KEY_WHITELIST,
-	MAGIC_KEY_WHITELIST_EXEC,
-	MAGIC_KEY_WHITELIST_READ,
-	MAGIC_KEY_WHITELIST_WRITE,
-	MAGIC_KEY_WHITELIST_NETWORK,
-	MAGIC_KEY_WHITELIST_NETWORK_BIND,
-	MAGIC_KEY_WHITELIST_NETWORK_CONNECT,
+	MAGIC_KEY_ALLOWLIST,
+	MAGIC_KEY_ALLOWLIST_EXEC,
+	MAGIC_KEY_ALLOWLIST_READ,
+	MAGIC_KEY_ALLOWLIST_WRITE,
+	MAGIC_KEY_ALLOWLIST_NETWORK,
+	MAGIC_KEY_ALLOWLIST_NETWORK_BIND,
+	MAGIC_KEY_ALLOWLIST_NETWORK_CONNECT,
 
-	MAGIC_KEY_BLACKLIST,
-	MAGIC_KEY_BLACKLIST_EXEC,
-	MAGIC_KEY_BLACKLIST_READ,
-	MAGIC_KEY_BLACKLIST_WRITE,
-	MAGIC_KEY_BLACKLIST_NETWORK,
-	MAGIC_KEY_BLACKLIST_NETWORK_BIND,
-	MAGIC_KEY_BLACKLIST_NETWORK_CONNECT,
+	MAGIC_KEY_DENYLIST,
+	MAGIC_KEY_DENYLIST_EXEC,
+	MAGIC_KEY_DENYLIST_READ,
+	MAGIC_KEY_DENYLIST_WRITE,
+	MAGIC_KEY_DENYLIST_NETWORK,
+	MAGIC_KEY_DENYLIST_NETWORK_BIND,
+	MAGIC_KEY_DENYLIST_NETWORK_CONNECT,
 
 	MAGIC_KEY_FILTER,
 	MAGIC_KEY_FILTER_EXEC,
@@ -304,13 +304,13 @@ enum syd_stat {
 
 enum sys_access_mode {
 	ACCESS_0,
-	ACCESS_WHITELIST,
-	ACCESS_BLACKLIST
+	ACCESS_ALLOWLIST,
+	ACCESS_DENYLIST
 };
 static const char *const sys_access_mode_table[] = {
 	[ACCESS_0]         = "0",
-	[ACCESS_WHITELIST] = "whitelist",
-	[ACCESS_BLACKLIST] = "blacklist"
+	[ACCESS_ALLOWLIST] = "allowlist",
+	[ACCESS_DENYLIST] = "denylist"
 };
 DEFINE_STRING_TABLE_LOOKUP(sys_access_mode, int)
 
@@ -364,7 +364,7 @@ struct syd_process_shared_clone_fs {
 /* Shared items when CLONE_FILES is set. */
 struct syd_process_shared_clone_files {
 	/*
-	 * Inode socket address mapping for bind whitelist
+	 * Inode socket address mapping for bind allowlist
 	 */
 	struct sockmap *sockmap;
 
@@ -511,9 +511,9 @@ struct config {
 	/* magic access to core.*  */
 	bool magic_core_allow;
 
-	bool whitelist_per_process_directories;
-	bool whitelist_successful_bind;
-	bool whitelist_unsupported_socket_families;
+	bool allowlist_per_process_directories;
+	bool allowlist_successful_bind;
+	bool allowlist_unsupported_socket_families;
 
 	/* restrict knobs are not inherited, they're global config */
 	bool restrict_ioctl;
@@ -646,7 +646,7 @@ struct syscall_info {
 	unsigned rmode;
 	/* Stat mode */
 	enum syd_stat syd_mode;
-	/* Access control mode (whitelist, blacklist) */
+	/* Access control mode (allowlist, denylist) */
 	enum sys_access_mode access_mode;
 
 	/* Deny errno */
@@ -946,38 +946,38 @@ int magic_set_restrict_ioctl(const void *val, syd_process_t *current);
 int magic_query_restrict_ioctl(syd_process_t *current);
 int magic_set_restrict_shm_wr(const void *val, syd_process_t *current);
 int magic_query_restrict_shm_wr(syd_process_t *current);
-int magic_set_whitelist_ppd(const void *val, syd_process_t *current);
-int magic_query_whitelist_ppd(syd_process_t *current);
-int magic_set_whitelist_sb(const void *val, syd_process_t *current);
-int magic_query_whitelist_sb(syd_process_t *current);
-int magic_set_whitelist_usf(const void *val, syd_process_t *current);
-int magic_query_whitelist_usf(syd_process_t *current);
-int magic_append_whitelist_exec(const void *val, syd_process_t *current);
-int magic_remove_whitelist_exec(const void *val, syd_process_t *current);
-int magic_append_whitelist_read(const void *val, syd_process_t *current);
-int magic_remove_whitelist_read(const void *val, syd_process_t *current);
-int magic_append_whitelist_write(const void *val, syd_process_t *current);
-int magic_remove_whitelist_write(const void *val, syd_process_t *current);
-int magic_append_blacklist_exec(const void *val, syd_process_t *current);
-int magic_remove_blacklist_exec(const void *val, syd_process_t *current);
-int magic_append_blacklist_read(const void *val, syd_process_t *current);
-int magic_remove_blacklist_read(const void *val, syd_process_t *current);
-int magic_append_blacklist_write(const void *val, syd_process_t *current);
-int magic_remove_blacklist_write(const void *val, syd_process_t *current);
+int magic_set_allowlist_ppd(const void *val, syd_process_t *current);
+int magic_query_allowlist_ppd(syd_process_t *current);
+int magic_set_allowlist_sb(const void *val, syd_process_t *current);
+int magic_query_allowlist_sb(syd_process_t *current);
+int magic_set_allowlist_usf(const void *val, syd_process_t *current);
+int magic_query_allowlist_usf(syd_process_t *current);
+int magic_append_allowlist_exec(const void *val, syd_process_t *current);
+int magic_remove_allowlist_exec(const void *val, syd_process_t *current);
+int magic_append_allowlist_read(const void *val, syd_process_t *current);
+int magic_remove_allowlist_read(const void *val, syd_process_t *current);
+int magic_append_allowlist_write(const void *val, syd_process_t *current);
+int magic_remove_allowlist_write(const void *val, syd_process_t *current);
+int magic_append_denylist_exec(const void *val, syd_process_t *current);
+int magic_remove_denylist_exec(const void *val, syd_process_t *current);
+int magic_append_denylist_read(const void *val, syd_process_t *current);
+int magic_remove_denylist_read(const void *val, syd_process_t *current);
+int magic_append_denylist_write(const void *val, syd_process_t *current);
+int magic_remove_denylist_write(const void *val, syd_process_t *current);
 int magic_append_filter_exec(const void *val, syd_process_t *current);
 int magic_remove_filter_exec(const void *val, syd_process_t *current);
 int magic_append_filter_read(const void *val, syd_process_t *current);
 int magic_remove_filter_read(const void *val, syd_process_t *current);
 int magic_append_filter_write(const void *val, syd_process_t *current);
 int magic_remove_filter_write(const void *val, syd_process_t *current);
-int magic_append_whitelist_network_bind(const void *val, syd_process_t *current);
-int magic_remove_whitelist_network_bind(const void *val, syd_process_t *current);
-int magic_append_whitelist_network_connect(const void *val, syd_process_t *current);
-int magic_remove_whitelist_network_connect(const void *val, syd_process_t *current);
-int magic_append_blacklist_network_bind(const void *val, syd_process_t *current);
-int magic_remove_blacklist_network_bind(const void *val, syd_process_t *current);
-int magic_append_blacklist_network_connect(const void *val, syd_process_t *current);
-int magic_remove_blacklist_network_connect(const void *val, syd_process_t *current);
+int magic_append_allowlist_network_bind(const void *val, syd_process_t *current);
+int magic_remove_allowlist_network_bind(const void *val, syd_process_t *current);
+int magic_append_allowlist_network_connect(const void *val, syd_process_t *current);
+int magic_remove_allowlist_network_connect(const void *val, syd_process_t *current);
+int magic_append_denylist_network_bind(const void *val, syd_process_t *current);
+int magic_remove_denylist_network_bind(const void *val, syd_process_t *current);
+int magic_append_denylist_network_connect(const void *val, syd_process_t *current);
+int magic_remove_denylist_network_connect(const void *val, syd_process_t *current);
 int magic_append_filter_network(const void *val, syd_process_t *current);
 int magic_remove_filter_network(const void *val, syd_process_t *current);
 int magic_set_violation_decision(const void *val, syd_process_t *current);
