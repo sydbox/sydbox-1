@@ -1125,8 +1125,9 @@ static inline pid_t process_find_exec(pid_t exec_pid)
 	syd_process_t *node, *tmp;
 
 	process_iter(node, tmp) {
-		if (proc_has_task(node->pid, exec_pid) &&
-		    node->pid == node->tgid)
+		if (node->pid == node->tgid &&
+		    !(node->flags & SYD_KILLED) &&
+		    proc_has_task(node->pid, exec_pid))
 			return node->pid;
 	}
 
