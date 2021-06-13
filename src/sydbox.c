@@ -507,12 +507,14 @@ static void switch_execve_leader(syd_process_t *leader,
 {
 	process_remove(leader);
 
+	/*
 	if (magic_query_violation_raise_safe(leader)) {
 		say("multithreaded execve: %d superseded by execve "
 		    "in pid clone_fs[pid:%d]=%d",
 		    leader->pid, execve_thread->pid,
 		    P_CLONE_FS_REFCNT(leader));
 	}
+	*/
 	dump(DUMP_EXEC_MT, execve_thread->pid, leader->pid,
 	     execve_thread->abspath);
 
