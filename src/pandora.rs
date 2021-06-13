@@ -65,7 +65,6 @@ core/violation/raise_safe:false
 core/trace/magic_lock:off
 core/trace/use_toolong_hack:true
 
-core/restrict/file_control:false
 core/restrict/io_control:false
 core/restrict/memory_map:false
 core/restrict/shared_memory_writable:false
@@ -154,8 +153,12 @@ enum Dump {
 fn command_box<'a>(
     bin: &'a str,
     cmd: &mut Vec<&'a str>,
+    arch: &Option<Vec<&'a str>>,
     config: &Option<Vec<&'a str>>,
     magic: &Option<Vec<&'a str>>,
+    bpf: bool,
+    dump: &Option<&'a str>,
+    export: &Option<&'a str>,
 ) -> i32 {
     cmd.insert(0, "--");
     if let Some(ref magic) = magic {
@@ -169,6 +172,23 @@ fn command_box<'a>(
             cmd.insert(0, item);
             cmd.insert(0, "-c");
         }
+    }
+    if let Some(ref arch) = arch {
+        for item in arch.iter() {
+            cmd.insert(0, item);
+            cmd.insert(0, "-a");
+        }
+    }
+    if bpf {
+        cmd.insert(0, "-b");
+    }
+    if let Some(dump_fd) = dump {
+        cmd.insert(0, dump_fd);
+        cmd.insert(0, "-d");
+    }
+    if let Some(export_format) = export {
+        cmd.insert(0, export_format);
+        cmd.insert(0, "--export");
     }
     cmd.insert(0, bin);
     // eprintln!("executing `{:?}'", cmd);
@@ -210,8 +230,6 @@ fn command_profile<'b>(bin: &'b str, cmd: &[&'b str], output_path: &'b str, path
         .arg("-m")
         .arg("core/sandbox/network:deny")
         .arg("-m")
-        .arg("core/restrict/file_control:0")
-        .arg("-m")
         .arg("core/restrict/shared_memory_writable:0")
         .arg("-d")
         .arg(format!("{}", fd_rw))
@@ -241,6 +259,15 @@ fn command_inspect(input_path: &str, output_path: &str, path_limit: u8) -> i32 {
 }
 
 fn main() {
+    let arch_values = ["native",
+        "x86_64", "x86", "x32",
+        "arm", "aarch64", "mips", "mips64",
+        "ppc", "ppc64", "ppc64le",
+        "s390", "s390x", "parisc",
+        "parisc64", "riscv64"
+    ];
+    let dump_values = ["fd[0-9]+", "path", "tmp"];
+    let export_values = ["bpf", "pfc"];
     let matches = App::new(built_info::PKG_NAME)
         .version(built_info::PKG_VERSION)
         .author(built_info::PKG_AUTHORS)
@@ -251,12 +278,12 @@ If no subcommands are given, Pandora executes a shell with the argument `-l'.
 To figure out the shell first the SHELL environment variable is checked.
 If this is not set, the default shell is `/bin/sh'.
 
-In login shell mode, if the file `/etc/pandora.syd-1' exists,
+In login shell mode, if the file `/etc/pandora.syd-2' exists,
 Pandora will tell SydBox to use this file as configuration.
 
 In login shell mode, SydBox uses the Paludis profile as the default set of configuration values.
 To see this default set of configuration values and white lists of system paths, check:
-https://git.exherbo.org/sydbox-1.git/plain/data/paludis.syd-1
+https://git.exherbo.org/sydbox-1.git/plain/data/paludis.syd-2
 
 Hey you, out there beyond the wall,
 Breaking bottles in the hall,
@@ -283,7 +310,6 @@ Repository: {}
                         .required(true)
                         .help("Path to sydbox binary")
                         .long("bin")
-                        .short("b")
                         .env("SYDBOX_BIN"),
                 )
                 .arg(
@@ -302,6 +328,50 @@ Repository: {}
                         .multiple(true)
                         .number_of_values(1),
                 )
+                .arg(
+                    Arg::with_name("arch")
+                        .default_value("native")
+                        .required(false)
+                        .help("filter system calls for the given architecture, may be repeated")
+                        .short("a")
+                        .long("arch")
+                        .number_of_values(1)
+                        .possible_values(&arch_values),
+                )
+                .arg(
+                    Arg::with_name("bpf-only")
+                        .required(false)
+                        .help("run in bpf only mode, no seccomp user notifications")
+                        .short("b"),
+                )
+                .arg(
+                    Arg::with_name("dump")
+                         .required(false)
+                         .help("dump system call information to the given file descriptor")
+                         .short("d")
+                         .number_of_values(1)
+                         .possible_values(&dump_values),
+                )
+                .arg(
+                    Arg::with_name("export")
+                        .required(false)
+                        .help("export the seccomp filters to standard error on startup")
+                        .long("export")
+                        .number_of_values(1)
+                        .possible_values(&export_values),
+                )
+                .arg(
+                    Arg::with_name("dry-run")
+                        .required(false)
+                        .help("run under inspection without denying system calls")
+                        .long("dry-run"),
+                )
+                .arg(
+                    Arg::with_name("test")
+                        .required(false)
+                        .help("test if various runtime requirements are functional and exit")
+                        .long("test"),
+                )
                 .arg(Arg::with_name("cmd").required(true).multiple(true)),
         )
         .subcommand(
@@ -313,12 +383,11 @@ Repository: {}
                         .required(true)
                         .help("Path to sydbox binary")
                         .long("bin")
-                        .short("b")
                         .env("SYDBOX_BIN"),
                 )
                 .arg(
                     Arg::with_name("output")
-                        .default_value("./out.syd-1")
+                        .default_value("./out.syd-2")
                         .required(true)
                         .help("Path to sydbox profile output")
                         .long("output")
@@ -349,7 +418,7 @@ Repository: {}
                 )
                 .arg(
                     Arg::with_name("output")
-                        .default_value("./out.syd-1")
+                        .default_value("./out.syd-2")
                         .required(true)
                         .help("Path to sydbox profile output")
                         .long("output")
@@ -369,10 +438,30 @@ Repository: {}
 
     if let Some(ref matches) = matches.subcommand_matches("box") {
         let bin = matches.value_of("bin").unwrap();
+        let bpf = matches.is_present("bpf-only");
         let mut cmd: Vec<&str> = matches.values_of("cmd").unwrap().collect();
+        let mut dump: Option<&str> = None;
+        if let Some(dump_fd) = matches.value_of("dump") {
+            dump = Some(dump_fd);
+        }
+        let mut export: Option<&str> = None;
+        if let Some(export_format) = matches.value_of("export") {
+            if export_format == "bpf" || export_format == "pfc" {
+                export = Some(export_format);
+            } else {
+                clap::Error::with_description(
+                    &format!("Invalid value `{}' for --export: use bpf, pfc", export_format),
+                    clap::ErrorKind::InvalidValue
+                )
+                .exit();
+            }
+        }
+        let arch: Option<Vec<&str>> = matches.values_of("arch").map(|values| values.collect());
         let config: Option<Vec<&str>> = matches.values_of("config").map(|values| values.collect());
         let magic: Option<Vec<&str>> = matches.values_of("magic").map(|values| values.collect());
-        std::process::exit(command_box(bin, &mut cmd, &config, &magic));
+        std::process::exit(command_box(bin, &mut cmd,
+                                       &arch, &config, &magic,
+                                       bpf, &dump, &export));
     } else if let Some(ref matches) = matches.subcommand_matches("profile") {
         let bin = matches.value_of("bin").unwrap();
         let out = matches.value_of("output").unwrap();
@@ -426,7 +515,7 @@ Repository: {}
             paludis.push(magic);
         }
 
-        let rcname = "/etc/pandora.syd-1";
+        let rcname = "/etc/pandora.syd-2";
         let rc = std::path::Path::new(rcname);
         let mut rcargs = Vec::new();
         if rc.exists() {
@@ -502,7 +591,6 @@ core/sandbox/network:deny
 
 # Further restrictions for open(), fcntl() and mmap()
 # See sydbox manual page for further details
-core/restrict/file_control:false
 core/restrict/io_control:false
 core/restrict/memory_map:false
 core/restrict/shared_memory_writable:false

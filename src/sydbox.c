@@ -105,7 +105,7 @@ usage: "PACKAGE" [-hvb] [-d <fd|path|tmp>] [-a arch...] \n\
 -E var=val         -- Put var=val in the environment for command, may be repeated\n\
 -E var             -- Remove var from the environment for command, may be repeated\n\
 -a <arch>          -- Filter system calls for the given architecture, may be repeated\n\
-                      native,x86_64,x86,x86,x32,arm,aarch64,mips,mips64,ppc,ppc64\n\
+                      native,x86_64,x86,x32,arm,aarch64,mips,mips64,ppc,ppc64\n\
                              ppc64le,s390,s390x,parisc,parisc64,riscv64\n\
                       default: native\n\
 -b                 -- Run in bpf only mode, no seccomp user notifications\n\
