@@ -1622,6 +1622,13 @@ notify_respond:
 			return sydbox->exit_code;
 	}
 
+	syd_process_t *node, *tmp;
+	process_iter(node, tmp) { /* process_iter is delete-safe. */
+		if (node->flags & SYD_KILLED)
+			node->flags &= ~SYD_KILLED;
+		remove_process_node(node);
+	}
+
 	seccomp_notify_free(sydbox->request, sydbox->response);
 	close(sydbox->notify_fd);
 	sydbox->notify_fd = -1;
