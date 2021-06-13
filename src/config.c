@@ -41,6 +41,8 @@ void config_init(void)
 	sydbox->config.restrict_general = 0;
 	sydbox->config.restrict_ioctl = false;
 	sydbox->config.restrict_mmap = false;
+	sydbox->config.violation_raise_fail = false;
+	sydbox->config.violation_raise_safe = false;
 	sydbox->config.allowlist_per_process_directories = true;
 	sydbox->config.allowlist_successful_bind = true;
 	sydbox->config.allowlist_unsupported_socket_families = true;
