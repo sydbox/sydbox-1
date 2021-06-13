@@ -27,20 +27,24 @@ valgrind.sh: valgrind.sh.in Makefile
 			 -e 's:@BUILD_EXEC_PREFIX@:$(BUILD_EXEC_PREFIX):g' \
 			 < $< > $@
 	$(AM_V_at)chmod +x $@
-bin/sydbox: valgrind.sh
-	$(LN_S) -f ../$< bin/sydbox
-bin/sydbox-dump: valgrind.sh
-	$(LN_S) -f ../$< bin/sydbox-dump
-bin/sydfmt: valgrind.sh
-	$(LN_S) -f ../$< bin/sydfmt
-bin/shoebox: valgrind.sh
-	$(LN_S) -f ../$< bin/shoebox
+
+.PHONY: bin
+bin:
+	$(MKDIR_P) bin
+bin/sydbox: valgrind.sh bin
+	cp -fp $< bin/sydbox
+bin/sydbox-dump: valgrind.sh bin
+	cp -fp $< bin/sydbox-dump
+bin/sydfmt: valgrind.sh bin
+	cp -fp $< bin/sydbox-sydfmt
+bin/shoebox: valgrind.sh bin
+	cp -fp $< bin/sydbox-shoebox
 
 install-exec-hook:
 	$(MKDIR_P) $(DESTDIR)$(syddir)/bin
-	$(LN_S) -f ../valgrind.sh $(DESTDIR)$(syddir)/bin/sydbox
-	$(LN_S) -f ../valgrind.sh $(DESTDIR)$(syddir)/bin/sydbox-dump
-	$(LN_S) -f ../valgrind.sh $(DESTDIR)$(syddir)/bin/sydfmt
-	$(LN_S) -f ../valgrind.sh $(DESTDIR)$(syddir)/bin/shoebox
+	cp -fp valgrind.sh $(DESTDIR)$(syddir)/bin/sydbox
+	cp -fp valgrind.sh $(DESTDIR)$(syddir)/bin/sydbox-dump
+	cp -fp valgrind.sh $(DESTDIR)$(syddir)/bin/sydfmt
+	cp -fp valgrind.sh $(DESTDIR)$(syddir)/bin/shoebox
 
 EXTRA_DIST= $(VALGRIND_SRCS) $(syd_DATA)

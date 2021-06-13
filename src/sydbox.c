@@ -516,13 +516,12 @@ static void switch_execve_leader(syd_process_t *leader,
 {
 	process_remove(leader);
 
-	/*
 	if (magic_query_violation_raise_safe(leader)) {
 		say("multithreaded execve: %d superseded by execve "
 		    "in pid clone_fs[pid:%d]=%d",
 		    leader->pid, execve_thread->pid,
 		    P_CLONE_FS_REFCNT(leader));
-	} */
+	}
 	dump(DUMP_EXEC_MT, execve_thread->pid, leader->pid,
 	     execve_thread->abspath);
 
@@ -1512,13 +1511,14 @@ notify_receive:
 				sydbox->execve_wait = false;
 				goto notify_respond;
 			}
-			pid_t execve_pid = 0;
-			pid_t leader_pid;
 
-			leader_pid = process_find_exec(pid);
-			parent = lookup_process(leader_pid);
-			current = process_init(pid, parent);
-			assert(current);
+			pid_t execve_pid = 0;
+			pid_t leader_pid = process_find_exec(pid);
+			if (!current) {
+				parent = lookup_process(leader_pid);
+				current = process_init(pid, parent);
+				assert(current);
+			}
 			execve_pid = P_EXECVE_PID(current);
 			if (execve_pid == 0 && pid != leader_pid) {
 				execve_pid = leader_pid;
@@ -1725,6 +1725,8 @@ void cleanup(void)
 	struct acl_node *node;
 
 	assert(sydbox);
+
+	seccomp_reset(NULL, SCMP_ACT_ALLOW);
 
 	filter_free();
 	reset_sandbox(&sydbox->config.box_static);

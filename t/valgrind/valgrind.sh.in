@@ -22,6 +22,8 @@ memcheck)
 	test 3 -eq "$VALGRIND_MAJOR" -a 4 -gt "$VALGRIND_MINOR" ||
 	TOOL_OPTIONS="$TOOL_OPTIONS
 		--leak-check=full
+		--show-leak-kinds=all
+		--show-reachable=yes
 		--track-origins=yes
 		--track-fds=yes
 		--error-limit=no

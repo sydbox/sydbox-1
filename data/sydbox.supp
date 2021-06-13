@@ -636,7 +636,6 @@
    Addr-Rw-Anon-Segment-39
    Memcheck:Free
    fun:free
-   fun:free_systable_entry
    fun:systable_free
    fun:cleanup
    fun:main
@@ -644,16 +643,6 @@
 
 {
    Addr-Rw-Anon-Segment-40
-   Memcheck:Free
-   fun:free
-   fun:free_systable
-   fun:systable_free
-   fun:cleanup
-   fun:main
-}
-
-{
-   Addr-Rw-Anon-Segment-41
    Memcheck:Free
    fun:free
    fun:fclose
@@ -667,7 +656,7 @@
 }
 
 {
-   Addr-Rw-Anon-Segment-42
+   Addr-Rw-Anon-Segment-41
    Memcheck:Free
    fun:free
    fun:arch_filter_rule_add
@@ -681,4 +670,44 @@
    fun:sysinit_seccomp_load
    fun:sysinit_seccomp
    fun:startup_child
+}
+
+{
+   Malloc-PutEnv
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:__env_rm_add
+   obj:*
+   fun:__putenv
+}
+
+{
+   Malloc-DbColDbAdd
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:db_col_db_add
+   fun:db_col_reset.part.0
+   fun:db_col_init
+   fun:main
+}
+
+{
+   Malloc-DbColResetPart
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:db_col_reset.part.0
+   fun:db_col_init
+   fun:main
+}
+
+{
+   Malloc-DbColInit
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:db_col_init
+   fun:main
 }
