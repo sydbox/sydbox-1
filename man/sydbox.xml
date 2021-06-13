@@ -34,7 +34,7 @@
 
   <refnamediv>
     <refname>sydbox</refname>
-    <refpurpose>seccomp based application sandbox</refpurpose>
+    <refpurpose>seccomp-bpf and seccomp-notify based application sandbox</refpurpose>
   </refnamediv>
 
   <refsynopsisdiv id="synopsis">
@@ -58,21 +58,24 @@
 
     <para>
       The basic idea of <command>sydbox</command> is to run a command under certain restrictions.
-      These restrictions define which system calls the command is allowed to run and which argument
-      values are allowed for the given system call. The restrictions may be applied via two ways.
-      <varname>seccomp-bpf</varname> can be used to apply simple seccomp user filters and
-      <varname>seccomp-user-notify</varname> functionality can be used to trace the system calls with
-      the ability to dereference their pointer arguments (pathnames, socket addresses, etc.)
+      These restrictions define which system calls the command is permitted to run and which argument
+      values are permitted for the given system call. The restrictions may be applied via two ways.
+      <varname>seccomp-bpf</varname> can be used to apply simple Secure Computing user filters to
+      run sandboxing fully on kernel space, and <varname>seccomp-notify</varname> functionality can
+      be used to run sandboxing on kernel space and fallback to user space to dereference pointer
+      arguments of system calls (pathnames, socket addresses, etc.) and make dynamic decisions
+      about the action to take.
     </para>
     <para>
-      The main difference of these methods is <varname>seccomp-bpf</varname> filters
-      run on the kernel space and <varname>seccomp-user-notify</varname> tracing runs on user space.
-      This makes <varname>seccomp-bpf</varname> filters extremely fast and secure yet somewhat limited.
-      The limitation stems from the fact that a seccomp filter may not dereference a pointer in a system call
-      argument. This means, e.g, one may not check if a path name argument is under a certain directory tree.
-      However, one may check if a file opening call is read or write. Note, this is important from the
-      security point of view as dereferencing a pointer opens the way for <constant>TOCTOU</constant> attacks.
-      This means using <varname>seccomp-user-notify</varname> is never completely secure.
+      <varname>seccomp-bpf</varname> filters are extremely fast and secure yet somewhat limited.
+      The limitation stems from the fact that a <varname>seccomp-bpf</varname> filter may not
+      dereference a pointer in a system call argument. This means, e.g, one may not check if
+      a path name argument is under a certain directory tree. However, one may check if a
+      file opening call is read or write. Note, this is important from the
+      security point of view as dereferencing a pointer is a
+      <emphasis>Time-of-Check-to-Time-of-Use-Problem</emphasis>, or shortly
+      <emphasis>TOCTOU</emphasis>. This means using <varname>seccomp-user-notify</varname> is
+      never completely secure. Use it at your own risk.
     </para>
     <para>
       To be able tu use <command>sydbox</command>, you need a recent Linux kernel with the system
@@ -1725,7 +1728,8 @@
 
     <para>
       However, otherwise SydBox must dereference the pointer arguments which is known to be
-      insecure because it makes TOCTOU, time-of-check time-of-use, attacks possible.
+      insecure because it makes <emphasis>TOCTOU</emphasis>, <emphasis>time-of-check time-of-use</emphasis>,
+      attacks possible.
     </para>
   </refsect1>
 
