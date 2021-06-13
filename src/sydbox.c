@@ -72,7 +72,7 @@ static void about(void)
 {
 	printf(PACKAGE"-"VERSION GITVERSION);
 
-	printf("Options:");
+	printf(" Options:");
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	printf(" dump:yes");
 #else
