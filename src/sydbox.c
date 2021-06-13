@@ -72,17 +72,13 @@ static void about(void)
 {
 	printf(PACKAGE"-"VERSION GITVERSION);
 
-	printf(" Options:");
+	printf("\nOptions:");
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	printf(" dump:yes");
 #else
 	printf(" dump:no");
 #endif
-#if SYDBOX_HAVE_SECCOMP
 	printf(" seccomp:yes");
-#else
-	printf(" seccomp:no");
-#endif
 	printf(" ipv6:yes");
 	printf(" netlink:yes");
 	fputc('\n', stdout);
