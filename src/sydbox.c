@@ -526,10 +526,16 @@ static void switch_execve_leader(syd_process_t *leader,
 	dump(DUMP_EXEC_MT, execve_thread->pid, leader->pid,
 	     execve_thread->abspath);
 
-	P_CLONE_THREAD_RELEASE(leader);
-	P_CLONE_FILES_RELEASE(leader);
-	if (P_CLONE_FS_REFCNT(leader) > 1)
+	bool clone_thread = false, clone_fs = false;
+	if (P_CLONE_THREAD_REFCNT(leader) > 1) {
+		P_CLONE_THREAD_RELEASE(leader);
+		clone_thread = true;
+	}
+	if (P_CLONE_FS_REFCNT(leader) > 1) {
 		P_CLONE_FS_RELEASE(leader);
+		clone_fs = true;
+	}
+	P_CLONE_FILES_RELEASE(leader);
 
 	tweak_execve_thread(execve_thread, leader);
 	if (execve_thread->abspath)
@@ -539,6 +545,13 @@ static void switch_execve_leader(syd_process_t *leader,
 	execve_thread->tgid = leader->tgid;
 	execve_thread->clone_flags = leader->clone_flags;
 	execve_thread->abspath = leader->abspath;
+
+	if (!clone_thread)
+		new_shared_memory_clone_thread(execve_thread);
+	if (!clone_fs) {
+		new_shared_memory_clone_fs(execve_thread);
+		execve_thread->update_cwd = true;
+	}
 
 	free(leader);
 }
@@ -1532,9 +1545,6 @@ notify_receive:
 					switch_execve_leader(execve_thread,
 							     current);
 					current = execve_thread;
-					new_shared_memory_clone_thread(current);
-					new_shared_memory_clone_fs(current);
-					current->update_cwd = true;
 				}
 				if (current->shm.clone_thread)
 					P_EXECVE_PID(current) = 0;
