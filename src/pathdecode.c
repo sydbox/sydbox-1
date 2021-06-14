@@ -42,8 +42,11 @@ int path_decode(syd_process_t *current, unsigned arg_index, char **buf)
 			return 0;
 		}
 		return -errno;
+	} else if (count_read == SYDBOX_PATH_MAX) {
+		path[count_read-1] = '\0';
+	} else {
+		path[count_read] = '\0';
 	}
-	path[count_read] = '\0';
 	*buf = xstrdup(path);
 	return 0;
 }

@@ -453,7 +453,10 @@ int sys_fstatat(syd_process_t *current)
 	addr = current->args[1];
 	if ((count = syd_read_string(current, addr, path, SYDBOX_PATH_MAX)) < 0)
 		return errno == EFAULT ? 0 : -errno;
-	path[count - 1] = '\0';
+	else if (count == SYDBOX_PATH_MAX)
+		path[count - 1] = '\0';
+	else
+		path[count] = '\0';
 
 	return do_stat(current, path, 2, false);
 }
@@ -473,7 +476,10 @@ int sys_statx(syd_process_t *current)
 	addr = current->args[1];
 	if ((count = syd_read_string(current, addr, path, SYDBOX_PATH_MAX)) < 0)
 		return errno == EFAULT ? 0 : -errno;
-	path[count-1] = '\0';
+	else if (count == SYDBOX_PATH_MAX)
+		path[count - 1] = '\0';
+	else
+		path[count] = '\0';
 
 	return do_stat(current, path, 4, true);
 }
