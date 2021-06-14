@@ -743,7 +743,6 @@ int sysinit_seccomp(void)
 			return -errno;
 		if (parent_write_int(fd))
 			return -errno;
-		kill(getpid(), SIGSTOP);
 	}
 
 	seccomp_release(sydbox->ctx);

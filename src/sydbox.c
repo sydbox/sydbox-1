@@ -1481,8 +1481,6 @@ static pid_t startup_child(char **argv,
 				die_errno("failed to obtain seccomp user fd");
 			// close(sydbox->notify_fd);
 			sydbox->notify_fd = fd;
-
-			kill(sydbox->execve_pid, SIGCONT);
 		}
 	}
 
