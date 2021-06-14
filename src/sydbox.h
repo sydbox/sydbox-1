@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <sched.h>
 #include <seccomp.h>
+#include <linux/sched.h>
 #include "pink.h"
 #include "acl-queue.h"
 #include "procmatch.h"
@@ -380,6 +381,21 @@ struct syd_process_shared {
 
 /* process information */
 struct syd_process {
+	/* Update current working directory, next step */
+	bool update_cwd:1;
+
+	/* SYD_* flags */
+	unsigned int flags:7;
+
+#define SYD_CLONE_THREAD	00001
+#define SYD_CLONE_FS		00002
+#define SYD_CLONE_FILES		00004
+	/* clone(2) flags used to spawn *this* thread */
+	unsigned int clone_flags:12;
+
+	/* Last clone(2) flags (used to spawn a *new* thread) */
+	unsigned int new_clone_flags:12;
+
 	/* Process/Thread ID */
 	pid_t pid;
 
@@ -395,12 +411,6 @@ struct syd_process {
 	/* System call ABI */
 	uint32_t arch;
 
-	/* SYD_* flags */
-	int flags;
-
-	/* Update current working directory, next step */
-	bool update_cwd;
-
 	/* Last system call */
 	unsigned long sysnum;
 
@@ -410,18 +420,6 @@ struct syd_process {
 	/* Denied system call will return this value */
 	long retval;
 
-	/* clone(2) flags used to spawn *this* thread */
-	unsigned long clone_flags;
-
-	/* Last clone(2) flags (used to spawn a *new* thread) */
-	unsigned long new_clone_flags;
-
-	/* Last system call name */
-	const char *sysname;
-
-	/* Resolved path argument for specially treated system calls like execve() */
-	char *abspath;
-
 	/* Arguments of last system call */
 	long args[6];
 
@@ -430,6 +428,12 @@ struct syd_process {
 
 	/* Per-thread shared data */
 	struct syd_process_shared shm;
+
+	/* Last system call name */
+	const char *sysname;
+
+	/* Resolved path argument for specially treated system calls like execve() */
+	char *abspath;
 
 	/* Process hash table via sydbox->proctab */
 	UT_hash_handle hh;
@@ -880,6 +884,20 @@ static inline void free_sandbox(sandbox_t *box)
 {
 	reset_sandbox(box);
 	free(box);
+}
+
+static inline unsigned short pack_clone_flags(long clone_flags)
+{
+	unsigned short f = 0;
+
+	if (clone_flags & CLONE_THREAD)
+		f |= SYD_CLONE_THREAD;
+	if (clone_flags & CLONE_FS)
+		f |= SYD_CLONE_FS;
+	if (clone_flags & CLONE_FILES)
+		f |= SYD_CLONE_FILES;
+
+	return f;
 }
 
 static inline bool use_notify(void)

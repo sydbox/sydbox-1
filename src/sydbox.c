@@ -344,11 +344,11 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 	}
 
 	share_thread = share_fs = share_files = false;
-	if (parent->new_clone_flags & CLONE_THREAD)
+	if (parent->new_clone_flags & SYD_CLONE_THREAD)
 		share_thread = true;
-	if (parent->new_clone_flags & CLONE_FS)
+	if (parent->new_clone_flags & SYD_CLONE_FS)
 		share_fs = true;
-	if (parent->new_clone_flags & CLONE_FILES)
+	if (parent->new_clone_flags & SYD_CLONE_FILES)
 		share_files = true;
 
 	/*
@@ -417,7 +417,7 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
 	 * Careful here, the process may still be a thread although new
 	 * clone flags is missing CLONE_THREAD
 	 */
-	if (p->new_clone_flags & CLONE_THREAD) {
+	if (p->new_clone_flags & SYD_CLONE_THREAD) {
 		child->ppid = p->ppid;
 		child->tgid = p->tgid;
 	} else if ((r = proc_parents(child->pid,
@@ -713,146 +713,6 @@ static unsigned get_os_release(void)
 	return rel;
 }
 
-static void dump_clone_flags(int flags)
-{
-	int r = 0;
-
-	if (flags & SIGCHLD) {
-		fprintf(stderr, "SIGCHLD");
-		r = 1;
-	}
-#ifdef CLONE_CHILD_CLEARTID
-	if (flags & CLONE_CHILD_CLEARTID) {
-		fprintf(stderr, "%sCLONE_CHILD_CLEARTID", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_CHILD_CLEARTID */
-#ifdef CLONE_CHILD_SETTID
-	if (flags & CLONE_CHILD_SETTID) {
-		fprintf(stderr, "%sCLONE_CHILD_SETTID", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_CHILD_SETTID */
-#ifdef CLONE_FILES
-	if (flags & CLONE_FILES) {
-		fprintf(stderr, "%sCLONE_FILES", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_FILES */
-#ifdef CLONE_FS
-	if (flags & CLONE_FS) {
-		fprintf(stderr, "%sCLONE_FS", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_FS */
-#ifdef CLONE_IO
-	if (flags & CLONE_IO) {
-		fprintf(stderr, "%sCLONE_IO", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_IO */
-#ifdef CLONE_NEWIPC
-	if (flags & CLONE_NEWIPC) {
-		fprintf(stderr, "%sCLONE_NEWIPC", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_NEWIPC */
-#ifdef CLONE_NEWNET
-	if (flags & CLONE_NEWNET) {
-		fprintf(stderr, "%sCLONE_NEWNET", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_NEWNET */
-#ifdef CLONE_NEWNS
-	if (flags & CLONE_NEWNS) {
-		fprintf(stderr, "%sCLONE_NEWNS", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_NEWNS */
-#ifdef CLONE_NEWPID
-	if (flags & CLONE_NEWPID) {
-		fprintf(stderr, "%sCLONE_NEWPID", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_NEWPID */
-#ifdef CLONE_NEWUTS
-	if (flags & CLONE_NEWUTS) {
-		fprintf(stderr, "%sCLONE_NEWUTS", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_NEWUTS */
-#ifdef CLONE_PARENT
-	if (flags & CLONE_PARENT) {
-		fprintf(stderr, "%sCLONE_PARENT", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_PARENT */
-#ifdef CLONE_PARENT_SETTID
-	if (flags & CLONE_PARENT_SETTID) {
-		fprintf(stderr, "%sCLONE_PARENT_SETTID", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_PARENT_SETTID */
-#ifdef CLONE_PID
-	if (flags & CLONE_PID) {
-		fprintf(stderr, "%sCLONE_PID", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_PID */
-#ifdef CLONE_PTRACE
-	if (flags & CLONE_PTRACE) {
-		fprintf(stderr, "%sCLONE_PTRACE", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_PTRACE */
-#ifdef CLONE_SETTLS
-	if (flags & CLONE_SETTLS) {
-		fprintf(stderr, "%sCLONE_SETTLS", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_SETTLS */
-#ifdef CLONE_SIGHAND
-	if (flags & CLONE_SIGHAND) {
-		fprintf(stderr, "%sCLONE_SIGHAND", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_SIGHAND */
-#ifdef CLONE_STOPPED
-	if (flags & CLONE_STOPPED) {
-		fprintf(stderr, "%sCLONE_STOPPED", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_STOPPED */
-#ifdef CLONE_SYSVSEM
-	if (flags & CLONE_SYSVSEM) {
-		fprintf(stderr, "%sCLONE_SYSVSEM", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_SYSVSEM */
-#ifdef CLONE_THREAD
-	if (flags & CLONE_THREAD) {
-		fprintf(stderr, "%sCLONE_THREAD", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_THREAD */
-#ifdef CLONE_UNTRACED
-	if (flags & CLONE_UNTRACED) {
-		fprintf(stderr, "%sCLONE_UNTRACED", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_UNTRACED */
-#ifdef CLONE_VFORK
-	if (flags & CLONE_VFORK) {
-		fprintf(stderr, "%sCLONE_VFORK", (r == 1) ? "|" : "");
-		r = 1;
-	}
-#endif /* CLONE_VFORK */
-#ifdef CLONE_VM
-	if (flags & CLONE_VM)
-		fprintf(stderr, "%sCLONE_VM", (r == 1) ? "|" : "");
-#endif /* CLONE_VM */
-}
-
 static void dump_one_process(syd_process_t *current, bool verbose)
 {
 	int r;
@@ -902,41 +762,6 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	if (current->flags & SYD_IN_CLONE) {
 		fprintf(stderr, "%sIN_CLONE", (r == 1) ? "|" : "");
 		r = 1;
-	}
-	fprintf(stderr, "%s\n", CN);
-	if (current->clone_flags) {
-		fprintf(stderr, "\t%sClone flags: ", CN);
-		dump_clone_flags(current->clone_flags);
-		fprintf(stderr, "%s\n", CE);
-	}
-
-	if (current->clone_flags & (CLONE_THREAD|CLONE_FS|CLONE_FILES)) {
-		fprintf(stderr, "\t%sClone flag refs: ", CN);
-		r = 0;
-		if (current->clone_flags & CLONE_THREAD) {
-			fprintf(stderr, "CLONE_THREAD{ref=%u}",
-				current->shm.clone_thread ? current->shm.clone_thread->refcnt : 0);
-
-			r = 1;
-		}
-		if (current->clone_flags & CLONE_FS) {
-			fprintf(stderr, "%sCLONE_FS{ref=%u}", (r == 1) ? "|" : "",
-				current->shm.clone_fs ? current->shm.clone_fs->refcnt : 0);
-			r = 1;
-		}
-		if (current->clone_flags & CLONE_FILES) {
-			fprintf(stderr, "%sCLONE_FILES{ref=%u}", (r == 1) ? "|" : "",
-				current->shm.clone_files ? current->shm.clone_files->refcnt : 0);
-			r = 1;
-		}
-		if (current->clone_flags & CLONE_VFORK)
-			fprintf(stderr, "%sCLONE_VFORK", (r == 1) ? "|" : "");
-		fprintf(stderr, "%s\n", CN);
-	}
-	if (current->new_clone_flags) {
-		fprintf(stderr, "\t%sNew clone flags: ", CN);
-		dump_clone_flags(current->new_clone_flags);
-		fprintf(stderr, "%s\n", CE);
 	}
 
 	if (!verbose)
@@ -1282,7 +1107,7 @@ static int check_interrupt(void)
 }
 
 static int event_clone(syd_process_t *current, const char clone_type,
-		       int clone_flags)
+		       long clone_flags)
 {
 	assert(current);
 
@@ -1291,10 +1116,10 @@ static int event_clone(syd_process_t *current, const char clone_type,
 		case 'f':
 		case 'v':
 		case 'c':
-			current->new_clone_flags = clone_flags;
+			current->new_clone_flags = pack_clone_flags(clone_flags);
 			break;
 		case '3': /* Cannot decode argument, treat as non-thread */
-			current->new_clone_flags = SIGCHLD;
+			current->new_clone_flags = 0;
 			break;
 		default:
 			assert_not_reached();
