@@ -426,6 +426,7 @@ int sys_stat(syd_process_t *current)
 	addr = current->args[0];
 	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
 		return errno == EFAULT ? 0 : -errno;
+	path[SYDBOX_PATH_MAX-1] = '\0';
 
 	return do_stat(current, path, 1, false);
 }
