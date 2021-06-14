@@ -72,10 +72,12 @@ const sysentry_t *systable_lookup(long no, uint32_t arch)
 	struct systable *s;
 	size_t abi_idx;
 
-	for (abi_idx = 0; abi_idx < ABIS_SUPPORTED; abi_idx++)
-		if (arch == abi[abi_idx])
-			break;
+	for (abi_idx = 0; abi_idx < ABIS_SUPPORTED; abi_idx++) {
+		if (arch != abi[abi_idx])
+			continue;
+		HASH_FIND_INT(systable[abi_idx], &no, s);
+		return s ? &(s->entry) : NULL;
+	}
 
-	HASH_FIND_INT(systable[abi_idx], &no, s);
-	return s ? &(s->entry) : NULL;
+	return NULL;
 }
