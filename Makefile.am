@@ -105,11 +105,23 @@ upload-release: upload $(SHA1_FILE) $(GPG_FILE)
 jenkins:
 	maint/jenkins-build.sh
 
-.PHONY: coverity
-coverity:
-	misc/conf.sh
-	cov-build --dir cov-int $(MAKE) -j clean all
-	tar -cvpzf /tmp/cov-int.tar.gz cov-int
-	$(AM_V_at)echo "Submit /tmp/cov-int.tar.gz to Coverity"
+if COVERITY
+coverity-build: clean
+	cov-build --dir cov-int ${MAKE} ${AM_MAKEFLAGS} check-build
+endif
+
+if COVERITY
+coverity-tarball: coverity-build
+	@if git rev-parse HEAD &> /dev/null; then \
+		rev_full=$$(git rev-parse HEAD); \
+		rev=$$(echo $$rev_full | cut -c1-8); \
+	else \
+		rev_full=$$(date --iso-8601=date); \
+		rev=$$rev_full; \
+	fi; \
+	tar czf sydbox-coverity_$$rev.tar.gz cov-int; \
+	echo " HEAD revision: $$rev_full"; \
+	ls -l sydbox-coverity_$$rev.tar.gz
+endif
 
 SUBDIRS= syd src data man t .

@@ -112,6 +112,9 @@ usage: "PACKAGE" [-hvb] [-d <fd|path|tmp>] [-a arch...] \n\
 --dry-run          -- Run under inspection without denying system calls\n\
 --export <bpf|pfc> -- Export the seccomp filters to standard error on startup\n\
 --test             -- Test if various runtime requirements are functional and exit\n\
+--chdir <path>     -- Chdir to this directory before starting the program\n\
+--chroot <path>    -- Chroot to this directory before starting the daemon\n\
+                      Path to the chdir should be relative to the chroot\n\
 \n\
 Hey you, out there beyond the wall,\n\
 Breaking bottles in the hall,\n\
@@ -1412,7 +1415,9 @@ static inline void free_pathlookup(char *pathname)
 	free(pathname);
 }
 
-static pid_t startup_child(char **argv)
+static pid_t startup_child(char **argv,
+			   const char *restrict root_directory,
+			   const char *restrict working_directory)
 {
 	int r, pfd[2];
 	char *pathname;
@@ -1431,6 +1436,10 @@ static pid_t startup_child(char **argv)
 	else if (pid == 0) {
 		sydbox->seccomp_fd = pfd[1];
 
+		if (root_directory && chroot(root_directory) < 0)
+			die_errno("chroot(`%s')", root_directory);
+		if (working_directory && chdir(working_directory) < 0)
+			die_errno("chdir(`%s')", working_directory);
 		if ((r = sysinit_seccomp()) < 0) {
 			errno = -r;
 			if (errno == ENOTTY || errno == ENOENT)
@@ -1549,6 +1558,9 @@ int main(int argc, char **argv)
 # endif
 #endif
 
+	char *root_directory = NULL;
+	char *working_directory = NULL;
+
 	/* Long options are present for compatibility with sydbox-0.
 	 * Thus they are not documented!
 	 */
@@ -1563,6 +1575,8 @@ int main(int argc, char **argv)
 		{"arch",	required_argument,	NULL,	'a'},
 		{"bpf",		no_argument,		NULL,	'b'},
 		{"test",	no_argument,		NULL,	't'},
+		{"chdir",	required_argument,	NULL,	0},
+		{"chroot",	required_argument,	NULL,	0},
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -1575,6 +1589,14 @@ int main(int argc, char **argv)
 		switch (opt) {
 		case 0:
 			if (streq(long_options[options_index].name,
+				  "chroot")) {
+				root_directory = xstrdup(optarg);
+				break;
+			} else if (streq(long_options[options_index].name,
+				  "chdir")) {
+				working_directory = xstrdup(optarg);
+				break;
+			} else if (streq(long_options[options_index].name,
 				  "dry-run")) {
 				sydbox->permissive = true;
 				break;
@@ -1779,7 +1801,13 @@ int main(int argc, char **argv)
 	/* STARTUP_CHILD must not be called before the signal handlers get
 	   installed below as they are inherited into the spawned process. */
 	init_signals();
-	pid_t pid = startup_child(&argv[optind]);
+	pid_t pid = startup_child(&argv[optind],
+				  root_directory,
+				  working_directory);
+	if (root_directory)
+		free(root_directory);
+	if (working_directory)
+		free(working_directory);
 	int exit_code;
 	if (use_notify()) {
 		syd_process_t *current = new_process_or_kill(pid);

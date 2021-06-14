@@ -223,6 +223,29 @@
         </listitem>
       </varlistentry>
 
+      <varlistentry>
+        <term><option>--chdir</option> <varname>path</varname></term>
+        <listitem>
+          <simpara>
+            Change directory to this directory before starting the program.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>--chroot</option> <varname>path</varname></term>
+        <listitem>
+          <simpara>
+            Chroot to this directory before starting the daemon.
+          </simpara>
+          <note>
+            <simpara>
+              Path to the chdir should be relative to the chroot.
+            </simpara>
+          </note>
+        </listitem>
+      </varlistentry>
+
     </variablelist>
   </refsect1>
 

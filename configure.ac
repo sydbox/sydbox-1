@@ -412,6 +412,18 @@ if test x"$ENABLE_INSTALLED_TESTS" = x"yes"; then
 fi
 AM_CONDITIONAL([ENABLE_INSTALLED_TESTS], test "x$ENABLE_INSTALLED_TESTS" = x"yes")
 
+dnl ####
+dnl coverity checks
+dnl ####
+AC_CHECK_PROG(have_coverity, cov-build, "yes", "no")
+AM_CONDITIONAL(COVERITY, test "$have_coverity" = yes)
+
+dnl ####
+dnl code coverage checks
+dnl -> https://www.gnu.org/software/autoconf-archive/ax_code_coverage.html
+dnl ####
+AX_CODE_COVERAGE
+
 dnl built sources
 GENERATED_FILE=misc/generated-file.txt
 AC_SUBST_FILE([GENERATED_FILE])
