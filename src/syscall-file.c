@@ -284,20 +284,17 @@ static inline int restrict_open_flags(syd_process_t *current, unsigned long flag
 
 int sys_open(syd_process_t *current)
 {
-	bool strict;
 	int r;
 	struct open_how how;
 	syscall_info_t info;
 	struct open_info open_info;
 
-	strict = false; /* sydbox->config.restrict_fcntl; */
-
-	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
+	if (sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
 
 	/* check flags first */
 	how.flags = current->args[1];
-	if (strict && (r = restrict_open_flags(current, how.flags)) < 0)
+	if ((r = restrict_open_flags(current, how.flags)) < 0)
 		return r;
 
 	if (sandbox_off_read(current) && sandbox_off_write(current))
@@ -315,15 +312,12 @@ int sys_open(syd_process_t *current)
 
 int sys_openat(syd_process_t *current)
 {
-	bool strict;
 	int r;
 	struct open_how how;
 	syscall_info_t info;
 	struct open_info open_info;
 
-	strict = false; /* sydbox->config.restrict_fcntl; */
-
-	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
+	if (sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
 
 	/* check flags first */
@@ -349,14 +343,11 @@ int sys_openat(syd_process_t *current)
 #if defined(HAVE_LINUX_OPENAT2_H) && defined(HAVE_STRUCT_OPEN_HOW)
 int sys_openat2(syd_process_t *current)
 {
-	bool strict;
 	int r;
 	syscall_info_t info;
 	struct open_info open_info;
 
-	strict = false; /* sydbox->config.restrict_fcntl; */
-
-	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
+	if (sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
 
 	enum { OPEN_HOW_MIN_SIZE = 24 };
