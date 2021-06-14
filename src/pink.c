@@ -635,6 +635,8 @@ int test_proc_mem(bool report)
 
 	if (report)
 		say("[*] /proc/pid/mem interface is functional.");
+
+	close(memfd);
 	return 0;
 }
 
