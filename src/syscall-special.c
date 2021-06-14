@@ -435,6 +435,7 @@ int sys_fstatat(syd_process_t *current)
 {
 	long addr;
 	char path[SYDBOX_PATH_MAX];
+	ssize_t count;
 
 	if (P_BOX(current)->magic_lock == LOCK_SET) {
 		/* No magic allowed! */
@@ -450,8 +451,9 @@ int sys_fstatat(syd_process_t *current)
 	 * does.
 	 */
 	addr = current->args[1];
-	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
+	if ((count = syd_read_string(current, addr, path, SYDBOX_PATH_MAX)) < 0)
 		return errno == EFAULT ? 0 : -errno;
+	path[count - 1] = '\0';
 
 	return do_stat(current, path, 2, false);
 }
