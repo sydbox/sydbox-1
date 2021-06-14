@@ -28,6 +28,8 @@ memcheck)
 		--track-fds=yes
 		--error-limit=no
 		--run-libc-freeres=no --run-cxx-freeres=no
+		--suppressions=\"$SYDBOX_VALGRIND/default.supp\"
+		--gen-suppressions=all
 	"
 	;;
 *)
@@ -35,8 +37,6 @@ memcheck)
 esac
 
 exec @BUILD_EXEC_PREFIX@ valgrind -q --error-exitcode=126 \
-	--suppressions="$SYDBOX_VALGRIND/default.supp" \
-	--gen-suppressions=all \
 	--time-stamp=yes \
 	$TOOL_OPTIONS \
 	--log-fd=4 \
