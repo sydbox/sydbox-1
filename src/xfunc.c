@@ -78,6 +78,8 @@ void say(const char *fmt, ...)
 
 	if (getenv("DEBUG")) {
 		FILE *f = fopen("sydbox.out", "w");
+		if (!f)
+			return;
 		va_start(ap, fmt);
 		vsay(f, fmt, ap);
 		va_end(ap);
