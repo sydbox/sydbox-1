@@ -554,33 +554,36 @@ struct sydbox {
 	bool violation;
 
 	bool execve_wait;
+	bool permissive;
+	bool bpf_only;
 
 	int exit_code;
-
-	pid_t execve_pid;
 	int execve_pidfd;
 
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	int dump_fd;
 #endif
-
-	/* seccomp filters */
-	bool bpf_only;
 	int seccomp_fd;
 	int notify_fd;
-	scmp_filter_ctx ctx;
-	struct filter *filter;
-	struct seccomp_notif *request;
-	struct seccomp_notif_resp *response;
-	uint32_t seccomp_action;
 
-	bool permissive;
+	/* Export mode, BPF/PFC */
 	enum sydbox_export_mode export;
+
+	uint32_t seccomp_action;
+	pid_t execve_pid;
 
 	/* Program invocation name (for the child) */
 	char *program_invocation_name;
 
+	/* SecComp Request & Response */
+	struct seccomp_notif *request;
+	struct seccomp_notif_resp *response;
+
 	syd_process_t *proctab;
+
+	/* SecComp Context */
+	scmp_filter_ctx ctx;
+	struct filter *filter;
 
 	/* Global configuration */
 	config_t config;
