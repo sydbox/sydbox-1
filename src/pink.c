@@ -596,9 +596,12 @@ int test_proc_mem(bool report)
 	long addr;
 	size_t wsize, len = 5; /* "ping" */
 	char dest[5];
+	ssize_t nread;
 	close(pipefd[1]);
-	if (read(pipefd[0], &addr, sizeof(long)) < 0)
+	if ((nread = read(pipefd[0], &addr, sizeof(long))) < 0)
 		die_errno("pipe_read");
+	if (nread != sizeof(long))
+		die_errno("pipe_read<%ld!=%zu>", nread, sizeof(long));
 	close(pipefd[0]);
 #if SIZEOF_LONG > 4
 	wsize = abi_wordsize(SCMP_ARCH_NATIVE);
