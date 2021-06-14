@@ -1314,8 +1314,7 @@ notify_receive:
 							     current);
 					goto notify_respond;
 				}
-				if (current && current->shm.clone_thread)
-					P_EXECVE_PID(current) = 0;
+				P_EXECVE_PID(current) = 0;
 				reap_zombies(NULL, -1);
 			}
 			current->flags &= ~SYD_IN_CLONE;
