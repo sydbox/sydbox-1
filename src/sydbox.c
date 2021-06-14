@@ -653,11 +653,8 @@ static void sig_chld(int sig, siginfo_t *info, void *ucontext)
 		if (pid == sydbox->execve_pid)
 			save_exit_signal(info->si_status);
 		break;
-	case CLD_STOPPED:
-	case CLD_CONTINUED:
-		return;
 	default:
-		break;
+		return;
 	}
 
 	for (;;) {
