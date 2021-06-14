@@ -459,8 +459,6 @@ int parent_read_int(int *message) {
 		if (!errno)
 			errno = EINVAL;
 		return -errno;
-		die_errno("failed to read int from pipe: %zu != %zu",
-			  count, sizeof(int));
 	}
 	return *message;
 }
