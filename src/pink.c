@@ -49,13 +49,12 @@ typedef struct msghdr struct_msghdr;
 		return 0; \
 	}} while (0)
 
-#if HAVE_PROCESS_VM_READV
-static ssize_t _pink_process_vm_readv(pid_t pid,
-				      const struct iovec *local_iov,
-				      unsigned long liovcnt,
-				      const struct iovec *remote_iov,
-				      unsigned long riovcnt,
-				      unsigned long flags)
+static ssize_t pink_process_vm_readv(pid_t pid,
+				     const struct iovec *local_iov,
+				     unsigned long liovcnt,
+				     const struct iovec *remote_iov,
+				     unsigned long riovcnt,
+				     unsigned long flags)
 {
 	ssize_t r;
 # if defined(__NR_process_vm_readv)
@@ -79,19 +78,12 @@ static ssize_t _pink_process_vm_readv(pid_t pid,
 	return r;
 }
 
-# define process_vm_readv _pink_process_vm_readv
-#else
-# define process_vm_readv(...) (errno = ENOSYS, -1)
-#endif
-
-#if HAVE_PROCESS_VM_WRITEV
-SYD_GCC_ATTR((unused))
-static ssize_t _pink_process_vm_writev(pid_t pid,
-				       const struct iovec *local_iov,
-				       unsigned long liovcnt,
-				       const struct iovec *remote_iov,
-				       unsigned long riovcnt,
-				       unsigned long flags)
+static ssize_t pink_process_vm_writev(pid_t pid,
+				      const struct iovec *local_iov,
+				      unsigned long liovcnt,
+				      const struct iovec *remote_iov,
+				      unsigned long riovcnt,
+				      unsigned long flags)
 {
 	ssize_t r;
 # if defined(__NR_process_vm_writev)
@@ -115,11 +107,6 @@ static ssize_t _pink_process_vm_writev(pid_t pid,
 # endif
 	return r;
 }
-
-# define process_vm_writev _pink_process_vm_writev
-#else
-# define process_vm_writev(...) (errno = ENOSYS, -1)
-#endif
 
 static inline int abi_wordsize(uint32_t arch)
 {
@@ -169,7 +156,6 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 #endif
 
 	int r;
-#if HAVE_PROCESS_VM_READV
 	static bool cross_memory_attach_works = true;
 
 	if (!cross_memory_attach_works) {
@@ -184,17 +170,11 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 		remote[0].iov_base = (void *)addr;
 		local[0].iov_len = remote[0].iov_len = count;
 
-		r = process_vm_readv(current->pid, local, 1, remote, 1, /*flags:*/0);
+		r = pink_process_vm_readv(current->pid, local, 1, remote, 1,
+					  /*flags:*/0);
 		if (errno == ENOSYS || errno == EPERM)
 			cross_memory_attach_works = false;
 	}
-#else
-	int memfd;
-	if ((memfd = syd_proc_mem_open(current->pid)) < 0)
-		return memfd;
-	r = syd_proc_mem_read(memfd, addr, buf, count);
-	close(memfd);
-#endif
 	return r;
 }
 
@@ -210,7 +190,6 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 #endif
 
 	int r;
-#if HAVE_PROCESS_VM_WRITEV
 	static bool cross_memory_attach_works = true;
 
 	if (!cross_memory_attach_works) {
@@ -225,17 +204,11 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 		remote[0].iov_base = (void *)addr;
 		local[0].iov_len = remote[0].iov_len = count;
 
-		r = process_vm_writev(current->pid, local, 1, remote, 1, /*flags:*/0);
+		r = pink_process_vm_writev(current->pid, local, 1, remote, 1,
+					   /*flags:*/0);
 		if (errno == ENOSYS || errno == EPERM)
 			cross_memory_attach_works = false;
 	}
-#else
-	int memfd;
-	if ((memfd = syd_proc_mem_open(current->pid)) < 0)
-		return memfd;
-	r = syd_proc_mem_write(memfd, addr, buf, count);
-	close(memfd);
-#endif
 	return r;
 }
 
@@ -547,7 +520,7 @@ int test_cross_memory_attach(bool report)
 	remote[0].iov_base = (void *)addr;
 	local[0].iov_len = remote[0].iov_len = len;
 
-	if (process_vm_readv(pid, local, 1, remote, 1, 0) < 0) {
+	if (pink_process_vm_readv(pid, local, 1, remote, 1, 0) < 0) {
 		int save_errno = errno;
 		say_errno("process_vm_readv");
 		if (report && (errno == ENOSYS || errno == EPERM)) {

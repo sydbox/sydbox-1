@@ -104,13 +104,13 @@ linux*)
 	case "$kernel_version" in
 	0.*|1.*|2.*|3.*|4.*|5.0.*|5.1.*|5.2.*|5.3.*|5.4.*|5.5.*)
 		AC_MSG_RESULT([NO!])
-		AC_MSG_ERROR([Linux kernel version $kernel_version is not supported by sydbox])
+		AC_MSG_WARN([Linux kernel version $kernel_version is not supported by sydbox])
 		;;
 	5.6.*)
 		kernel_minor_version=`echo $kernel_version | cut -d'.' -f3`
 		if test "$kernel_minor_version" -lt 0; then
 			AC_MSG_RESULT([NO!])
-			AC_MSG_ERROR([Linux kernel version $kernel_version is not supported by sydbox])
+			AC_MSG_WARN([Linux kernel version $kernel_version is not supported by sydbox])
 		fi
 		AC_MSG_RESULT([$kernel_version])
 		;;
@@ -314,27 +314,22 @@ AM_CONDITIONAL([WANT_DEBUG], test x"$WANT_DEBUG" = x"yes")
 AC_DEFINE_UNQUOTED([SYDBOX_DEBUG], [$SYDBOX_DEBUG], ['Enable debug support (requires: libunwind)'])
 AC_SUBST([SYDBOX_DEBUG])
 
-dnl check for process_vm_readv, process_vm_writev
-AC_CHECK_FUNCS([process_vm_readv],
-	       [HAVE_PROCESS_VM_READV=1],
-	       [AC_CHECK_DECL([__NR_process_vm_readv],
-			      [HAVE_PROCESS_VM_READV=1],
-			      [HAVE_PROCESS_VM_READV=0],
-			      [#include <asm/unistd.h>])])
-AC_CHECK_FUNCS([process_vm_writev],
-	       [HAVE_PROCESS_VM_WRITEV=1],
-	       [AC_CHECK_DECL([__NR_process_vm_writev],
-			      [HAVE_PROCESS_VM_WRITEV=1],
-			      [HAVE_PROCESS_VM_WRITEV=0],
-			      [#include <asm/unistd.h>])])
-AC_SUBST([HAVE_PROCESS_VM_READV])
-AC_SUBST([HAVE_PROCESS_VM_WRITEV])
-AC_DEFINE_UNQUOTED([HAVE_PROCESS_VM_READV],
-		   [$HAVE_PROCESS_VM_READV],
-		   ['Use process_vm_readv, needs CONFIG_CROSS_MEMORY_ATTACH with fallback to /proc/pid/mem'])
-AC_DEFINE_UNQUOTED([HAVE_PROCESS_VM_WRITEV],
-		   [$HAVE_PROCESS_VM_WRITEV],
-		   ['Use process_vm_writev, needs CONFIG_CROSS_MEMORY_ATTACH with fallback to /proc/pid/mem'])
+dnl check for process_vm_readv and process_vm_writev
+PROCESS_VM_WARN=0
+m4_define([include_process_vm_headers], [
+	   #ifdef HAVE_ASM_UNISTD_H
+	   #include <asm/unistd.h>
+	   #endif
+	   #ifdef HAVE_SYS_UIO_H
+	   #include <sys/uio.h>
+	   #endif
+])
+AC_CHECK_DECL([__NR_process_vm_readv],  [],
+	      [PROCESS_VM_WARN=1],
+	      [include_process_vm_headers])
+AC_CHECK_DECL([__NR_process_vm_writev],  [],
+	      [PROCESS_VM_WARN=1],
+	      [include_process_vm_headers])
 
 dnl check for pidfd_open and pidfd_getfd.
 m4_define([include_pidfd_headers], [
@@ -454,7 +449,11 @@ if test x"$PIDFD_SEND_SIGNAL" = x"1"; then
 	AC_MSG_WARN([__NR_pidfd_send_signal not declared! Setting pidfd_getfd to 424.])
 	PIDFD_WARN=1
 fi
-if test x"$PIDFD_WARN" = x"1"; then
+if test x"$PROCESS_VM_WARN" = x"1"; then
+	AC_MSG_WARN([__NR_process_vm_readv not declared! Setting process_vm_readv to 310.])
+	AC_MSG_WARN([__NR_process_vm_writev not declared! Setting process_vm_writev to 311.])
+fi
+if test x"$PIDFD_WARN" = x"1" -o x"$PROCESS_VM_WARN" = x"1"; then
 	AC_MSG_WARN([SydBox may not work correctly!"])
 	AC_MSG_WARN([Try using a newer Linux kernel version."])
 fi
