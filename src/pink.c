@@ -146,6 +146,7 @@ static ssize_t process_vm_read(syd_process_t *current, long addr, void *buf,
 {
 	if (!process_alive(current))
 		return -ESRCH;
+
 #if SIZEOF_LONG > 4
 	size_t wsize = abi_wordsize(SCMP_ARCH_NATIVE);
 	if (wsize < sizeof(addr))
@@ -229,6 +230,7 @@ static ssize_t process_vm_write(syd_process_t *current, long addr, void *buf,
 {
 	if (!process_alive(current))
 		return -ESRCH;
+
 #if SIZEOF_LONG > 4
 	size_t wsize = abi_wordsize(current->arch);
 	if (wsize < sizeof(addr))

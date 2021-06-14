@@ -1150,6 +1150,7 @@ static void init_early(void)
 	}
 	config_init();
 	filter_init();
+	sc_map_init_64v(&sydbox->tree, 0, 0);
 	syd_abort_func(kill_all);
 }
 

@@ -31,6 +31,7 @@
 #include "acl-queue.h"
 #include "bsd-compat.h"
 #include "procmatch.h"
+#include "sc_map.h"
 #include "sockmatch.h"
 #include "sockmap.h"
 #include "util.h"

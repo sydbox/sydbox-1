@@ -240,14 +240,14 @@
 		while (true) {                                                 \
 			if (m->mem[pos].key == 0) {                               \
 				m->size++;                                     \
-			} else if (!sc_map_cmp_##name(&m->mem[pos], key, h)) {    \
+			} else if (!sc_map_cmp_##name(&m->mem[pos], key, h)) { \
 				pos = (pos + 1) & (mod);                       \
 				continue;                                      \
 			}                                                      \
                                                                                \
-			m->found = m->mem[pos].key != 0;                          \
-			ret = m->found ? m->mem[pos].value : 0;                   \
-			sc_map_assign_##name(&m->mem[pos], key, value, h);        \
+			m->found = m->mem[pos].key != 0;                       \
+			ret = m->found ? m->mem[pos].value : 0;                \
+			sc_map_assign_##name(&m->mem[pos], key, value, h);     \
                                                                                \
 			return ret;                                            \
 		}                                                              \
