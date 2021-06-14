@@ -384,9 +384,7 @@ static int do_stat(syd_process_t *current, const char *path,
 		write_stat(current, buf_index, extended);
 
 		/* magic command accepted */
-		if (r < 0)
-			errno = -r;
-		else if (r == MAGIC_RET_FALSE)
+		if (r == MAGIC_RET_FALSE)
 			errno = ENOENT;
 		else
 			errno = 0;
