@@ -1736,7 +1736,7 @@ int main(int argc, char **argv)
 		say("can't optimize seccomp filter (%d %s), continuing...",
 		    -r, strerror(-r));
 	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_NATIVE);
-	for (i = arch_argv_idx; i >= 0; i--) {
+	for (i = arch_argv_idx - 1; i >= 0; i--) {
 		if (arch_argv[i] == NULL)
 			continue;
 		arch = arch_from_string(arch_argv[i]);
