@@ -1269,7 +1269,7 @@ notify_receive:
 		current = lookup_process(pid);
 
 		/* Search early for exit before getting a process entry. */
-		if ((!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
+		if (name && (!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
 			//if (pid == sydbox->execve_pid)
 			//	sydbox->exit_code = sydbox->request->data.args[0];
 			reap_zombies(current, -1);
@@ -1280,7 +1280,7 @@ notify_receive:
 		}
 
 		/* Search early for execve before getting a process entry. */
-		if ((!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
+		if (name && (!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
 			if (sydbox->execve_wait) { /* allow the initial exec */
 				sydbox->execve_wait = false;
 				goto notify_respond;
@@ -1338,7 +1338,9 @@ notify_receive:
 			current->update_cwd = false;
 		}
 
-		if (!strcmp(name, "clone")) {
+		if (!name) {
+			;
+		} else if (!strcmp(name, "clone")) {
 			event_clone(current, 'c', current->args[2]);
 		} else if (!strcmp(name, "fork")) {
 			event_clone(current, 'f', 0);
