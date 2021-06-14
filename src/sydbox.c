@@ -899,10 +899,6 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 		fputs("STARTUP", stderr);
 		r = 1;
 	}
-	if (current->flags & SYD_IGNORE_ONE_SIGSTOP) {
-		fprintf(stderr, "%sIGNORE_ONE_SIGSTOP", (r == 1) ? "|" : "");
-		r = 1;
-	}
 	if (current->flags & SYD_IN_CLONE) {
 		fprintf(stderr, "%sIN_CLONE", (r == 1) ? "|" : "");
 		r = 1;

@@ -60,11 +60,10 @@
 
 /* Process flags */
 #define SYD_STARTUP		00001 /* process attached, needs to be set up */
-#define SYD_IGNORE_ONE_SIGSTOP	00002 /* initial sigstop is to be ignored */
-#define SYD_IN_CLONE		00004 /* process called clone(2) */
-#define SYD_IN_EXECVE		00010 /* process called execve(2) */
-#define SYD_KILLED		00020 /* process is dead, keeping entry for child. */
-#define SYD_DETACHED		00040 /* process is detached, not sandboxed. */
+#define SYD_IN_CLONE		00002 /* process called clone(2) */
+#define SYD_IN_EXECVE		00004 /* process called execve(2) */
+#define SYD_KILLED		00010 /* process is dead, keeping entry for child. */
+#define SYD_DETACHED		00020 /* process is detached, not sandboxed. */
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
 #define SYD_TGID_NONE		0      /* no thread group ID (yet) */

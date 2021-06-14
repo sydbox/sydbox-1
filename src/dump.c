@@ -149,7 +149,6 @@ static void dump_process(pid_t pid)
 	if (p) {
 		fprintf(fp, "{"
 			J(flag_STARTUP)"%s,"
-			J(flag_IGNORE_ONE_SIGSTOP)"%s,"
 			J(flag_IN_CLONE)"%s,"
 			J(flag_IN_EXECVE)"%s,"
 			J(flag_KILLED)"%s,"
@@ -162,7 +161,6 @@ static void dump_process(pid_t pid)
 			J(syscall_no)"%lu,"
 			J(syscall_arch)"%u",
 			J_BOOL(p->flags & SYD_STARTUP),
-			J_BOOL(p->flags & SYD_IGNORE_ONE_SIGSTOP),
 			J_BOOL(p->flags & SYD_IN_CLONE),
 			J_BOOL(p->flags & SYD_IN_EXECVE),
 			J_BOOL(p->flags & SYD_KILLED),
