@@ -623,6 +623,7 @@ int test_proc_mem(bool report)
 			    "interface.");
 		return -save_errno;
 	}
+	dest[len-1] = '\0';
 	if (strcmp(dest, "ping")) {
 		if (report)
 			say("warning: Your system does not support /proc/pid/mem "
