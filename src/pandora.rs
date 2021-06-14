@@ -146,8 +146,12 @@ enum Dump {
         args: [i64; 6],
         repr: [String; 6],
     },
-    ThreadNew { id: u32 },
-    ThreadFree { id: u32 },
+    ThreadNew {
+        id: u32,
+    },
+    ThreadFree {
+        id: u32,
+    },
 }
 
 fn command_box<'a>(
@@ -259,12 +263,9 @@ fn command_inspect(input_path: &str, output_path: &str, path_limit: u8) -> i32 {
 }
 
 fn main() {
-    let arch_values = ["native",
-        "x86_64", "x86", "x32",
-        "arm", "aarch64", "mips", "mips64",
-        "ppc", "ppc64", "ppc64le",
-        "s390", "s390x", "parisc",
-        "parisc64", "riscv64"
+    let arch_values = [
+        "native", "x86_64", "x86", "x32", "arm", "aarch64", "mips", "mips64", "ppc", "ppc64",
+        "ppc64le", "s390", "s390x", "parisc", "parisc64", "riscv64",
     ];
     let dump_values = ["fd[0-9]+", "path", "tmp"];
     let export_values = ["bpf", "pfc"];
@@ -346,11 +347,11 @@ Repository: {}
                 )
                 .arg(
                     Arg::with_name("dump")
-                         .required(false)
-                         .help("dump system call information to the given file descriptor")
-                         .short("d")
-                         .number_of_values(1)
-                         .possible_values(&dump_values),
+                        .required(false)
+                        .help("dump system call information to the given file descriptor")
+                        .short("d")
+                        .number_of_values(1)
+                        .possible_values(&dump_values),
                 )
                 .arg(
                     Arg::with_name("export")
@@ -450,8 +451,11 @@ Repository: {}
                 export = Some(export_format);
             } else {
                 clap::Error::with_description(
-                    &format!("Invalid value `{}' for --export: use bpf, pfc", export_format),
-                    clap::ErrorKind::InvalidValue
+                    &format!(
+                        "Invalid value `{}' for --export: use bpf, pfc",
+                        export_format
+                    ),
+                    clap::ErrorKind::InvalidValue,
                 )
                 .exit();
             }
@@ -459,9 +463,9 @@ Repository: {}
         let arch: Option<Vec<&str>> = matches.values_of("arch").map(|values| values.collect());
         let config: Option<Vec<&str>> = matches.values_of("config").map(|values| values.collect());
         let magic: Option<Vec<&str>> = matches.values_of("magic").map(|values| values.collect());
-        std::process::exit(command_box(bin, &mut cmd,
-                                       &arch, &config, &magic,
-                                       bpf, &dump, &export));
+        std::process::exit(command_box(
+            bin, &mut cmd, &arch, &config, &magic, bpf, &dump, &export,
+        ));
     } else if let Some(ref matches) = matches.subcommand_matches("profile") {
         let bin = matches.value_of("bin").unwrap();
         let out = matches.value_of("output").unwrap();
@@ -706,10 +710,10 @@ fn parse_json_line(
         Dump::StartUp { id: 1, cmd, ts, .. } => {
             return (None, Some(cmd), Some(UNIX_EPOCH + Duration::from_secs(ts)));
         }
-        Dump::ThreadNew { id: 5, .. } => {},
-        Dump::ThreadFree { id: 6, .. } => {},
+        Dump::ThreadNew { id: 5, .. } => {}
+        Dump::ThreadFree { id: 6, .. } => {}
         Dump::SysEnt {
-            event: EventStruct {id: 8, ..},
+            event: EventStruct { id: 8, .. },
             repr,
             name,
             ..
@@ -717,7 +721,7 @@ fn parse_json_line(
             magic.insert((crate::Sandbox::Bind, repr[1].clone()));
         }
         Dump::SysEnt {
-            event: EventStruct {id: 8, ..},
+            event: EventStruct { id: 8, .. },
             repr,
             name,
             ..
@@ -725,7 +729,7 @@ fn parse_json_line(
             magic.insert((crate::Sandbox::Connect, repr[1].clone()));
         }
         Dump::SysEnt {
-            event: EventStruct {id: 8, ..},
+            event: EventStruct { id: 8, .. },
             repr,
             name,
             ..
@@ -733,7 +737,7 @@ fn parse_json_line(
             magic.insert((crate::Sandbox::Connect, repr[4].clone()));
         }
         Dump::SysEnt {
-            event: EventStruct {id: 8, ..},
+            event: EventStruct { id: 8, .. },
             repr,
             name,
             ..
@@ -741,7 +745,7 @@ fn parse_json_line(
             magic.insert((crate::Sandbox::Exec, repr[0].clone()));
         }
         Dump::SysEnt {
-            event: EventStruct {id: 8, ..},
+            event: EventStruct { id: 8, .. },
             args,
             repr,
             name,

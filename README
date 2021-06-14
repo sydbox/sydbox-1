@@ -8,11 +8,15 @@ access to filesystem and network resources.
 
 See: https://sydbox.exherbo.org
 
-## Build and Requirements
+For updates, check out my blog at https://pink.exherbo.org
 
-SydBox uses autotools. To build, simply do `./configure`, `make` and `sudo make install`.
+## Build &amp; Requirements
 
-To use SydBox you need a [Linux](https://kernel.org) kernel with version 5.6 or
+SydBox uses autotools. To build, simply do `./configure`, `make`, `make -j check`
+and `sudo make install`. By default this will produce a statically linked *SydBox* binary.
+If you want use dynamic linking, give the `--disable-static` option to `./configure`.
+
+To use SydBox you need a [Linux](https://kernel.org) kernel with version 5.11 or
 newer which includes [the secure computing mode](https://en.wikipedia.org/wiki/Seccomp)
 with the `SECCOMP_USER_NOTIF_FLAG_CONTINUE` facility,
 and the system calls
@@ -20,27 +24,12 @@ and the system calls
 and [pidfd_getfd](https://man7.org/linux/man-pages/man2/pidfd_getfd.2.html).
 
 In addition, it is recommended that you enable the kernel option
-`CONFIG_CROSS_MEMORY_ATTACH=y` so that SydBox can use the system calls
+`CONFIG_CROSS_MEMORY_ATTACH` so that SydBox can use the system calls
 [process_vm_readv](https://man7.org/linux/man-pages/man2/process_vm_readv.2.html)
 and
 [process_vm_writev](https://man7.org/linux/man-pages/man2/process_vm_readv.2.html).
 These system calls are available in Linux since 3.2. Note SydBox will use the file
 `/proc/pid/mem` if these system calls are unavailable or not working.
-
-After building SydBox, you can use the `--test`, or shortly `-t`, option to test if
-all the required facilities are present on the running system. If this command returns
-success, SydBox is usable on the running system:
-
-```
-$ sydbox --test || echo 'sydbox not usable!'
-sydbox: Linux/chesswob 5.11
-sydbox: [>] Checking for requirements...
-sydbox: [*] cross memory attach is functional.
-sydbox: [*] /proc/pid/mem interface is functional.
-sydbox: [*] pidfd interface is functional.
-sydbox: [*] seccomp filters are functional.
-sydbox: [>] SydBox is supported on this system!
-```
 
 For more information about these requirements, check the following links:
 - [kernelnewbies.org/Linux-5.6](https://kernelnewbies.org/Linux_5.6#A_new_pidfd_syscall.2C_pidfd_getfd.282.29)
@@ -84,7 +73,7 @@ parts which are of particular interest to read are:
 - [core/restrict/memory_map](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-restrict-mmap)
 - [core/restrict/shared_memory_writable](https://dev.exherbo.org/~alip/sydbox/sydbox.html#core-restrict-shm-wr)
 
-## SydBox and Pandora
+## SydBox &amp; Pandora
 
 **NOTE:** Pandora is in its early stages of development. To be able to use Pandora
 you need **Sydbox-2.0.1** or later.

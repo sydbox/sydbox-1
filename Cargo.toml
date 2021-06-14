@@ -1,12 +1,12 @@
 [package]
 name = "pandora_box"
-version = "0.4.8"
+version = "0.5.1"
 authors = ["Alï Polatel <alip@exherbo.org>"]
 edition = "2018"
 description = "Pandora's Box: A helper for SydBox, a ptrace & seccomp based sandbox to make sandboxing practical"
-documentation = "https://dev.exherbo.org/~alip/sydbox/sydbox.html"
+documentation = "https://sydbox.exherbo.org"
 readme = "README"
-homepage = "https://dev.exherbo.org/~alip/sydbox/sydbox.html"
+homepage = "https://pink.exherbo.org"
 repository = "https://github.com/sydbox/sydbox-1"
 license = "GPL-3.0-or-later"
 keywords = ["security", "sandbox", "seccomp", "sydbox", "pinktrace"]
