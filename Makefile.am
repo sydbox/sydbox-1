@@ -105,4 +105,11 @@ upload-release: upload $(SHA1_FILE) $(GPG_FILE)
 jenkins:
 	maint/jenkins-build.sh
 
+.PHONY: coverity
+coverity:
+	misc/conf.sh
+	cov-build --dir cov-int $(MAKE) -j clean all
+	tar -cvpzf /tmp/cov-int.tar.gz cov-int
+	$(AM_V_at)echo "Submit /tmp/cov-int.tar.gz to Coverity"
+
 SUBDIRS= syd src data man t .
