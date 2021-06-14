@@ -43,6 +43,7 @@ int path_decode(syd_process_t *current, unsigned arg_index, char **buf)
 		}
 		return -errno;
 	}
+	path[count_read] = '\0';
 	*buf = xstrdup(path);
 	return 0;
 }
