@@ -631,6 +631,7 @@ int test_proc_mem(bool report)
 		if (report)
 			say("warning: Your system does not support /proc/pid/mem "
 			    "interface: \"%s\"", dest);
+		close(memfd);
 		return -ENOSYS;
 	}
 
