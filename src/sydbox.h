@@ -29,6 +29,7 @@
 #include <linux/sched.h>
 #include "pink.h"
 #include "acl-queue.h"
+#include "bsd-compat.h"
 #include "procmatch.h"
 #include "sc_map.h"
 #include "sockmatch.h"

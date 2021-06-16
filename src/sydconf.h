@@ -18,7 +18,10 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <linux/fs.h>
+#include <sys/mount.h>
+#ifdef HAVE_LINUX_FS_H
+# include <linux/fs.h>
+#endif
 #define SYDBOX_EXPORT_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT|O_EXCL)
 #define SYDBOX_EXPORT_MODE 0600
 #define SYDBOX_DUMP_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT|O_EXCL)
