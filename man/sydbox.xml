@@ -40,7 +40,7 @@
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
       <itemizedlist>
-        <listitem><para><command>sydbox <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">-d fd|path|tmp</arg> <arg choice="opt" rep="repeat">-a arch</arg>  <arg choice="opt" rep="repeat">-c pathspec</arg> <arg choice="opt" rep="repeat">-m magic</arg> <arg choice="opt" rep="repeat">-E var</arg> <arg choice="opt" rep="repeat">-E var=val</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
+        <listitem><para><command>sydbox <arg choice="opt">-hvbN</arg> <arg choice="opt">-d &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >-e &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >-C directory</arg> <arg choice="opt" >-D directory</arg> <arg choice="opt" >-M 0..3</arg> <arg choice="opt" rep="repeat">-c pathspec</arg> <arg choice="opt" rep="repeat">-m magic</arg> <arg choice="opt" rep="repeat">-E var</arg> <arg choice="opt" rep="repeat">-E var=val</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
         <listitem><para><command>sydbox --test</command></para></listitem>
       </itemizedlist>
     </cmdsynopsis>
@@ -97,6 +97,7 @@
     <variablelist>
       <varlistentry>
         <term><option>-h</option></term>
+        <term><option>--help</option></term>
         <listitem>
           <simpara>
             Show usage and exit
@@ -106,6 +107,7 @@
 
       <varlistentry>
         <term><option>-v</option></term>
+        <term><option>--version</option></term>
         <listitem>
           <simpara>
             Show version and exit
@@ -114,36 +116,71 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-c</option> <filename>pathspec</filename></term>
+        <term><option>-b</option></term>
+        <term><option>--bpf-only</option></term>
         <listitem>
           <simpara>
-            <filename>pathspec</filename> to the configuration file, may be repeated.
-            See <xref linkend="configuration"/> for more information.
+            Run in bpf only mode, no seccomp user notifications. All
+            tracing happens in kernel-space and action for read, write
+            and network sandboxing is determined by checking the relevant
+            sandboxing mode for <constant>allow</constant>,
+            <constant>deny</constant> or <constant>bpf</constant>.
+            See <xref linkend="sandboxing"/> for more information.
           </simpara>
         </listitem>
       </varlistentry>
 
       <varlistentry>
-        <term><option>-m</option> <varname>magic</varname></term>
+        <term><option>-N</option></term>
+        <term><option>--dry-run</option></term>
         <listitem>
           <simpara>
-            Run a magic command during init, may be repeated.
-            See <xref linkend="configuration"/> for more information.
+            Run under inspection without denying system calls, use with
+            <option>-d</option> to get an overview of what the traced process
+            is doing without intervening with its processing.
           </simpara>
         </listitem>
       </varlistentry>
 
       <varlistentry>
-        <term><option>-E</option> <varname>var=val</varname></term>
+        <term><option>-d</option> <varname>&lt;fd[0-9]+|path|tmp&gt;</varname></term>
+        <term><option>--dump</option>=<varname>&lt;fd[0-9]+|path|tmp&gt;</varname></term>
         <listitem>
           <simpara>
-            Put <varname>var=val</varname> in the environment for command, may be repeated
+            Dump system call information to the given file descriptor.
+          </simpara>
+          <simpara>
+            Use a number to dump to a file descriptor, e.g. 2 for standard error,
+            use a string to write the dump to a path, and use <constant>tmp</constant>
+            to write the dump to a temporary file. In the latter case, Sydbox prints
+            the path of the temporary file to standard error on start and exit.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-e</option> <varname>&lt;bpf|pfc&gt;:filename</varname></term>
+        <term><option>--export</option>=<varname>&lt;bpf|pfc&gt;:filename</varname></term>
+        <listitem>
+          <simpara>
+            Export the seccomp filters in given format. Format can be exactly one of
+            <constant>bpf</constant> for Berkeley Packet Filter or
+            <constant>pfc</constant> for Pseudo Filter Code. The output of
+            <constant>bpf</constant> is suitable for loading into the kernel, while
+            the output of <constant>pfc</constant> is human readable and is intended
+            primarily as a debugging tool for developers using libseccomp.
+          </simpara>
+          <simpara>
+            If a filename is given after the format name and a colon, write the
+            seccomp filters into the given filename. If no filename is given write
+            to standard error.
           </simpara>
         </listitem>
       </varlistentry>
 
       <varlistentry>
         <term><option>-a</option> <varname>arch</varname></term>
+        <term><option>--arch</option>=<varname>arch</varname></term>
         <listitem>
           <simpara>
             Filter system calls for the given architecture, may be repeated
@@ -175,74 +212,125 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-b</option></term>
-        <listitem>
-          <simpara>
-            Run in bpf only mode, no seccomp user notifications. All
-            tracing happens in kernel-space and action for read, write
-            and network sandboxing is determined by checking the relevant
-            sandboxing mode for <constant>allow</constant>,
-            <constant>deny</constant> or <constant>bpf</constant>.
-            See <xref linkend="sandboxing"/> for more information.
-          </simpara>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term><option>-d</option> <varname>fd[0-9]+|path|tmp</varname></term>
-        <listitem>
-          <simpara>
-            Dump system call information to the given file descriptor.
-          </simpara>
-          <simpara>
-            Use a number to dump to a file descriptor, e.g. 2 for standard error,
-            use a string to write the dump to a path, and use <constant>tmp</constant>
-            to write the dump to a temporary file. In the latter case, Sydbox prints
-            the path of the temporary file to standard error on start and exit.
-          </simpara>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term><option>--dry-run</option></term>
-        <listitem>
-          <simpara>
-            Run under inspection without denying system calls, use with
-            <option>-d</option> to get an overview of what the traced process
-            is doing without intervening with its processing.
-          </simpara>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term><option>--test</option></term>
-        <listitem>
-          <simpara>
-            Test if various runtime requirements are functional and exit.
-          </simpara>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term><option>--chdir</option> <varname>path</varname></term>
-        <listitem>
-          <simpara>
-            Change directory to this directory before starting the program.
-          </simpara>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term><option>--chroot</option> <varname>path</varname></term>
+        <term><option>-C</option> <varname>directory</varname></term>
+        <term><option>--chroot</option>=<varname>directory</varname></term>
         <listitem>
           <simpara>
             Chroot to this directory before starting the daemon.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-D</option> <varname>directory</varname></term>
+        <term><option>--chdir</option>=<varname>directory</varname></term>
+        <listitem>
+          <simpara>
+            Change directory to this directory before starting the program.
           </simpara>
           <note>
             <simpara>
               Path to the chdir should be relative to the chroot.
             </simpara>
           </note>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-M</option> <varname>0..3</varname></term>
+        <term><option>--memaccess</option>=<varname>0..3</varname></term>
+        <listitem>
+          <simpara>
+            Mode on using cross memory attach or <constant>/proc/pid/mem</constant>.
+            Cross memory attach requires a Linux kernel with the
+            <constant>CONFIG_CROSS_MEMORY_ATTACH</constant> option enabled.
+            Default mode is <constant>0</constant>.
+            <variablelist>
+              <varlistentry>
+                <term>0</term>
+                <listitem>
+                  <simpara>
+                    Use cross memory attach if available, use /proc otherwise.
+                  </simpara>
+                </listitem>
+              </varlistentry>
+              <varlistentry>
+                <term>1</term>
+                <listitem>
+                  <simpara>
+                    Use /proc/pid/mem unconditionally.
+                  </simpara>
+                </listitem>
+              </varlistentry>
+              <varlistentry>
+                <term>2</term>
+                <listitem>
+                  <simpara>
+                    Use cross memory attach if available, use /proc otherwise,
+                    open file once, do not reopen the file each call.
+                  </simpara>
+                </listitem>
+              </varlistentry>
+              <varlistentry>
+                <term>3</term>
+                <listitem>
+                  <simpara>
+                    Use /proc/pid/mem unconditionally, open file once,
+                    do not reopen the file each call.
+                  </simpara>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+          </simpara>
+          <warning>
+            <para>
+              Modes 2 and 3 may run into too many processes errors.
+              Use another mode or adapt the sysctl <varname>fs.nr_open</varname>
+              as necessary if this is the case.
+            </para>
+          </warning>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-c</option> <filename>pathspec</filename></term>
+        <term><option>--config</option>=<filename>pathspec</filename></term>
+        <listitem>
+          <simpara>
+            <filename>pathspec</filename> to the configuration file, may be repeated.
+            See <xref linkend="configuration"/> for more information.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-m</option> <varname>magic</varname></term>
+        <term><option>--magic</option>=<varname>magic</varname></term>
+        <listitem>
+          <simpara>
+            Run a magic command during init, may be repeated.
+            See <xref linkend="configuration"/> for more information.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-E</option> <varname>var=val</varname></term>
+        <term><option>--env</option>=<varname>var=val</varname></term>
+        <listitem>
+          <simpara>
+            Put <varname>var=val</varname> in the environment for command, may be repeated
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-t</option></term>
+        <term><option>--test</option></term>
+        <listitem>
+          <simpara>
+            Test if various runtime requirements are functional and exit.
+          </simpara>
         </listitem>
       </varlistentry>
 
@@ -1189,6 +1277,68 @@
               commands are allowed. Note, the magic lock is tracked per-process. If <varname>exec</varname> is
               specified, the magic lock is set to <varname>on</varname> when the process returns from the system call
               <function>execve</function><manvolnum>2</manvolnum>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-trace-memory_access">core/trace/memory_access</option></term>
+          <listitem>
+            <para>type: <type>integer</type></para>
+            <para>default: <varname>0</varname></para>
+            <para>
+              Mode on using cross memory attach or <constant>/proc/pid/mem</constant>.
+              Cross memory attach requires a Linux kernel with the
+              <constant>CONFIG_CROSS_MEMORY_ATTACH</constant> option enabled.
+              Default mode is <constant>0</constant>.
+              <variablelist>
+                <varlistentry>
+                  <term>0</term>
+                  <listitem>
+                    <simpara>
+                      Use cross memory attach if available, use /proc otherwise.
+                    </simpara>
+                  </listitem>
+                </varlistentry>
+                <varlistentry>
+                  <term>1</term>
+                  <listitem>
+                    <simpara>
+                      Use /proc/pid/mem unconditionally.
+                    </simpara>
+                  </listitem>
+                </varlistentry>
+                <varlistentry>
+                  <term>2</term>
+                  <listitem>
+                    <simpara>
+                      Use cross memory attach if available, use /proc otherwise,
+                      open file once, do not reopen the file each call.
+                    </simpara>
+                  </listitem>
+                </varlistentry>
+                <varlistentry>
+                  <term>3</term>
+                  <listitem>
+                    <simpara>
+                      Use /proc/pid/mem unconditionally, open file once,
+                      do not reopen the file each call.
+                    </simpara>
+                  </listitem>
+                </varlistentry>
+              </variablelist>
+            </para>
+            <note>
+              <para>
+                This option is functionally identical to the <option>-M</option> command line switch.
+              </para>
+            </note>
+            <warning>
+              <para>
+                Modes 2 and 3 may run into too many processes errors.
+                Use another mode or adapt the sysctl <varname>fs.nr_open</varname>
+                as necessary if this is the case.
+              </para>
+            </warning>
           </listitem>
         </varlistentry>
 

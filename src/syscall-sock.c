@@ -89,7 +89,7 @@ out:
 }
 
 static int sys_connect_call(syd_process_t *current, bool sockaddr_in_msghdr,
-			    unsigned arg_index)
+			    unsigned arg_index, int deny_errno)
 {
 	syscall_info_t info;
 
@@ -115,7 +115,7 @@ static int sys_connect_call(syd_process_t *current, bool sockaddr_in_msghdr,
 	info.access_filter = &sydbox->config.filter_network;
 	info.rmode = RPATH_NOLAST;
 	info.arg_index = arg_index;
-	info.deny_errno = ECONNREFUSED;
+	info.deny_errno = deny_errno;
 	if (sub_connect(current, arg_index) || sub_sendto(current, arg_index) ||
 	    sub_recvmsg(current, arg_index) || sub_sendmsg(current, arg_index))
 		info.decode_socketcall = true;
@@ -187,22 +187,22 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 
 int sys_connect(syd_process_t *current)
 {
-	return sys_connect_call(current, false, 1);
+	return sys_connect_call(current, false, 1, ECONNREFUSED);
 }
 
 int sys_sendto(syd_process_t *current)
 {
-	return sys_connect_call(current, false, 4);
+	return sys_connect_call(current, false, 4, ENOTCONN);
 }
 
 int sys_recvmsg(syd_process_t *current)
 {
-	return sys_connect_call(current, true, 1);
+	return sys_connect_call(current, true, 1, ECONNREFUSED);
 }
 
 int sys_sendmsg(syd_process_t *current)
 {
-	return sys_connect_call(current, true, 1);
+	return sys_connect_call(current, true, 1, ENOTCONN);
 }
 
 int sys_listen(syd_process_t *current)

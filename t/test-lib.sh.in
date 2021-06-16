@@ -193,6 +193,7 @@ parse_option () {
 # Parse options while taking care to leave $@ intact, so we will still
 # have all the original command line options when executing the test
 # script again for '--tee' and '--verbose-log' later.
+dump_only=t
 for opt
 do
 	if test -n "$store_arg_to"
@@ -236,7 +237,6 @@ then
 	test -z "$verbose_log" && verbose=t
 fi
 
-dump=t
 if test -n "$stress"
 then
 	verbose=t
@@ -496,7 +496,6 @@ SQ=\'
 if test -n "$dump_only"
 then
 	test -z "$dump" && dump=t
-	test -z "$verbose" && verbose_only="$dump_only"
 elif test -n "$dump"
 then
 	verbose=t
@@ -952,12 +951,12 @@ test_run_ () {
 	save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
 	if test -n "$test_sydbox_options"
 	then
-		if test -n "$use_memory"
+		if test -n "$memory_access"
 		then
-			SYDBOX_USE_MEMORY=$use_memory
-			export SYDBOX_USE_MEMORY
+			SYDBOX_MEMORY_ACCESS=$memory_access
+			export SYDBOX_MEMORY_ACCESS
 		else
-			SYDBOX_USE_MEMORY=0
+			SYDBOX_MEMORY_ACCESS=0
 		fi
 	fi
 

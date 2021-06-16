@@ -175,8 +175,8 @@ test_expect_success_foreach_option() {
 	argc="$#" ; arg1="$1" ; arg2="$2" ; arg3="$3"
 	for choice in 0 1 2 3
 	do
-		use_memory="$choice"
-		suffix="[use_memory:${choice}]"
+		memory_access="$choice"
+		suffix="[memory_access:${choice}]"
 		if test "$argc" = 3
 		then
 			prereq="$arg1"
@@ -201,10 +201,10 @@ test_expect_failure_foreach_option() {
 	argc="$#" ; arg1="$1" ; arg2="$2" ; arg3="$3"
 	for choice in 0 1 2 3
 	do
-		IFS=' ' read -r use_memory <<EOF
+		IFS=' ' read -r memory_access <<EOF
 $choice
 EOF
-		suffix="[use_memory:${choice}]"
+		suffix="[memory_access:${choice}]"
 		if test "$argc" = 3
 		then
 			set -- "$arg1" "$arg2 $suffix" "$arg3"

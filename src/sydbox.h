@@ -242,7 +242,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE,
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
 	MAGIC_KEY_CORE_TRACE_INTERRUPT,
-	MAGIC_KEY_CORE_TRACE_USE_PROC_MEM,
+	MAGIC_KEY_CORE_TRACE_MEMORY_ACCESS,
 	MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK,
 
 	MAGIC_KEY_EXEC,
@@ -533,9 +533,9 @@ struct config {
 	/* same for these, not inherited: global */
 	bool use_seize;
 	bool use_toolong_hack;
-#define SYDBOX_CONFIG_USE_PROC_MEM_REOPEN_MIN 2
-#define SYDBOX_CONFIG_USE_PROC_MEM_MAX 3
-	uint32_t use_proc_mem;
+#define SYDBOX_CONFIG_MEMACCESS_REOPEN_MIN 2
+#define SYDBOX_CONFIG_MEMACCESS_MAX 3
+	uint32_t mem_access;
 
 	/* Per-process sandboxing data */
 	sandbox_t box_static;
@@ -704,10 +704,10 @@ extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 #define bpf_only() ((sydbox) && sydbox->bpf_only)
 
 #define use_cross_memory_attach() \
-		(((sydbox)->config.use_proc_mem == 0) || \
-		 ((sydbox)->config.use_proc_mem == 2))
+		(((sydbox)->config.mem_access == 0) || \
+		 ((sydbox)->config.mem_access == 2))
 #define proc_mem_open_once() \
-	((sydbox)->config.use_proc_mem >= SYDBOX_CONFIG_USE_PROC_MEM_REOPEN_MIN)
+	((sydbox)->config.mem_access >= SYDBOX_CONFIG_MEMACCESS_REOPEN_MIN)
 
 #define sysdeny(p) ((p)->retval)
 #define hasparent(p) ((p)->ppid >= 0)
@@ -988,8 +988,8 @@ int magic_set_violation_raise_fail(const void *val, syd_process_t *current);
 int magic_query_violation_raise_fail(syd_process_t *current);
 int magic_set_violation_raise_safe(const void *val, syd_process_t *current);
 int magic_query_violation_raise_safe(syd_process_t *current);
-int magic_set_trace_use_proc_mem(const void *val, syd_process_t *current);
-int magic_query_trace_use_proc_mem(syd_process_t *current);
+int magic_set_trace_memory_access(const void *val, syd_process_t *current);
+int magic_query_trace_memory_access(syd_process_t *current);
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current);
 int magic_query_trace_use_toolong_hack(syd_process_t *current);
 int magic_set_restrict_general(const void *val, syd_process_t *current);

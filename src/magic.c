@@ -271,13 +271,13 @@ static const struct key key_table[] = {
 		.type   = MAGIC_TYPE_STRING,
 		.set    = magic_set_trace_magic_lock,
 	},
-	[MAGIC_KEY_CORE_TRACE_USE_PROC_MEM] = {
-		.name   = "use_proc_mem",
-		.lname  = "core.trace.use_proc_mem",
+	[MAGIC_KEY_CORE_TRACE_MEMORY_ACCESS] = {
+		.name   = "memory_access",
+		.lname  = "core.trace.memory_access",
 		.parent = MAGIC_KEY_CORE_TRACE,
 		.type   = MAGIC_TYPE_INTEGER,
-		.set    = magic_set_trace_use_proc_mem,
-		.query  = magic_query_trace_use_proc_mem,
+		.set    = magic_set_trace_memory_access,
+		.query  = magic_query_trace_memory_access,
 	},
 	[MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK] = {
 		.name   = "use_toolong_hack",

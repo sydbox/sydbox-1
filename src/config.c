@@ -34,7 +34,7 @@ void config_init(void)
 	sydbox->config.magic_core_allow = true;
 
 	/* set sane defaults for configuration */
-	sydbox->config.use_proc_mem = 0;
+	sydbox->config.mem_access = 0;
 	sydbox->config.use_toolong_hack = false;
 	sydbox->config.restrict_general = 0;
 	sydbox->config.restrict_ioctl = false;

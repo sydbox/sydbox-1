@@ -120,7 +120,7 @@ usage: "PACKAGE" [-hvb] [-d <fd|path|tmp>] [-a arch...] \n\
                               open file once, do not reopen the file each call.\n\
                       default: 0\n\
                       Warning: Modes 2 and 3 may run into too many processes errors.\n\
-                      Use another mode or adapt sysctl fs.nr_open as necessary if\n\
+                      Use another mode or adapt the sysctl fs.nr_open as necessary if\n\
                       this is the case.\n\
 --dry-run          -- Run under inspection without denying system calls\n\
 --export=<bpf|pfc> -- Export the seccomp filters to standard error on startup\n\
@@ -1624,17 +1624,21 @@ int main(int argc, char **argv)
 	int options_index;
 	char *profile_name;
 	struct option long_options[] = {
+		{"profile",	required_argument,	NULL,	0},
 		{"help",	no_argument,		NULL,	'h'},
 		{"version",	no_argument,		NULL,	'v'},
-		{"profile",	required_argument,	NULL,	0},
-		{"dry-run",	no_argument,		NULL,	'N'},
-		{"export",	required_argument,	NULL,	'e'},
-		{"arch",	required_argument,	NULL,	'a'},
 		{"bpf",		no_argument,		NULL,	'b'},
+		{"dry-run",	no_argument,		NULL,	'N'},
+		{"config",	required_argument,	NULL,	'c'},
+		{"magic",	required_argument,	NULL,	'm'},
+		{"env",		required_argument,	NULL,	'E'},
+		{"arch",	required_argument,	NULL,	'a'},
+		{"dump",	no_argument,		NULL,	'd'},
+		{"export",	required_argument,	NULL,	'e'},
 		{"test",	no_argument,		NULL,	't'},
 		{"chdir",	required_argument,	NULL,	'D'},
 		{"chroot",	required_argument,	NULL,	'C'},
-		{"memory",	required_argument,	NULL,	'M'},
+		{"memaccess",	required_argument,	NULL,	'M'},
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -1735,13 +1739,13 @@ int main(int argc, char **argv)
 			errno = 0;
 			opt = strtoul(optarg, &end, 10);
 			if ((errno && errno != EINVAL) ||
-			    (unsigned long)opt > SYDBOX_CONFIG_USE_PROC_MEM_MAX)
+			    (unsigned long)opt > SYDBOX_CONFIG_MEMACCESS_MAX)
 			{
 				say_errno("Invalid argument for option --memory: "
 					  "`%s'", optarg);
 				usage(stderr, 1);
 			}
-			sydbox->config.use_proc_mem = opt;
+			sydbox->config.mem_access = opt;
 			break;
 		case 't':
 			if (uname(&buf_uts) < 0) {

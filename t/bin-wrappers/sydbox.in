@@ -17,28 +17,29 @@ then
 	done
 fi
 
-SYDBOX_USE_MEMORY=${SYDBOX_USE_MEMORY:-0}
+SYDBOX_MEMORY_ACCESS=${SYDBOX_MEMORY_ACCESS:-0}
 if test -z "$SYDBOX_TEST_INSTALLED"
 then
 	if test -z "$SYDBOX_DUMP_ENABLED"
 	then
 		exec "@TOP_BUILDDIR@"/src/sydbox \
-			-M ${SYDBOX_USE_MEMORY} \
+			-M ${SYDBOX_MEMORY_ACCESS} \
 			$SYDBOX_TEST_OPTIONS "$@"
 	else
 		exec "@TOP_BUILDDIR@"/src/sydbox-dump \
-			-M ${SYDBOX_USE_MEMORY} \
+			-M ${SYDBOX_MEMORY_ACCESS} \
 			$SYDBOX_TEST_OPTIONS "$@"
 	fi
 else
 	if test -z "$SYDBOX_DUMP_ENABLED"
 	then
 		exec "@BINDIR@"/sydbox \
-			-M ${SYDBOX_USE_MEMORY} \
+			-M ${SYDBOX_MEMORY_ACCESS} \
 			$SYDBOX_TEST_OPTIONS "$@"
 	else
 		exec "@LIBEXECDIR@"/sydbox/dump/sydbox-dump \
-			-M ${SYDBOX_USE_MEMORY} \
+			-M ${SYDBOX_MEMORY_ACCESS} \
 			$SYDBOX_TEST_OPTIONS "$@"
 	fi
 fi
+set +x
