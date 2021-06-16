@@ -46,11 +46,9 @@ static int wait_one(syd_process_t *node)
 {
 	int status;
 
-	errno = 0;
-	waitpid(node->pid, &status, __WALL|WNOHANG);
-
-	if (errno == ECHILD ||
-	    (errno == 0 && (WIFSIGNALED(status) || WIFEXITED(status))))
+	if (waitpid(node->pid, &status, __WALL|WNOHANG) == -1)
+		return (errno == ECHILD) ? -ESRCH : -errno;
+	if ((WIFSIGNALED(status) || WIFEXITED(status)))
 		return -ESRCH;
 	return 0;
 }
