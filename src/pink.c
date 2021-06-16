@@ -562,7 +562,7 @@ int test_proc_mem(bool report)
 		_exit(0);
 	}
 	long addr;
-	size_t wsize, len = 5; /* "ping" */
+	size_t len = 5; /* "ping" */
 	char dest[5];
 	ssize_t nread;
 	close(pipefd[1]);
@@ -572,7 +572,7 @@ int test_proc_mem(bool report)
 		die_errno("pipe_read<%ld!=%zu>", nread, sizeof(long));
 	close(pipefd[0]);
 #if SIZEOF_LONG > 4
-	wsize = abi_wordsize(SCMP_ARCH_NATIVE);
+	size_t wsize = abi_wordsize(SCMP_ARCH_NATIVE);
 	if (wsize < sizeof(addr))
 		addr &= (1ul << 8 * wsize) - 1;
 #endif

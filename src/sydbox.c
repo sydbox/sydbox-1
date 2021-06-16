@@ -406,7 +406,6 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent)
 
 static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
 {
-	int r;
 	bool new_child;
 	syd_process_t *child;
 
@@ -423,8 +422,7 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
 	if (p->new_clone_flags & SYD_CLONE_THREAD) {
 		child->ppid = p->ppid;
 		child->tgid = p->tgid;
-	} else if ((r = proc_parents(child->pid,
-				     &child->tgid, &child->ppid)) < 0) {
+	} else if (proc_parents(child->pid, &child->tgid, &child->ppid) < 0) {
 		say_errno("proc_parents");
 		child->ppid = p->pid;
 		child->tgid = child->pid;
@@ -756,7 +754,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	}
 	if (current->flags & SYD_IN_CLONE) {
 		fprintf(stderr, "%sIN_CLONE", (r == 1) ? "|" : "");
-		r = 1;
+		/*r = 1; */
 	}
 
 	if (!verbose)
@@ -784,7 +782,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 			CE);
 	}
 
-	if (!verbose || !current->shm.clone_thread || !current->shm.clone_thread->box)
+	if (!current->shm.clone_thread || !current->shm.clone_thread->box)
 		return;
 
 	fprintf(stderr, "\t%sSandbox: {exec:%s read:%s write:%s sock:%s}%s\n",

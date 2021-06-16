@@ -739,7 +739,7 @@ static inline void process_remove(syd_process_t *p)
 
 static inline unsigned int process_count_alive(void)
 {
-	unsigned int r;
+	unsigned int r = 0;
 	syd_process_t *node;
 
 	sc_map_foreach_value(&sydbox->tree, node) {

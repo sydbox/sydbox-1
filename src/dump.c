@@ -82,7 +82,7 @@ static void dump_format(void)
 {
 	fprintf(fp, "{"
 		J(id)"%llu,"
-		J(shoebox)"%u,"
+		J(shoebox)"%d,"
 		J(name)"\"%s\"}",
 		id++, DUMP_FMT,
 		sydbox->program_invocation_name);
