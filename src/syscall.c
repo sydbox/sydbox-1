@@ -122,7 +122,7 @@ static const sysentry_t syscall_entries[] = {
 	},
 	{
 		.name = "faccessat2",
-		.notify = sys_faccessat,
+		.notify = sys_faccessat2,
 		.sandbox_read = true,
 		.sandbox_write = true,
 		.sandbox_exec = true,
@@ -718,7 +718,7 @@ int sysinit_seccomp(void)
 {
 	int r;
 
-	if ((r = sysinit_seccomp_load() < 0)) {
+	if ((r = sysinit_seccomp_load()) < 0) {
 		errno = -r;
 		say_errno("sysinit_seccomp_load");
 		return r;
@@ -860,13 +860,12 @@ static int rule_add_access_ex(uint32_t action, int sysnum, int access_mode)
 static int
 rule_add_open_rd(uint32_t action, int sysnum, int open_flag)
 {
-	int r;
-
 	if (action == sydbox->seccomp_action)
 		return 0;
 
 	/* FIXME: duplication with syscall-filter.c:filter_open_readonly() */
 	for (unsigned i = 0; i < ELEMENTSOF(open_readonly_flags); i++) {
+		int r;
 		r = seccomp_rule_add(sydbox->ctx, action,
 				     sysnum, 1,
 				     SCMP_CMP( open_flag,
@@ -883,8 +882,6 @@ rule_add_open_rd(uint32_t action, int sysnum, int open_flag)
 static int
 rule_add_open_wr(uint32_t action, int sysnum, int open_flag)
 {
-	int r;
-
 	if (action == sydbox->seccomp_action)
 		return 0;
 
@@ -895,6 +892,7 @@ rule_add_open_wr(uint32_t action, int sysnum, int open_flag)
 	};
 
 	for (unsigned int i = 0; i < ELEMENTSOF(flag); i++) {
+		int r;
 		r = seccomp_rule_add(sydbox->ctx, action, sysnum,
 				     1,
 				     SCMP_CMP( open_flag, SCMP_CMP_MASKED_EQ,

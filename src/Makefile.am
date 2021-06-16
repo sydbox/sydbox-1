@@ -54,11 +54,11 @@ noinst_HEADERS+= \
 		 procmatch.h \
 		 #profile_parser.y \
 		 #profile_scanner.l \
+		 sc_map.h \
 		 sockmatch.h \
 		 sockmap.h \
 		 util.h \
 		 xfunc.h \
-		 sydhash.h \
 		 sydconf.h \
 		 sydbox.h
 sydbox_SOURCES= \
@@ -74,6 +74,7 @@ sydbox_SOURCES= \
 		 pathdecode.c \
 		 pathmatch.c \
 		 procmatch.c \
+		 sc_map.c \
 		 sockmatch.c \
 		 acl-queue.c \
 		 util.c \
@@ -99,10 +100,6 @@ sydbox_SOURCES= \
 		 sydbox.c
 sydfmt_SOURCES= \
 		sydfmt.c
-
-# http://troydhanson.github.io/uthash/ v1.9.8-223-ge7f4693
-noinst_HEADERS+= \
-		 uthash.h
 
 # Imported from rsync!
 noinst_HEADERS+= \

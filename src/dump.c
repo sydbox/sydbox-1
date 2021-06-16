@@ -104,7 +104,6 @@ static void dump_proc_statinfo(const struct proc_statinfo *info)
 
 static void dump_process(pid_t pid)
 {
-	int r;
 	struct proc_statinfo info;
 	syd_process_t *p;
 
@@ -117,6 +116,7 @@ static void dump_process(pid_t pid)
 
 	fprintf(fp, ","J(stat));
 	if (flags & DUMPF_PROCFS) {
+		int r;
 		r = proc_stat(pid, &info);
 		if (r < 0)
 			dump_errno(-r);
@@ -153,9 +153,9 @@ static void dump_process(pid_t pid)
 			J(flag_IN_EXECVE)"%s,"
 			J(flag_KILLED)"%s,"
 			J(flag_DETACHED)"%s,"
-			J(ref_CLONE_THREAD)"%d,"
-			J(ref_CLONE_FS)"%d,"
-			J(ref_CLONE_FILES)"%d,"
+			J(ref_CLONE_THREAD)"%u,"
+			J(ref_CLONE_FS)"%u,"
+			J(ref_CLONE_FILES)"%u,"
 			J(ppid)"%d,"
 			J(tgid)"%d,"
 			J(syscall_no)"%lu,"

@@ -9,15 +9,16 @@
 #include <errno.h>
 #include <stdlib.h>
 #include "pink.h"
-#include "sydhash.h"
-
+#include "sc_map.h"
+/*
 struct systable {
 	long no;
 	sysentry_t entry;
-	UT_hash_handle hh;
 };
+*/
 
-static struct systable *systable[ABIS_SUPPORTED];
+bool systable_initialised;
+struct sc_map_64v systable[ABIS_SUPPORTED];
 
 void systable_add_full(long no, uint32_t arch, const char *name,
 		       sysfunc_t fnotify, sysfunc_t fexit)
@@ -30,37 +31,42 @@ void systable_add_full(long no, uint32_t arch, const char *name,
 		}
 	}
 
-	struct systable *s = xmalloc(sizeof(struct systable));
-	s->no = no;
-	s->entry.name = name;
-	s->entry.notify = fnotify;
-	s->entry.exit = fexit;
-
-	HASH_ADD_INT(systable[abi_idx], no, s);
+	sysentry_t *entry = xmalloc(sizeof(sysentry_t));
+	entry->name = name;
+	entry->notify = fnotify;
+	entry->exit = fexit;
+	sc_map_put_64v(&systable[abi_idx], no, entry);
 }
 
 void systable_init(void)
 {
-	;
+	if (systable_initialised)
+		return;
+	for (size_t i = 0; i < ELEMENTSOF(systable); i++)
+		if (!sc_map_init_64v(&systable[i], 0, 0))
+			die_errno("sc_map_init_64v");
+	systable_initialised = true;
 }
 
 void systable_free(void)
 {
+	if (!systable_initialised)
+		return;
 	for (size_t i = 0; i < ABIS_SUPPORTED; i++) {
-		struct systable *s, *tmp;
-		HASH_ITER(hh, systable[i], s, tmp) {
-			HASH_DEL(systable[i], s);
-			free(s);
-		}
-		HASH_CLEAR(hh, systable[i]);
+		sysentry_t *entry;
+		sc_map_foreach_value(&systable[i], entry)
+			if (entry)
+				free(entry);
+		sc_map_clear_64v(&systable[i]);
+		sc_map_term_64v(&systable[i]);
 	}
+	systable_initialised = false;
 }
 
 void systable_add(const char *name, sysfunc_t fnotify, sysfunc_t fexit)
 {
-	int no;
-
 	for (size_t i = 0; i < ABIS_SUPPORTED; i++) {
+		int no;
 		no = seccomp_syscall_resolve_name_arch(abi[i], name);
 		if (no >= 0)
 			systable_add_full(no, abi[i], name, fnotify, fexit);
@@ -69,14 +75,16 @@ void systable_add(const char *name, sysfunc_t fnotify, sysfunc_t fexit)
 
 const sysentry_t *systable_lookup(long no, uint32_t arch)
 {
-	struct systable *s;
+	sysentry_t *entry;
 	size_t abi_idx;
 
 	for (abi_idx = 0; abi_idx < ABIS_SUPPORTED; abi_idx++) {
 		if (arch != abi[abi_idx])
 			continue;
-		HASH_FIND_INT(systable[abi_idx], &no, s);
-		return s ? &(s->entry) : NULL;
+		entry = sc_map_get_64v(&systable[abi_idx], no);
+		if (sc_map_found(&systable[abi_idx]))
+			return entry;
+		return NULL;
 	}
 
 	return NULL;

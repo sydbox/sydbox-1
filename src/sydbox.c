@@ -219,7 +219,7 @@ static void new_shared_memory_clone_files(struct syd_process *p)
 {
 	p->shm.clone_files = xmalloc(sizeof(struct syd_process_shared_clone_files));
 	p->shm.clone_files->refcnt = 1;
-	p->shm.clone_files->sockmap = NULL;
+	sc_map_init_64v(&p->shm.clone_files->sockmap, 0, 0);
 }
 
 static void new_shared_memory(struct syd_process *p)
@@ -400,7 +400,7 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent)
 
 	if (sydbox->config.allowlist_per_process_directories &&
 	    (!parent || current->pid != parent->pid)) {
-		procadd(&sydbox->config.hh_proc_pid_auto, current->pid);
+		procadd(&sydbox->config.proc_pid_auto, current->pid);
 	}
 }
 
@@ -477,7 +477,7 @@ void bury_process(syd_process_t *p)
 	P_CLONE_FILES_RELEASE(p);
 
 	if (sydbox->config.allowlist_per_process_directories)
-		procdrop(&sydbox->config.hh_proc_pid_auto, pid);
+		procdrop(&sydbox->config.proc_pid_auto, pid);
 
 	free(p); /* good bye, good bye, good bye. */
 }
@@ -487,7 +487,7 @@ static void tweak_execve_thread(syd_process_t *leader,
 				syd_process_t *execve_thread)
 {
 	if (sydbox->config.allowlist_per_process_directories)
-		procdrop(&sydbox->config.hh_proc_pid_auto, execve_thread->pid);
+		procdrop(&sydbox->config.proc_pid_auto, execve_thread->pid);
 	if (execve_thread->pidfd >= 0)
 		close(execve_thread->pidfd);
 	process_remove(execve_thread);
@@ -547,7 +547,7 @@ void remove_process_node(syd_process_t *p)
 	if (p->flags & SYD_IN_CLONE || p->flags & SYD_IN_EXECVE) {
 		/* Let's wait for the children before the funeral. */
 		if (sydbox->config.allowlist_per_process_directories)
-			procdrop(&sydbox->config.hh_proc_pid_auto, p->pid);
+			procdrop(&sydbox->config.proc_pid_auto, p->pid);
 		if (p->pidfd >= 0) {
 			close(p->pidfd);
 			p->pidfd = -1;
@@ -579,7 +579,7 @@ static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
 {
 	pid_t ppid, tgid;
 	unsigned short parent_count;
-	syd_process_t *parent_node, *node, *tmp;
+	syd_process_t *parent_node, *node;
 
 	/* Try (really) hard to find the parent process. */
 
@@ -606,7 +606,7 @@ static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
 	 * We need IN_EXECVE for threaded exec -> leader lost case.
 	 */
 	parent_count = 0;
-	process_iter(node, tmp) {
+	sc_map_foreach_value(&sydbox->tree, node) {
 		if (node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE)) {
 			if (!syd_proc_task_find(node->pid, pid_task))
 				return node;
@@ -828,7 +828,7 @@ static void sig_usr(int sig)
 {
 	bool complete_dump;
 	unsigned count;
-	syd_process_t *node, *tmp;
+	syd_process_t *node;
 
 	if (!sydbox)
 		return;
@@ -844,7 +844,7 @@ static void sig_usr(int sig)
 
 	fprintf(stderr, "sydbox: Dumping process tree:\n");
 	count = 0;
-	process_iter(node, tmp) {
+	sc_map_foreach_value(&sydbox->tree, node) {
 		dump_one_process(node, complete_dump);
 		count++;
 	}
@@ -876,8 +876,8 @@ static void reap_zombies(syd_process_t *current, pid_t pid)
 	else if (pid >= 0)
 		remove_process(pid, 0);
 
-	syd_process_t *node, *tmp;
-	process_iter(node, tmp) { /* process_iter is delete-safe. */
+	syd_process_t *node;
+	sc_map_foreach_value(&sydbox->tree, node) {
 		if (node->flags & SYD_KILLED) {
 			if (!(node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE)))
 				remove_process_node(node);
@@ -934,9 +934,9 @@ static inline bool process_is_alive(pid_t pid, pid_t tgid)
 
 static inline pid_t process_find_exec(pid_t exec_pid)
 {
-	syd_process_t *node, *tmp;
+	syd_process_t *node;
 
-	process_iter(node, tmp) {
+	sc_map_foreach_value(&sydbox->tree, node) {
 		if (node->pid == node->tgid &&
 		    !(node->flags & SYD_KILLED) &&
 		    proc_has_task(node->pid, exec_pid))
@@ -998,7 +998,6 @@ static void init_early(void)
 
 	os_release = get_os_release();
 	sydbox = xmalloc(sizeof(sydbox_t));
-	sydbox->proctab = NULL;
 	sydbox->violation = false;
 	sydbox->execve_wait = false;
 	sydbox->exit_code = EXIT_SUCCESS;
@@ -1011,6 +1010,7 @@ static void init_early(void)
 	sydbox->permissive = false;
 	config_init();
 	filter_init();
+	sc_map_init_64v(&sydbox->tree, 0, 0);
 	syd_abort_func(kill_all);
 }
 
@@ -1381,8 +1381,8 @@ notify_respond:
 			return sydbox->exit_code;
 	}
 
-	syd_process_t *node, *tmp;
-	process_iter(node, tmp) { /* process_iter is delete-safe. */
+	syd_process_t *node;
+	sc_map_foreach_value(&sydbox->tree, node) {
 		if (node->flags & SYD_KILLED)
 			node->flags &= ~SYD_KILLED;
 		remove_process_node(node);
@@ -1511,6 +1511,8 @@ void cleanup(void)
 		close(sydbox->seccomp_fd);
 	if (sydbox->notify_fd >= 0)
 		close(sydbox->notify_fd);
+	sc_map_term_64s(&sydbox->config.proc_pid_auto);
+	sc_map_term_64v(&sydbox->tree);
 	free_program_invocation_name(sydbox->program_invocation_name);
 	free_sydbox(&sydbox);
 

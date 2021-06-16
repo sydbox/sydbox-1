@@ -295,27 +295,26 @@ static int write_stat(syd_process_t *current, unsigned int buf_index, bool exten
 	}
 #endif
 
-	if (!bufaddr) {
-		if (extended) {
+	if (extended) {
 #ifdef HAVE_STRUCT_STATX
-			memset(&bufx, 0, sizeof(struct statx));
-			bufx.stx_mode = FAKE_MODE;
-			bufx.stx_rdev_major = FAKE_RDEV_MAJOR;
-			bufx.stx_rdev_minor = FAKE_RDEV_MINOR;
-			bufx.stx_atime.tv_sec = FAKE_ATIME;
-			bufx.stx_mtime.tv_sec = FAKE_MTIME;
-			bufx.stx_ctime.tv_sec = FAKE_CTIME;
-			bufaddr = (char *)&bufx;
-			bufsize = sizeof(struct statx);
+		memset(&bufx, 0, sizeof(struct statx));
+		bufx.stx_mode = FAKE_MODE;
+		bufx.stx_rdev_major = FAKE_RDEV_MAJOR;
+		bufx.stx_rdev_minor = FAKE_RDEV_MINOR;
+		bufx.stx_atime.tv_sec = FAKE_ATIME;
+		bufx.stx_mtime.tv_sec = FAKE_MTIME;
+		bufx.stx_ctime.tv_sec = FAKE_CTIME;
+		bufaddr = (char *)&bufx;
+		bufsize = sizeof(struct statx);
 #else
-			say("struct statx undefined at build time, can not encode!");
-			say("skipped statx() buffer write");
-			return 0;
+		say("struct statx undefined at build time, can not encode!");
+		say("skipped statx() buffer write");
+		return 0;
 #endif
-		} else {
-			memset(&buf, 0, sizeof(struct stat));
-			buf.st_mode = FAKE_MODE;
-			buf.st_rdev = FAKE_RDEV;
+	} else {
+		memset(&buf, 0, sizeof(struct stat));
+		buf.st_mode = FAKE_MODE;
+		buf.st_rdev = FAKE_RDEV;
 #ifdef st_atime_was_a_macro
 # define st_atime st_atim.tv_sec
 #endif
@@ -325,17 +324,16 @@ static int write_stat(syd_process_t *current, unsigned int buf_index, bool exten
 #ifdef st_ctime_was_a_macro
 # define st_ctime st_ctim.tv_sec
 #endif
-			buf.st_atime = FAKE_ATIME;
-			buf.st_mtime = FAKE_MTIME;
-			buf.st_ctime = FAKE_CTIME;
-			bufaddr = (char *)&buf;
-			bufsize = sizeof(struct stat);
-		}
+		buf.st_atime = FAKE_ATIME;
+		buf.st_mtime = FAKE_MTIME;
+		buf.st_ctime = FAKE_CTIME;
+		bufaddr = (char *)&buf;
+		bufsize = sizeof(struct stat);
 	}
 
 	long addr;
 	addr = current->args[buf_index];
-	if ((r = syd_write_data(current, addr, bufaddr, bufsize) < 0)) {
+	if ((r = syd_write_data(current, addr, bufaddr, bufsize)) < 0) {
 		errno = -r;
 		say_errno("syd_write_stat");
 	}
@@ -380,7 +378,7 @@ static int do_stat(syd_process_t *current, const char *path,
 			}
 			r = deny(current, errno);
 		}
-	} else if (r != MAGIC_RET_NOOP) {
+	} else {
 		write_stat(current, buf_index, extended);
 
 		/* magic command accepted */

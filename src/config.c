@@ -57,7 +57,7 @@ void config_init(void)
 	sydbox->config.box_static.mode.sandbox_network = SANDBOX_BPF;
 
 	/* initialize access control lists */
-	sydbox->config.hh_proc_pid_auto = NULL;
+	sc_map_init_64s(&sydbox->config.proc_pid_auto, 0, 0);
 
 	ACLQ_INIT(&sydbox->config.exec_kill_if_match);
 	ACLQ_INIT(&sydbox->config.exec_resume_if_match);

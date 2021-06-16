@@ -15,42 +15,42 @@
 #include "xfunc.h"
 #include "procmatch.h"
 #include "pathmatch.h"
+#include "sc_map.h"
 
-int procadd(proc_pid_t **pp, pid_t pid)
+int procadd(struct sc_map_64s *map, pid_t pid)
 {
-	proc_pid_t *npp;
-
-	HASH_FIND_INT(*pp, &pid, npp);
-	if (npp)
+	sc_map_get_64s(map, pid);
+	if (sc_map_found(map))
 		return 0;
 
-	npp = xmalloc(sizeof(proc_pid_t));
-	npp->pid = pid;
-	sprintf(npp->path, "/proc/%u/***", pid);
+	char *p;
+	xasprintf(&p, "/proc/%u/***", pid);
+	sc_map_put_64s(map, pid, p);
 
-	HASH_ADD_INT(*pp, pid, npp);
 	return 1;
 }
 
-int procdrop(proc_pid_t **pp, pid_t pid)
+int procdrop(struct sc_map_64s *map, pid_t pid)
 {
-	proc_pid_t *opp = NULL;
+	char *p;
 
-	HASH_FIND_INT(*pp, &pid, opp);
-	if (!opp)
+	p = (char *)sc_map_get_64s(map, pid);
+	if (!sc_map_found(map))
 		return 0;
 
-	HASH_DEL(*pp, opp);
-	free(opp);
+	sc_map_del_64s(map, pid);
+	free(p);
+
 	return 1;
 }
 
-int procmatch(proc_pid_t **pp, const char *path)
+int procmatch(struct sc_map_64s *map, const char *path)
 {
-	proc_pid_t *node, *tmp;
+	pid_t pid;
+	const char *match;
 
-	HASH_ITER(hh, *pp, node, tmp) {
-		if (pathmatch(node->path, path))
+	sc_map_foreach(map, pid, match) {
+		if (pathmatch(match, path))
 			return 1;
 	}
 

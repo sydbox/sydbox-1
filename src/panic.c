@@ -92,12 +92,12 @@ int kill_one(syd_process_t *node, int fatal_sig)
 
 void kill_all(int fatal_sig)
 {
-	syd_process_t *node, *tmp;
+	syd_process_t *node;
 
 	if (!sydbox)
 		return;
 
-	process_iter(node, tmp) {
+	sc_map_foreach_value(&sydbox->tree, node) {
 		if (kill_one(node, fatal_sig) == -ESRCH)
 			remove_process_node(node);
 	}
@@ -167,11 +167,10 @@ int panic(syd_process_t *current)
 
 int violation(syd_process_t *current, const char *fmt, ...)
 {
-	va_list ap;
-
 	sydbox->violation = true;
 
 	if (!sydbox->permissive) {
+		va_list ap;
 		va_start(ap, fmt);
 		report(current, fmt, ap);
 		va_end(ap);

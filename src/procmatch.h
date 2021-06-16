@@ -10,17 +10,10 @@
 #ifndef PROCMATCH_H
 #define PROCMATCH_H 1
 
-#include "sydhash.h"
+#include "sc_map.h"
 
-struct proc_pid {
-	pid_t pid;
-	char path[sizeof("/proc/%u/***") + sizeof(int)*3 + /*paranoia:*/11];
-	UT_hash_handle hh;
-};
-typedef struct proc_pid proc_pid_t;
-
-int procadd(proc_pid_t **pp, pid_t pid);
-int procdrop(proc_pid_t **pp, pid_t pid);
-int procmatch(proc_pid_t **pp, const char *path);
+int procadd(struct sc_map_64s *map, pid_t pid);
+int procdrop(struct sc_map_64s *map, pid_t pid);
+int procmatch(struct sc_map_64s *map, const char *path);
 
 #endif

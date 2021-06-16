@@ -30,6 +30,7 @@
 #include "pink.h"
 #include "acl-queue.h"
 #include "procmatch.h"
+#include "sc_map.h"
 #include "sockmatch.h"
 #include "sockmap.h"
 #include "util.h"
@@ -366,7 +367,7 @@ struct syd_process_shared_clone_files {
 	/*
 	 * Inode socket address mapping for bind allowlist
 	 */
-	struct sockmap *sockmap;
+	struct sc_map_64v sockmap;
 
 	/* Reference count */
 	unsigned refcnt;
@@ -434,9 +435,6 @@ struct syd_process {
 
 	/* Resolved path argument for specially treated system calls like execve() */
 	char *abspath;
-
-	/* Process hash table via sydbox->proctab */
-	UT_hash_handle hh;
 };
 typedef struct syd_process syd_process_t;
 
@@ -483,10 +481,7 @@ typedef struct syd_process syd_process_t;
 		if ((p)->shm.clone_files != NULL) { \
 			(p)->shm.clone_files->refcnt--; \
 			if ((p)->shm.clone_files->refcnt == 0) { \
-				if ((p)->shm.clone_files->sockmap) { \
-					sockmap_destroy(&(p)->shm.clone_files->sockmap); \
-					free((p)->shm.clone_files->sockmap); \
-				} \
+				sockmap_destroy(&(p)->shm.clone_files->sockmap); \
 				free((p)->shm.clone_files); \
 				(p)->shm.clone_files = NULL; \
 			} \
@@ -547,7 +542,7 @@ struct config {
 	aclq_t filter_write;
 	aclq_t filter_network;
 
-	proc_pid_t *hh_proc_pid_auto;
+	struct sc_map_64s proc_pid_auto;
 	aclq_t acl_network_connect_auto;
 };
 typedef struct config config_t;
@@ -582,7 +577,8 @@ struct sydbox {
 	struct seccomp_notif *request;
 	struct seccomp_notif_resp *response;
 
-	syd_process_t *proctab;
+	/* The Process Tree */
+	struct sc_map_64v tree;
 
 	/* SecComp Context */
 	scmp_filter_ctx ctx;
@@ -726,18 +722,27 @@ extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 #define sandbox_deny_network(p) (sandbox_deny((p), network))
 #define sandbox_deny_file(p) (sandbox_deny_exec((p)) && sandbox_deny_read((p)) && sandbox_deny_write((p)))
 
-#define process_count() HASH_COUNT(sydbox->proctab)
-#define process_iter(p, tmp) HASH_ITER(hh, sydbox->proctab, (p), (tmp))
-#define process_add(p) HASH_ADD(hh, sydbox->proctab, pid, sizeof(pid_t), (p))
-#define process_remove(p) HASH_DEL(sydbox->proctab, (p))
+static inline uint32_t process_count(void)
+{
+	return sc_map_size_64v(&sydbox->tree);
+}
+
+static inline void process_add(syd_process_t *p)
+{
+	sc_map_put_64v(&sydbox->tree, p->pid, p);
+}
+
+static inline void process_remove(syd_process_t *p)
+{
+	sc_map_del_64v(&sydbox->tree, p->pid);
+}
 
 static inline unsigned int process_count_alive(void)
 {
 	unsigned int r;
-	syd_process_t *node, *tmp;
+	syd_process_t *node;
 
-	r = 0;
-	process_iter(node, tmp) {
+	sc_map_foreach_value(&sydbox->tree, node) {
 		if (node->flags & SYD_KILLED)
 			continue;
 		r += 1;
@@ -777,10 +782,10 @@ void remove_process_node(syd_process_t *p);
 
 static inline syd_process_t *lookup_process(pid_t pid)
 {
-	syd_process_t *process;
-
-	HASH_FIND(hh, sydbox->proctab, &pid, sizeof(pid_t), process);
-	return process;
+	syd_process_t *p = sc_map_get_64v(&sydbox->tree, pid);
+	if (sc_map_found(&sydbox->tree))
+		return p;
+	return NULL;
 }
 
 void cleanup(void);

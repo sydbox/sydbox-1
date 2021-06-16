@@ -12,67 +12,64 @@
 
 #include "sydconf.h"
 #include "xfunc.h"
+#include "sc_map.h"
 #include "sockmatch.h"
-#include "sydhash.h"
 
-struct sockmap {
-	UT_hash_handle hh;
-	struct sockinfo *info;
-	unsigned long long inode;
-};
-
-static inline void sockmap_add(struct sockmap **map,
+static inline void sockmap_add(struct sc_map_64v *map,
 			       unsigned long long inode,
 			       struct sockinfo *info)
 {
-	struct sockmap *s = xmalloc(sizeof(struct sockmap));
-	s->inode = inode;
-	s->info = info;
-	HASH_ADD(hh, *map, inode, sizeof(unsigned long long), s);
+	struct sockinfo *info_old;
+
+	info_old = sc_map_get_64v(map, inode);
+	if (sc_map_found(map)) {
+		sc_map_del_64v(map, inode);
+		if (info_old)
+			free_sockinfo(info_old);
+	}
+	sc_map_put_64v(map, (uint64_t)inode, info);
 }
 
-static inline const struct sockinfo *sockmap_find(struct sockmap **map,
+static inline const struct sockinfo *sockmap_find(struct sc_map_64v *map,
 						  unsigned long long inode)
 {
-	struct sockmap *s;
-
-	if (!map || !*map)
+	if (!map)
 		return NULL;
 
-	HASH_FIND(hh, *map, &inode, sizeof(unsigned long long), s);
-	return s ? s->info : NULL;
+	struct sockinfo *info = sc_map_get_64v(map, inode);
+	if (sc_map_found(map))
+		return info;
+	return NULL;
 }
 
-static inline void sockmap_remove(struct sockmap **map,
+static inline void sockmap_remove(struct sc_map_64v *map,
 				  unsigned long long inode)
 {
-	struct sockmap *s;
-
-	if (!map || !*map)
+	if (!map)
 		return;
 
-	HASH_FIND(hh, *map, &inode, sizeof(unsigned long long), s);
-	if (!s)
+	struct sock_info *info = sc_map_get_64v(map, inode);
+	if (!sc_map_found(map))
 		return;
-	HASH_DEL(*map, s);
-	free_sockinfo(s->info);
-	free(s);
+	sc_map_del_64v(map, inode);
+	free_sockinfo(info);
 }
 
-static inline void sockmap_destroy(struct sockmap **map)
+static inline void sockmap_destroy(struct sc_map_64v *map)
 {
-	struct sockmap *e, *t;
+	uint64_t inode;
+	struct sockinfo *info;
 
-	if (!map || !*map)
+	if (!map)
 		return;
 
-	HASH_ITER(hh, *map, e, t) {
-		if (e->info)
-			free_sockinfo(e->info);
-		HASH_DEL(*map, e);
-		free(e);
+	sc_map_foreach(map, inode, info) {
+		sc_map_del_64v(map, inode);
+		if (info)
+			free_sockinfo(info);
 	}
-	HASH_CLEAR(hh, *map);
+	sc_map_clear_64v(map);
+	sc_map_term_64v(map);
 }
 
 #endif

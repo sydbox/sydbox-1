@@ -589,7 +589,6 @@ bool filter_includes(int sysnum)
 
 static int filter_open_readonly()
 {
-	int r;
 	uint32_t action;
 	enum sandbox_mode mode;
 
@@ -611,6 +610,7 @@ static int filter_open_readonly()
 		return 0;
 
 	for (unsigned i = 0; i < ELEMENTSOF(open_readonly_flags); i++) {
+		int r;
 		r = seccomp_rule_add(sydbox->ctx, action,
 				     SCMP_SYS(open), 1,
 				     SCMP_A1( SCMP_CMP_EQ,
@@ -793,7 +793,6 @@ static int filter_general_level_3(void)
 
 int filter_general(void)
 {
-	int r;
 	static const int allow_calls[] = {
 		SCMP_SYS(exit),
 		SCMP_SYS(exit_group),
@@ -804,10 +803,12 @@ int filter_general(void)
 	};
 
 	if (sydbox->seccomp_action != SCMP_ACT_ALLOW) {
-		for (unsigned int i = 0; i < ELEMENTSOF(allow_calls); i++)
+		for (unsigned int i = 0; i < ELEMENTSOF(allow_calls); i++) {
+			int r;
 			if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
 						  allow_calls[i], 0)) < 0)
 				return r;
+		}
 	}
 
 	switch (sydbox->config.restrict_general) {

@@ -166,7 +166,7 @@ static void init_open_info(syd_process_t *current,
 	assert(current);
 	assert(info);
 
-	info->rmode = how->flags & O_CREAT ? RPATH_NOLAST : RPATH_EXIST;
+	info->rmode = (how->flags & O_CREAT) ? RPATH_NOLAST : RPATH_EXIST;
 	info->syd_mode = 0;
 	if (how->flags & O_EXCL) {
 		if (info->rmode == RPATH_EXIST) {

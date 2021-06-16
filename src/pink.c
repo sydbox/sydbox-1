@@ -122,7 +122,6 @@ static inline int abi_wordsize(uint32_t arch)
 		return 4;
 		break;
 #elif defined(__aarch64__)
-	switch (current->arch) {
 	case SCMP_ARCH_AARCH64:
 		return 8;
 		break;
@@ -147,10 +146,8 @@ static inline int abi_wordsize(uint32_t arch)
 static int process_vm_read(syd_process_t *current, long addr, void *buf,
 			   size_t count)
 {
-	size_t wsize;
-
 #if SIZEOF_LONG > 4
-	wsize = abi_wordsize(SCMP_ARCH_NATIVE);
+	size_t wsize = abi_wordsize(SCMP_ARCH_NATIVE);
 	if (wsize < sizeof(addr))
 		addr &= (1ul << 8 * wsize) - 1;
 #endif
@@ -181,10 +178,8 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 			    size_t count)
 {
-	size_t wsize;
-
 #if SIZEOF_LONG > 4
-	wsize = abi_wordsize(current->arch);
+	size_t wsize = abi_wordsize(current->arch);
 	if (wsize < sizeof(addr))
 		addr &= (1ul << 8 * wsize) - 1;
 #endif

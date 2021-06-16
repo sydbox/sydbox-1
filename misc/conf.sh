@@ -6,6 +6,7 @@ root=$(git rev-parse --show-toplevel)
 cd "$root"
 ./autogen.sh
 exec ./configure --prefix=/usr \
-    --enable-code-coverage \
+    --disable-code-coverage \
     --enable-maintainer-mode \
-    --disable-static
+    --disable-static \
+    --disable-dependency-tracking
