@@ -102,12 +102,12 @@ static void test_syd_readlink_alloc_01(void)
 	assert_int_equal(sizeof(TMP_FILE), syd_readlink_alloc(tmp_link, &buf));
 	assert_true(buf[sizeof(TMP_FILE) - 1] == '\0');
 	assert_string_equal(TMP_FILE, buf);
-	free(buf);
+	free(buf); buf = NULL;
 
 	assert_int_equal(sizeof(TMP_VOID_FILE), syd_readlink_alloc(tmp_dang_link, &buf));
 	assert_true(buf[sizeof(TMP_VOID_FILE) - 1] == '\0');
 	assert_string_equal(TMP_VOID_FILE, buf);
-	free(buf);
+	free(buf); buf = NULL;
 
 	assert_int_equal(sizeof(TMP_LOOP_LOOP_LINK), syd_readlink_alloc(tmp_loop_link, &buf));
 	assert_true(buf[sizeof(TMP_LOOP_LOOP_LINK) - 1] == '\0');
