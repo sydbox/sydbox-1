@@ -1568,6 +1568,7 @@ void cleanup(void)
 
 	assert(sydbox);
 
+	dump(DUMP_CLOSE);
 	seccomp_reset(NULL, SCMP_ACT_ALLOW);
 
 	filter_free();

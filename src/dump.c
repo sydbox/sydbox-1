@@ -231,7 +231,6 @@ static int dump_init(void)
 
 	dump_format();
 	dump_cycle();
-	atexit(dump_close);
 	return 0;
 }
 
