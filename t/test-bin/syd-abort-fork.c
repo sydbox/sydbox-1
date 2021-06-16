@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
 	int i, c, s;
 	pid_t p;
 
-	c = atoi(argv[1]);
+	c = atoi(getenv("SPAWN_MAX") ? getenv("SPAWN_MAX") : "16");
 	if (c < 0 || c > 4096)
 		abort();
 	for (i = 0; i < c; i++) {
@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	s = atoi(argv[2]);
+	s = atoi(argv[1]);
 	p = getpid();
 	errno = 0;
 

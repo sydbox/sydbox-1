@@ -1,4 +1,5 @@
 #!/bin/sh
+# vim: set noet :
 #
 # Copyright (c) 2005 Junio C Hamano
 #
@@ -21,11 +22,22 @@ ORIGINAL_TERM=$TERM
 # Timeouts for tests that need them.
 TIMEOUT_DURATION=60
 
+# How many threads to spawn at maximum for forking and threaded tests.
+SPAWN_MAX=64
+
 # Install directories
 BINDIR="@BINDIR@"
 LIBEXECDIR="@LIBEXECDIR@"
 export BINDIR
 export LIBEXECDIR
+
+# Configuration for network tests
+PUBLIC_DNS=8.8.8.8
+PUBLIC_DNS_ALT=8.8.4.4
+PUBLIC_HOST=dev.chessmuse.com
+export PUBLIC_DNS
+export PUBLIC_DNS_ALT
+export PUBLIC_HOST
 
 # Test the binaries we have just built.  The tests are kept in
 # t/ subdirectory and are run in 'trash directory' subdirectory.
@@ -122,8 +134,14 @@ parse_option () {
 	--du|--dum|--dump)
 		dump=t
 		;;
+	--pfc=*)
+		pfc=${opt#--*=}
+		;;
 	--dump-only=*)
 		dump_only=${opt#--*=}
+		;;
+	--pfc-only=*)
+		pfc_only=${opt#--*=}
 		;;
 	--va|--val|--valg|--valgr|--valgri|--valgrin|--valgrind)
 		valgrind=memcheck
@@ -194,6 +212,7 @@ parse_option () {
 # have all the original command line options when executing the test
 # script again for '--tee' and '--verbose-log' later.
 dump_only=t
+pfc_only=t
 for opt
 do
 	if test -n "$store_arg_to"
@@ -497,6 +516,14 @@ if test -n "$dump_only"
 then
 	test -z "$dump" && dump=t
 elif test -n "$dump"
+then
+	verbose=t
+fi
+
+if test -n "$pfc_only"
+then
+	test -z "$pfc" && pfc=t
+elif test -n "$pfc"
 then
 	verbose=t
 fi
@@ -842,9 +869,16 @@ maybe_setup_verbose () {
 }
 
 maybe_teardown_dump () {
-	test -z "$SYDBOX_DUMP" && return
 	SYDBOX_DUMP_ENABLED=
 	export SYDBOX_DUMP_ENABLED
+	rm -f "$SHOEBOX"
+}
+
+maybe_teardown_pfc () {
+	SYDBOX_PFC_ENABLED=
+	export SYDBOX_PFC_ENABLED
+	bpf_dump "TEST: ${TEST_NAME}.${TEST_NUMBER}.${test_count}"
+	rm -f "$SHOEBOX_PFC"
 }
 
 maybe_teardown_valgrind () {
@@ -852,22 +886,69 @@ maybe_teardown_valgrind () {
 	SYDBOX_VALGRIND_ENABLED=
 }
 
-maybe_setup_dump () {
-	test -z "$SYDBOX_DUMP" && return
-	if test -z "$dump_only"
+maybe_setup_pfc() {
+#	if test -z "$pfc_only"
+#	then
+#		SYDBOX_PFC_ENABLED=t
+#	else
+#		SYDBOX_PFC_ENABLED=
+#		if match_pattern_list $test_count $pfc_only
+#		then
+#			SYDBOX_PFC_ENABLED=t
+#		fi
+#	fi
+	SYDBOX_PFC_ENABLED=t
+
+	if test -n "$SYDBOX_PFC_ENABLED"
 	then
-		SYDBOX_DUMP_ENABLED=t
-	else
-		SYDBOX_DUMP_ENABLED=
-		if match_pattern_list $test_count $dump_only
-		then
-			SYDBOX_DUMP_ENABLED=t
-		fi
+		i=1
+		SHOEBOX_PFC=$TRASH_DIRECTORY/${this_test}.${test_count}.pfc
+		while true; do
+			shoe=$(printf '%s.%02d' "$SHOEBOX_PFC" "$i")
+			if test -f "$shoe"
+			then
+				i=$(expr "$i" + 1)
+			else
+				SHOEBOX_PFC="${shoe}"
+				export SHOEBOX_PFC
+				break
+			fi
+		done
+		rm -vf "$SHOEBOX_PFC" 2>/dev/null
 	fi
+	export SYDBOX_PFC_ENABLED # To used by bin-wrappers/sydbox
+	export SHOEBOX_PFC        # To be used by bin-wrappers/sydbox
+}
+
+maybe_setup_dump () {
+#	if test -z "$dump_only"
+#	then
+#		SYDBOX_DUMP_ENABLED=t
+#	else
+#		SYDBOX_DUMP_ENABLED=
+#		if match_pattern_list $test_count $dump_only
+#		then
+#			SYDBOX_DUMP_ENABLED=t
+#		fi
+#	fi
+	SYDBOX_DUMP_ENABLED=t
 
 	if test -n "$SYDBOX_DUMP_ENABLED"
 	then
-		SHOEBOX="$TRASH_DIRECTORY/${this_test}.${test_count}.sydcore"
+		i=1
+		SHOEBOX=$TRASH_DIRECTORY/${this_test}.${test_count}.sydcore
+		while true; do
+			shoe=$(printf '%s.%02d' "$SHOEBOX" "$i")
+			if test -f "$shoe"
+			then
+				i=$(expr "$i" + 1)
+			else
+				SHOEBOX="${shoe}"
+				export SHOEBOX
+				break
+			fi
+		done
+		rm -f "$SHOEBOX"
 	fi
 	export SYDBOX_DUMP_ENABLED # To used by bin-wrappers/sydbox
 	export SHOEBOX # To be used by sydbox-dump
@@ -1013,6 +1094,7 @@ test_start_ () {
 	maybe_setup_verbose
 	maybe_setup_valgrind
 	maybe_setup_dump
+	maybe_setup_pfc
 	if test -n "$write_junit_xml"
 	then
 	    junit_start=$(TZ=UTC date +'%N')
@@ -1022,6 +1104,7 @@ test_start_ () {
 test_finish_ () {
 	echo >&3 ""
 	maybe_teardown_dump
+	maybe_teardown_pfc
 	maybe_teardown_valgrind
 	maybe_teardown_verbose
 	if test -n "$SYDBOX_TEST_TEE_OFFSET"

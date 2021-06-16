@@ -9,22 +9,52 @@ save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
 SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS -mcore/sandbox/read:allow"
 export SYDBOX_TEST_OPTIONS
 
+test_expect_success_foreach_option 'magic /dev/sydbox stat works' '
+    sydbox -- sh -c "test -e /dev/sydbox"
+'
+
+test_expect_success_foreach_option 'magic /dev/sydbox stat works using fstatat(AT_FDCWD, /dev/sydbox)' '
+    sydbox -- syd-fstatat cwd /dev/sydbox
+'
+
+test_expect_success_foreach_option 'magic /dev/sydbox stat works using fstatat(0, /dev/sydbox)' '
+    sydbox -- syd-fstatat null /dev/sydbox
+'
+
+test_expect_success_foreach_option 'magic /dev/sydbox stat works using fstatat(/dev, /dev/sydbox)' '
+    sydbox -- syd-fstatat /dev /dev/sydbox
+'
+
 test_expect_success_foreach_option 'magic /dev/sydbox API is 2' '
-    sydbox -- sh -c "test -e /dev/sydbox/2" &&
-    sydbox -- sh -c "test -e /dev/sydbox" &&
-    test_expect_code 1 sydbox -- sh -c "test -e /dev/sydbox/1" &&
+    sydbox -- sh -c "test -e /dev/sydbox/2"
+'
+
+test_expect_success_foreach_option HAVE_NEWFSTATAT 'magic /dev/sydbox API is 2 using fstatat(AT_FDCWD, /dev/sydbox/2)' '
+    sydbox -- syd-fstatat cwd /dev/sydbox/2
+'
+
+test_expect_success_foreach_option HAVE_NEWFSTATAT 'magic /dev/sydbox API is 2 using fstatat(0, /dev/sydbox/2)' '
+    sydbox -- syd-fstatat null /dev/sydbox/2
+'
+
+test_expect_success_foreach_option HAVE_NEWFSTATAT 'magic /dev/sydbox API is using fstatat(/dev, sydbox/2)' '
+    sydbox -- syd-fstatat /dev /dev/sydbox/2
+'
+
+test_expect_success_foreach_option 'magic /dev/sydbox API is not 1' '
+    test_expect_code 1 sydbox -- sh -c "test -e /dev/sydbox/1"
+'
+
+test_expect_success_foreach_option HAVE_NEWFSTATAT 'magic /dev/sydbox API is not 1 using fstatat(cwd, sydbox/1)' '
+    test_expect_code 22 sydbox -- syd-fstatat cwd /dev/sydbox/1 # EINVAL
+'
+
+test_expect_success_foreach_option 'magic /dev/sydbox API is not 0' '
     test_expect_code 1 sydbox -- sh -c "test -e /dev/sydbox/0"
 '
 
-test_expect_success_foreach_option HAVE_NEWFSTATAT 'magic /dev/sydbox API is 2 using fstatat' '
-    sydbox -- syd-fstatat cwd /dev/sydbox &&
-    sydbox -- syd-fstatat cwd /dev/sydbox/2 &&
-    sydbox -- syd-fstatat null /dev/sydbox &&
-    sydbox -- syd-fstatat null /dev/sydbox/2 &&
-    sydbox -- syd-fstatat /dev /dev/sydbox &&
-    sydbox -- syd-fstatat /dev /dev/sydbox/2 &&
-    test_expect_code 22 sydbox -- syd-fstatat cwd /dev/sydbox/1 && # EINVAL
-    test_expect_code 22 sydbox -- syd-fstatat cwd /dev/sydbox/0    # ""
+test_expect_success_foreach_option HAVE_NEWFSTATAT 'magic /dev/sydbox API is not 0 using fstatat(cwd, sydbox/0)' '
+    test_expect_code 22 sydbox -- syd-fstatat cwd /dev/sydbox/0 # EINVAL
 '
 
 test_expect_failure_foreach_option 'magic /dev/sydbox boolean checking works with write:off' '

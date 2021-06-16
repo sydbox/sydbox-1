@@ -121,19 +121,37 @@ test_path_has_mtime() {
 	fi
 }
 
-test_bpf_action() {
-	local file="$1"
-	local name="$2"
-	local action="$3"
+bpf_dump() {
+	if test -n "$verbose" -a -s "$SHOEBOX_PFC"; then
+		echo >&4 "-- BPF.PFC: $@"
+		if bpf_action "$SHOEBOX_PFC" default ALLOW; then
+			echo >&4 '-- DEFAULT_ACTION: ALLOW'
+		elif bpf_action "$SHOEBOX_PFC" default KILL; then
+			echo >&4 '-- DEFAULT_ACTION: KILL'
+		elif bpf_action "$SHOEBOX_PFC" default "ERRNO\(1\)"; then
+			echo >&4 '-- DEFAULT_ACTION: EPERM'
+		else
+			echo >&4 '-- DEFAULT_ACTION: ???'
+		fi
+		cat >&4 "$SHOEBOX_PFC"
+		echo >&4 '--8<--'
+	fi
+}
 
-	echo >&2 "# BPF.PFC: NAME: $name ACTION: $action"
-	test -s "$file" && cat >&2 "$file"
-	echo >&2 '--8<--'
-
-	test -s "$file" &&
+bpf_action() {
+	test -s "$1" &&
 	grep -iPz \
-		"(?s)\n(\s*)#\s*$name action\s*\n\s*action $action;\s*\n" \
-		"$file"
+		"(?s)\n(\s*)#\s*$2 action\s*\n\s*action $3;\s*\n" \
+		"$1"
+}
+
+test_bpf_action() {
+	local file="${SHOEBOX_PFC}"
+	local name="$1"
+	local action="$2"
+
+	bpf_dump "NAME: $name ACTION: $action"
+	bpf_action "$file" "$name" "$action"
 }
 
 test_must_violate() {

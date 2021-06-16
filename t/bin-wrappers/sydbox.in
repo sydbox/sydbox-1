@@ -1,45 +1,42 @@
 #!/bin/sh
+# vim: set noet :
 
-set -x
-if test -n "$SYDBOX_DUMP_ENABLED" && -z "$SHOEBOX"
-then
-	i=1
-	while true; do
-		shoe=$(printf '%s.%02d' "$SHOEBOX" "$i")
-		if test -f "$shoe"
-		then
-			i=$(expr "$i" + 1)
-		else
-			SHOEBOX="$shoe"
-			export SHOEBOX
-			break
-		fi
-	done
-fi
+eexec() {
+    echo >&4 "> SYD: $*"
+    exec "$@"
+}
 
 SYDBOX_MEMORY_ACCESS=${SYDBOX_MEMORY_ACCESS:-0}
+if test -n "$SHOEBOX_PFC"; then
+	opt_export=:${SHOEBOX_PFC}
+else
+	opt_export=
+fi
 if test -z "$SYDBOX_TEST_INSTALLED"
 then
 	if test -z "$SYDBOX_DUMP_ENABLED"
 	then
-		exec "@TOP_BUILDDIR@"/src/sydbox \
+		eexec "@TOP_BUILDDIR@"/src/sydbox \
 			-M ${SYDBOX_MEMORY_ACCESS} \
+			-e pfc"${opt_export}" \
 			$SYDBOX_TEST_OPTIONS "$@"
 	else
-		exec "@TOP_BUILDDIR@"/src/sydbox-dump \
+		eexec "@TOP_BUILDDIR@"/src/sydbox-dump \
 			-M ${SYDBOX_MEMORY_ACCESS} \
+			-e pfc"${opt_export}" \
 			$SYDBOX_TEST_OPTIONS "$@"
 	fi
 else
 	if test -z "$SYDBOX_DUMP_ENABLED"
 	then
-		exec "@BINDIR@"/sydbox \
+		eexec "@BINDIR@"/sydbox \
 			-M ${SYDBOX_MEMORY_ACCESS} \
+			-e pfc"${opt_export}" \
 			$SYDBOX_TEST_OPTIONS "$@"
 	else
-		exec "@LIBEXECDIR@"/sydbox/dump/sydbox-dump \
+		eexec "@LIBEXECDIR@"/sydbox/dump/sydbox-dump \
 			-M ${SYDBOX_MEMORY_ACCESS} \
+			-e pfc"${opt_export}" \
 			$SYDBOX_TEST_OPTIONS "$@"
 	fi
 fi
-set +x

@@ -10,7 +10,7 @@ SYDBOX_TEST_OPTIONS=
 export SYDBOX_TEST_OPTIONS
 
 test_expect_success 'export bpf options to standard error' '
-    sydbox --export pfc true 2>out &&
+    env SHOEBOX_PFC= sydbox --export pfc true 2>out &&
     cat out &&
     test -s out &&
     grep "pseudo filter code start" out &&
@@ -30,84 +30,69 @@ test_expect_success 'export bpf options to file' '
 # perl -e '$f=join("",<>); print $& if $f=~/foo\nbar.*\n/m' file
 # perl -n000e 'print $& while /^foo.*\nbar.*\n/mg' file
 
-save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
-SYDBOX_TEST_OPTIONS="--export=pfc:bpf.pfc"
-export SYDBOX_TEST_OPTIONS
-
 test_expect_success 'invalid architecture action is kill ' '
-    rm -f bpf.pfc &&
     sydbox true &&
-    test_bpf_action bpf.pfc "invalid architecture" KILL
+    test_bpf_action "invalid architecture" KILL
 '
 
 test_expect_success 'default action is allow' '
-    rm -f bpf.pfc &&
     sydbox true &&
-    test_bpf_action bpf.pfc default ALLOW
+    test_bpf_action default ALLOW
 '
 
 test_expect_success 'default action is allow with --bpf-only' '
-    rm -f bpf.pfc &&
     sydbox -b true &&
-    test_bpf_action bpf.pfc default ALLOW
+    test_bpf_action default ALLOW
 '
 
 test_expect_success 'default action is permission denied with Level 1 restrictions' '
-    rm -f bpf.pfc &&
     sydbox -b -m core/restrict/general:1 true &&
-    test_bpf_action bpf.pfc default "ERRNO\(1\)"
+    test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success 'default action is permission denied with -b and Level 1 restrictions' '
-    rm -f bpf.pfc &&
     sydbox -b -m core/restrict/general:1 true &&
-    test_bpf_action bpf.pfc default "ERRNO\(1\)"
+    test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success 'default action is permission denied with Level 2 restrictions' '
-    rm -f bpf.pfc &&
     sydbox -b -m core/restrict/general:2 true &&
-    test_bpf_action bpf.pfc default "ERRNO\(1\)"
+    test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success 'default action is permission denied with -b and Level 2 restrictions' '
-    rm -f bpf.pfc &&
     sydbox -b -m core/restrict/general:2 true &&
-    test_bpf_action bpf.pfc default "ERRNO\(1\)"
+    test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success 'default action is permission denied with Level 3 restrictions' '
-    rm -f bpf.pfc &&
     sydbox -b -m core/restrict/general:3 true &&
-    test_bpf_action bpf.pfc default "ERRNO\(1\)"
+    test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success 'default action is permission denied with -b and Level 3 restrictions' '
-    rm -f bpf.pfc &&
     sydbox -b -m core/restrict/general:3 true &&
-    test_bpf_action bpf.pfc default "ERRNO\(1\)"
+    test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success 'default action is allow with read sandboxing bpf' '
-    rm -f bpf.pfc &&
     sydbox \
         -m core/sandbox/read:bpf \
         -m core/sandbox/write:off \
         -m core/sandbox/exec:off \
         -m core/sandbox/network:off \
         true &&
-    test_bpf_action bpf.pfc default ALLOW
+    test_bpf_action default ALLOW
 '
 
 test_expect_success 'default action is allow with write sandboxing bpf' '
-    rm -f bpf.pfc &&
     sydbox \
         -m core/sandbox/read:off \
         -m core/sandbox/write:bpf \
         -m core/sandbox/exec:off \
         -m core/sandbox/network:off \
         true &&
-    test_bpf_action bpf.pfc default ALLOW
+    test_bpf_action default ALLOW
 '
 
 test_expect_failure 'default action is allow with exec sandboxing bpf' '
@@ -117,18 +102,17 @@ test_expect_failure 'default action is allow with exec sandboxing bpf' '
         -m core/sandbox/exec:bpf \
         -m core/sandbox/network:off \
         true &&
-    test_bpf_action bpf.pfc default ALLOW
+    test_bpf_action default ALLOW
 '
 
 test_expect_success 'default action is allow with network sandboxing bpf' '
-    rm -f bpf.pfc &&
     sydbox \
         -m core/sandbox/read:off \
         -m core/sandbox/write:off \
         -m core/sandbox/exec:off \
         -m core/sandbox/network:bpf \
         true &&
-    test_bpf_action bpf.pfc default ALLOW
+    test_bpf_action default ALLOW
 '
 
 test_done
