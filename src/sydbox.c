@@ -1550,20 +1550,26 @@ int main(int argc, char **argv)
 	/* Long options are present for compatibility with sydbox-0.
 	 * Thus they are not documented!
 	 */
+#define SYD_OPT_CHROOT 0
+#define SYD_OPT_CHDIR 1
+#define SYD_OPT_DRYRUN 2
+#define SYD_OPT_PROCMEM 3
+#define SYD_OPT_EXPORT 4
+#define SYD_OPT_PROFILE 5
 	int options_index;
 	char *profile_name;
 	struct option long_options[] = {
 		{"help",	no_argument,		NULL,	'h'},
 		{"version",	no_argument,		NULL,	'v'},
-		{"profile",	required_argument,	NULL,	0},
-		{"dry-run",	no_argument,		NULL,	0},
-		{"export",	required_argument,	NULL,	0},
+		{"profile",	required_argument,	NULL,	SYD_OPT_PROFILE},
+		{"dry-run",	no_argument,		NULL,	SYD_OPT_DRYRUN},
+		{"export",	required_argument,	NULL,	SYD_OPT_EXPORT},
 		{"arch",	required_argument,	NULL,	'a'},
 		{"bpf",		no_argument,		NULL,	'b'},
 		{"test",	no_argument,		NULL,	't'},
-		{"chdir",	required_argument,	NULL,	0},
-		{"chroot",	required_argument,	NULL,	0},
-		{"proc-mem",	no_argument,		NULL,	0},
+		{"chdir",	required_argument,	NULL,	SYD_OPT_CHDIR},
+		{"chroot",	required_argument,	NULL,	SYD_OPT_CHROOT},
+		{"proc-mem",	no_argument,		NULL,	SYD_OPT_PROCMEM},
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -1574,45 +1580,36 @@ int main(int argc, char **argv)
 	while ((opt = getopt_long(argc, argv, "a:bhd:e:vc:m:E:t", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
-		case 0:
-			if (streq(long_options[options_index].name,
-				  "chroot")) {
-				root_directory = xstrdup(optarg);
-				break;
-			} else if (streq(long_options[options_index].name,
-				  "chdir")) {
-				working_directory = xstrdup(optarg);
-				break;
-			} else if (streq(long_options[options_index].name,
-				  "dry-run")) {
-				sydbox->permissive = true;
-				break;
-			} else if (streq(long_options[options_index].name,
-				  "proc-mem")) {
-				sydbox->proc_mem = true;
-				break;
-			} else if (streq(long_options[options_index].name,
-					 "export")) {
-				if (streq(optarg, "bpf")) {
-					sydbox->export = SYDBOX_EXPORT_BPF;
-					break;
-				} else if (streq(optarg, "pfc")) {
-					sydbox->export = SYDBOX_EXPORT_PFC;
-					break;
-				} else {
-					say("Invalid argument to --export");
-				}
-			} else if (optarg &&
-				   streq(long_options[options_index].name, "profile")) {
-				/* special case for backwards compatibility */
-				profile_name = xmalloc(sizeof(char) * (strlen(optarg) + 2));
-				profile_name[0] = SYDBOX_PROFILE_CHAR;
-				strcpy(&profile_name[1], optarg);
-				config_parse_spec(profile_name);
-				free(profile_name);
-				break;
+		case SYD_OPT_CHROOT:
+			root_directory = xstrdup(optarg);
+			break;
+		case SYD_OPT_CHDIR:
+			working_directory = xstrdup(optarg);
+			break;
+		case SYD_OPT_DRYRUN:
+			sydbox->permissive = true;
+			break;
+		case SYD_OPT_PROCMEM:
+			sydbox->proc_mem = true;
+			break;
+		case SYD_OPT_EXPORT:
+			if (streq(optarg, "bpf")) {
+				sydbox->export = SYDBOX_EXPORT_BPF;
+			} else if (streq(optarg, "pfc")) {
+				sydbox->export = SYDBOX_EXPORT_PFC;
+			} else {
+				say("Invalid argument to --export");
+				usage(stderr, 1);
 			}
-			usage(stderr, 1);
+			break;
+		case SYD_OPT_PROFILE:
+			/* special case for backwards compatibility */
+			profile_name = xmalloc(sizeof(char) * (strlen(optarg) + 2));
+			profile_name[0] = SYDBOX_PROFILE_CHAR;
+			strcpy(&profile_name[1], optarg);
+			config_parse_spec(profile_name);
+			free(profile_name);
+			break;
 		case 'a':
 			if (arch_argv_idx >= 32)
 				die("too many -a arguments");
