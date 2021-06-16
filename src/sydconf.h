@@ -19,6 +19,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <linux/fs.h>
+#define SYDBOX_EXPORT_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT|O_EXCL)
+#define SYDBOX_EXPORT_MODE 0600
 #define SYDBOX_DUMP_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT|O_EXCL)
 #define SYDBOX_DUMP_MODE 0600
 

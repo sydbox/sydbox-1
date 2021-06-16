@@ -733,8 +733,8 @@ int sysinit_seccomp(void)
 			export_fd = STDERR_FILENO;
 		} else {
 			export_fd = open(sydbox->export_path,
-					 O_WRONLY|O_CREAT|O_EXCL,
-					 S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
+					 SYDBOX_EXPORT_FLAGS,
+					 SYDBOX_EXPORT_MODE);
 			if (export_fd < 0) {
 				say_errno("sysinit_seccomp_export(`%s')",
 					  sydbox->export_path);
