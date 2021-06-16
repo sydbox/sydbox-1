@@ -36,9 +36,7 @@ TEST_EXTENSIONS= .sh
 SH_LOG_COMPILER= $(srcdir)/test-runner.sh
 TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
 		  $(top_srcdir)/build-aux/tap-driver.sh
-SYDBOX_CHECK_OPTIONS=\
-		     --tee \
-		     --verbose
+SYDBOX_CHECK_OPTIONS=--tee --verbose $(TEST_OPTIONS)
 export SYDBOX_CHECK_OPTIONS
 TESTS= \
 	t0000-basic.sh \
