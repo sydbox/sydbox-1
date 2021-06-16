@@ -7,11 +7,6 @@
 
 #include "sydbox.h"
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include "pink.h"
-
-#include "macro.h"
 
 int magic_set_allowlist_ppd(const void *val, syd_process_t *current)
 {

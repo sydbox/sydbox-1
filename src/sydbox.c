@@ -28,7 +28,6 @@
 #include <sys/utsname.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#include <sys/utsname.h>
 #include <getopt.h>
 #include <poll.h>
 #include <pthread.h>

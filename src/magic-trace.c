@@ -7,12 +7,6 @@
 
 #include "sydbox.h"
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include "pink.h"
-
-#include "macro.h"
-
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current)
 {
 	sydbox->config.use_toolong_hack = PTR_TO_BOOL(val);

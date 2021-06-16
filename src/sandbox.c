@@ -8,24 +8,19 @@
  */
 
 #include "sydbox.h"
-#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
-#include "pink.h"
-#include "macro.h"
+#include <netinet/in.h>
+#include <unistd.h>
 #include "bsd-compat.h"
 #include "file.h"
 #include "path.h"
 #include "pathdecode.h"
-#include "pathmatch.h"
-#include "sockmatch.h"
-#include "proc.h"
-#include "util.h"
 
 static void box_report_violation_path(syd_process_t *current,
 				      unsigned arg_index,

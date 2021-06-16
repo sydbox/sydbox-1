@@ -9,9 +9,10 @@
 
 #include "sydbox.h"
 
-#include <asm/unistd.h>
-#include <sys/syscall.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
 #include <unistd.h>

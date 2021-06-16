@@ -9,16 +9,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include "compiler.h"
-#include "pink.h"
-#include "xfunc.h"
-
-#include <syd.h>
+#include <unistd.h>
 
 static inline int errno2retval(int err_no)
 {

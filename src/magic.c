@@ -7,14 +7,8 @@
 
 #include "sydbox.h"
 
-#include <errno.h>
+#include <stdio.h>
 #include <string.h>
-
-#include "pink.h"
-
-#include "compiler.h"
-#include "macro.h"
-#include "util.h"
 
 struct key {
 	const char *name;

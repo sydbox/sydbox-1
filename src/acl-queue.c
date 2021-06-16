@@ -3,18 +3,15 @@
  *
  * ACL queue for sydbox based on TAILQ from <sys/queue.h>
  *
- * Copyright (c) 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2013, 2021 Ali Polatel <alip@exherbo.org>
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #include "acl-queue.h"
 
-#include <stdbool.h>
-#include <errno.h>
+#include <stdlib.h>
 
-#include "xfunc.h"
 #include "pathmatch.h"
-#include "sockmatch.h"
 
 static inline unsigned acl_default(enum acl_action defaction,
 				   struct acl_node **match_ptr)

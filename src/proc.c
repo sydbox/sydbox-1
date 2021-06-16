@@ -14,9 +14,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/user.h>
-#include <limits.h>
-#include <errno.h>
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -26,10 +23,8 @@
 #include <dirent.h>
 
 #include "file.h"
-#include "macro.h"
 #include "util.h"
 #include "toolong.h"
-#include "xfunc.h"
 
 /* Useful macros */
 #ifndef MAX

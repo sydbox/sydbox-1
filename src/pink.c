@@ -16,17 +16,15 @@
  */
 
 #include "sydbox.h"
-#include "bsd-compat.h"
-#include "compiler.h"
-#include "pink.h"
-#include "syd.h"
-#include "util.h"
-#include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <stdbool.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signal.h>
+#include <unistd.h>
 
 /* For definitions of struct msghdr and struct mmsghdr. */
 #include <sys/socket.h>

@@ -9,8 +9,6 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "sydconf.h"
-
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE 1
 #endif /* !_GNU_SOURCE */

@@ -6,14 +6,11 @@
  */
 
 #include "sydbox.h"
-#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include "file.h"
-#include "macro.h"
 
 static int filename_api(const char *filename, unsigned *api)
 {

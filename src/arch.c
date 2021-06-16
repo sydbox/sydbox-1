@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
+#include <string.h>
 #include "arch.h"
 
 int32_t arch_from_string(const char *arch) {

@@ -7,12 +7,6 @@
 
 #include "sydbox.h"
 
-#include <stdlib.h>
-
-#include "pink.h"
-
-#include "macro.h"
-
 enum sandbox_type {
 	SANDBOX_EXEC,
 	SANDBOX_READ,

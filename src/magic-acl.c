@@ -7,15 +7,6 @@
 
 #include "sydbox.h"
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include "pink.h"
-
-#include "acl-queue.h"
-#include "macro.h"
-
 static int magic_edit_acl(int (*edit_func)(enum acl_action, const char *, aclq_t *),
 			  enum acl_action action, const char *val, aclq_t *acl)
 {

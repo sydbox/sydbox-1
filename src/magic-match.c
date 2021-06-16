@@ -7,11 +7,6 @@
 
 #include "sydbox.h"
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include "pink.h"
-
-#include "macro.h"
 #include "pathmatch.h"
 
 int magic_set_match_case_sensitive(const void *val, syd_process_t *current)

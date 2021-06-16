@@ -7,8 +7,6 @@
 
 #include "sydbox.h"
 
-#include "macro.h"
-
 int magic_set_restrict_general(const void *val, syd_process_t *current)
 {
 	unsigned u_val = PTR_TO_UINT(val);

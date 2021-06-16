@@ -7,7 +7,7 @@ case "$base" in
 	;;
 esac
 
-TOOL_OPTIONS='--leak-check=no'
+TOOL_OPTIONS=''
 test -z "$SYDBOX_VALGRIND_ENABLED" &&
 exec "$program" "$@"
 
@@ -27,8 +27,7 @@ memcheck)
 		--track-origins=yes
 		--track-fds=yes
 		--error-limit=no
-		--run-libc-freeres=no --run-cxx-freeres=no
-		--suppressions=\"$SYDBOX_VALGRIND/default.supp\"
+		--suppressions=$SYDBOX_VALGRIND/default.supp
 		--gen-suppressions=all
 	"
 	;;

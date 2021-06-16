@@ -9,18 +9,12 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include "sydconf.h"
-
 #include "sockmatch.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <arpa/inet.h> /* inet_pton() */
 #include "pathmatch.h"
-#include "wildmatch.h"
-#include "util.h"
-#include "xfunc.h"
 
 struct sockinfo *sockinfo_xdup(const struct sockinfo *src)
 {

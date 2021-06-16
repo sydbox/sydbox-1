@@ -3,20 +3,16 @@
  *
  * Extends wildmatch for sydbox specific use cases.
  *
- * Copyright (c) 2012, 2013, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * SPDX-License-Identifier: GPL-2.0-only
  */
-
-#include "sydconf.h"
 
 #include "pathmatch.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include "path.h"
-#include "util.h"
 #include "wildmatch.h"
-#include "xfunc.h"
 
 bool match_case_sensitive = true;
 enum no_wildcard match_no_wild = NO_WILDCARD_LITERAL;

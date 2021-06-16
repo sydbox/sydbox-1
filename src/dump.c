@@ -9,27 +9,18 @@
 
 #include "sydbox.h"
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 
-#include <errno.h>
 #include <fcntl.h>
-#include <sched.h>
-#include <signal.h>
 #include <time.h>
-#include <arpa/inet.h>
 
-#include "dump.h"
 #include "errno2name.h"
-#include "path.h"
 #include "proc.h"
-#include "bsd-compat.h"
 
 #define J(s)		"\""#s"\":"
 #define J_BOOL(b)	(b) ? "true" : "false"

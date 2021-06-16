@@ -10,12 +10,9 @@
 #include "sydconf.h"
 
 #include <stdlib.h>
-#include <stdio.h>
 
-#include "xfunc.h"
 #include "procmatch.h"
 #include "pathmatch.h"
-#include "sc_map.h"
 
 int procadd(struct sc_map_64s *map, pid_t pid)
 {

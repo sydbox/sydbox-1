@@ -5,7 +5,8 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include <errno.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "sydbox.h"
 
 #define FILTER_NMEMB_MAX 1048576 /* Allows up to ~42000 filters. */

@@ -6,14 +6,9 @@
  */
 
 #include "sydbox.h"
-#include "pathdecode.h"
-#include <errno.h>
 #include <fcntl.h>
 #include <string.h>
-#include "pink.h"
-#include "xfunc.h"
 
-#include <syd.h>
 
 /* Decode the path at the given index and place it in buf.
  * Handles panic()
