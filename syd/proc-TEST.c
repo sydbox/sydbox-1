@@ -186,7 +186,7 @@ static void test_proc_cmdline(void)
 		if (r < 0)
 			fail_msg("syd_proc_cmdline (trunc1) failed: %d %s",
 				 errno, strerror(errno));
-		cmdline_trunc1[sizeof(cmdline) - 2] = '\0';
+		cmdline_trunc1[sizeof(cmdline) - 3] = '\0';
 		if ((r = strcmp(cmdline_trunc1, cmdline_trunc1_orig)) != 0)
 			fail_msg("cmdline: (trunc1) strcmp('%s', '%s') = %d", cmdline_trunc1, cmdline_trunc1_orig, r);
 
@@ -194,7 +194,7 @@ static void test_proc_cmdline(void)
 		if (r < 0)
 			fail_msg("syd_proc_cmdline (trunc2) failed: %d %s",
 				 errno, strerror(errno));
-		cmdline_trunc2[sizeof(cmdline) - 3] = '\0';
+		cmdline_trunc2[sizeof(cmdline) - 4] = '\0';
 		if ((r = strcmp(cmdline_trunc2, cmdline_trunc2_orig)) != 0)
 			fail_msg("cmdline: (trunc2) strcmp('%s', '%s') = %d",
 				 cmdline_trunc2, cmdline_trunc2_orig, r);
