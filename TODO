@@ -1,6 +1,5 @@
 # Sydbox
 
-- Do not call ptrace() from dump.c under any circumstances.
 - Avoid unnecessary printf usage in dump.c
 - Finish the rework on tests
 - SIGUSR2 dumps sydcore
@@ -19,7 +18,6 @@ pattern wins.
 - Abstract Paludis sandboxing system call hooks away from the core loop.
 
 # Sydbox (next major)
-- Evaluate using seccomp user notifications rather than ptrace.
 - Add an intuitive, simple interface to configure basic sandboxing via
 configuration and allow calling internal functions or dynamic SO libraries to
 use for seccomp-bpf and system call entry/exit hooks. The simple cases can be
