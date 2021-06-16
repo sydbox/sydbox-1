@@ -5,7 +5,10 @@
 use strict;
 use warnings;
 use feature 'say';
-use JSON 'decode_json';
+unless (eval "use JSON 'decode_json'; 1") {
+	# Exit silently, we don't want tests to break because of this.
+	exit 0;
+}
 
 my %alloc;
 $alloc{'sum'} = 0;
