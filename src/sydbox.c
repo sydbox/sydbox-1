@@ -1008,6 +1008,8 @@ static void init_early(void)
 	sydbox->bpf_only = false;
 	sydbox->proc_mem = false;
 	sydbox->permissive = false;
+	sydbox->export_mode = SYDBOX_EXPORT_NUL;
+	sydbox->export_path = NULL;
 	config_init();
 	filter_init();
 	sc_map_init_64v(&sydbox->tree, 0, 0);
@@ -1420,6 +1422,7 @@ static pid_t startup_child(char **argv,
 	if (pid < 0)
 		die_errno("can't fork");
 	else if (pid == 0) {
+		sydbox->in_child = true;
 		sydbox->seccomp_fd = pfd[1];
 
 		if (root_directory && chroot(root_directory) < 0)
@@ -1442,6 +1445,8 @@ static pid_t startup_child(char **argv,
 	/* write end of the pipe is not used. */
 	close(pfd[1]);
 
+	if (sydbox->export_path)
+		free(sydbox->export_path);
 	free_pathlookup(pathname);
 
 	sydbox->execve_pid = pid;
@@ -1593,14 +1598,16 @@ int main(int argc, char **argv)
 			sydbox->proc_mem = true;
 			break;
 		case SYD_OPT_EXPORT:
-			if (streq(optarg, "bpf")) {
-				sydbox->export = SYDBOX_EXPORT_BPF;
-			} else if (streq(optarg, "pfc")) {
-				sydbox->export = SYDBOX_EXPORT_PFC;
+			if (startswith(optarg, "bpf")) {
+				sydbox->export_mode = SYDBOX_EXPORT_BPF;
+			} else if (startswith(optarg, "pfc")) {
+				sydbox->export_mode = SYDBOX_EXPORT_PFC;
 			} else {
 				say("Invalid argument to --export");
 				usage(stderr, 1);
 			}
+			if (strlen(optarg) > 4 && optarg[3] == ':')
+				sydbox->export_path = xstrdup(optarg + 4);
 			break;
 		case SYD_OPT_PROFILE:
 			/* special case for backwards compatibility */
@@ -1728,9 +1735,11 @@ int main(int argc, char **argv)
 
 	/* Late validations for options */
 	if (!sydbox->config.restrict_general &&
+	    /*
 	    !sydbox->config.restrict_ioctl &&
 	    !sydbox->config.restrict_mmap &&
 	    !sydbox->config.restrict_shm_wr &&
+	    */
 	    SANDBOX_OFF_ALL()) {
 		say("All restrict and sandbox options are off.");
 		die("Refusing to run the program `%s'.", argv[optind]);

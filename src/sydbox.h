@@ -555,6 +555,7 @@ struct sydbox {
 	bool permissive;
 	bool bpf_only;
 	bool proc_mem;
+	bool in_child;
 
 	int exit_code;
 	int execve_pidfd;
@@ -566,7 +567,8 @@ struct sydbox {
 	int notify_fd;
 
 	/* Export mode, BPF/PFC */
-	enum sydbox_export_mode export;
+	enum sydbox_export_mode export_mode;
+	char *export_path;
 
 	uint32_t seccomp_action;
 	pid_t execve_pid;
@@ -866,11 +868,16 @@ static inline void reset_sandbox(sandbox_t *box)
 {
 	struct acl_node *node;
 
-	ACLQ_RESET(node, &box->acl_exec, free);
-	ACLQ_RESET(node, &box->acl_read, free);
-	ACLQ_RESET(node, &box->acl_write, free);
-	ACLQ_RESET(node, &box->acl_network_bind, free_sockmatch);
-	ACLQ_RESET(node, &box->acl_network_connect, free_sockmatch);
+	if (box->acl_exec.tqh_last)
+		ACLQ_RESET(node, &box->acl_exec, free);
+	if (box->acl_read.tqh_last)
+		ACLQ_RESET(node, &box->acl_read, free);
+	if (box->acl_write.tqh_last)
+		ACLQ_RESET(node, &box->acl_write, free);
+	if (box->acl_network_bind.tqh_last)
+		ACLQ_RESET(node, &box->acl_network_bind, free_sockmatch);
+	if (box->acl_network_connect.tqh_last)
+		ACLQ_RESET(node, &box->acl_network_connect, free_sockmatch);
 }
 
 static inline int new_sandbox(sandbox_t **box_ptr)

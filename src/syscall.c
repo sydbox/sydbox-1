@@ -723,14 +723,37 @@ int sysinit_seccomp(void)
 		say_errno("sysinit_seccomp_load");
 		return r;
 	}
-	switch (sydbox->export) {
+
+	bool close_fd = false;
+	int export_fd = -1;
+	if (sydbox->export_mode != SYDBOX_EXPORT_NUL) {
+		if (!sydbox->export_path) {
+			export_fd = STDERR_FILENO;
+		} else {
+			export_fd = open(sydbox->export_path,
+					 O_WRONLY|O_CREAT|O_EXCL,
+					 S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
+			if (export_fd < 0) {
+				say_errno("sysinit_seccomp_export(`%s')",
+					  sydbox->export_path);
+				return r;
+			}
+			free(sydbox->export_path);
+			close_fd = true;
+		}
+	}
+	switch (sydbox->export_mode) {
 	case SYDBOX_EXPORT_BPF:
-		if (seccomp_export_bpf(sydbox->ctx, 2) < 0)
+		if (seccomp_export_bpf(sydbox->ctx, export_fd) < 0)
 			say_errno("seccomp_export_bpf");
+		if (close_fd)
+			close(export_fd);
 		break;
 	case SYDBOX_EXPORT_PFC:
-		if (seccomp_export_pfc(sydbox->ctx, 2) < 0)
+		if (seccomp_export_pfc(sydbox->ctx, export_fd) < 0)
 			say_errno("seccomp_export_pfc");
+		if (close_fd)
+			close(export_fd);
 		break;
 	default:
 		break;

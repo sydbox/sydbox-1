@@ -10,6 +10,7 @@
 #include "errno2name.h"
 #include "xfunc.h"
 #include "dump.h"
+#include "sydbox.h"
 
 #include <signal.h>
 #include <stdarg.h>
@@ -27,14 +28,25 @@
 #define ANSI_YELLOW		"[00;33m"
 #define ANSI_CYAN		"[00;36m"
 
+#if IN_SYDBOX
+# define in_child()	((sydbox)->in_child)
+
 /* abort function. */
 static void (*abort_func)(int sig);
+
+void syd_abort_func(void (*func)(int))
+{
+	abort_func = func;
+}
+#endif
 
 SYD_GCC_ATTR((noreturn))
 static void syd_abort(int how) /* SIGTERM == exit(1), SIGABRT == abort() */
 {
-	if (abort_func)
+#if IN_SYDBOX
+	if (!in_child() && abort_func)
 		abort_func(SIGTERM);
+#endif
 	switch (how) {
 	case SIGABRT:
 		abort();
@@ -42,11 +54,6 @@ static void syd_abort(int how) /* SIGTERM == exit(1), SIGABRT == abort() */
 	default:
 		exit(1);
 	}
-}
-
-void syd_abort_func(void (*func)(int))
-{
-	abort_func = func;
 }
 
 void vsay(FILE *fp, const char *fmt, va_list ap)

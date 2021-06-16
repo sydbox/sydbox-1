@@ -13,6 +13,7 @@ noinst_SCRIPTS= \
 EXTRA_DIST+= $(noinst_SCRIPTS)
 
 DEFS+= \
+       -DIN_SYDBOX=1 \
        -DDATADIR=\"$(datadir)\" \
        -DGITVERSION=\"$(GITVERSION)\"
 AM_CFLAGS= \

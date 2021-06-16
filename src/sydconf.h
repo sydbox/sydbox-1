@@ -1,7 +1,7 @@
 /*
  * sydbox/sydconf.h
  *
- * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2021 Ali Polatel <alip@exherbo.org>
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
@@ -11,6 +11,10 @@
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
+
+#ifndef IN_SYDBOX
+# define IN_SYDBOX 0
+# endif
 
 #ifndef SYDBOX_API_VERSION
 # error "SYDBOX_API_VERSION is not defined!"
