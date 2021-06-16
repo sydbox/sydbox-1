@@ -744,6 +744,9 @@ extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 #define sandbox_deny_network(p) (sandbox_deny((p), network))
 #define sandbox_deny_file(p) (sandbox_deny_exec((p)) && sandbox_deny_read((p)) && sandbox_deny_write((p)))
 
+#define proc_esrch(err_no)  ((err_no) == ENOENT || (err_no) == ESRCH)
+#define process_alive(p) ((p) && !((p)->flags & SYD_KILLED))
+
 static inline uint32_t process_count(void)
 {
 	return sc_map_size_64v(&sydbox->tree);
@@ -759,9 +762,9 @@ static inline void process_remove(syd_process_t *p)
 	sc_map_del_64v(&sydbox->tree, p->pid);
 }
 
-static inline unsigned int process_count_alive(void)
+static inline size_t process_count_alive(void)
 {
-	unsigned int r = 0;
+	size_t r = 0;
 	syd_process_t *node;
 
 	sc_map_foreach_value(&sydbox->tree, node) {

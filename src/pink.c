@@ -141,47 +141,82 @@ static inline int abi_wordsize(uint32_t arch)
 	}
 }
 
-static int process_vm_read(syd_process_t *current, long addr, void *buf,
-			   size_t count)
+static ssize_t process_vm_read(syd_process_t *current, long addr, void *buf,
+			       size_t count)
 {
+	if (!process_alive(current))
+		return -ESRCH;
 #if SIZEOF_LONG > 4
 	size_t wsize = abi_wordsize(SCMP_ARCH_NATIVE);
 	if (wsize < sizeof(addr))
 		addr &= (1ul << 8 * wsize) - 1;
 #endif
 
-	int r;
+	ssize_t r = 0, nread;
 #if !SYDBOX_DEF_PROC_MEM
 	static bool cross_memory_attach_works = true;
+retry_vm_readv:
 	if (use_cross_memory_attach() && cross_memory_attach_works) {
 		struct iovec local[1], remote[1];
-		local[0].iov_base = (void *)buf;
-		remote[0].iov_base = (void *)addr;
-		local[0].iov_len = remote[0].iov_len = count;
+		local[0].iov_base = ((char *)(buf)) + r;
+		remote[0].iov_base = (void *)(addr + r);
+		local[0].iov_len = remote[0].iov_len = count - r;
 
-		r = pink_process_vm_readv(current->pid, local, 1, remote, 1,
-					   /*flags:*/0);
-		if (errno == ENOSYS || errno == EPERM)
+		errno = 0;
+		nread = pink_process_vm_readv(current->pid, local, 1,
+					      remote, 1, /*flags:*/0);
+		if (nread > 0)
+			r += nread;
+		if (errno == EINTR || (nread > 0 && (size_t)r < count)) {
+			goto retry_vm_readv;
+		} else if (errno == ENOSYS || errno == EPERM) {
 			cross_memory_attach_works = false;
+			goto retry_vm_readv;
+		} else if (errno == ESRCH) {
+			current->flags |= SYD_KILLED;
+		} else if (nread < 0 && r == 0) {
+			int save_errno = errno;
+			say_errno("process_vm_read(%d)", current->pid);
+			errno = save_errno;
+		}
 		return r;
 	}
 #endif
-	bool mem_open = false;
+	bool mem_open = false, mem_open_ok = false;
 mem_open:
 	if (mem_open || !proc_mem_open_once()) {
 		int memfd;
 		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
 			return memfd;
 		current->memfd = memfd;
+		if (mem_open)
+			mem_open_ok = true;
 	}
-	r = syd_proc_mem_read(current->memfd, addr, buf, count);
-	if (r == -ESPIPE && !mem_open) {
+mem_read:
+	errno = 0;
+	nread = syd_proc_mem_read(current->memfd, addr + r,
+				  ((char *)buf) + r, count - r);
+	if (nread > 0)
+		r += nread;
+	if (errno == EINTR || (nread > 0 && (size_t)r < count)) {
+		goto mem_read;
+	} else if (proc_esrch(errno)) {
+		close(current->memfd);
+		current->memfd = -1;
+		current->flags |= SYD_KILLED;
+		errno = ESRCH;
+		return r;
+	} else if (!mem_open && (!nread || errno == EBADF || errno == ESPIPE)) {
 		close(current->memfd);
 		current->memfd = -1;
 		mem_open = true;
 		goto mem_open;
+	} else if (nread < 0 && r == 0) { /* not partial read */
+		int save_errno = errno;
+		say_errno("proc_mem_read(%d)", current->pid);
+		errno = save_errno;
 	}
-	if (!proc_mem_open_once()) {
+	if (!mem_open_ok && !proc_mem_open_once() && current->memfd >= 0) {
 		close(current->memfd);
 		current->memfd = -1;
 	}
@@ -189,49 +224,85 @@ mem_open:
 	return r;
 }
 
-static int process_vm_write(syd_process_t *current, long addr, void *buf,
-			    size_t count)
+static ssize_t process_vm_write(syd_process_t *current, long addr, void *buf,
+				size_t count)
 {
+	if (!process_alive(current))
+		return -ESRCH;
 #if SIZEOF_LONG > 4
 	size_t wsize = abi_wordsize(current->arch);
 	if (wsize < sizeof(addr))
 		addr &= (1ul << 8 * wsize) - 1;
 #endif
 
-	int r;
-
+	ssize_t r = 0, nwritten = 0;
 #if !SYDBOX_DEF_PROC_MEM
 	static bool cross_memory_attach_works = true;
+retry_vm_writev:
 	if (use_cross_memory_attach() && cross_memory_attach_works) {
 		struct iovec local[1], remote[1];
-		local[0].iov_base = (void *)buf;
-		remote[0].iov_base = (void *)addr;
-		local[0].iov_len = remote[0].iov_len = count;
+		local[0].iov_base = ((char *)(buf)) + r;
+		remote[0].iov_base = (void *)(addr + r);
+		local[0].iov_len = remote[0].iov_len = count - r;
 
-		r = pink_process_vm_writev(current->pid, local, 1, remote, 1,
-					   /*flags:*/0);
-		if (errno == ENOSYS || errno == EPERM)
+		errno = 0;
+		nwritten = pink_process_vm_writev(current->pid,
+						  local, 1,
+						  remote, 1, /*flags:*/0);
+		if (nwritten > 0)
+			r += nwritten;
+		if (errno == EINTR || (nwritten > 0 && (size_t)r < count)) {
+			goto retry_vm_writev;
+		} else if (errno == ENOSYS || errno == EPERM) {
 			cross_memory_attach_works = false;
+			goto retry_vm_writev;
+		} else if (errno == ESRCH) {
+			current->flags |= SYD_KILLED;
+		} else if (nwritten < 0 && r == 0) {
+			int save_errno = errno;
+			say_errno("process_vm_write(%d)", current->pid);
+			errno = save_errno;
+		}
 		return r;
 	}
 #endif
-
-	bool mem_open = false;
+	bool mem_open = false, mem_open_ok = false;
 mem_open:
 	if (mem_open || !proc_mem_open_once()) {
 		int memfd;
 		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
 			return memfd;
 		current->memfd = memfd;
+		if (mem_open)
+			mem_open_ok = true;
 	}
-	r = syd_proc_mem_write(current->memfd, addr, buf, count);
-	if (r == -ESPIPE && !mem_open) {
+mem_write:
+	errno = 0;
+	nwritten = syd_proc_mem_write(current->memfd,
+				      addr + r,
+				      ((char *)buf) + r,
+				      count - r);
+	if (nwritten > 0)
+		r += nwritten;
+	if (errno == EINTR || (nwritten > 0 && (size_t)r < count)) {
+		goto mem_write;
+	} else if (proc_esrch(errno)) {
+		close(current->memfd);
+		current->memfd = -1;
+		current->flags |= SYD_KILLED;
+		errno = ESRCH;
+		return r;
+	} else if (!mem_open && (!nwritten || errno == EBADF || errno == ESPIPE)) {
 		close(current->memfd);
 		current->memfd = -1;
 		mem_open = true;
 		goto mem_open;
+	} else if (nwritten < 0 && r == 0) { /* not partial write */
+		int save_errno = errno;
+		say_errno("proc_mem_write(%d)", current->pid);
+		errno = save_errno;
 	}
-	if (!proc_mem_open_once()) {
+	if (!mem_open_ok && !proc_mem_open_once() && current->memfd >= 0) {
 		close(current->memfd);
 		current->memfd = -1;
 	}
