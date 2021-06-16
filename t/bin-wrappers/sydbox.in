@@ -1,10 +1,5 @@
 #!/bin/sh
-# vim: set noet :
-
-eexec() {
-    echo >&4 "> SYD: $*"
-    exec "$@"
-}
+# vim: noet sw=8 sts=8 :
 
 SYDBOX_MEMORY_ACCESS=${SYDBOX_MEMORY_ACCESS:-0}
 if test -n "$SHOEBOX_PFC"; then
@@ -12,6 +7,17 @@ if test -n "$SHOEBOX_PFC"; then
 else
 	opt_export=
 fi
+
+eexec() {
+	if test -n "$SYDBOX_STRACE_ENABLED"; then
+		echo >&4 "> SYD: strace -f -o shoebox.strace -- $*"
+		exec strace -f -o "$SHOEBOX_STRACE" -- "$@"
+	else
+		echo >&4 "> SYD: $*"
+		exec "$@"
+	fi
+}
+
 if test -z "$SYDBOX_TEST_INSTALLED"
 then
 	if test -z "$SYDBOX_DUMP_ENABLED"

@@ -23,28 +23,31 @@ else
     threads_execve="${SYDBOX_BUILD_DIR}/t/test-bin/threads_execve"
 fi
 
+for ce_mem_access in 2; do
 # FIXME: Add DUMP prereq!
-test_expect_success_foreach_option DIFF,JQ 'multithreaded execve leader switch' '
+    test_expect_success DIFF,JQ \
+        "multithreaded execve leader switch [memory_access:${ce_mem_access}]" '
     # Due to probabilistic nature of the test, try it several times.
     EXP="$(unique_file)" &&
     OUT="$(unique_file)" &&
     s0="$(date +%s)" &&
     r=0 &&
     while :; do
-        f="$(unique_file)" &&
-        rm -f "$f" &&
         sydbox \
-            -d "$f" \
+            -M '${ce_mem_access}' \
             "'${threads_execve}'" > "$OUT" || r=1 &&
         test $r = 1 && break ||
-        test -s "$f" &&
+        test -s "$SHOEBOX" &&
         echo >&2 DUMP &&
-        cat >&2 "$f" &&
+        cat >&2 "$SHOEBOX" &&
         echo >&2 "--" &&
         jq -r \
             ". |\
                 select(.event.name==\"exec_mt\") |\
-                [.execve_thread.pid,.leader_thread.pid] | join(\" \")"  < "$f" > "$EXP"
+                [.execve_thread.pid,.leader_thread.pid] | join(\" \")" \
+                < "$SHOEBOX" > "$EXP" &&
+        rm -f "$SHOEBOX" &&
+        rm -f "$SHOEBOX_PFC" &&
         echo >&2 EXP &&
         cat >&2 "$EXP" &&
         echo >&2 "--" &&
@@ -58,5 +61,6 @@ test_expect_success_foreach_option DIFF,JQ 'multithreaded execve leader switch' 
     done &&
     test $r = 0
 '
+done
 
 test_done

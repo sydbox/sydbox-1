@@ -124,6 +124,7 @@ test_path_has_mtime() {
 bpf_dump() {
 	if test -n "$verbose" -a -s "$SHOEBOX_PFC"; then
 		echo >&4 "-- BPF.PFC: $@"
+		echo >&4
 		if bpf_action "$SHOEBOX_PFC" default ALLOW; then
 			echo >&4 '-- DEFAULT_ACTION: ALLOW'
 		elif bpf_action "$SHOEBOX_PFC" default KILL; then
@@ -150,7 +151,7 @@ test_bpf_action() {
 	local name="$1"
 	local action="$2"
 
-	bpf_dump "NAME: $name ACTION: $action"
+	# bpf_dump "NAME: $name ACTION: $action"
 	bpf_action "$file" "$name" "$action"
 }
 
@@ -181,56 +182,6 @@ test_must_violate() {
 	SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS"
 	export SYDBOX_TEST_OPTIONS
 	return "$retval"
-}
-
-#
-# Test with different tracing options
-#
-test_expect_success_foreach_option() {
-	test "$#" = 3 || test "$#" = 2 ||
-	error "bug in the test script: not 2 or 3 parameters to test-expect-success-foreach-option"
-
-	argc="$#" ; arg1="$1" ; arg2="$2" ; arg3="$3"
-	for choice in 0 1 2 3
-	do
-		memory_access="$choice"
-		suffix="[memory_access:${choice}]"
-		if test "$argc" = 3
-		then
-			prereq="$arg1"
-		fi
-		if test "$argc" = 3
-		then
-			set -- "$prereq" "$arg2 $suffix" "$arg3"
-		elif test -n "$prereq"
-		then
-			set -- "$prereq" "$arg1 $suffix" "$arg2"
-		else
-			set -- "$arg1 $suffix" "$arg2"
-		fi
-		test_sydbox_options=t test_expect_success "$@"
-	done
-}
-
-test_expect_failure_foreach_option() {
-	test "$#" = 3 || test "$#" = 2 ||
-	error "bug in the test script: not 2 or 3 parameters to test-expect-failure-foreach-option"
-
-	argc="$#" ; arg1="$1" ; arg2="$2" ; arg3="$3"
-	for choice in 0 1 2 3
-	do
-		IFS=' ' read -r memory_access <<EOF
-$choice
-EOF
-		suffix="[memory_access:${choice}]"
-		if test "$argc" = 3
-		then
-			set -- "$arg1" "$arg2 $suffix" "$arg3"
-		else
-			set -- "$arg1 $suffix" "$arg2"
-		fi
-		test_sydbox_options=t test_expect_failure "$@"
-	done
 }
 
 #

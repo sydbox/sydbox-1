@@ -8,12 +8,15 @@ use feature 'say';
 use JSON 'decode_json';
 
 my %alloc;
+$alloc{'sum'} = 0;
 foreach my $line ( <STDIN> ) {
 	chomp($line);
 	my $data = decode_json ($line);
 	next unless $data->{'event'};
 	next unless $data->{'event'}->{'name'} eq 'alloc';
+	next unless $data->{'func'} eq 'sum';
 	$alloc{$data->{'func'}} += $data->{'size'};
+	$alloc{'sum'} += $data->{'size'};
 }
 
 my $argv = join(' ', @ARGV);
