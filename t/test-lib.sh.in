@@ -1232,10 +1232,8 @@ test_done () {
 PATH="$TEST_DIRECTORY/sb:$TEST_DIRECTORY/bin-wrappers:$TEST_DIRECTORY/test-bin:$PATH"
 if test -n "$dump"
 then
-	# TODO: Not good. Maybe use a valgrind like bin-wrapper for sydbox-dump
-	# under bin-wrappers/dump/sydbox and prepend PATH (?)
-	SYDBOX_DUMP=1
-	export SYDBOX_DUMP
+	SYDBOX_DUMP_ENABLED=t
+	export SYDBOX_DUMP_ENABLED
 fi
 if test -n "$valgrind"
 then

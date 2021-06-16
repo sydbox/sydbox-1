@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if test -n "$SYDBOX_DUMP_ENABLED"
+if test -n "$SYDBOX_DUMP_ENABLED" && -z "$SHOEBOX"
 then
 	i=1
 	while true; do

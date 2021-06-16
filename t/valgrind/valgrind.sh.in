@@ -3,7 +3,7 @@
 base=$(basename "$0")
 case "$base" in
 *)
-	program="@TOP_BUILDDIR@/src/$base"
+	program="@TOP_BUILDDIR@/t/bin-wrappers/$base"
 	;;
 esac
 
