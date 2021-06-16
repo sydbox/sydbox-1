@@ -708,6 +708,8 @@ extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 		 ((sydbox)->config.mem_access == 2))
 #define proc_mem_open_once() \
 	((sydbox)->config.mem_access >= SYDBOX_CONFIG_MEMACCESS_REOPEN_MIN)
+#define request_is_valid(id) (seccomp_notify_id_valid((sydbox)->notify_fd, \
+						      (id)))
 
 #define sysdeny(p) ((p)->retval)
 #define hasparent(p) ((p)->ppid >= 0)

@@ -64,6 +64,8 @@ static void sig_usr(int sig);
 static void sig_alrm(int sig);
 
 static inline bool process_is_alive(pid_t pid, pid_t tgid);
+static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current,
+					  bool kill_on_error);
 static inline pid_t process_find_exec(pid_t pid);
 static inline syd_process_t *process_init(pid_t pid, syd_process_t *parent);
 
@@ -195,11 +197,16 @@ static int process_proc(struct syd_process *p)
 	 */
 	if (p->pidfd < 0 &&
 	    (p->pidfd = syscall(__NR_pidfd_open, p->pid, 0)) < 0) {
-		int save_errno = errno;
-		if (errno != EINVAL)
-			say_errno("pidfd_open(%d)", p->pid);
+		r = -errno;
 		p->pidfd = -1;
-		r = -save_errno;
+		if (errno == EINVAL) {
+			; /* process id not a thread-group leader. */
+		} else if (proc_esrch(errno)) {
+			p->flags |= SYD_KILLED;
+			return -ESRCH;
+		} else {
+			say_errno("pidfd_open(%d)", p->pid);
+		}
 		goto out;
 	}
 
@@ -207,9 +214,14 @@ static int process_proc(struct syd_process *p)
 	{
 		int memfd;
 		if ((memfd = syd_proc_mem_open(p->pid)) < 0) {
-			if (-memfd != ENOENT)
+			r = -memfd;
+			p->memfd = -1;
+			if (proc_esrch(-r)) {
+				p->flags |= SYD_KILLED;
+				return -ESRCH;
+			} else if (-r != ENOENT) {
 				say_errno("proc_mem_open(%d)", p->pid);
-			r = memfd;
+			}
 			goto out;
 		}
 		p->memfd = memfd;
@@ -271,8 +283,15 @@ static syd_process_t *new_thread(pid_t pid)
 	thread->pid = pid;
 	thread->ppid = SYD_PPID_NONE;
 	thread->tgid = SYD_TGID_NONE;
+
 	thread->pidfd = -1;
+	thread->memfd = -1;
+	/*
+	 * process_proc return -ESRCH indicating dead process. In this case
+	 * SYD_KILLED flag is already set on the process, so nothing to do here.
+	 */
 	process_proc(thread);
+
 	process_add(thread);
 
 	dump(DUMP_THREAD_NEW, pid);
@@ -585,8 +604,7 @@ out:
 
 void remove_process_node(syd_process_t *p)
 {
-	if (p->flags & SYD_IN_CLONE || p->flags & SYD_IN_EXECVE) {
-		/* Let's wait for the children before the funeral. */
+	if (p->flags & SYD_KILLED) {
 		if (sydbox->config.allowlist_per_process_directories)
 			procdrop(&sydbox->config.proc_pid_auto, p->pid);
 		if (p->pidfd >= 0) {
@@ -597,7 +615,9 @@ void remove_process_node(syd_process_t *p)
 			close(p->memfd);
 			p->memfd = -1;
 		}
+	} else if (p->flags & SYD_IN_CLONE || p->flags & SYD_IN_EXECVE) {
 		p->flags |= SYD_KILLED;
+		remove_process_node(p);
 	} else if (!(p->flags & SYD_KILLED)) {
 		bury_process(p);
 	}
@@ -977,6 +997,35 @@ static inline bool process_is_alive(pid_t pid, pid_t tgid)
 	return true;
 }
 
+static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current,
+					  bool kill_on_error)
+{
+	if (!current && pid >= 0)
+		current = lookup_process(pid);
+	if (!current)
+		return -ESRCH;
+	if (!current->update_mem)
+		return 0;
+	if (current->memfd >= 0) {
+		close(current->memfd);
+		current->memfd = -1;
+	}
+	current->memfd = syd_proc_mem_open(current->pid);
+	current->update_mem = false;
+	if (current->memfd < 0) {
+		errno = -current->memfd;
+		current->memfd = -1;
+		if (proc_esrch(errno)) {
+			current->flags |= SYD_KILLED;
+			return -ESRCH;
+		} else {
+			say_errno("proc_mem_open(%d)", current->pid);
+		}
+		return -errno;
+	}
+	return 0;
+}
+
 static inline pid_t process_find_exec(pid_t exec_pid)
 {
 	syd_process_t *node;
@@ -1249,6 +1298,7 @@ static int notify_loop(syd_process_t *current)
 	for (;;) {
 		char *name = NULL;
 		bool jump = false;
+		bool update_mem = false, update_mem_now = false;
 		syd_process_t *parent;
 
 		pid = sydbox->execve_pid;
@@ -1316,19 +1366,21 @@ notify_receive:
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
 		current = lookup_process(pid);
-
-		if (current &&
-		    (current->update_mem ||
-		    (current->memfd < 0 && proc_mem_open_once()))) {
-			if (current->memfd >= 0)
-				close(current->memfd);
-			current->memfd = syd_proc_mem_open(current->pid);
-			if (current->memfd < 0) {
-				errno = -current->memfd;
-				current->memfd = -1;
-				say_errno("proc_mem_open(%d)", current->pid);
+		if (request_is_valid(sydbox->request->id) == -ENOENT) {
+			if (current) {
+				current->flags |= SYD_KILLED;
+				remove_process_node(current);
 			}
-			current->update_mem = false;
+			if (process_count_alive() == 0)
+				jump = true;
+			goto out;
+		} else if (current &&
+			   process_reopen_proc_mem(-1,
+						   current,
+						   true) == -ESRCH) {
+			if (process_count_alive() == 0)
+				jump = true;
+			goto notify_respond;
 		}
 
 		/* Search early for exit before getting a process entry. */
@@ -1336,21 +1388,22 @@ notify_receive:
 			//if (pid == sydbox->execve_pid)
 			//	sydbox->exit_code = sydbox->request->data.args[0];
 			reap_zombies(current, -1);
-			int count = process_count_alive();
-			if (!count)
+			if (process_count_alive() == 0)
 				jump = true;
 			goto notify_respond;
 		}
 
 		/* Search early for execve before getting a process entry. */
 		if (name && (!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
-			if (proc_mem_open_once()) {
-				/* memfd is no longer valid, reopen */
-				current->update_mem = true;
-			}
+			/* memfd is no longer valid, reopen next turn,
+			 * reading /proc/pid/mem on a process stopped
+			 * for execve returns EPERM! */
+			update_mem_now = false;
 			if (sydbox->execve_wait) { /* allow the initial exec */
 				sydbox->execve_wait = false;
 				goto notify_respond;
+			} else if (proc_mem_open_once()) {
+				update_mem = true;
 			}
 			pid_t execve_pid = 0;
 			pid_t leader_pid = process_find_exec(pid);
@@ -1397,6 +1450,19 @@ notify_receive:
 				say_errno("sys_chdir");
 			current->update_cwd = false;
 		}
+		if (update_mem) {
+			current->update_mem = true;
+			update_mem = false;
+		}
+		if (update_mem_now && current->update_mem) {
+			update_mem_now = false;
+			process_reopen_proc_mem(-1, current, true);
+			if (!process_alive(current)) {
+				if (process_count_alive() == 0)
+					jump = true;
+				goto notify_respond;
+			}
+		}
 
 		if (!name) {
 			;
@@ -1418,9 +1484,25 @@ notify_receive:
 
 notify_respond:
 		/* 0 if valid, ENOENT if not */
-		if ((r = seccomp_notify_id_valid(sydbox->notify_fd,
-						 sydbox->request->id)) < 0 ||
-		    (r = seccomp_notify_respond(sydbox->notify_fd,
+		if (request_is_valid(sydbox->request->id) == -ENOENT) {
+			if (current) {
+				current->flags |= SYD_KILLED;
+				remove_process_node(current);
+			}
+			if (process_count_alive() == 0)
+				jump = true;
+			goto out;
+		}
+		if (update_mem_now && current->update_mem) {
+			update_mem_now = false;
+			process_reopen_proc_mem(-1, current, true);
+			if (!process_alive(current)) {
+				if (process_count_alive() == 0)
+					jump = true;
+				goto out;
+			}
+		}
+		if ((r = seccomp_notify_respond(sydbox->notify_fd,
 						sydbox->response)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
 				goto notify_respond;
@@ -1442,6 +1524,7 @@ notify_respond:
 				break;
 			}
 		}
+out:
 		if (name)
 			free(name);
 		if (jump)
