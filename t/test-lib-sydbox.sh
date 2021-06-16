@@ -168,7 +168,6 @@ test_must_violate() {
 #
 # Test with different tracing options
 #
-
 test_expect_success_foreach_option() {
 	test "$#" = 3 || test "$#" = 2 ||
 	error "bug in the test script: not 2 or 3 parameters to test-expect-success-foreach-option"
@@ -182,7 +181,6 @@ test_expect_success_foreach_option() {
 		then
 			prereq="$arg1"
 		fi
-
 		if test "$argc" = 3
 		then
 			set -- "$prereq" "$arg2 $suffix" "$arg3"
