@@ -1,21 +1,26 @@
 image: debian/sid
 arch: arm64
+artifacts: [ sydbox-test.tar.bz2, sydbox-static.tar.bz2, sydbox-strace.tar.bz2, sydbox-valgrind.tar.bz2 ]
 packages:
 - linux-headers-arm64
+- libseccomp2
+- libseccomp-dev
 - xsltproc
-- docbook-xsl
 - dnsutils
+- perl
+- diffutils
+- docbook-xsl
 - libtool
 - m4
 - autoconf
 - automake
 - pkgconf
 - bzip2
-- diffutils
-- perl
 - tmux
 - cgdb
 - bash
+- strace
+- valgrind
 - vim
 sources:
 - https://git.sr.ht/~alip/sydbox
@@ -26,7 +31,7 @@ tasks:
     uname -a
     gcc --version
     bash --version
-    diff --version
+    diff --help
     perl --version
     libtoolize --version
     autoconf --version
@@ -36,11 +41,31 @@ tasks:
     bzip2 --version || true
     xsltproc --version
     dig -v
+    strace --version
+    valgrind --version
     mkdir root
+- conf_static: |
+    cd sydbox
+    ./autogen.sh
+    CFLAGS="-O0 -g -ggdb" ./configure --enable-static
+- make_static: |
+    cd sydbox
+    make -j V=1
+- check_static: |
+    cd sydbox
+    make -j V=1 check && touch .check_ok
+    cat {syd,t}/test-suite.log || true
+    test -e .check_ok
+    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cjpf ../sydbox-static.tar.bz2 config.log {syd,t}/test-suite.log t/test-results t/trash*
+- clean_static: |
+    cd sydbox
+    make clean
+    rm -f .check_ok
+    rm -fr config.log {syd,t}/test-suite.log t/test-results t/trash*
 - conf: |
     cd sydbox
     ./autogen.sh
-    PKG_CONFIG_PATH=$(readlink -f ../root/lib/pkgconfig) ./configure --enable-seccomp
+    CFLAGS="-O0 -g -ggdb" ./configure --disable-static
 - make: |
     cd sydbox
     make -j V=1
@@ -49,3 +74,26 @@ tasks:
     make -j V=1 check && touch .check_ok
     cat {syd,t}/test-suite.log || true
     test -e .check_ok
+    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cjpf ../sydbox-test.tar.bz2 config.log {syd,t}/test-suite.log t/test-results t/trash*
+- clean: |
+    cd sydbox
+    make clean
+    rm -f .check_ok
+    rm -fr t/test-suite.log t/test-results t/trash*
+- check_strace: |
+    cd sydbox
+    make -j V=1 TEST_OPTIONS="--strace" check && touch .check_ok
+    cat {syd,t}/test-suite.log || true
+    test -e .check_ok
+    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cjpf ../sydbox-strace.tar.bz2 config.log {syd,t}/test-suite.log t/test-results t/trash*
+- clean_strace: |
+    cd sydbox
+    make clean
+    rm -f .check_ok
+    rm -fr t/test-suite.log t/test-results t/trash*
+- check_valgrind: |
+    cd sydbox
+    make -j V=1 TEST_OPTIONS="--valgrind" check && touch .check_ok
+    cat {syd,t}/test-suite.log || true
+    test -e .check_ok
+    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cjpf ../sydbox-valgrind.tar.bz2 config.log {syd,t}/test-suite.log t/test-results t/trash*
