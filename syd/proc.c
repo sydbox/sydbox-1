@@ -359,20 +359,20 @@ int syd_proc_mem_open(pid_t pid)
 	if (r < 0 || (size_t)r >= sizeof(p))
 		return -EINVAL;
 
-	fd = open(p, O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	fd = open(p, O_RDWR|O_NOFOLLOW|O_CLOEXEC);
 	return (fd < 0) ? -errno : fd;
 }
 
 ssize_t syd_proc_mem_read(int mem_fd, long addr, void *buf, size_t count)
 {
-	if (lseek(mem_fd, addr, SEEK_SET) < 0)
+	if (lseek(mem_fd, addr, SEEK_SET) == -1)
 		return -errno;
 	return read(mem_fd, buf, count);
 }
 
 ssize_t syd_proc_mem_write(int mem_fd, long addr, const void *buf, size_t count)
 {
-	if (lseek(mem_fd, addr, SEEK_SET) < 0)
+	if (lseek(mem_fd, addr, SEEK_SET) == -1)
 		return -errno;
 	return write(mem_fd, buf, count);
 }

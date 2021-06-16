@@ -24,7 +24,7 @@ else
 fi
 
 # FIXME: Add DUMP prereq!
-test_expect_success DIFF,JQ 'multithreaded execve leader switch' '
+test_expect_success_foreach_option DIFF,JQ 'multithreaded execve leader switch' '
     # Due to probabilistic nature of the test, try it several times.
     EXP="$(unique_file)" &&
     OUT="$(unique_file)" &&
@@ -52,7 +52,7 @@ test_expect_success DIFF,JQ 'multithreaded execve leader switch' '
         cmp "$EXP" "$OUT" && r=0 &&
         echo >&2 "--" &&
         s1="$(date +%s)" &&
-        if [ "$(($s1-$s0))" -gt "$(($TIMEOUT_DURATION/3))" ]; then
+        if [ "$(($s1-$s0))" -gt "$(($TIMEOUT_DURATION/4))" ]; then
             break
         fi
     done &&

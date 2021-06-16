@@ -5,7 +5,7 @@
 test_description='test network sandboxing'
 . ./test-lib.sh
 
-test_expect_success DIG 'network sandboxing = allow' '
+test_expect_success_foreach_option DIG 'network sandboxing = allow' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
@@ -20,7 +20,7 @@ test_expect_success DIG 'network sandboxing = allow' '
     test -s "$cdir"/out
 '
 
-test_expect_success DIG 'network sandboxing = deny' '
+test_expect_success_foreach_option DIG 'network sandboxing = deny' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
@@ -38,7 +38,7 @@ test_expect_success DIG 'network sandboxing = deny' '
         dig +retry=1 +ignore +noall +answer dev.chessmuse.com
 '
 
-test_expect_success PY3 'network sandboxing for connect works to deny IPv4 address' '
+test_expect_success_foreach_option PY3 'network sandboxing for connect works to deny IPv4 address' '
     test_expect_code 111 sydbox \
         -m core/sandbox/network:deny \
         python <<EOF
@@ -60,7 +60,7 @@ finally:
 EOF
 '
 
-test_expect_success HAVE_IPV6,PY3 'network sandboxing for connect works to deny IPv6 address' '
+test_expect_success_foreach_option HAVE_IPV6,PY3 'network sandboxing for connect works to deny IPv6 address' '
     test_expect_code 111 sydbox \
         -m core/sandbox/network:deny \
         python <<EOF
@@ -84,7 +84,7 @@ finally:
 EOF
 '
 
-test_expect_success PY3 'network sandboxing for bind works to deny UNIX socket' '
+test_expect_success_foreach_option PY3 'network sandboxing for bind works to deny UNIX socket' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     test_expect_code 99 sydbox \
@@ -110,7 +110,7 @@ finally:
 EOF
 '
 
-test_expect_success PY3 'network sandboxing for bind works to deny IPv4 address with port zero' '
+test_expect_success_foreach_option PY3 'network sandboxing for bind works to deny IPv4 address with port zero' '
     test_expect_code 99 sydbox \
         -m core/sandbox/network:deny \
         python <<EOF
@@ -134,7 +134,7 @@ finally:
 EOF
 '
 
-test_expect_success PY3 'network sandboxing for bind works to deny IPv6 address with port zero' '
+test_expect_success_foreach_option PY3 'network sandboxing for bind works to deny IPv6 address with port zero' '
     test_expect_code 99 sydbox \
         -m core/sandbox/network:deny \
         python <<EOF
@@ -158,7 +158,7 @@ finally:
 EOF
 '
 
-test_expect_success PY3 'network sandboxing for bind works to allowlist IPv4 address' '
+test_expect_success_foreach_option PY3 'network sandboxing for bind works to allowlist IPv4 address' '
     test_expect_code 0 sydbox \
         -m core/sandbox/network:deny \
         -m allowlist/network/bind+LOOPBACK@65534 \
@@ -181,7 +181,7 @@ finally:
 EOF
 '
 
-test_expect_success PY3 'network sandboxing for bind works to allowlist IPv6 address' '
+test_expect_success_foreach_option PY3 'network sandboxing for bind works to allowlist IPv6 address' '
     test_expect_code 0 sydbox \
         -m core/sandbox/network:deny \
         -m allowlist/network/bind+LOOPBACK6@65534 \
@@ -204,7 +204,7 @@ finally:
 EOF
 '
 
-test_expect_success PY3 'network sandboxing for bind works to allowlist IPv4 address with port zero' '
+test_expect_success_foreach_option PY3 'network sandboxing for bind works to allowlist IPv4 address with port zero' '
     test_expect_code 0 sydbox \
         -m core/sandbox/network:deny \
         -m allowlist/network/bind+LOOPBACK@0 \
@@ -227,7 +227,7 @@ finally:
 EOF
 '
 
-test_expect_success PY3 'network sandboxing for bind works to allowlist IPv6 address with port zero' '
+test_expect_success_foreach_option PY3 'network sandboxing for bind works to allowlist IPv6 address with port zero' '
     test_expect_code 0 sydbox \
         -m core/sandbox/network:deny \
         -m allowlist/network/bind+LOOPBACK6@0 \
@@ -250,7 +250,7 @@ finally:
 EOF
 '
 
-test_expect_success PY3 'network sandboxing for bind works to auto-allowlist UNIX socket' '
+test_expect_success_foreach_option PY3 'network sandboxing for bind works to auto-allowlist UNIX socket' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cd "$pdir" &&

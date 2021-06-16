@@ -1640,7 +1640,7 @@ int main(int argc, char **argv)
 		{"test",	no_argument,		NULL,	't'},
 		{"chdir",	required_argument,	NULL,	SYD_OPT_CHDIR},
 		{"chroot",	required_argument,	NULL,	SYD_OPT_CHROOT},
-		{"proc-mem",	no_argument,		NULL,	SYD_OPT_PROCMEM},
+		{"proc-mem",	required_argument,	NULL,	SYD_OPT_PROCMEM},
 		{NULL,		0,		NULL,	0},
 	};
 

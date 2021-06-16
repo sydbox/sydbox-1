@@ -153,7 +153,7 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 	int r;
 #if !SYDBOX_DEF_PROC_MEM
 	static bool cross_memory_attach_works = true;
-	if (use_cross_memory_attach() && !cross_memory_attach_works) {
+	if (use_cross_memory_attach() && cross_memory_attach_works) {
 		struct iovec local[1], remote[1];
 		local[0].iov_base = (void *)buf;
 		remote[0].iov_base = (void *)addr;
@@ -193,7 +193,7 @@ static int process_vm_write(syd_process_t *current, long addr, void *buf,
 
 #if !SYDBOX_DEF_PROC_MEM
 	static bool cross_memory_attach_works = true;
-	if (use_cross_memory_attach() && !cross_memory_attach_works) {
+	if (use_cross_memory_attach() && cross_memory_attach_works) {
 		struct iovec local[1], remote[1];
 		local[0].iov_base = (void *)buf;
 		remote[0].iov_base = (void *)addr;

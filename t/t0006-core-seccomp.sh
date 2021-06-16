@@ -31,7 +31,7 @@ test_expect_success 'export bpf options to file' '
 # perl -n000e 'print $& while /^foo.*\nbar.*\n/mg' file
 
 save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
-SYDBOX_TEST_OPTIONS="--export pfc:bpf.pfc"
+SYDBOX_TEST_OPTIONS="--export=pfc:bpf.pfc"
 export SYDBOX_TEST_OPTIONS
 
 test_expect_success 'invalid architecture action is kill ' '
@@ -120,7 +120,7 @@ test_expect_failure 'default action is allow with exec sandboxing bpf' '
     test_bpf_action bpf.pfc default ALLOW
 '
 
-test_expect_failure 'default action is allow with network sandboxing bpf' '
+test_expect_success 'default action is allow with network sandboxing bpf' '
     rm -f bpf.pfc &&
     sydbox \
         -m core/sandbox/read:off \

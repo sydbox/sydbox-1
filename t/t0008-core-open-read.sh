@@ -7,7 +7,7 @@ test_description='test the read sandboxing for open of sydbox'
 
 # Note, we use test_must_fail here rather than ! so we know if sydbox exits
 # abnormally, eg. segfaults.
-test_expect_success 'read sandboxing for open works' '
+test_expect_success_foreach_option 'read sandboxing for open works' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
@@ -21,7 +21,7 @@ test_expect_success 'read sandboxing for open works' '
         syd-open-static "$cdir"/readme rdonly
 '
 
-test_expect_success 'read sandboxing for open works with allowlist' '
+test_expect_success_foreach_option 'read sandboxing for open works with allowlist' '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
