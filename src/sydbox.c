@@ -110,6 +110,7 @@ usage: "PACKAGE" [-hvb] [-d <fd|path|tmp>] [-a arch...] \n\
                       use `tmp' to dump to a temporary file.\n\
 --dry-run          -- Run under inspection without denying system calls\n\
 --export <bpf|pfc> -- Export the seccomp filters to standard error on startup\n\
+--proc-mem         -- Do not use kernel's cross memory attach facility but read /proc/pid/mem\n\
 --test             -- Test if various runtime requirements are functional and exit\n\
 --chdir <path>     -- Chdir to this directory before starting the program\n\
 --chroot <path>    -- Chroot to this directory before starting the daemon\n\
@@ -1004,6 +1005,8 @@ static void init_early(void)
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	sydbox->dump_fd = 0;
 #endif
+	sydbox->bpf_only = false;
+	sydbox->proc_mem = false;
 	sydbox->permissive = false;
 	config_init();
 	filter_init();
@@ -1560,6 +1563,7 @@ int main(int argc, char **argv)
 		{"test",	no_argument,		NULL,	't'},
 		{"chdir",	required_argument,	NULL,	0},
 		{"chroot",	required_argument,	NULL,	0},
+		{"proc-mem",	no_argument,		NULL,	0},
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -1582,6 +1586,10 @@ int main(int argc, char **argv)
 			} else if (streq(long_options[options_index].name,
 				  "dry-run")) {
 				sydbox->permissive = true;
+				break;
+			} else if (streq(long_options[options_index].name,
+				  "proc-mem")) {
+				sydbox->proc_mem = true;
 				break;
 			} else if (streq(long_options[options_index].name,
 					 "export")) {

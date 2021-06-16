@@ -554,6 +554,7 @@ struct sydbox {
 	bool execve_wait;
 	bool permissive;
 	bool bpf_only;
+	bool proc_mem;
 
 	int exit_code;
 	int execve_pidfd;

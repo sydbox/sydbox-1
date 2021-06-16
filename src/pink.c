@@ -153,7 +153,7 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 	int r;
 	static bool cross_memory_attach_works = true;
 
-	if (!cross_memory_attach_works) {
+	if (sydbox->proc_mem || !cross_memory_attach_works) {
 		int memfd;
 		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
 			return memfd;
@@ -185,7 +185,7 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 	int r;
 	static bool cross_memory_attach_works = true;
 
-	if (!cross_memory_attach_works) {
+	if (sydbox->proc_mem || !cross_memory_attach_works) {
 		int memfd;
 		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
 			return memfd;
