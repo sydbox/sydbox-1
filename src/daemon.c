@@ -65,22 +65,30 @@ void set_ionice(int c, int d)
 
 int set_username(const char *name)
 {
+#if 0
+#error can not static link
 	struct passwd *p = getpwnam(name);
 	if (p) {
 		uid = p->pw_uid;
 		return 0;
 	}
 	return -errno;
+#endif
+	return 0;
 }
 
 int set_groupname(const char *name)
 {
+#if 0
+#error can not static link
 	struct group *group = getgrnam(name);
 	if (group) {
 		gid = group->gr_gid;
 		return 0;
 	}
 	return -errno;
+#endif
+	return 0;
 }
 
 int change_umask(void)

@@ -145,12 +145,17 @@ int parse_port(const char *s, unsigned *ret_port)
 			return -ERANGE;
 	}
 	else {
+		say("service name lookup is disabled");
+		say("submit a bug report.");
+		return -EINVAL;
+#if 0
+#error cannot static link
 		/* Looks like a service name! */
 		struct servent *service;
 		if (!(service = getservbyname(s, NULL)))
 			return -EINVAL;
-
 		port = ntohs(service->s_port);
+#endif
 	}
 
 	*ret_port = port;
