@@ -31,8 +31,15 @@ EXTRA_DIST+= test-lib.sh.in
 nodist_check_SCRIPTS= test-lib.sh
 nodist_syd_SCRIPTS= $(nodist_check_SCRIPTS)
 
+AM_TESTSUITE_SUMMARY_HEADER = ' for $(PACKAGE_STRING)'
 TEST_EXTENSIONS= .sh
 SH_LOG_COMPILER= $(srcdir)/test-runner.sh
+TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
+		  $(top_srcdir)/build-aux/tap-driver.sh
+SYDBOX_CHECK_OPTIONS=\
+		     --tee \
+		     --verbose
+export SYDBOX_CHECK_OPTIONS
 TESTS= \
 	t0000-basic.sh \
 	t0001-path-wildmatch.sh \

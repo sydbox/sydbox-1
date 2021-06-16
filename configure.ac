@@ -469,6 +469,7 @@ GENERATED_FILE=misc/generated-file.txt
 AC_SUBST_FILE([GENERATED_FILE])
 
 dnl output
+AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 syd/Makefile
