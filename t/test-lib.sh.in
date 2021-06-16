@@ -1329,15 +1329,18 @@ test_done () {
 
 	if test -n "$dump"
 	then
-		shopt -s nullglob # FIXME: bashism.
-		for sydcore in "${TEST_RESULTS_BASE}"*.sydcore.*
+		set -- "${TEST_RESULTS_BASE}"*.sydcore.*
+		case "$1$2" in
+			"${TEST_RESULTS_BASE}"'*.sydcore.*') shift;;
+			*) ;;
+		esac
+		for sydcore
 		do
 			name="${sydcore%.*sydcore*}"
 			"$TEST_DIRECTORY"/alloc_stats.pl "$name" \
 				< "$sydcore" > "$name".alloc
 			cat "$sydcore"
 		done > "$TRASH_DIRECTORY"/sydcore
-		shopt -u nullglob
 		if test -s "$TRASH_DIRECTORY/sydcore"
 		then
 			"$TEST_DIRECTORY"/alloc_stats.pl test \
