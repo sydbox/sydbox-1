@@ -154,9 +154,8 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 		port = ntohs(info->addr->u.sa_in.sin_port);
 		/* allowlist bind(0 -> port) for connect() */
 		if (!port &&
-		    (!read_net_tcp || (r = proc_socket_port(inode,
-							    true,
-							    &port)) < 0))
+		    (!read_net_tcp || proc_socket_port(inode, true,
+						       &port) < 0))
 			return 0;
 		match = sockmatch_new(info);
 		match->addr.sa_in.port[0] = match->addr.sa_in.port[1] = port;
@@ -165,9 +164,8 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 		port = ntohs(info->addr->u.sa6.sin6_port);
 		/* allowlist bind(0 -> port) for connect() */
 		if (!port &&
-		    (!read_net_tcp || (r = proc_socket_port(inode,
-							    false,
-							    &port)) < 0))
+		    (!read_net_tcp || proc_socket_port(inode, false,
+						       &port) < 0))
 			return 0;
 		match = sockmatch_new(info);
 		match->addr.sa6.port[0] = match->addr.sa6.port[1] = port;

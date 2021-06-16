@@ -725,11 +725,11 @@ int sysinit_seccomp(void)
 	}
 	switch (sydbox->export) {
 	case SYDBOX_EXPORT_BPF:
-		if ((r = seccomp_export_bpf(sydbox->ctx, 2)) < 0)
+		if (seccomp_export_bpf(sydbox->ctx, 2) < 0)
 			say_errno("seccomp_export_bpf");
 		break;
 	case SYDBOX_EXPORT_PFC:
-		if ((r = seccomp_export_pfc(sydbox->ctx, 2)) < 0)
+		if (seccomp_export_pfc(sydbox->ctx, 2) < 0)
 			say_errno("seccomp_export_pfc");
 		break;
 	default:
