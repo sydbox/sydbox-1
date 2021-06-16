@@ -246,7 +246,11 @@ static void new_shared_memory_clone_files(struct syd_process *p)
 {
 	p->shm.clone_files = xmalloc(sizeof(struct syd_process_shared_clone_files));
 	p->shm.clone_files->refcnt = 1;
-	sc_map_init_64v(&p->shm.clone_files->sockmap, 0, 0);
+	if (!sc_map_init_64v(&p->shm.clone_files->sockmap, 0, 0)) {
+		errno = -ENOMEM;
+		die_errno("failed to initialize sockmap for process %d",
+			  p->pid);
+	}
 }
 
 static void new_shared_memory(struct syd_process *p)
@@ -1052,9 +1056,15 @@ static void init_early(void)
 	sydbox->permissive = false;
 	sydbox->export_mode = SYDBOX_EXPORT_NUL;
 	sydbox->export_path = NULL;
+	if (!sc_map_init_64v(&sydbox->tree,
+			     SYDBOX_TREE_CAP,
+			     SYDBOX_TREE_LOAD_FAC)) {
+		errno = ENOMEM;
+		die_errno("failed to allocate hashmap for process tree");
+	}
 	config_init();
 	filter_init();
-	sc_map_init_64v(&sydbox->tree, SYDBOX_TREE_CAP, SYDBOX_TREE_LOAD_FAC);
+	systable_init();
 	syd_abort_func(kill_all);
 }
 
@@ -1807,8 +1817,6 @@ int main(int argc, char **argv)
 		config_parse_spec(env);
 
 	config_done();
-
-	systable_init();
 	sysinit();
 
 	/* Late validations for options */

@@ -55,7 +55,12 @@ void config_init(void)
 	sydbox->config.box_static.mode.sandbox_network = SANDBOX_BPF;
 
 	/* initialize access control lists */
-	sc_map_init_64s(&sydbox->config.proc_pid_auto, 16, 0);
+	if (!sc_map_init_64s(&sydbox->config.proc_pid_auto,
+			     SYDBOX_TREE_CAP,
+			     SYDBOX_TREE_LOAD_FAC)) {
+		errno = ENOMEM;
+		die_errno("failed to allocate hashmap for /proc/pid auto-allowlist");
+	}
 
 	ACLQ_INIT(&sydbox->config.exec_kill_if_match);
 	ACLQ_INIT(&sydbox->config.exec_resume_if_match);
