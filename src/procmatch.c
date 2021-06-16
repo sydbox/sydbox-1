@@ -31,13 +31,10 @@ int procdrop(struct sc_map_64s *map, pid_t pid)
 {
 	char *p;
 
-	p = (char *)sc_map_get_64s(map, pid);
+	p = (char *)sc_map_del_64s(map, pid);
 	if (!sc_map_found(map))
 		return 0;
-
-	sc_map_del_64s(map, pid);
 	free(p);
-
 	return 1;
 }
 

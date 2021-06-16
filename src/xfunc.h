@@ -82,6 +82,18 @@ extern void die(const char *fmt, ...)
 extern void die_errno(const char *fmt, ...)
 	SYD_GCC_ATTR((noreturn, format (printf, 1, 2)));
 
+extern void *syd_malloc(size_t size)
+	SYD_GCC_ATTR((malloc));
+extern void *syd_calloc(size_t nmemb, size_t size)
+	SYD_GCC_ATTR((malloc));
+extern void *syd_realloc(void *ptr, size_t size);
+
+extern char *syd_strdup(const char *src);
+extern char *syd_strndup(const char *src, size_t n);
+
+extern int syd_asprintf(char **strp, const char *fmt, ...)
+	SYD_GCC_ATTR((format (printf, 2, 3)));
+
 extern void *xmalloc(size_t size)
 	SYD_GCC_ATTR((malloc));
 extern void *xcalloc(size_t nmemb, size_t size)

@@ -88,5 +88,5 @@ char *path_lookup(const char *filename)
 		return NULL;
 	}
 
-	return strdup(pathname);
+	return syd_strdup(pathname);
 }

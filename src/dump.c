@@ -25,12 +25,13 @@
 #define J(s)		"\""#s"\":"
 #define J_BOOL(b)	(b) ? "true" : "false"
 
-unsigned long dump_inspect = INSPECT_DEFAULT;
+unsigned long long dump_inspect = INSPECT_DEFAULT;
 static FILE *fp;
 static char pathdump[PATH_MAX];
 static int nodump = -1;
 static unsigned long flags = DUMPF_PROCFS;
 static unsigned long long id;
+static size_t alloc_bytes;
 
 static void dump_flush(void)
 {
@@ -444,6 +445,29 @@ void dump(enum dump what, ...)
 		fprintf(fp, ","J(execve_thread));
 		dump_process(execve_thread);
 		fprintf(fp, "}");
+	} else if (what == DUMP_ALLOC) {
+		size_t size = va_arg(ap, size_t);
+		const char *func = va_arg(ap, const char *);
+
+		if (size == 0) {
+			size = alloc_bytes;
+			func = "sum";
+		} else if ((unsigned long long)(alloc_bytes + size) > SIZE_MAX) {
+			say("dump: alloc_bytes:%zu overflowed over SIZE_MAX:%zu "
+			    "with request:%zu",
+			    alloc_bytes, SIZE_MAX, size);
+			alloc_bytes = 0;
+		} else {
+			alloc_bytes += size;
+		}
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(ts)"%llu,"
+			J(event)"{\"id\":%u,\"name\":\"alloc\"},"
+			J(size)"%zu,"
+			J(func)"\"%s\"}",
+			id++, (unsigned long long)now,
+			what, size, func);
 	} else {
 		abort();
 	}

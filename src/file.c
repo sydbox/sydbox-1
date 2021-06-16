@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 
 #include "file.h"
+#include "xfunc.h"
 
 #define NEWLINE "\n\r"
 
@@ -60,12 +61,12 @@ int basename_alloc(const char *path, char **buf)
 
 	assert(buf != NULL);
 
-	c = strdup(path);
+	c = syd_strdup(path);
 	if (!c)
 		return -ENOMEM;
 
 	bname = basename(c);
-	retbuf = strdup(bname);
+	retbuf = syd_strdup(bname);
 	free(c);
 
 	if (!retbuf)
@@ -103,7 +104,7 @@ ssize_t readlink_alloc(const char *path, char **buf)
 		char *c;
 		ssize_t n;
 
-		c = malloc(l * sizeof(char));
+		c = syd_malloc(l * sizeof(char));
 		if (!c)
 			return -ENOMEM;
 
@@ -143,7 +144,7 @@ int read_one_line_file(const char *fn, char **line)
 		goto out;
 	}
 
-	c = strdup(t);
+	c = syd_strdup(t);
 	if (!c) {
 		r = -ENOMEM;
 		goto out;

@@ -38,6 +38,8 @@ void syd_abort_func(void (*func)(int))
 {
 	abort_func = func;
 }
+#else
+# define dump(...) /* empty */
 #endif
 
 SYD_GCC_ATTR((noreturn))
@@ -192,6 +194,68 @@ void die_errno(const char *fmt, ...)
 	syd_abort(SIGTERM);
 }
 
+inline void *syd_malloc(size_t size)
+{
+	dump(DUMP_ALLOC, size, "malloc");
+	return malloc(size);
+}
+
+inline void *syd_calloc(size_t nmemb, size_t size)
+{
+	dump(DUMP_ALLOC, size, "calloc");
+	return calloc(nmemb, size);
+}
+
+inline void *syd_realloc(void *ptr, size_t size)
+{
+	dump(DUMP_ALLOC, size, "realloc");
+	return realloc(ptr, size);
+}
+
+inline char *syd_strdup(const char *src)
+{
+	dump(DUMP_ALLOC, strlen(src) + 1, "strdup");
+	return strdup(src);
+}
+
+inline char *syd_strndup(const char *src, size_t n)
+{
+	dump(DUMP_ALLOC, n, "strndup");
+	return strndup(src, n);
+}
+
+static inline int syd_vasprintf(const char *name, char **strp, const char *fmt,
+				va_list ap)
+{
+	int r;
+
+	assert(strp);
+
+	r = vasprintf(strp, fmt, ap);
+	dump(DUMP_ALLOC, strlen(*strp) + 1, name);
+	return r;
+}
+
+inline int syd_asprintf(char **strp, const char *fmt, ...)
+{
+	int r;
+	char *dest;
+	va_list ap;
+
+	assert(strp);
+
+	va_start(ap, fmt);
+	r = syd_vasprintf("vasprintf", &dest, fmt, ap);
+	va_end(ap);
+
+	if (r == -1) {
+		errno = ENOMEM;
+		die_errno("vasprintf");
+	}
+	*strp = dest;
+	return r;
+}
+
 void *xmalloc(size_t size)
 {
 	void *ptr;
@@ -199,6 +263,7 @@ void *xmalloc(size_t size)
 	ptr = malloc(size);
 	if (!ptr)
 		die_errno("malloc");
+	dump(DUMP_ALLOC, size, "xmalloc");
 
 	return ptr;
 }
@@ -210,6 +275,7 @@ void *xcalloc(size_t nmemb, size_t size)
 	ptr = calloc(nmemb, size);
 	if (!ptr)
 		die_errno("calloc");
+	dump(DUMP_ALLOC, size, "xcalloc");
 
 	return ptr;
 }
@@ -221,6 +287,7 @@ void *xrealloc(void *ptr, size_t size)
 	nptr = realloc(ptr, size);
 	if (!nptr)
 		die_errno("realloc");
+	dump(DUMP_ALLOC, size, "xrealloc");
 
 	return nptr;
 }
@@ -232,6 +299,7 @@ char *xstrdup(const char *src)
 	dest = strdup(src);
 	if (!dest)
 		die_errno("strdup");
+	dump(DUMP_ALLOC, strlen(src) + 1, "xstrdup");
 
 	return dest;
 }
@@ -243,6 +311,7 @@ char *xstrndup(const char *src, size_t n)
 	dest = strndup(src, n);
 	if (!dest)
 		die_errno("strndup");
+	dump(DUMP_ALLOC, n, "xstrndup");
 
 	return dest;
 }
@@ -256,14 +325,13 @@ int xasprintf(char **strp, const char *fmt, ...)
 	assert(strp);
 
 	va_start(ap, fmt);
-	r = vasprintf(&dest, fmt, ap);
+	r = syd_vasprintf("vasprintf", &dest, fmt, ap);
 	va_end(ap);
 
 	if (r == -1) {
 		errno = ENOMEM;
 		die_errno("vasprintf");
 	}
-
 	*strp = dest;
 	return r;
 }

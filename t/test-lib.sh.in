@@ -236,6 +236,7 @@ then
 	test -z "$verbose_log" && verbose=t
 fi
 
+dump=t
 if test -n "$stress"
 then
 	verbose=t

@@ -82,22 +82,22 @@ static char *box_name_violation_sock(syd_process_t *current,
 	switch (paddr->family) {
 	case AF_UNIX:
 		abstract = path_abstract(paddr->u.sa_un.sun_path);
-		if (asprintf(&repr, "%s:%s",
-			  abstract ? "unix-abstract" : "unix",
-			  abstract ? paddr->u.sa_un.sun_path + 1
-				   : (unix_abspath ? unix_abspath : paddr->u.sa_un.sun_path)) < 0)
+		if (syd_asprintf(&repr, "%s:%s",
+				 abstract ? "unix-abstract" : "unix",
+				 abstract ? paddr->u.sa_un.sun_path + 1
+					: (unix_abspath ? unix_abspath : paddr->u.sa_un.sun_path)) < 0)
 			repr = NULL;
 		break;
 	case AF_INET:
 		inet_ntop(AF_INET, &paddr->u.sa_in.sin_addr, ip, sizeof(ip));
-		if (asprintf(&repr, "inet:%s@%d",
-			     ip, ntohs(paddr->u.sa_in.sin_port)) < 0)
+		if (syd_asprintf(&repr, "inet:%s@%d",
+				 ip, ntohs(paddr->u.sa_in.sin_port)) < 0)
 			repr = NULL;
 		break;
 	case AF_INET6:
 		inet_ntop(AF_INET6, &paddr->u.sa6.sin6_addr, ip, sizeof(ip));
-		if (asprintf(&repr, "inet6:%s@%d",
-			     ip, ntohs(paddr->u.sa6.sin6_port)) < 0)
+		if (syd_asprintf(&repr, "inet6:%s@%d",
+				 ip, ntohs(paddr->u.sa6.sin6_port)) < 0)
 			repr = NULL;
 		break;
 	default:
@@ -407,7 +407,7 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 	/* Step 4: Record absolute path for dump. */
 	if (current->repr[info->arg_index])
 		free(current->repr[info->arg_index]);
-	current->repr[info->arg_index] = strdup(abspath);
+	current->repr[info->arg_index] = syd_strdup(abspath);
 	dump(DUMP_SYSENT, current);
 
 	/* Step 5: Check for access */

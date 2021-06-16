@@ -55,6 +55,8 @@ enum dump {
 #define INSPECT_DUMP_EXEC (1ULL << DUMP_EXEC)
 	DUMP_EXEC_MT, /* multithreaded execve, leader switch */
 #define INSPECT_DUMP_EXEC_MT (1ULL << DUMP_EXEC_MT)
+	DUMP_ALLOC, /* dump allocations, *alloc(), str*dup() & asprintf() */
+#define INSPECT_DUMP_ALLOC (1ULL << DUMP_ALLOC)
 };
 
 #if SYDBOX_DUMP
@@ -69,7 +71,7 @@ enum dump {
 # error do not know how to define INSPECT_DEFAULT
 #endif
 
-extern unsigned long dump_inspect;
+extern unsigned long long dump_inspect;
 #define inspected_i(what) ((dump_inspect & (1ULL << what)) != 0)
 #define inspected_f(what) ((dump_inspect & (what)) != 0)
 

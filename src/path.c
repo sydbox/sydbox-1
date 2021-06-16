@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "path.h"
+#include "xfunc.h"
 
 /* Makes every item in the list an absolute path by prepending
  * the prefix, if specified and necessary */
@@ -26,9 +27,9 @@ char *path_make_absolute(const char *p, const char *prefix)
 	char *r = NULL;
 
 	if (path_is_absolute(p) || !prefix)
-		return strdup(p);
+		return syd_strdup(p);
 
-	if (asprintf(&r, "%s/%s", prefix, p) < 0)
+	if (syd_asprintf(&r, "%s/%s", prefix, p) < 0)
 		return NULL;
 
 	return r;

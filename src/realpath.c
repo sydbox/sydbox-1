@@ -18,6 +18,7 @@
 #include "sydconf.h"
 #include "bsd-compat.h"
 #include "file.h"
+#include "xfunc.h"
 
 struct stat_mode {
 	unsigned rmode;
@@ -107,7 +108,7 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 	nofollow = !!(flags & RPATH_NOFOLLOW);
 	mode &= RPATH_MASK;
 
-	resolved = malloc(sizeof(char) * SYDBOX_PATH_MAX);
+	resolved = syd_malloc(sizeof(char) * SYDBOX_PATH_MAX);
 	if (!resolved)
 		return -ENOMEM;
 	r = 0;

@@ -682,13 +682,13 @@ extern sydbox_t *sydbox;
 extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 
 #if SYDBOX_HAVE_DUMP_BUILTIN
-# define inspecting() ((sydbox->dump_fd) != 0)
+# define inspecting() ((sydbox) && (sydbox->dump_fd) != 0)
 #else
 # define inspecting() (0)
 #endif
 
 #define tracing() (0)
-#define bpf_only() (sydbox->bpf_only)
+#define bpf_only() ((sydbox) && sydbox->bpf_only)
 
 #define sysdeny(p) ((p)->retval)
 #define hasparent(p) ((p)->ppid >= 0)
@@ -884,7 +884,7 @@ static inline int new_sandbox(sandbox_t **box_ptr)
 {
 	sandbox_t *box;
 
-	box = malloc(sizeof(sandbox_t));
+	box = syd_malloc(sizeof(sandbox_t));
 	if (!box)
 		return -errno;
 	init_sandbox(box);

@@ -64,7 +64,7 @@ int proc_cwd(pid_t pid, bool use_toolong_hack, char **buf)
 	assert(pid >= 1);
 	assert(buf);
 
-	if (asprintf(&linkcwd, "/proc/%u/cwd", pid) < 0)
+	if (syd_asprintf(&linkcwd, "/proc/%u/cwd", pid) < 0)
 		return -ENOMEM;
 
 	r = readlink_alloc(linkcwd, &cwd);
@@ -104,7 +104,7 @@ int proc_fd(pid_t pid, int dfd, char **buf)
 	assert(dfd >= 0);
 	assert(buf);
 
-	if (asprintf(&linkdir, "/proc/%u/fd/%d", pid, dfd) < 0)
+	if (syd_asprintf(&linkdir, "/proc/%u/fd/%d", pid, dfd) < 0)
 		return -ENOMEM;
 
 	r = readlink_alloc(linkdir, &fd);
@@ -130,7 +130,7 @@ int proc_cmdline(pid_t pid, size_t max_length, char **buf)
 	assert(max_length > 0);
 	assert(buf);
 
-	if (asprintf(&p, "/proc/%u/cmdline", pid) < 0)
+	if (syd_asprintf(&p, "/proc/%u/cmdline", pid) < 0)
 		return -ENOMEM;
 
 	f = fopen(p, "r");
@@ -139,7 +139,7 @@ int proc_cmdline(pid_t pid, size_t max_length, char **buf)
 	if (!f)
 		return -errno;
 
-	r = malloc(max_length * sizeof(char));
+	r = syd_malloc(max_length * sizeof(char));
 	if (!r) {
 		fclose(f);
 		return -ENOMEM;
@@ -192,7 +192,7 @@ int proc_comm(pid_t pid, char **name)
 	assert(pid >= 1);
 	assert(name);
 
-	if (asprintf(&p, "/proc/%u/comm", pid) < 0)
+	if (syd_asprintf(&p, "/proc/%u/comm", pid) < 0)
 		return -ENOMEM;
 
 	r = read_one_line_file(p, name);
@@ -249,7 +249,7 @@ int proc_parents(pid_t pid, pid_t *tgid, pid_t *ppid)
 	assert(tgid);
 	assert(ppid);
 
-	if (asprintf(&p, "/proc/%u/status", pid) < 0)
+	if (syd_asprintf(&p, "/proc/%u/status", pid) < 0)
 		return -ENOMEM;
 
 	f = fopen(p, "r");
@@ -291,7 +291,7 @@ int proc_stat(pid_t pid, struct proc_statinfo *info)
 	assert(pid >= 1);
 	assert(info);
 
-	if (asprintf(&p, "/proc/%u/stat", pid) < 0)
+	if (syd_asprintf(&p, "/proc/%u/stat", pid) < 0)
 		return -ENOMEM;
 
 	f = fopen(p, "r");
@@ -347,7 +347,7 @@ int proc_environ(pid_t pid)
 
 	assert(pid >= 1);
 
-	if (asprintf(&p, "/proc/%u/environ", pid) < 0)
+	if (syd_asprintf(&p, "/proc/%u/environ", pid) < 0)
 		return -ENOMEM;
 
 	f = fopen(p, "r");
@@ -385,7 +385,7 @@ int proc_socket_inode(pid_t pid, int socket_fd, unsigned long long *inode)
 	assert(pid >= 1);
 	assert(socket_fd >= 0);
 
-	if (asprintf(&p, "/proc/%d/fd/%d", pid, socket_fd) < 0)
+	if (syd_asprintf(&p, "/proc/%d/fd/%d", pid, socket_fd) < 0)
 		return -ENOMEM;
 
 #define PREFIX_LEN 8

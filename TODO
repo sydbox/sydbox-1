@@ -1,5 +1,6 @@
 # Sydbox
 
+- Add check for struct iovec in configure.ac and use /proc/pid/mem otherwise.
 - Avoid unnecessary printf usage in dump.c
 - Finish the rework on tests
 - SIGUSR2 dumps sydcore

@@ -19,8 +19,8 @@ static int filter_grow(void)
 		return -ERANGE;
 
 	filter_nmemb += 1024;
-	sydbox->filter = realloc(sydbox->filter,
-				 sizeof(struct filter) * filter_nmemb);
+	sydbox->filter = syd_realloc(sydbox->filter,
+				     sizeof(struct filter) * filter_nmemb);
 	return 0;
 }
 

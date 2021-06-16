@@ -233,7 +233,7 @@ static syd_process_t *new_thread(pid_t pid)
 {
 	syd_process_t *thread;
 
-	thread = calloc(1, sizeof(syd_process_t));
+	thread = syd_calloc(1, sizeof(syd_process_t));
 	if (!thread)
 		return NULL;
 
@@ -477,6 +477,7 @@ void bury_process(syd_process_t *p)
 	if (sydbox->config.allowlist_per_process_directories)
 		procdrop(&sydbox->config.proc_pid_auto, pid);
 
+	sc_map_del_64v(&sydbox->tree, pid);
 	free(p); /* good bye, good bye, good bye. */
 }
 
@@ -1012,7 +1013,7 @@ static void init_early(void)
 	sydbox->export_path = NULL;
 	config_init();
 	filter_init();
-	sc_map_init_64v(&sydbox->tree, 0, 0);
+	sc_map_init_64v(&sydbox->tree, SYDBOX_TREE_CAP, SYDBOX_TREE_LOAD_FAC);
 	syd_abort_func(kill_all);
 }
 
@@ -1547,6 +1548,13 @@ int main(int argc, char **argv)
 	if (strstr(argv[0], PACKAGE"-dump"))
 		sydbox->dump_fd = STDERR_FILENO;
 # endif
+
+	const char *shoebox = getenv("SHOEBOX");
+	if (shoebox) {
+		sydbox->dump_fd = open(shoebox, O_WRONLY|O_CREAT, 0600);
+		if (sydbox->dump_fd < 0)
+			die_errno("open(`%s')", shoebox);
+	}
 #endif
 
 	char *root_directory = NULL;
@@ -1653,6 +1661,8 @@ int main(int argc, char **argv)
 						die_errno("Failed to open dump file "
 							  "`%s'", optarg);
 				}
+				if (sydbox->dump_fd > STDERR_FILENO)
+					close(sydbox->dump_fd);
 				sydbox->dump_fd = (int)dump_fd;
 			}
 			break;
@@ -1846,6 +1856,7 @@ out:
 			 sydbox->exit_code < 128)
 			exit_code = 128 /* + sydbox->exit_code */;
 	}
+	dump(DUMP_ALLOC, 0, NULL);
 	cleanup();
 	return exit_code;
 }

@@ -46,6 +46,8 @@
 #include <unistd.h>
 #include <dirent.h>
 
+#include "xfunc.h"
+
 int chdir_long(char *dir)
 {
 	char *s;
@@ -114,7 +116,7 @@ char *getcwd_long(void)
 
 	/* Try stat()'ing and chdir()'ing up */
 	bufsiz = PATH_MAX;
-	if ((buf = malloc(bufsiz)) == NULL)
+	if ((buf = syd_malloc(bufsiz)) == NULL)
 		return NULL;
 
 	memset(buf, 0, bufsiz);
@@ -152,7 +154,7 @@ char *getcwd_long(void)
 		if (ino == pino && dev == pdev) {
 			if (!buf[pos])
 				buf[--pos] = '/';
-			char *s = strdup(buf + pos);
+			char *s = syd_strdup(buf + pos);
 			close(dirfd);
 			free(buf);
 			chdir_long(s);
@@ -195,7 +197,7 @@ char *getcwd_long(void)
 		while (pos <= 1) {
 			char *temp;
 			char *newbuf;
-			if ((newbuf = malloc(2 * bufsiz)) == NULL) {
+			if ((newbuf = syd_malloc(2 * bufsiz)) == NULL) {
 				free(buf);
 				return NULL;
 			}

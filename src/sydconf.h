@@ -16,6 +16,13 @@
 # define IN_SYDBOX 0
 # endif
 
+#include <linux/fs.h>
+#ifndef NR_FILE
+# warning "Your system does not define NR_FILE, defaulting to 1024"
+# define NR_FILE 1024
+#endif
+#define SYDBOX_TREE_CAP NR_FILE
+#define SYDBOX_TREE_LOAD_FAC 75
 #ifndef SYDBOX_API_VERSION
 # error "SYDBOX_API_VERSION is not defined!"
 #endif
