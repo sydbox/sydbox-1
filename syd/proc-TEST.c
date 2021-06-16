@@ -3,7 +3,7 @@
  *
  * proc utility tests
  *
- * Copyright (c) 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the GNU General Public License v3 (or later)
  */
 
@@ -276,6 +276,7 @@ static void test_proc_fd_path(void)
 
 		close(pfd[0]);
 
+		path = NULL;
 		r = syd_proc_fd_path(pid, fdp, &path);
 		if (r < 0) {
 			fail_msg("fdp: syd_proc_fd_path failed: errno:%d %s", -r, strerror(-r));
@@ -283,15 +284,12 @@ static void test_proc_fd_path(void)
 		}
 		if (strncmp(path, cwd, strlen(cwd))) {
 			fail_msg("fd_path: path:%s doesn't start with cwd:%s (len:%zu)", path, cwd, strlen(cwd));
-			free(path);
 			goto out;
 		}
 		if (strncmp(path + strlen(cwd) + 1, fd_path, sizeof(fd_path))) {
 			fail_msg("fd_path: path:%s doesn't end with `%s'", path, fd_path);
-			free(path);
 			goto out;
 		}
-		free(path);
 
 		r = syd_proc_fd_path(pid, fdl, &path);
 		if (r < 0) {
@@ -300,17 +298,16 @@ static void test_proc_fd_path(void)
 		}
 		if (strncmp(path, cwd, strlen(cwd))) {
 			fail_msg("fd_long: path:%s doesn't start with cwd:%s (len:%zu)", path, cwd, strlen(cwd));
-			free(path);
 			goto out;
 		}
 		if (strncmp(path + strlen(cwd) + 1, fd_long, sizeof(fd_long))) {
 			fail_msg("fd_long: path:%s doesn't end with `%s'", path, fd_long);
-			free(path);
 			goto out;
 		}
-		free(path);
 
 out:
+		if (path)
+			free(path);
 		kill(cpid, SIGKILL);
 	}
 }
