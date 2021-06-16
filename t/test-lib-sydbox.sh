@@ -121,6 +121,21 @@ test_path_has_mtime() {
 	fi
 }
 
+test_bpf_action() {
+	local file="$1"
+	local name="$2"
+	local action="$3"
+
+	echo >&2 "# BPF.PFC: NAME: $name ACTION: $action"
+	test -s "$file" && cat >&2 "$file"
+	echo >&2 '--8<--'
+
+	test -s "$file" &&
+	grep -iPz \
+		"(?s)\n(\s*)#\s*$name action\s*\n\s*action $action;\s*\n" \
+		"$file"
+}
+
 test_must_violate() {
 	retval=0
 	save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"

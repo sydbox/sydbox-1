@@ -40,12 +40,13 @@ TESTS= \
 	t0003-core-basic.sh \
 	t0004-core-exit.sh \
 	t0005-core-abort.sh \
-	t0006-core-magic.sh \
-	t0007-core-open-read.sh \
-	t0008-core-exec.sh \
-	t0009-core-chdir.sh \
-	t0010-net-match.sh \
-	t0011-net-sandbox.sh
+	t0006-core-seccomp.sh \
+	t0007-core-magic.sh \
+	t0008-core-open-read.sh \
+	t0009-core-exec.sh \
+	t0010-core-chdir.sh \
+	t0011-net-netmatch.sh \
+	t0012-net-sandbox.sh
 check_SCRIPTS+= $(TESTS)
 
 syddir=$(libexecdir)/$(PACKAGE)/t
