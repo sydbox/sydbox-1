@@ -13,12 +13,14 @@
  */
 
 #include "sydbox.h"
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <sched.h>
 #include "pink.h"
 #include "path.h"
@@ -29,8 +31,9 @@
 
 #include <stdio.h>
 
-#include <fcntl.h>
-#include <sys/stat.h>
+#ifdef HAVE_LINUX_STAT_H
+# include <linux/stat.h>
+#endif
 
 #if defined(__x86_64__)
 /* These might be macros. */
@@ -245,7 +248,7 @@ int sys_execveat(syd_process_t *current)
 static int write_stat(syd_process_t *current, unsigned int buf_index, bool extended)
 {
 	int r;
-	const char *bufaddr = NULL;
+	char *bufaddr = NULL;
 	size_t bufsize;
 	struct stat buf;
 #ifdef HAVE_STRUCT_STATX

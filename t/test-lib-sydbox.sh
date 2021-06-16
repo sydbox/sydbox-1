@@ -168,66 +168,54 @@ test_must_violate() {
 #
 # Test with different tracing options
 #
-#test_expect_success_foreach_option() {
-#	test "$#" = 3 || test "$#" = 2 ||
-#	error "bug in the test script: not 2 or 3 parameters to test-expect-success-foreach-option"
-#
-#	argc="$#" ; arg1="$1" ; arg2="$2" ; arg3="$3"
-#	for choice in "0 0" "0 1" "1 0" "1 1"
-#	do
-#		IFS=' ' read -r use_seize use_seccomp <<EOF
-#$choice
-#EOF
-#		prereq=""
-#		if test "$argc" = 3
-#		then
-#			prereq="$arg1"
-#		fi
-#		if test "$use_seize" = 1
-#		then
-#			test -z "$prereq" || prereq="${prereq},"
-#			prereq="${prereq}PTRACE_SEIZE"
-#		fi
-#		if test "$use_seccomp" = 1
-#		then
-#			test -z "$prereq" || prereq="${prereq},"
-#			prereq="${prereq}PTRACE_SECCOMP"
-#		fi
-#
-#		suffix="[seize=$use_seize seccomp:$use_seccomp]"
-#		if test "$argc" = 3
-#		then
-#			set -- "$prereq" "$arg2 $suffix" "$arg3"
-#		elif test -n "$prereq"
-#		then
-#			set -- "$prereq" "$arg1 $suffix" "$arg2"
-#		else
-#			set -- "$arg1 $suffix" "$arg2"
-#		fi
-#		test_sydbox_options=t test_expect_success "$@"
-#	done
-#}
-#
-#test_expect_failure_foreach_option() {
-#	test "$#" = 3 || test "$#" = 2 ||
-#	error "bug in the test script: not 2 or 3 parameters to test-expect-failure-foreach-option"
-#
-#	argc="$#" ; arg1="$1" ; arg2="$2" ; arg3="$3"
-#	for choice in "0 0" "0 1" "1 0" "1 1"
-#	do
-#		IFS=' ' read -r use_seize use_seccomp <<EOF
-#$choice
-#EOF
-#		suffix="[seize=$use_seize seccomp:$use_seccomp]"
-#		if test "$argc" = 3
-#		then
-#			set -- "$arg1" "$arg2 $suffix" "$arg3"
-#		else
-#			set -- "$arg1 $suffix" "$arg2"
-#		fi
-#		test_sydbox_options=t test_expect_failure "$@"
-#	done
-#}
+
+test_expect_success_foreach_option() {
+	test "$#" = 3 || test "$#" = 2 ||
+	error "bug in the test script: not 2 or 3 parameters to test-expect-success-foreach-option"
+
+	argc="$#" ; arg1="$1" ; arg2="$2" ; arg3="$3"
+	for choice in 0 1 2 3
+	do
+		use_memory="$choice"
+		suffix="[use_memory:${choice}]"
+		if test "$argc" = 3
+		then
+			prereq="$arg1"
+		fi
+
+		if test "$argc" = 3
+		then
+			set -- "$prereq" "$arg2 $suffix" "$arg3"
+		elif test -n "$prereq"
+		then
+			set -- "$prereq" "$arg1 $suffix" "$arg2"
+		else
+			set -- "$arg1 $suffix" "$arg2"
+		fi
+		test_sydbox_options=t test_expect_success "$@"
+	done
+}
+
+test_expect_failure_foreach_option() {
+	test "$#" = 3 || test "$#" = 2 ||
+	error "bug in the test script: not 2 or 3 parameters to test-expect-failure-foreach-option"
+
+	argc="$#" ; arg1="$1" ; arg2="$2" ; arg3="$3"
+	for choice in 0 1 2 3
+	do
+		IFS=' ' read -r use_memory <<EOF
+$choice
+EOF
+		suffix="[use_memory:${choice}]"
+		if test "$argc" = 3
+		then
+			set -- "$arg1" "$arg2 $suffix" "$arg3"
+		else
+			set -- "$arg1 $suffix" "$arg2"
+		fi
+		test_sydbox_options=t test_expect_failure "$@"
+	done
+}
 
 #
 # Generate unique file/dir name for a testcase.

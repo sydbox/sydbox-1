@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[])
 {
-#if !HAVE_NEWFSTATAT
+#ifndef HAVE_NEWFSTATAT
 	return ENOSYS;
 #else
 	int dirfd;

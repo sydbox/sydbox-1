@@ -17,6 +17,7 @@ core/violation/raise_fail:false
 core/violation/raise_safe:false
 
 core/trace/magic_lock:off
+core/trace/use_proc_mem:0
 core/trace/use_toolong_hack:true
 
 core/restrict/io_control:false

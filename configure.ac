@@ -202,6 +202,7 @@ AC_CHECK_HEADERS_ONCE(m4_flatten([
 	sys/wait.h
 	sys/syscall.h
 	linux/openat2.h
+	linux/stat.h
 	linux/uio.h
 	linux/unistd.h
 ]))

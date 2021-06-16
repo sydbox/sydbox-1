@@ -949,6 +949,18 @@ test_run_ () {
 	test_cleanup=:
 	expecting_failure=$2
 
+	save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
+	if test -n "$test_sydbox_options"
+	then
+		if test -n "$use_memory"
+		then
+			SYDBOX_USE_MEMORY=$use_memory
+			export SYDBOX_USE_MEMORY
+		else
+			SYDBOX_USE_MEMORY=0
+		fi
+	fi
+
 	if test "${SYDBOX_TEST_CHAIN_LINT:-1}" != 0; then
 		# turn off tracing for this test-eval, as it simply creates
 		# confusing noise in the "-x" output
@@ -992,8 +1004,8 @@ test_run_ () {
 	if test -n "$test_sydbox_options"
 	then
 		SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS"
-		export SYDBOX_TEST_OPTIONS
 	fi
+	export SYDBOX_TEST_OPTIONS
 	return "$eval_ret"
 }
 
@@ -1017,6 +1029,11 @@ test_finish_ () {
 	then
 		SYDBOX_TEST_TEE_OFFSET=$(test-tool path-utils file-size \
 			"$SYDBOX_TEST_TEE_OUTPUT_FILE")
+	fi
+	if test -n "$save_SYDBOX_TEST_OPTIONS"
+	then
+		SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS"
+		export SYDBOX_TEST_OPTIONS
 	fi
 }
 

@@ -242,6 +242,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE,
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
 	MAGIC_KEY_CORE_TRACE_INTERRUPT,
+	MAGIC_KEY_CORE_TRACE_USE_PROC_MEM,
 	MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK,
 
 	MAGIC_KEY_EXEC,
@@ -389,6 +390,9 @@ struct syd_process {
 	/* Update current working directory, next step */
 	bool update_cwd:1;
 
+	/* Update the /proc/pid/mem file descriptor as necessary */
+	bool update_mem:1;
+
 	/* SYD_* flags */
 	unsigned int flags:7;
 
@@ -412,6 +416,9 @@ struct syd_process {
 
 	/* Pid file descriptor */
 	int pidfd;
+
+	/* File descriptor to /proc/pid/mem, maybe -1 if reopening each call. */
+	int memfd;
 
 	/* System call ABI */
 	uint32_t arch;
@@ -526,6 +533,9 @@ struct config {
 	/* same for these, not inherited: global */
 	bool use_seize;
 	bool use_toolong_hack;
+#define SYDBOX_CONFIG_USE_PROC_MEM_REOPEN_MIN 2
+#define SYDBOX_CONFIG_USE_PROC_MEM_MAX 3
+	uint32_t use_proc_mem;
 
 	/* Per-process sandboxing data */
 	sandbox_t box_static;
@@ -558,7 +568,6 @@ struct sydbox {
 	bool execve_wait;
 	bool permissive;
 	bool bpf_only;
-	bool proc_mem;
 	bool in_child;
 
 	int exit_code;
@@ -694,6 +703,12 @@ extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
 #define tracing() (0)
 #define bpf_only() ((sydbox) && sydbox->bpf_only)
 
+#define use_cross_memory_attach() \
+		(((sydbox)->config.use_proc_mem == 0) || \
+		 ((sydbox)->config.use_proc_mem == 2))
+#define proc_mem_open_once() \
+	((sydbox)->config.use_proc_mem >= SYDBOX_CONFIG_USE_PROC_MEM_REOPEN_MIN)
+
 #define sysdeny(p) ((p)->retval)
 #define hasparent(p) ((p)->ppid >= 0)
 
@@ -766,7 +781,7 @@ int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argva
 ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t len);
 int syd_write_syscall(syd_process_t *current, long sysnum);
 int syd_write_retval(syd_process_t *current, long retval, int error);
-ssize_t syd_write_data(syd_process_t *current, long addr, const void *buf, size_t count);
+ssize_t syd_write_data(syd_process_t *current, long addr, void *buf, size_t count);
 int syd_read_socket_argument(syd_process_t *current, unsigned arg_index,
 			     unsigned long *argval);
 int syd_read_socket_subcall(syd_process_t *current, long *subcall);
@@ -775,7 +790,7 @@ int syd_read_socket_address(syd_process_t *current, bool sockaddr_in_msghdr,
 			    struct pink_sockaddr *sockaddr);
 int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len);
 int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argval);
-ssize_t syd_write_vm_data(syd_process_t *current, long addr, const char *src,
+ssize_t syd_write_vm_data(syd_process_t *current, long addr, char *src,
 			  size_t len);
 
 int test_cross_memory_attach(bool report);
@@ -973,6 +988,8 @@ int magic_set_violation_raise_fail(const void *val, syd_process_t *current);
 int magic_query_violation_raise_fail(syd_process_t *current);
 int magic_set_violation_raise_safe(const void *val, syd_process_t *current);
 int magic_query_violation_raise_safe(syd_process_t *current);
+int magic_set_trace_use_proc_mem(const void *val, syd_process_t *current);
+int magic_query_trace_use_proc_mem(syd_process_t *current);
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current);
 int magic_query_trace_use_toolong_hack(syd_process_t *current);
 int magic_set_restrict_general(const void *val, syd_process_t *current);

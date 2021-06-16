@@ -7,6 +7,20 @@
 
 #include "sydbox.h"
 
+int magic_set_trace_use_proc_mem(const void *val, syd_process_t *current)
+{
+	if (sydbox->config.use_proc_mem > SYDBOX_CONFIG_USE_PROC_MEM_MAX)
+		return MAGIC_RET_INVALID_VALUE;
+	sydbox->config.use_proc_mem = PTR_TO_UINT32(val);
+	return MAGIC_RET_OK;
+}
+
+int magic_query_trace_use_proc_mem(syd_process_t *current)
+{
+	return sydbox->config.use_proc_mem;
+}
+
+
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current)
 {
 	sydbox->config.use_toolong_hack = PTR_TO_BOOL(val);

@@ -110,7 +110,17 @@ usage: "PACKAGE" [-hvb] [-d <fd|path|tmp>] [-a arch...] \n\
                       use `tmp' to dump to a temporary file.\n\
 --dry-run          -- Run under inspection without denying system calls\n\
 --export <bpf|pfc> -- Export the seccomp filters to standard error on startup\n\
---proc-mem         -- Do not use kernel's cross memory attach facility but read /proc/pid/mem\n\
+--proc-mem <mode>  -- Mode on using cross memory attach or /proc/pid/mem:\n\
+                      Mode 0: Use cross memory attach if available, use /proc otherwise.\n\
+                      Mode 1: Use /proc/pid/mem unconditionally.\n\
+                      Mode 2: Use cross memory attach if available, use /proc otherwise,\n\
+                              open file once, do not reopen the file each call.\n\
+                      Mode 3: Use /proc/pid/mem unconditionally,\n\
+                              open file once, do not reopen the file each call.\n\
+                      default: 0\n\
+                      Warning: Modes 2 and 3 may run into too many processes errors.\n\
+                      Use another mode or adapt sysctl fs.nr_open as necessary if\n\
+                      this is the case.\n\
 --test             -- Test if various runtime requirements are functional and exit\n\
 --chdir <path>     -- Chdir to this directory before starting the program\n\
 --chroot <path>    -- Chroot to this directory before starting the daemon\n\
@@ -185,12 +195,29 @@ static int process_proc(struct syd_process *p)
 	 */
 	if (p->pidfd < 0 &&
 	    (p->pidfd = syscall(__NR_pidfd_open, p->pid, 0)) < 0) {
+		int save_errno = errno;
 		if (errno != EINVAL)
 			say_errno("pidfd_open(%d)", p->pid);
 		p->pidfd = -1;
-		r = -errno;
+		r = -save_errno;
+		goto out;
 	}
 
+	if (proc_mem_open_once())
+	{
+		int memfd;
+		if ((memfd = syd_proc_mem_open(p->pid)) < 0) {
+			if (-memfd != ENOENT)
+				say_errno("proc_mem_open(%d)", p->pid);
+			r = memfd;
+			goto out;
+		}
+		p->memfd = memfd;
+	} else {
+		p->memfd = -1;
+	}
+
+out:
 	return r;
 }
 
@@ -456,6 +483,10 @@ void bury_process(syd_process_t *p)
 		close(p->pidfd);
 		p->pidfd = -1;
 	}
+	if (p->memfd >= 0) {
+		close(p->memfd);
+		p->memfd = -1;
+	}
 	if (p->abspath) {
 		free(p->abspath);
 		p->abspath = NULL;
@@ -487,12 +518,19 @@ static void tweak_execve_thread(syd_process_t *leader,
 {
 	if (sydbox->config.allowlist_per_process_directories)
 		procdrop(&sydbox->config.proc_pid_auto, execve_thread->pid);
-	if (execve_thread->pidfd >= 0)
+	if (execve_thread->pidfd >= 0) {
 		close(execve_thread->pidfd);
+		execve_thread->pidfd = -1;
+	}
+	if (execve_thread->memfd >= 0) {
+		close(execve_thread->memfd);
+		execve_thread->memfd = -1;
+	}
 	process_remove(execve_thread);
 
 	execve_thread->pid = leader->pid;
 	execve_thread->pidfd = leader->pidfd;
+	execve_thread->memfd = leader->memfd;
 	execve_thread->flags = switch_execve_flags(leader->flags);
 	if (!P_CWD(execve_thread))
 		P_CWD(execve_thread) = P_CWD(leader);
@@ -550,6 +588,10 @@ void remove_process_node(syd_process_t *p)
 		if (p->pidfd >= 0) {
 			close(p->pidfd);
 			p->pidfd = -1;
+		}
+		if (p->memfd >= 0) {
+			close(p->memfd);
+			p->memfd = -1;
 		}
 		p->flags |= SYD_KILLED;
 	} else if (!(p->flags & SYD_KILLED)) {
@@ -1007,7 +1049,6 @@ static void init_early(void)
 	sydbox->dump_fd = 0;
 #endif
 	sydbox->bpf_only = false;
-	sydbox->proc_mem = false;
 	sydbox->permissive = false;
 	sydbox->export_mode = SYDBOX_EXPORT_NUL;
 	sydbox->export_path = NULL;
@@ -1266,6 +1307,20 @@ notify_receive:
 							sydbox->request->data.nr);
 		current = lookup_process(pid);
 
+		if (current &&
+		    (current->update_mem ||
+		    (current->memfd < 0 && proc_mem_open_once()))) {
+			if (current->memfd >= 0)
+				close(current->memfd);
+			current->memfd = syd_proc_mem_open(current->pid);
+			if (current->memfd < 0) {
+				errno = -current->memfd;
+				current->memfd = -1;
+				say_errno("proc_mem_open(%d)", current->pid);
+			}
+			current->update_mem = false;
+		}
+
 		/* Search early for exit before getting a process entry. */
 		if (name && (!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
 			//if (pid == sydbox->execve_pid)
@@ -1279,6 +1334,10 @@ notify_receive:
 
 		/* Search early for execve before getting a process entry. */
 		if (name && (!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
+			if (proc_mem_open_once()) {
+				/* memfd is no longer valid, reopen */
+				current->update_mem = true;
+			}
 			if (sydbox->execve_wait) { /* allow the initial exec */
 				sydbox->execve_wait = false;
 				goto notify_respond;
@@ -1322,7 +1381,6 @@ notify_receive:
 		current->sysname = name;
 		for (unsigned short idx = 0; idx < 6; idx++)
 			current->args[idx] = sydbox->request->data.args[idx];
-
 		if (current->update_cwd) {
 			r = sysx_chdir(current);
 			if (r < 0)
@@ -1603,7 +1661,16 @@ int main(int argc, char **argv)
 			sydbox->permissive = true;
 			break;
 		case SYD_OPT_PROCMEM:
-			sydbox->proc_mem = true;
+			errno = 0;
+			opt = strtoul(optarg, &end, 10);
+			if ((errno && errno != EINVAL) ||
+			    (unsigned long)opt > SYDBOX_CONFIG_USE_PROC_MEM_MAX)
+			{
+				say_errno("Invalid argument for option --proc-mem: "
+					  "`%s'", optarg);
+				usage(stderr, 1);
+			}
+			sydbox->config.use_proc_mem = opt;
 			break;
 		case SYD_OPT_EXPORT:
 			if (startswith(optarg, "bpf")) {

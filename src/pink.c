@@ -153,30 +153,34 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 	int r;
 #if !SYDBOX_DEF_PROC_MEM
 	static bool cross_memory_attach_works = true;
-	if (sydbox->proc_mem || !cross_memory_attach_works) {
-#endif
-		int memfd;
-		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
-			return memfd;
-		r = syd_proc_mem_read(memfd, addr, buf, count);
-		close(memfd);
-#if !SYDBOX_DEF_PROC_MEM
-	} else {
+	if (use_cross_memory_attach() && !cross_memory_attach_works) {
 		struct iovec local[1], remote[1];
-		local[0].iov_base = buf;
+		local[0].iov_base = (void *)buf;
 		remote[0].iov_base = (void *)addr;
 		local[0].iov_len = remote[0].iov_len = count;
 
 		r = pink_process_vm_readv(current->pid, local, 1, remote, 1,
-					  /*flags:*/0);
+					   /*flags:*/0);
 		if (errno == ENOSYS || errno == EPERM)
 			cross_memory_attach_works = false;
+		return r;
 	}
 #endif
+	if (!proc_mem_open_once()) {
+		int memfd;
+		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
+			return memfd;
+		current->memfd = memfd;
+	}
+	r = syd_proc_mem_read(current->memfd, addr, buf, count);
+	if (!proc_mem_open_once()) {
+		close(current->memfd);
+		current->memfd = -1;
+	}
 	return r;
 }
 
-static int process_vm_write(syd_process_t *current, long addr, const void *buf,
+static int process_vm_write(syd_process_t *current, long addr, void *buf,
 			    size_t count)
 {
 #if SIZEOF_LONG > 4
@@ -186,18 +190,10 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 #endif
 
 	int r;
+
 #if !SYDBOX_DEF_PROC_MEM
 	static bool cross_memory_attach_works = true;
-	if (sydbox->proc_mem || !cross_memory_attach_works) {
-#endif
-		int memfd;
-		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
-			return memfd;
-		r = syd_proc_mem_write(memfd, addr, buf, count);
-		close(memfd);
-#if !SYDBOX_DEF_PROC_MEM
-	} else {
-#endif
+	if (use_cross_memory_attach() && !cross_memory_attach_works) {
 		struct iovec local[1], remote[1];
 		local[0].iov_base = (void *)buf;
 		remote[0].iov_base = (void *)addr;
@@ -207,9 +203,21 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 					   /*flags:*/0);
 		if (errno == ENOSYS || errno == EPERM)
 			cross_memory_attach_works = false;
-#if !SYDBOX_DEF_PROC_MEM
+		return r;
 	}
 #endif
+
+	if (!proc_mem_open_once()) {
+		int memfd;
+		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
+			return memfd;
+		current->memfd = memfd;
+	}
+	r = syd_proc_mem_write(current->memfd, addr, buf, count);
+	if (!proc_mem_open_once()) {
+		close(current->memfd);
+		current->memfd = -1;
+	}
 	return r;
 }
 
@@ -233,7 +241,7 @@ int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len)
 }
 
 SYD_GCC_ATTR((nonnull(1,3)))
-ssize_t syd_write_vm_data(syd_process_t *current, long addr, const char *src,
+ssize_t syd_write_vm_data(syd_process_t *current, long addr, char *src,
 			  size_t len)
 {
 	return process_vm_write(current, addr, src, len);
@@ -481,7 +489,7 @@ int syd_write_retval(syd_process_t *current, long retval, int error)
 	return 0;
 }
 
-ssize_t syd_write_data(syd_process_t *current, long addr, const void *buf,
+ssize_t syd_write_data(syd_process_t *current, long addr, void *buf,
 		       size_t count)
 {
 	SYD_RETURN_IF_DETACHED(current);
