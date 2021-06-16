@@ -100,6 +100,8 @@ AM_CONDITIONAL([HAVE_GNU_CC], [test x"$GCC" = x"yes"])
 AM_CONDITIONAL([HAVE_GNU_LD], [test x"$with_gnu_ld" = x"yes"])
 
 dnl check for supported operating system
+KERNEL_VERSION=
+KERNEL_VERSION_WARN=0
 AC_CANONICAL_HOST
 AC_MSG_CHECKING([for supported operating system])
 case "$host_os" in
@@ -108,12 +110,15 @@ linux*)
 	AC_MSG_RESULT([$host_os])
 	AC_MSG_CHECKING([for supported kernel])
 	kernel_version=`uname -r | cut -d'-' -f1`
+	KERNEL_VERSION="$kernel_version"
 	case "$kernel_version" in
 	0.*|1.*|2.*|3.*|4.*|5.0.*|5.1.*|5.2.*|5.3.*|5.4.*|5.5.*)
+		KERNEL_VERSION_WARN=1
 		AC_MSG_RESULT([NO!])
 		AC_MSG_WARN([Linux kernel version $kernel_version is not supported by sydbox])
 		;;
 	5.6.*)
+		KERNEL_VERSION_WARN=1
 		kernel_minor_version=`echo $kernel_version | cut -d'.' -f3`
 		if test "$kernel_minor_version" -lt 0; then
 			AC_MSG_RESULT([NO!])
@@ -509,7 +514,7 @@ dnl Print the file to screen, if any such file exists (i.e. $FILENAME is not emp
 	fi
 fi
 echo
-echo "Configured with"
+echo "Build options:"
 echo "- debug:$WANT_DEBUG"
 echo "- dump:$WANT_DUMP_BUILTIN"
 echo "- static:$enable_static"
@@ -535,7 +540,8 @@ if test x"$PROCESS_VM_WARN" = x"1"; then
 	AC_MSG_WARN([__NR_process_vm_readv not declared! Setting process_vm_readv to 310.])
 	AC_MSG_WARN([__NR_process_vm_writev not declared! Setting process_vm_writev to 311.])
 fi
-if test x"$PIDFD_WARN" = x"1" -o x"$PROCESS_VM_WARN" = x"1"; then
-	AC_MSG_WARN([SydBox may not work correctly!"])
-	AC_MSG_WARN([Try using a newer Linux kernel version."])
+if test x"$KERNEL_VERSION_WARN" = x"1" -o x"$PIDFD_WARN" = x"1" -o x"$PROCESS_VM_WARN" = x"1"
+then
+	AC_MSG_WARN([SydBox may not work correctly with your kernel version v$KERNEL_VERSION!])
+	AC_MSG_WARN([Try updating your kernel headers or using a newer Linux kernel version.])
 fi
