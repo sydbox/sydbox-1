@@ -86,6 +86,10 @@ void config_parse_file(const char *filename)
 	size_t line_count;
 	FILE *fp;
 
+	if (streq(filename, "-")) {
+		fp = fdopen(STDIN_FILENO, "r");
+		goto fp_open;
+	}
 	if (filename_api(filename, &api) < 0)
 		die("no API information in file name `%s', current API is %u",
 		    filename, SYDBOX_API_VERSION);
@@ -94,6 +98,7 @@ void config_parse_file(const char *filename)
 		    filename, api, SYDBOX_API_VERSION);
 
 	fp = fopen(filename, "r");
+fp_open:
 	if (!fp)
 		die_errno("fopen(`%s')", filename);
 

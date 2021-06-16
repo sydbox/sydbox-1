@@ -16,7 +16,6 @@ core/sandbox/network:deny
 
 # Further restrictions for open(), fcntl() and mmap()
 # See sydbox manual page for further details
-core/restrict/file_control:false
 core/restrict/shared_memory_writable:false
 
 core/allowlist/per_process_directories:true
@@ -28,10 +27,6 @@ core/violation/exit_code:-1
 core/violation/raise_fail:false
 core/violation/raise_safe:false
 
-core/trace/follow_fork:true
-core/trace/use_ptrace:true
-core/trace/use_seccomp:true
-core/trace/use_seize:true
 core/trace/use_toolong_hack:true
 
 core/match/case_sensitive:true
