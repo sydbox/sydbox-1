@@ -426,6 +426,8 @@ size_t syscall_entries_max(void)
 
 void sysinit(void)
 {
+	systable_init();
+
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		if (syscall_entries[i].name) {
 			systable_add(syscall_entries[i].name,

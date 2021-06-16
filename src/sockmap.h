@@ -68,7 +68,6 @@ static inline void sockmap_destroy(struct sc_map_64v *map)
 		if (info)
 			free_sockinfo(info);
 	}
-	sc_map_clear_64v(map);
 	sc_map_term_64v(map);
 }
 

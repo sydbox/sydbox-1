@@ -10,12 +10,6 @@
 #include <stdlib.h>
 #include "pink.h"
 #include "sc_map.h"
-/*
-struct systable {
-	long no;
-	sysentry_t entry;
-};
-*/
 
 bool systable_initialised;
 struct sc_map_64v systable[ABIS_SUPPORTED];
@@ -36,14 +30,22 @@ void systable_add_full(long no, uint32_t arch, const char *name,
 	entry->notify = fnotify;
 	entry->exit = fexit;
 	sc_map_put_64v(&systable[abi_idx], no, entry);
+	if (sc_map_oom(&systable[abi_idx])) {
+		errno = ENOMEM;
+		die_errno("systable[%d] out of memory, default cap:%d",
+			  abi_idx, SYDBOX_SYSMAP_CAP);
+	}
 }
 
 void systable_init(void)
 {
 	if (systable_initialised)
 		return;
+
 	for (size_t i = 0; i < ELEMENTSOF(systable); i++)
-		if (!sc_map_init_64v(&systable[i], 0, 0))
+		if (!sc_map_init_64v(&systable[i],
+				     SYDBOX_SYSMAP_CAP,
+				     SYDBOX_MAP_LOAD_FAC))
 			die_errno("sc_map_init_64v");
 	systable_initialised = true;
 }
@@ -55,9 +57,7 @@ void systable_free(void)
 	for (size_t i = 0; i < ABIS_SUPPORTED; i++) {
 		sysentry_t *entry;
 		sc_map_foreach_value(&systable[i], entry)
-			if (entry)
-				free(entry);
-		sc_map_clear_64v(&systable[i]);
+			free(entry);
 		sc_map_term_64v(&systable[i]);
 	}
 	systable_initialised = false;

@@ -258,7 +258,9 @@ static void new_shared_memory_clone_files(struct syd_process *p)
 {
 	p->shm.clone_files = xmalloc(sizeof(struct syd_process_shared_clone_files));
 	p->shm.clone_files->refcnt = 1;
-	if (!sc_map_init_64v(&p->shm.clone_files->sockmap, 0, 0)) {
+	if (!sc_map_init_64v(&p->shm.clone_files->sockmap,
+			     SYDBOX_SOCKMAP_CAP,
+			     SYDBOX_MAP_LOAD_FAC)) {
 		errno = -ENOMEM;
 		die_errno("failed to initialize sockmap for process %d",
 			  p->pid);
@@ -1106,14 +1108,13 @@ static void init_early(void)
 	sydbox->export_mode = SYDBOX_EXPORT_NUL;
 	sydbox->export_path = NULL;
 	if (!sc_map_init_64v(&sydbox->tree,
-			     SYDBOX_TREE_CAP,
-			     SYDBOX_TREE_LOAD_FAC)) {
+			     SYDBOX_PROCMAP_CAP,
+			     SYDBOX_MAP_LOAD_FAC)) {
 		errno = ENOMEM;
 		die_errno("failed to allocate hashmap for process tree");
 	}
 	config_init();
 	filter_init();
-	systable_init();
 	syd_abort_func(kill_all);
 }
 
@@ -1532,14 +1533,7 @@ out:
 
 		/* We handled quick cases, we are permitted to interrupt now. */
 		if (check_interrupt() != 0)
-			return sydbox->exit_code;
-	}
-
-	syd_process_t *node;
-	sc_map_foreach_value(&sydbox->tree, node) {
-		if (node->flags & SYD_KILLED)
-			node->flags &= ~SYD_KILLED;
-		remove_process_node(node);
+			break;
 	}
 
 	seccomp_notify_free(sydbox->request, sydbox->response);
@@ -1589,6 +1583,7 @@ static pid_t startup_child(char **argv,
 				errno = EINVAL;
 			die_errno("seccomp load failed");
 		}
+		cleanup();
 		if (noexec)
 			_exit(getenv(SYDBOX_NOEXEC_ENV) ?
 				atoi(getenv(SYDBOX_NOEXEC_ENV)) :
@@ -1653,32 +1648,36 @@ static inline void free_sydbox(sydbox_t **syd)
 
 void cleanup(void)
 {
-	struct acl_node *node;
-
 	assert(sydbox);
-
-	dump(DUMP_CLOSE);
-	seccomp_reset(NULL, SCMP_ACT_ALLOW);
-
-	filter_free();
-	reset_sandbox(&sydbox->config.box_static);
-
-	ACLQ_FREE(node, &sydbox->config.exec_kill_if_match, free);
-	ACLQ_FREE(node, &sydbox->config.exec_resume_if_match, free);
-
-	ACLQ_FREE(node, &sydbox->config.filter_exec, free);
-	ACLQ_FREE(node, &sydbox->config.filter_read, free);
-	ACLQ_FREE(node, &sydbox->config.filter_write, free);
-	ACLQ_FREE(node, &sydbox->config.filter_network, free_sockmatch);
 
 	if (sydbox->seccomp_fd >= 0)
 		close(sydbox->seccomp_fd);
 	if (sydbox->notify_fd >= 0)
 		close(sydbox->notify_fd);
+
+	const char *path;
+	syd_process_t *proc_node;
+	sc_map_foreach_value(&sydbox->config.proc_pid_auto, path)
+		free((char *)path);
+	sc_map_foreach_value(&sydbox->tree, proc_node) {
+		if (proc_node->flags & SYD_KILLED)
+			proc_node->flags &= ~SYD_KILLED;
+		remove_process_node(proc_node);
+	}
 	sc_map_term_64s(&sydbox->config.proc_pid_auto);
 	sc_map_term_64v(&sydbox->tree);
-	free_program_invocation_name(sydbox->program_invocation_name);
-	free_sydbox(&sydbox);
+
+	filter_free();
+	// reset_sandbox(&sydbox->config.box_static);
+
+	struct acl_node *acl_node;
+	ACLQ_FREE(acl_node, &sydbox->config.exec_kill_if_match, free);
+	ACLQ_FREE(acl_node, &sydbox->config.exec_resume_if_match, free);
+
+	ACLQ_FREE(acl_node, &sydbox->config.filter_exec, free);
+	ACLQ_FREE(acl_node, &sydbox->config.filter_read, free);
+	ACLQ_FREE(acl_node, &sydbox->config.filter_write, free);
+	ACLQ_FREE(acl_node, &sydbox->config.filter_network, free_sockmatch);
 
 	systable_free();
 }
@@ -2014,6 +2013,7 @@ int main(int argc, char **argv)
 		}
 	}
 out:
+	cleanup();
 	exit_code = sydbox->exit_code;
 	if (sydbox->violation) {
 		if (sydbox->config.violation_exit_code > 0)
@@ -2023,6 +2023,6 @@ out:
 			exit_code = 128 /* + sydbox->exit_code */;
 	}
 	dump(DUMP_ALLOC, 0, NULL);
-	cleanup();
+	dump(DUMP_CLOSE);
 	return exit_code;
 }

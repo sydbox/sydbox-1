@@ -31,8 +31,18 @@
 # warning "Your system does not define NR_FILE, defaulting to 1024"
 # define NR_FILE 1024
 #endif
-#define SYDBOX_TREE_CAP NR_FILE
-#define SYDBOX_TREE_LOAD_FAC 75
+#ifndef SYDBOX_MAP_LOAD_FAC
+# define SYDBOX_MAP_LOAD_FAC 75
+#endif
+#ifndef SYDBOX_PROCMAP_CAP
+# define SYDBOX_PROCMAP_CAP 64
+#endif
+#ifndef SYDBOX_SOCKMAP_CAP
+# define SYDBOX_SOCKMAP_CAP 16
+#endif
+#ifndef SYDBOX_SYSMAP_CAP
+# define SYDBOX_SYSMAP_CAP 64
+#endif
 #ifndef SYDBOX_API_VERSION
 # error "SYDBOX_API_VERSION is not defined!"
 #endif

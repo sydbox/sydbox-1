@@ -56,8 +56,8 @@ void config_init(void)
 
 	/* initialize access control lists */
 	if (!sc_map_init_64s(&sydbox->config.proc_pid_auto,
-			     SYDBOX_TREE_CAP,
-			     SYDBOX_TREE_LOAD_FAC)) {
+			     SYDBOX_PROCMAP_CAP,
+			     SYDBOX_MAP_LOAD_FAC)) {
 		errno = ENOMEM;
 		die_errno("failed to allocate hashmap for /proc/pid auto-allowlist");
 	}
