@@ -10,12 +10,14 @@ CLEANFILES= \
 # Use -DNDEBUG so as not to require sydbox' assert() override
 AM_CPPFLAGS = $(DEFS) \
 	      -I$(top_builddir) -I$(top_srcdir) -I$(top_srcdir)/src \
-	      @SYDBOX_CFLAGS@ -DNDEBUG
+	      @SYDBOX_CFLAGS@ -DNDEBUG $(CODE_COVERAGE_CPPFLAGS)
 AM_CFLAGS = \
-	    `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_CFLAGS)`
+	    `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_CFLAGS)` \
+	    $(CODE_COVERAGE_CFLAGS)
 AM_LDFLAGS = \
 	     `expr $@ : .*-static >/dev/null && echo -all-static` \
-	     `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_LIBS)`
+	     `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_LIBS)` \
+	     $(CODE_COVERAGE_LDFLAGS)
 
 wildtest_SOURCES= tap.h wildtest.c
 wildtest_CFLAGS= \
@@ -56,3 +58,7 @@ syd_PROGRAMS= wildtest realpath_mode-1 sockmatchtest \
 	      threads_execve
 
 check_PROGRAMS= $(syd_PROGRAMS)
+
+.PHONY: check-build
+check-build:
+	${MAKE} ${AM_MAKEFLAGS} ${check_PROGRAMS}

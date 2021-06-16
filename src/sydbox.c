@@ -501,21 +501,16 @@ static void tweak_execve_thread(syd_process_t *leader,
 	process_add(execve_thread);
 }
 
-static void switch_execve_leader(syd_process_t *leader,
-				 syd_process_t *execve_thread)
+static void switch_execve_leader(pid_t leader_pid, syd_process_t *execve_thread)
 {
-	process_remove(leader);
 
-	/*
-	if (magic_query_violation_raise_safe(leader)) {
-		say("multithreaded execve: %d superseded by execve "
-		    "in pid clone_fs[pid:%d]=%d",
-		    leader->pid, execve_thread->pid,
-		    P_CLONE_FS_REFCNT(leader));
-	}
-	*/
-	dump(DUMP_EXEC_MT, execve_thread->pid, leader->pid,
+	dump(DUMP_EXEC_MT, execve_thread->pid, leader_pid,
 	     execve_thread->abspath);
+
+	syd_process_t *leader = lookup_process(leader_pid);
+	if (!leader)
+		goto out;
+	process_remove(leader);
 
 	bool clone_thread = false, clone_fs = false;
 	if (P_CLONE_THREAD_REFCNT(leader) > 1) {
@@ -536,15 +531,15 @@ static void switch_execve_leader(syd_process_t *leader,
 	execve_thread->tgid = leader->tgid;
 	execve_thread->clone_flags = leader->clone_flags;
 	execve_thread->abspath = leader->abspath;
+	free(leader);
 
+out:
 	if (!clone_thread)
 		new_shared_memory_clone_thread(execve_thread);
 	if (!clone_fs)
 		new_shared_memory_clone_fs(execve_thread);
 	if (!P_CWD(execve_thread))
 		sysx_chdir(execve_thread);
-
-	free(leader);
 }
 
 void remove_process_node(syd_process_t *p)
@@ -1285,7 +1280,6 @@ notify_receive:
 				sydbox->execve_wait = false;
 				goto notify_respond;
 			}
-
 			pid_t execve_pid = 0;
 			pid_t leader_pid = process_find_exec(pid);
 			if (!current) {
@@ -1302,15 +1296,10 @@ notify_receive:
 
 			if (execve_pid) {
 				if (pid != execve_pid) {
-					syd_process_t *execve_thread;
-
-					execve_thread = lookup_process(execve_pid);
-					assert(execve_thread);
-
 					current = lookup_process(pid);
 					assert(current);
 
-					switch_execve_leader(execve_thread,
+					switch_execve_leader(execve_pid,
 							     current);
 					goto notify_respond;
 				}

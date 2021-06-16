@@ -17,3 +17,7 @@ syd_check_LDFLAGS= -lrt -lm \
 
 check_PROGRAMS= check-pause syd-check
 TESTS= syd-check
+
+.PHONY: check-build
+check-build:
+	${MAKE} ${AM_MAKEFLAGS} ${check_PROGRAMS}

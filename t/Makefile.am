@@ -11,6 +11,8 @@ EXTRA_DIST=
 check_SCRIPTS=
 BUILT_SOURCES=
 
+@CODE_COVERAGE_RULES@
+
 check_SCRIPTS+= \
 		test-lib-functions.sh \
 		test-lib-sydbox.sh \
@@ -65,3 +67,8 @@ sydtest: sydtest.sh.in
 EXTRA_DIST+= Makefile.test
 install-data-local:
 	cp Makefile.test $(DESTDIR)$(syddir)/Makefile
+
+.PHONY: check-build
+check-build:
+	${MAKE} ${AM_MAKEFLAGS} ${check_SCRIPTS}
+	${MAKE} ${AM_MAKEFLAGS} -C test-bin check-build

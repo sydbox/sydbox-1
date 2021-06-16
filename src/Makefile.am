@@ -26,6 +26,9 @@ if WANT_DEBUG
 AM_CFLAGS+= $(libunwind_CFLAGS)
 endif
 
+AM_CFLAGS+= $(CODE_COVERAGE_CFLAGS)
+AM_CPPFLAGS= $(CODE_COVERAGE_CPPFLAGS)
+
 AM_LFLAGS = -v
 AM_YFLAGS = -d
 
@@ -125,13 +128,14 @@ sydbox_SOURCES+= \
 noinst_HEADERS+= \
 		 sys-queue.h
 
-sydbox_LDFLAGS= -lsyd_@LIBSYD_PC_SLOT@
+sydbox_LDFLAGS= -lsyd_@LIBSYD_PC_SLOT@ $(CODE_COVERAGE_LDFLAGS)
 sydbox_LDADD= \
 	      $(top_builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la \
 	      -L$(top_builddir)/syd/.libs \
 	      -lsyd_@LIBSYD_PC_SLOT@ \
 	      @SYDBOX_LDFLAGS@ \
-	      $(libseccomp_LIBS)
+	      $(libseccomp_LIBS) \
+	      $(CODE_COVERAGE_LIBS)
 if WANT_DEBUG
 sydbox_LDADD+= $(libunwind_LIBS)
 endif

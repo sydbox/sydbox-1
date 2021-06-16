@@ -124,4 +124,19 @@ coverity-tarball: coverity-build
 	ls -l sydbox-coverity_$$rev.tar.gz
 endif
 
+.PHONY: coveralls
+coveralls:
+	coveralls \
+		--exclude t \
+		--exclude tests \
+		--exclude target \
+		--gcov-options '\-lp'
+
+check-build: all
+	${MAKE} ${AM_MAKEFLAGS} -C syd check-build
+	${MAKE} ${AM_MAKEFLAGS} -C t check-build
+
+check-code-coverage: check-build
+	${MAKE} ${AM_MAKEFLAGS} -C t check-code-coverage
+
 SUBDIRS= syd src data man t .

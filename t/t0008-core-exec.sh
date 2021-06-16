@@ -12,7 +12,8 @@ test_description='test execve() handling of sydbox'
 save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
 SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS
     -m core/violation/raise_safe:1
-    -m core/sandbox/write:deny
+    -m core/sandbox/read:allow
+    -m core/sandbox/write:allow
 "
 export SYDBOX_TEST_OPTIONS
 
