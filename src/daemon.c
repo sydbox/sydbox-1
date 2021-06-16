@@ -181,8 +181,23 @@ int change_background(void)
 	}
 
 out:
-	if (devnull_fd >= 0)
-		close(devnull_fd);
+	errno = 0;
+	setsid();
+	return -errno;
+}
+
+int change_nice(void)
+{
+	if (!nice_inc)
+		return 0;
+	errno = 0;
+	nice(nice_inc);
+	return -errno;
+}
+
+int change_ionice(void)
+{
+	if (ionicec == -1)
 	if (r)
 		return r;
 
