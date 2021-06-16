@@ -630,22 +630,6 @@ static int filter_open_readonly()
 	return 0;
 }
 
-static int filter_kill(void)
-{
-	int r;
-	uint32_t action = SCMP_ACT_ALLOW;
-
-	if (action == sydbox->seccomp_action)
-		return 0;
-
-	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
-				  SCMP_SYS(kill), 1,
-				  SCMP_CMP(1, SCMP_CMP_EQ, SIGSTOP))) < 0)
-		return r;
-
-	return 0;
-}
-
 static int filter_time(void)
 {
 	int r;
@@ -751,8 +735,6 @@ static int filter_general_level_2(void)
 		return r;
 #endif
 
-	if ((r = filter_kill()) < 0)
-		return r;
 	if ((r = filter_time()) < 0)
 		return r;
 	if ((r = filter_rt_sigaction()) < 0)
@@ -800,8 +782,6 @@ static int filter_general_level_3(void)
 #endif
 
 	if ((r = filter_open_readonly()) < 0)
-		return r;
-	if ((r = filter_kill()) < 0)
 		return r;
 	if ((r = filter_time()) < 0)
 		return r;

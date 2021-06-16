@@ -899,12 +899,6 @@
               <function>openat2</function><manvolnum>2</manvolnum>
               as well.
             </para>
-            <note>
-              <para>
-                In addition, the <function>kill</function> system call with
-                the <constant>SIGSTOP</constant> argument permitted in all levels.
-              </para>
-            </note>
           </listitem>
         </varlistentry>
 
