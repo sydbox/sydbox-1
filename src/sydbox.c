@@ -1609,7 +1609,9 @@ int main(int argc, char **argv)
 
 	const char *shoebox = getenv("SHOEBOX");
 	if (shoebox) {
-		sydbox->dump_fd = open(shoebox, O_WRONLY|O_CREAT, 0600);
+		sydbox->dump_fd = open(shoebox,
+				       SYDBOX_DUMP_FLAGS,
+				       SYDBOX_DUMP_MODE);
 		if (sydbox->dump_fd < 0)
 			die_errno("open(`%s')", shoebox);
 	}
@@ -1688,8 +1690,9 @@ int main(int argc, char **argv)
 						  "`%s'", optarg);
 					usage(stderr, 1);
 				} else if (end != strchr(optarg, '\0')) {
-					dump_fd = open(optarg, O_WRONLY|O_CREAT|
-						       O_EXCL, 0600);
+					dump_fd = open(optarg,
+						       SYDBOX_DUMP_FLAGS,
+						       SYDBOX_DUMP_MODE);
 					if (dump_fd < 0)
 						die_errno("Failed to open dump file "
 							  "`%s'", optarg);

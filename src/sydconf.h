@@ -16,7 +16,12 @@
 # define IN_SYDBOX 0
 # endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <linux/fs.h>
+#define SYDBOX_DUMP_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT|O_EXCL)
+#define SYDBOX_DUMP_MODE 0600
+
 #ifndef NR_FILE
 # warning "Your system does not define NR_FILE, defaulting to 1024"
 # define NR_FILE 1024
