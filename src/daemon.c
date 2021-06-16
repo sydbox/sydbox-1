@@ -123,7 +123,10 @@ int change_root_directory(void)
 	if (!root_directory)
 		return 0;
 	errno = 0;
-	chroot(root_directory);
+	if (chroot(root_directory) == -1)
+		return -errno;
+	errno = 0;
+	chdir("/");
 	return -errno;
 }
 
