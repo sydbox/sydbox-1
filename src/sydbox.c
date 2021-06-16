@@ -1563,10 +1563,12 @@ static pid_t startup_child(char **argv,
 	char *pathname;
 	pid_t pid = 0;
 
-	pathname = path_lookup(argv[0]);
-	if (!pathname)
-		die_errno("can't exec `%s'", argv[0]);
-
+	bool noexec = streq(argv[0], SYDBOX_NOEXEC_NAME);
+	if (!noexec) {
+		pathname = path_lookup(argv[0]);
+		if (!pathname)
+			die_errno("can't exec `%s'", argv[0]);
+	}
 	if (pipe2(pfd, O_CLOEXEC|O_DIRECT) < 0)
 		die_errno("can't pipe");
 
@@ -1587,6 +1589,10 @@ static pid_t startup_child(char **argv,
 				errno = EINVAL;
 			die_errno("seccomp load failed");
 		}
+		if (noexec)
+			_exit(getenv(SYDBOX_NOEXEC_ENV) ?
+				atoi(getenv(SYDBOX_NOEXEC_ENV)) :
+				0);
 		execv(pathname, argv);
 		fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
 			pathname, errno, strerror(errno));

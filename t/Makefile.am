@@ -38,9 +38,9 @@ TESTS= \
 	t0001-path-wildmatch.sh \
 	t0002-path-realpath.sh \
 	t0003-core-basic.sh \
-	t0004-core-exit.sh \
-	t0005-core-abort.sh \
-	t0006-core-seccomp.sh \
+	t0004-core-seccomp.sh \
+	t0005-core-exit.sh \
+	t0006-core-abort.sh \
 	t0007-core-magic.sh \
 	t0008-core-open-read.sh \
 	t0009-core-exec.sh \

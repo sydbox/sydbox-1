@@ -111,4 +111,11 @@
 # undef SYDBOX_NO_GETDENTS
 #endif
 
+#ifndef SYDBOX_NOEXEC_NAME
+# define SYDBOX_NOEXEC_NAME "noexec"
+#endif
+#ifndef SYDBOX_NOEXEC_ENV
+# define SYDBOX_NOEXEC_ENV "SYDBOX_NOEXEC"
+#endif
+
 #endif

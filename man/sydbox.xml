@@ -175,6 +175,17 @@
             seccomp filters into the given filename. If no filename is given write
             to standard error.
           </simpara>
+          <note>
+            <simpara>
+            If you just want to inspect the seccomp filters and not execute a process,
+            pass the special string <constant>noexec</constant> as the command, e.g:
+            <command>sydbox -e pfc:out noexec</command> when SydBox will exit with
+            either the numeric value of the environment variable
+            <varname>SYDBOX_NOEXEC</varname> or <constant>0</constant>
+            if the variable is not set. The exit happens after preparing all the
+            requested restrictions and right before process execution.
+            </simpara>
+          </note>
         </listitem>
       </varlistentry>
 

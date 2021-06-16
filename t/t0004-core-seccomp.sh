@@ -31,47 +31,47 @@ test_expect_success 'export bpf options to file' '
 # perl -n000e 'print $& while /^foo.*\nbar.*\n/mg' file
 
 test_expect_success 'invalid architecture action is kill ' '
-    sydbox true &&
+    sydbox noexec &&
     test_bpf_action "invalid architecture" KILL
 '
 
 test_expect_success 'default action is allow' '
-    sydbox true &&
+    sydbox noexec &&
     test_bpf_action default ALLOW
 '
 
 test_expect_success 'default action is allow with --bpf-only' '
-    sydbox -b true &&
+    sydbox -b noexec &&
     test_bpf_action default ALLOW
 '
 
 test_expect_success 'default action is permission denied with Level 1 restrictions' '
-    sydbox -b -m core/restrict/general:1 true &&
+    sydbox -b -m core/restrict/general:1 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success 'default action is permission denied with -b and Level 1 restrictions' '
-    sydbox -b -m core/restrict/general:1 true &&
+    sydbox -b -m core/restrict/general:1 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success 'default action is permission denied with Level 2 restrictions' '
-    sydbox -b -m core/restrict/general:2 true &&
+    sydbox -b -m core/restrict/general:2 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success 'default action is permission denied with -b and Level 2 restrictions' '
-    sydbox -b -m core/restrict/general:2 true &&
+    sydbox -b -m core/restrict/general:2 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success 'default action is permission denied with Level 3 restrictions' '
-    sydbox -b -m core/restrict/general:3 true &&
+    sydbox -b -m core/restrict/general:3 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success 'default action is permission denied with -b and Level 3 restrictions' '
-    sydbox -b -m core/restrict/general:3 true &&
+    sydbox -b -m core/restrict/general:3 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
@@ -81,7 +81,7 @@ test_expect_success 'default action is allow with read sandboxing bpf' '
         -m core/sandbox/write:off \
         -m core/sandbox/exec:off \
         -m core/sandbox/network:off \
-        true &&
+        noexec &&
     test_bpf_action default ALLOW
 '
 
@@ -91,7 +91,7 @@ test_expect_success 'default action is allow with write sandboxing bpf' '
         -m core/sandbox/write:bpf \
         -m core/sandbox/exec:off \
         -m core/sandbox/network:off \
-        true &&
+        noexec &&
     test_bpf_action default ALLOW
 '
 
@@ -101,7 +101,7 @@ test_expect_failure 'default action is allow with exec sandboxing bpf' '
         -m core/sandbox/write:bpf \
         -m core/sandbox/exec:bpf \
         -m core/sandbox/network:off \
-        true &&
+        noexec &&
     test_bpf_action default ALLOW
 '
 
@@ -111,7 +111,7 @@ test_expect_success 'default action is allow with network sandboxing bpf' '
         -m core/sandbox/write:off \
         -m core/sandbox/exec:off \
         -m core/sandbox/network:bpf \
-        true &&
+        noexec &&
     test_bpf_action default ALLOW
 '
 
