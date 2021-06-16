@@ -181,7 +181,8 @@ int change_background(void)
 	}
 
 out:
-	close(devnull_fd);
+	if (devnull_fd >= 0)
+		close(devnull_fd);
 	if (r)
 		return r;
 
