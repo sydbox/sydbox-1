@@ -908,9 +908,9 @@ int filter_mmap(void)
 int filter_mmap2(void)
 {
 	if (sydbox->config.restrict_shm_wr)
-		return filter_mmap_restrict_shared(SCMP_SYS(mmap));
+		return filter_mmap_restrict_shared(SCMP_SYS(mmap2));
 	else if (sydbox->config.restrict_mmap)
-		return filter_mmap_restrict(SCMP_SYS(mmap));
+		return filter_mmap_restrict(SCMP_SYS(mmap2));
 	else
 		return 0;
 }

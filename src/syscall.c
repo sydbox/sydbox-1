@@ -322,16 +322,19 @@ static const sysentry_t syscall_entries[] = {
 	},
 	{
 		.name = "bind",
+		.filter = filter_bind,
 		.notify = sys_bind,
 		.sandbox_network = true,
 	},
 	{
 		.name = "connect",
+		.filter = filter_connect,
 		.notify = sys_connect,
 		.sandbox_network = true,
 	},
 	{
 		.name = "sendto",
+		.filter = filter_sendto,
 		.notify = sys_sendto,
 		.sandbox_network = true,
 	},
@@ -357,11 +360,13 @@ static const sysentry_t syscall_entries[] = {
 	},
 	{
 		.name = "sendmsg",
+		.filter = filter_sendmsg,
 		.notify = sys_sendmsg,
 		.sandbox_network = true,
 	},
 	{
 		.name = "recvmsg",
+		.filter = filter_recvmsg,
 		.notify = sys_recvmsg,
 		.sandbox_network = true,
 	},
@@ -422,9 +427,6 @@ size_t syscall_entries_max(void)
 void sysinit(void)
 {
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		if (syscall_entries[i].filter)
-			continue;
-
 		if (syscall_entries[i].name) {
 			systable_add(syscall_entries[i].name,
 				     syscall_entries[i].notify,

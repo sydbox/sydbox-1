@@ -57,6 +57,8 @@ enum dump {
 #define INSPECT_DUMP_EXEC_MT (1ULL << DUMP_EXEC_MT)
 	DUMP_ALLOC, /* dump allocations, *alloc(), str*dup() & asprintf() */
 #define INSPECT_DUMP_ALLOC (1ULL << DUMP_ALLOC)
+	DUMP_MEMORY_ACCESS, /* dump memory accesses */
+#define INSPECT_DUMP_MEMORY_ACCESS (1ULL << DUMP_MEMORY_ACCESS)
 };
 
 #if SYDBOX_DUMP

@@ -363,14 +363,14 @@ int syd_proc_mem_open(pid_t pid)
 	return (fd < 0) ? -errno : fd;
 }
 
-ssize_t syd_proc_mem_read(int mem_fd, long addr, void *buf, size_t count)
+ssize_t syd_proc_mem_read(int mem_fd, off_t addr, void *buf, size_t count)
 {
 	if (lseek(mem_fd, addr, SEEK_SET) == -1)
 		return -errno;
 	return read(mem_fd, buf, count);
 }
 
-ssize_t syd_proc_mem_write(int mem_fd, long addr, const void *buf, size_t count)
+ssize_t syd_proc_mem_write(int mem_fd, off_t addr, const void *buf, size_t count)
 {
 	if (lseek(mem_fd, addr, SEEK_SET) == -1)
 		return -errno;

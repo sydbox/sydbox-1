@@ -40,8 +40,8 @@ int syd_proc_comm(pid_t pid, char *dst, size_t siz);
 int syd_proc_cmdline(pid_t pid, char *dst, size_t siz);
 int syd_proc_state(pid_t pid, char *state);
 int syd_proc_mem_open(pid_t pid);
-ssize_t syd_proc_mem_read(int mem_fd, long addr, void *buf, size_t count);
-ssize_t syd_proc_mem_write(int mem_fd, long addr, const void *buf, size_t len);
+ssize_t syd_proc_mem_read(int mem_fd, off_t addr, void *buf, size_t count);
+ssize_t syd_proc_mem_write(int mem_fd, off_t addr, const void *buf, size_t len);
 
 int syd_proc_environ(pid_t pid);
 

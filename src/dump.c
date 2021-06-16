@@ -468,6 +468,27 @@ void dump(enum dump what, ...)
 			J(func)"\"%s\"}",
 			id++, (unsigned long long)now,
 			what, size, func);
+	} else if (what == DUMP_MEMORY_ACCESS) {
+		const char *type = va_arg(ap, const char *);
+		pid_t pid = va_arg(ap, pid_t);
+		long addr = va_arg(ap, long);
+		int err_no = va_arg(ap, int);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(ts)"%llu,"
+			J(event)"{\"id\":%u,\"name\":\"memory\"},"
+			J(pid)"%d,"
+			J(memory)"{"
+			J(addr)"%ld,"
+			J(errno)"%d,"
+			J(type)"\"%s\"},",
+			id++, (unsigned long long)now,
+			what, pid, addr, err_no, type);
+
+		fprintf(fp, ","J(process));
+		dump_process(pid);
+		fprintf(fp, "}");
 	} else {
 		abort();
 	}

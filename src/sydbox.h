@@ -1069,6 +1069,11 @@ int filter_mmap2(void);
 int filter_mprotect(void);
 int filter_ioctl(void);
 int sys_fallback_mmap(syd_process_t *current);
+int filter_bind(void);
+int filter_connect(void);
+int filter_sendto(void);
+int filter_recvmsg(void);
+int filter_sendmsg(void);
 
 int sys_access(syd_process_t *current);
 int sys_faccessat(syd_process_t *current);

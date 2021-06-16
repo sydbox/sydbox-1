@@ -23,6 +23,68 @@
 #include "dump.h"
 #include "proc.h"
 
+static uint32_t action_simple(int deny_errno, enum sandbox_mode mode)
+{
+	switch (mode) {
+	case SANDBOX_OFF:
+		return SCMP_ACT_ALLOW;
+	case SANDBOX_BPF:
+		return SCMP_ACT_ERRNO(deny_errno);
+	case SANDBOX_ALLOW:
+		return use_notify() ? SCMP_ACT_NOTIFY : SCMP_ACT_ALLOW;
+	case SANDBOX_DENY:
+		return use_notify() ? SCMP_ACT_NOTIFY
+			: SCMP_ACT_ERRNO(deny_errno);
+	default:
+		assert_not_reached();
+	}
+}
+static int filter_simple(long sys_num, int deny_errno,
+			 enum sandbox_mode mode)
+{
+	int r;
+	uint32_t action = action_simple(deny_errno, mode);
+
+	if (action == sydbox->seccomp_action)
+		return 0;
+
+	if ((r = seccomp_rule_add(sydbox->ctx, action,
+				  sys_num, 0)) < 0)
+		return r;
+
+	return 0;
+}
+
+static int filter_socketcall(enum pink_socket_subcall call, int deny_errno,
+			     enum sandbox_mode mode)
+{
+	int r;
+	uint32_t action = action_simple(deny_errno, mode);
+
+	if (action == sydbox->seccomp_action)
+		return 0;
+
+	if ((r = seccomp_rule_add(sydbox->ctx, action,
+				  SCMP_SYS(socketcall), 1,
+				  SCMP_CMP(1, SCMP_CMP_EQ, call))) < 0)
+		return r;
+
+	return 0;
+}
+
+int filter_bind(void)
+{
+	int r;
+	enum sandbox_mode mode = sydbox->config.box_static.mode.sandbox_network;
+
+	if ((r = filter_simple(SCMP_SYS(bind), EADDRNOTAVAIL, mode)) < 0 ||
+	     (r = filter_socketcall(PINK_SOCKET_SUBCALL_BIND,
+				    EADDRNOTAVAIL, mode)) < 0)
+		return r;
+
+	return 0;
+}
+
 int sys_bind(syd_process_t *current)
 {
 	int r;
@@ -86,6 +148,19 @@ out:
 	}
 
 	return r;
+}
+
+static int filter_connect_call(long sys_num, enum pink_socket_subcall call,
+			       int deny_errno)
+{
+	int r;
+	enum sandbox_mode mode = sydbox->config.box_static.mode.sandbox_network;
+
+	if ((r = filter_simple(sys_num, deny_errno, mode)) < 0 ||
+	     (r = filter_socketcall(call, deny_errno, mode)) < 0)
+		return r;
+
+	return 0;
 }
 
 static int sys_connect_call(syd_process_t *current, bool sockaddr_in_msghdr,
@@ -185,9 +260,23 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 	return 0;
 }
 
+int filter_connect(void)
+{
+	return filter_connect_call(SCMP_SYS(connect),
+				   PINK_SOCKET_SUBCALL_CONNECT,
+				   ECONNREFUSED);
+}
+
 int sys_connect(syd_process_t *current)
 {
 	return sys_connect_call(current, false, 1, ECONNREFUSED);
+}
+
+int filter_sendto(void)
+{
+	return filter_connect_call(SCMP_SYS(sendto),
+				   PINK_SOCKET_SUBCALL_SENDTO,
+				   ENOTCONN);
 }
 
 int sys_sendto(syd_process_t *current)
@@ -195,9 +284,23 @@ int sys_sendto(syd_process_t *current)
 	return sys_connect_call(current, false, 4, ENOTCONN);
 }
 
+int filter_recvmsg(void)
+{
+	return filter_connect_call(SCMP_SYS(recvmsg),
+				   PINK_SOCKET_SUBCALL_RECVMSG,
+				   ECONNREFUSED);
+}
+
 int sys_recvmsg(syd_process_t *current)
 {
 	return sys_connect_call(current, true, 1, ECONNREFUSED);
+}
+
+int filter_sendmsg(void)
+{
+	return filter_connect_call(SCMP_SYS(sendmsg),
+				   PINK_SOCKET_SUBCALL_SENDMSG,
+				   ENOTCONN);
 }
 
 int sys_sendmsg(syd_process_t *current)

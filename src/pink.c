@@ -166,17 +166,26 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 		return r;
 	}
 #endif
-	if (!proc_mem_open_once()) {
+	bool mem_open = false;
+mem_open:
+	if (mem_open || !proc_mem_open_once()) {
 		int memfd;
 		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
 			return memfd;
 		current->memfd = memfd;
 	}
 	r = syd_proc_mem_read(current->memfd, addr, buf, count);
+	if (r == -ESPIPE && !mem_open) {
+		close(current->memfd);
+		current->memfd = -1;
+		mem_open = true;
+		goto mem_open;
+	}
 	if (!proc_mem_open_once()) {
 		close(current->memfd);
 		current->memfd = -1;
 	}
+	dump(DUMP_MEMORY_ACCESS, "read", current->pid, addr, -r);
 	return r;
 }
 
@@ -207,17 +216,26 @@ static int process_vm_write(syd_process_t *current, long addr, void *buf,
 	}
 #endif
 
-	if (!proc_mem_open_once()) {
+	bool mem_open = false;
+mem_open:
+	if (mem_open || !proc_mem_open_once()) {
 		int memfd;
 		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
 			return memfd;
 		current->memfd = memfd;
 	}
 	r = syd_proc_mem_write(current->memfd, addr, buf, count);
+	if (r == -ESPIPE && !mem_open) {
+		close(current->memfd);
+		current->memfd = -1;
+		mem_open = true;
+		goto mem_open;
+	}
 	if (!proc_mem_open_once()) {
 		close(current->memfd);
 		current->memfd = -1;
 	}
+	dump(DUMP_MEMORY_ACCESS, "write", current->pid, addr, -r);
 	return r;
 }
 
