@@ -109,12 +109,9 @@ upload-release: upload $(SHA1_FILE) $(GPG_FILE)
 jenkins:
 	maint/jenkins-build.sh
 
-if COVERITY
 coverity-build: clean
 	cov-build --dir cov-int ${MAKE} ${AM_MAKEFLAGS} check-build
-endif
 
-if COVERITY
 coverity-tarball: coverity-build
 	@if git rev-parse HEAD &> /dev/null; then \
 		rev_full=$$(git rev-parse HEAD); \
@@ -126,7 +123,6 @@ coverity-tarball: coverity-build
 	tar czf sydbox-coverity_$$rev.tar.gz cov-int; \
 	echo " HEAD revision: $$rev_full"; \
 	ls -l sydbox-coverity_$$rev.tar.gz
-endif
 
 .PHONY: coveralls
 coveralls:
