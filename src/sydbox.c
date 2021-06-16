@@ -108,9 +108,10 @@ usage: "PACKAGE" [-hvb] [-d <fd|path|tmp>] [-a arch...] \n\
                       Use a number to dump to a file descriptor,\n\
                       use a string to dump to a path, and\n\
                       use `tmp' to dump to a temporary file.\n\
---dry-run          -- Run under inspection without denying system calls\n\
---export <bpf|pfc> -- Export the seccomp filters to standard error on startup\n\
---proc-mem <mode>  -- Mode on using cross memory attach or /proc/pid/mem:\n\
+-D <path>          -- Chdir to this directory before starting the program\n\
+-C <path>          -- Chroot to this directory before starting the daemon\n\
+                      Path to the chdir should be relative to the chroot\n\
+-M <mode>          -- Mode on using cross memory attach or /proc/pid/mem:\n\
                       Mode 0: Use cross memory attach if available, use /proc otherwise.\n\
                       Mode 1: Use /proc/pid/mem unconditionally.\n\
                       Mode 2: Use cross memory attach if available, use /proc otherwise,\n\
@@ -121,10 +122,9 @@ usage: "PACKAGE" [-hvb] [-d <fd|path|tmp>] [-a arch...] \n\
                       Warning: Modes 2 and 3 may run into too many processes errors.\n\
                       Use another mode or adapt sysctl fs.nr_open as necessary if\n\
                       this is the case.\n\
+--dry-run          -- Run under inspection without denying system calls\n\
+--export=<bpf|pfc> -- Export the seccomp filters to standard error on startup\n\
 --test             -- Test if various runtime requirements are functional and exit\n\
---chdir <path>     -- Chdir to this directory before starting the program\n\
---chroot <path>    -- Chroot to this directory before starting the daemon\n\
-                      Path to the chdir should be relative to the chroot\n\
 \n\
 Hey you, out there beyond the wall,\n\
 Breaking bottles in the hall,\n\
@@ -1621,26 +1621,20 @@ int main(int argc, char **argv)
 	/* Long options are present for compatibility with sydbox-0.
 	 * Thus they are not documented!
 	 */
-#define SYD_OPT_CHROOT 0
-#define SYD_OPT_CHDIR 1
-#define SYD_OPT_DRYRUN 2
-#define SYD_OPT_PROCMEM 3
-#define SYD_OPT_EXPORT 4
-#define SYD_OPT_PROFILE 5
 	int options_index;
 	char *profile_name;
 	struct option long_options[] = {
 		{"help",	no_argument,		NULL,	'h'},
 		{"version",	no_argument,		NULL,	'v'},
-		{"profile",	required_argument,	NULL,	SYD_OPT_PROFILE},
-		{"dry-run",	no_argument,		NULL,	SYD_OPT_DRYRUN},
-		{"export",	required_argument,	NULL,	SYD_OPT_EXPORT},
+		{"profile",	required_argument,	NULL,	0},
+		{"dry-run",	no_argument,		NULL,	'N'},
+		{"export",	required_argument,	NULL,	'e'},
 		{"arch",	required_argument,	NULL,	'a'},
 		{"bpf",		no_argument,		NULL,	'b'},
 		{"test",	no_argument,		NULL,	't'},
-		{"chdir",	required_argument,	NULL,	SYD_OPT_CHDIR},
-		{"chroot",	required_argument,	NULL,	SYD_OPT_CHROOT},
-		{"proc-mem",	required_argument,	NULL,	SYD_OPT_PROCMEM},
+		{"chdir",	required_argument,	NULL,	'D'},
+		{"chroot",	required_argument,	NULL,	'C'},
+		{"memory",	required_argument,	NULL,	'M'},
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -1648,43 +1642,10 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "a:bhd:e:vc:m:E:t", long_options,
+	while ((opt = getopt_long(argc, argv, "a:bc:d:e:C:D:m:E:M:thv", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
-		case SYD_OPT_CHROOT:
-			root_directory = xstrdup(optarg);
-			break;
-		case SYD_OPT_CHDIR:
-			working_directory = xstrdup(optarg);
-			break;
-		case SYD_OPT_DRYRUN:
-			sydbox->permissive = true;
-			break;
-		case SYD_OPT_PROCMEM:
-			errno = 0;
-			opt = strtoul(optarg, &end, 10);
-			if ((errno && errno != EINVAL) ||
-			    (unsigned long)opt > SYDBOX_CONFIG_USE_PROC_MEM_MAX)
-			{
-				say_errno("Invalid argument for option --proc-mem: "
-					  "`%s'", optarg);
-				usage(stderr, 1);
-			}
-			sydbox->config.use_proc_mem = opt;
-			break;
-		case SYD_OPT_EXPORT:
-			if (startswith(optarg, "bpf")) {
-				sydbox->export_mode = SYDBOX_EXPORT_BPF;
-			} else if (startswith(optarg, "pfc")) {
-				sydbox->export_mode = SYDBOX_EXPORT_PFC;
-			} else {
-				say("Invalid argument to --export");
-				usage(stderr, 1);
-			}
-			if (strlen(optarg) > 4 && optarg[3] == ':')
-				sydbox->export_path = xstrdup(optarg + 4);
-			break;
-		case SYD_OPT_PROFILE:
+		case 0:
 			/* special case for backwards compatibility */
 			profile_name = xmalloc(sizeof(char) * (strlen(optarg) + 2));
 			profile_name[0] = SYDBOX_PROFILE_CHAR;
@@ -1700,8 +1661,9 @@ int main(int argc, char **argv)
 		case 'b':
 			sydbox->bpf_only = true;
 			break;
-		case 'h':
-			usage(stdout, 0);
+		case 'c':
+			config_parse_spec(optarg);
+			break;
 #if SYDBOX_HAVE_DUMP_BUILTIN
 		case 'd':
 			sydbox->config.violation_decision = VIOLATION_NOOP;
@@ -1738,11 +1700,17 @@ int main(int argc, char **argv)
 			say("dump not supported, compile with --enable-dump");
 			usage(stderr, 1);
 #endif
-		case 'v':
-			about();
-			return 0;
-		case 'c':
-			config_parse_spec(optarg);
+		case 'e':
+			if (startswith(optarg, "bpf")) {
+				sydbox->export_mode = SYDBOX_EXPORT_BPF;
+			} else if (startswith(optarg, "pfc")) {
+				sydbox->export_mode = SYDBOX_EXPORT_PFC;
+			} else {
+				say("Invalid argument to --export");
+				usage(stderr, 1);
+			}
+			if (strlen(optarg) > 4 && optarg[3] == ':')
+				sydbox->export_path = xstrdup(optarg + 4);
 			break;
 		case 'm':
 			r = magic_cast_string(NULL, optarg, 0);
@@ -1750,9 +1718,30 @@ int main(int argc, char **argv)
 				die("invalid magic: `%s': %s",
 				    optarg, magic_strerror(r));
 			break;
+		case 'C':
+			root_directory = xstrdup(optarg);
+			break;
+		case 'D':
+			working_directory = xstrdup(optarg);
+			break;
+		case 'N':
+			sydbox->permissive = true;
+			break;
 		case 'E':
 			if (putenv(optarg))
 				die_errno("putenv");
+			break;
+		case 'M':
+			errno = 0;
+			opt = strtoul(optarg, &end, 10);
+			if ((errno && errno != EINVAL) ||
+			    (unsigned long)opt > SYDBOX_CONFIG_USE_PROC_MEM_MAX)
+			{
+				say_errno("Invalid argument for option --memory: "
+					  "`%s'", optarg);
+				usage(stderr, 1);
+			}
+			sydbox->config.use_proc_mem = opt;
 			break;
 		case 't':
 			if (uname(&buf_uts) < 0) {
@@ -1792,6 +1781,11 @@ int main(int argc, char **argv)
 				say("[>] SydBox is supported on this system!");
 			exit(r == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 			break;
+		case 'h':
+			usage(stdout, 0);
+		case 'v':
+			about();
+			return 0;
 		default:
 			usage(stderr, 1);
 		}
