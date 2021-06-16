@@ -608,9 +608,12 @@ int test_cross_memory_attach(bool report)
 	long addr;
 	size_t len = 5; /* "ping" */
 	char dest[5];
+	ssize_t nread;
 	close(pipefd[1]);
-	if (read(pipefd[0], &addr, sizeof(long)) < 0)
+	if ((nread = read(pipefd[0], &addr, sizeof(long))) < 0)
 		die_errno("pipe_read");
+	if (nread != sizeof(long))
+		die_errno("pipe_read<%ld!=%zu>", nread, sizeof(long));
 	close(pipefd[0]);
 
 	struct iovec local[1], remote[1];
