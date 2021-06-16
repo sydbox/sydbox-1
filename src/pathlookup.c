@@ -83,7 +83,7 @@ char *path_lookup(const char *filename)
 			    (statbuf.st_mode & 0111))
 				break;
 		}
-		if (!path && !*path)
+		if (!path || !*path)
 			pathname[0] = '\0';
 	}
 	if (stat(pathname, &statbuf) < 0) {
