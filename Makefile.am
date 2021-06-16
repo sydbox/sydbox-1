@@ -30,6 +30,7 @@ dist_doc_DATA= \
 	       COPYING \
 	       LICENSE \
 	       README \
+	       KERNEL.md \
 	       man/ptrace-ntpl.txt
 
 DISTCHECK_CONFIGURE_FLAGS= \
