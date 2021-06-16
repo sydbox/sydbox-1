@@ -178,20 +178,26 @@ static void test_proc_cmdline(void)
 		r = syd_proc_cmdline(pid, cmdline, sizeof(cmdline));
 		if (r < 0)
 			fail_msg("syd_proc_cmdline failed: %d %s", errno, strerror(errno));
-		else if ((r = strcmp(cmdline, cmdline_orig)) != 0)
+		cmdline[sizeof(cmdline) - 1] = '\0';
+		if ((r = strcmp(cmdline, cmdline_orig)) != 0)
 			fail_msg("cmdline: strcmp('%s', '%s') = %d", cmdline, cmdline_orig, r);
 
 		r = syd_proc_cmdline(pid, cmdline_trunc1, sizeof(cmdline) - 2);
 		if (r < 0)
-			fail_msg("syd_proc_cmdline (trunc1) failed: %d %s", errno, strerror(errno));
-		else if ((r = strcmp(cmdline_trunc1, cmdline_trunc1_orig)) != 0)
+			fail_msg("syd_proc_cmdline (trunc1) failed: %d %s",
+				 errno, strerror(errno));
+		cmdline_trunc1[sizeof(cmdline) - 2] = '\0';
+		if ((r = strcmp(cmdline_trunc1, cmdline_trunc1_orig)) != 0)
 			fail_msg("cmdline: (trunc1) strcmp('%s', '%s') = %d", cmdline_trunc1, cmdline_trunc1_orig, r);
 
 		r = syd_proc_cmdline(pid, cmdline_trunc2, sizeof(cmdline) - 3);
 		if (r < 0)
-			fail_msg("syd_proc_cmdline (trunc2) failed: %d %s", errno, strerror(errno));
-		else if ((r = strcmp(cmdline_trunc2, cmdline_trunc2_orig)) != 0)
-			fail_msg("cmdline: (trunc2) strcmp('%s', '%s') = %d", cmdline_trunc2, cmdline_trunc2_orig, r);
+			fail_msg("syd_proc_cmdline (trunc2) failed: %d %s",
+				 errno, strerror(errno));
+		cmdline_trunc2[sizeof(cmdline) - 3] = '\0';
+		if ((r = strcmp(cmdline_trunc2, cmdline_trunc2_orig)) != 0)
+			fail_msg("cmdline: (trunc2) strcmp('%s', '%s') = %d",
+				 cmdline_trunc2, cmdline_trunc2_orig, r);
 		kill(cpid, SIGKILL);
 	}
 }
@@ -299,7 +305,8 @@ static void test_proc_fd_path(void)
 			goto out;
 		}
 		if (strncmp(path, cwd, strlen(cwd))) {
-			fail_msg("fd_long: path:%s doesn't start with cwd:%s (len:%zu)", path, cwd, strlen(cwd));
+			fail_msg("fd_long: path:%s doesn't start with cwd:%s (len:%zu)",
+				 path, cwd, strlen(cwd));
 			goto out;
 		}
 		if (strncmp(path + strlen(cwd) + 1, fd_long, sizeof(fd_long))) {
