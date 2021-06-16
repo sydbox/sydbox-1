@@ -108,8 +108,7 @@
 		v++;                                                           \
                                                                                \
 		*cap = v;                                                      \
-		t = sc_map_calloc(sizeof(*t), v + 1);                          \
-		return t ? &t[1] : NULL;                                       \
+		return sc_map_calloc(sizeof(*t), v + 1);                       \
 	}                                                                      \
                                                                                \
 	bool sc_map_init_##name(struct sc_map_##name *m, uint32_t cap,         \
@@ -145,8 +144,8 @@
                                                                                \
 	void sc_map_term_##name(struct sc_map_##name *m)                       \
 	{                                                                      \
-		if (m->mem != sc_map_empty_##name.mem) {                       \
-			sc_map_free(&m->mem[-1]);                              \
+		if (m->mem && m->mem != sc_map_empty_##name.mem) {             \
+			sc_map_free(m->mem);                                   \
 			*m = sc_map_empty_##name;                              \
 		}                                                              \
 	}                                                                      \
@@ -201,8 +200,8 @@
 		}                                                              \
                                                                                \
 		if (m->mem != sc_map_empty_##name.mem) {                       \
-			new[-1] = m->mem[-1];                                  \
-			sc_map_free(&m->mem[-1]);                              \
+			new[cap] = m->mem[m->cap];                             \
+			sc_map_free(m->mem);                                   \
 		}                                                              \
                                                                                \
 		m->mem = new;                                                  \
@@ -225,11 +224,11 @@
 		}                                                              \
                                                                                \
 		if (key == 0) {                                                \
-			ret = (m->used) ? m->mem[-1].value : 0;                \
+			ret = (m->used) ? m->mem[m->cap].value : 0;            \
 			m->found = m->used;                                    \
 			m->size += !m->used;                                   \
 			m->used = true;                                        \
-			m->mem[-1].value = value;                              \
+			m->mem[m->cap].value = value;                          \
                                                                                \
 			return ret;                                            \
 		}                                                              \
@@ -239,16 +238,16 @@
 		pos = h & (mod);                                               \
                                                                                \
 		while (true) {                                                 \
-			if (m->mem[pos].key == 0) {                            \
+			if (m->mem[pos].key == 0) {                               \
 				m->size++;                                     \
-			} else if (!sc_map_cmp_##name(&m->mem[pos], key, h)) { \
+			} else if (!sc_map_cmp_##name(&m->mem[pos], key, h)) {    \
 				pos = (pos + 1) & (mod);                       \
 				continue;                                      \
 			}                                                      \
                                                                                \
-			m->found = m->mem[pos].key != 0;                       \
-			ret = m->found ? m->mem[pos].value : 0;                \
-			sc_map_assign_##name(&m->mem[pos], key, value, h);     \
+			m->found = m->mem[pos].key != 0;                          \
+			ret = m->found ? m->mem[pos].value : 0;                   \
+			sc_map_assign_##name(&m->mem[pos], key, value, h);        \
                                                                                \
 			return ret;                                            \
 		}                                                              \
@@ -262,7 +261,7 @@
                                                                                \
 		if (key == 0) {                                                \
 			m->found = m->used;                                    \
-			return m->used ? m->mem[-1].value : 0;                 \
+			return m->used ? m->mem[m->cap].value : 0;             \
 		}                                                              \
                                                                                \
 		h = hash_fn(key);                                              \
@@ -294,7 +293,7 @@
 			m->size -= m->used;                                    \
 			m->used = false;                                       \
                                                                                \
-			return m->found ? m->mem[-1].value : 0;                \
+			return m->found ? m->mem[m->cap].value : 0;            \
 		}                                                              \
                                                                                \
 		h = hash_fn(key);                                              \

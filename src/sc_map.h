@@ -170,10 +170,11 @@
  * }
  */
 #define sc_map_foreach(map, K, V)                                              \
-	for (int64_t __i = -1, __b = 0; __i < (map)->cap; __i++)               \
+	for (int64_t __i = 0, __b = 0; __i < (map)->cap+1; __i++)              \
 		for ((V) = (map)->mem[__i].value, (K) = (map)->mem[__i].key,   \
 		    __b = 1;                                                   \
-		     __b && ((__i == -1 && (map)->used) || (K) != 0); __b = 0)
+		     __b && ((__i == (map)->cap && (map)->used) || (K) != 0);  \
+		     __b = 0)
 
 /**
  * Foreach loop for keys
@@ -201,10 +202,11 @@
  * }
  */
 #define sc_map_foreach_value(map, V)                                           \
-	for (int64_t __i = -1, __b = 0; __i < (map)->cap; __i++)               \
+	for (int64_t __i = 0, __b = 0; __i < (map)->cap+1; __i++)              \
 		for ((V) = (map)->mem[__i].value, __b = 1;                     \
 		     __b &&                                                    \
-		     ((__i == -1 && (map)->used) || (map)->mem[__i].key != 0); \
+		     ((__i == (map)->cap && (map)->used) ||                    \
+		      (map)->mem[__i].key != 0);                               \
 		     __b = 0)
 
 // clang-format off
