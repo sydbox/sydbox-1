@@ -134,7 +134,9 @@ static void test_proc_comm(void)
 		r = syd_proc_comm(pid, comm_trunc, comm_trunc_len);
 		if (r < 0)
 			fail_msg("syd_proc_comm failed (trunc): %d %s", errno, strerror(errno));
-		else if ((r = strncmp(comm_trunc, comm_real, comm_trunc_len - 1)) != 0)
+		else
+			comm_trunc[comm_trunc_len-1] = '\0';
+		if ((r = strncmp(comm_trunc, comm_real, comm_trunc_len - 1)) != 0)
 			fail_msg("comm: strncmp('%s', '%s', %zu) = %d", comm_trunc, comm_real, comm_trunc_len - 1, r);
 		else if (comm_trunc[comm_trunc_len - 1] != '\0')
 			fail_msg("comm: truncated '%s' not null-terminated: '%c'", comm_trunc, comm_trunc[comm_trunc_len - 1]);
