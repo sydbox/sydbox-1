@@ -3,7 +3,7 @@
  *
  * pinktrace wrapper functions
  *
- * Copyright (c) 2013, 2014, 2015, 2018 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2013, 2014, 2015, 2018, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -151,14 +151,16 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 #endif
 
 	int r;
+#if !SYDBOX_DEF_PROC_MEM
 	static bool cross_memory_attach_works = true;
-
 	if (sydbox->proc_mem || !cross_memory_attach_works) {
+#endif
 		int memfd;
 		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
 			return memfd;
 		r = syd_proc_mem_read(memfd, addr, buf, count);
 		close(memfd);
+#if !SYDBOX_DEF_PROC_MEM
 	} else {
 		struct iovec local[1], remote[1];
 		local[0].iov_base = buf;
@@ -170,6 +172,7 @@ static int process_vm_read(syd_process_t *current, long addr, void *buf,
 		if (errno == ENOSYS || errno == EPERM)
 			cross_memory_attach_works = false;
 	}
+#endif
 	return r;
 }
 
@@ -183,15 +186,18 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 #endif
 
 	int r;
+#if !SYDBOX_DEF_PROC_MEM
 	static bool cross_memory_attach_works = true;
-
 	if (sydbox->proc_mem || !cross_memory_attach_works) {
+#endif
 		int memfd;
 		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
 			return memfd;
 		r = syd_proc_mem_write(memfd, addr, buf, count);
 		close(memfd);
+#if !SYDBOX_DEF_PROC_MEM
 	} else {
+#endif
 		struct iovec local[1], remote[1];
 		local[0].iov_base = (void *)buf;
 		remote[0].iov_base = (void *)addr;
@@ -201,7 +207,9 @@ static int process_vm_write(syd_process_t *current, long addr, const void *buf,
 					   /*flags:*/0);
 		if (errno == ENOSYS || errno == EPERM)
 			cross_memory_attach_works = false;
+#if !SYDBOX_DEF_PROC_MEM
 	}
+#endif
 	return r;
 }
 

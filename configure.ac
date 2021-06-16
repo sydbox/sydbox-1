@@ -1,3 +1,9 @@
+dnl
+dnl sydbox/configure.ac
+dnl
+dnl Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2018, 2021 Ali Polatel <alip@exherbo.org>
+dnl SPDX-License-Identifier: GPL-2.0-only
+
 dnl Program, version
 AC_PREREQ(2.59)
 
@@ -25,6 +31,7 @@ AC_CONFIG_SRCDIR([src/sydbox.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
+AC_GNU_SOURCE
 AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip std-options subdir-objects foreign])
@@ -147,6 +154,7 @@ AC_CHECK_HEADER([ctype.h],       [], AC_MSG_ERROR([I need ctype.h]))
 AC_CHECK_HEADER([arpa/inet.h],   [], AC_MSG_ERROR([I need arpa/inet.h]))
 AC_CHECK_HEADER([netdb.h],       [], AC_MSG_ERROR([I need netdb.h]))
 AC_CHECK_HEADER([sched.h],       [], AC_MSG_ERROR([I need sched.h]))
+AC_CHECK_HEADER([asm/unistd.h],  [], AC_MSG_ERROR([I need asm/unistd.h]))
 
 dnl check for everything (for tests)
 AC_FUNC_ALLOCA
@@ -184,7 +192,6 @@ AC_CHECK_HEADERS_ONCE(m4_flatten([
 	sys/file.h
 	sys/mman.h
 	sys/param.h
-	sys/ptrace.h
 	sys/reg.h
 	sys/stat.h
 	sys/syscall.h
@@ -193,11 +200,9 @@ AC_CHECK_HEADERS_ONCE(m4_flatten([
 	sys/uio.h
 	sys/user.h
 	sys/wait.h
-	asm/ptrace.h
-	asm/unistd.h
 	sys/syscall.h
-	linux/ptrace.h
 	linux/openat2.h
+	linux/uio.h
 	linux/unistd.h
 ]))
 
@@ -209,27 +214,47 @@ AC_TYPE_MODE_T
 AC_TYPE_SIZE_T
 AC_CHECK_DECLS_ONCE([environ])
 AC_CHECK_TYPES([ptrdiff_t])
-AC_CHECK_TYPES([struct pt_all_user_regs, struct ia64_fpreg, struct ptrace_peeksiginfo_args],,,[#include <sys/ptrace.h>])
 AC_CHECK_TYPES([sig_atomic_t], [], AC_MSG_ERROR([I need sigatomic_t]), [#include <signal.h>])
 AC_CHECK_TYPES([sighandler_t, sig_t, __sighandler_t],,,[#include <signal.h>])
-AC_CHECK_TYPES([struct open_how],,,[#include <linux/openat2.h>])
-AC_CHECK_TYPES([struct statx],,,[#include <sys/stat.h>])
-AC_CHECK_TYPES([struct mmsghdr],,, [#include <sys/socket.h>])
+AC_MSG_CHECKING([struct open_how])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <linux/openat2.h>]],
+		  [[struct open_how *buf;]])],
+		  [AC_MSG_RESULT([yes])
+		   AC_DEFINE_UNQUOTED([HAVE_STRUCT_OPEN_HOW],
+				      [1], [Have struct open_how])],
+		  [AC_MSG_RESULT([no])])
+AC_MSG_CHECKING([struct statx])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <sys/stat.h>]],
+		  [[struct statx *buf;]])],
+		  [AC_MSG_RESULT([yes])
+		   AC_DEFINE_UNQUOTED([HAVE_STRUCT_STATX],
+				      [1], [Have struct statx])],
+		  [AC_MSG_RESULT([no])])
+AC_CHECK_TYPES([struct msghdr],
+	       [],
+	       [AC_MSG_ERROR([I need struct msghdr!])],
+	       [#include <sys/socket.h>])
+AC_CHECK_TYPES([struct sockaddr_storage],
+	       [],
+	       [AC_MSG_ERROR([I need struct sockaddr_storage!])],
+	       [#include <sys/socket.h>])
+AC_MSG_CHECKING([struct mmsghdr])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <sys/socket.h>]],
+		  [[struct mmsghdr *hdr;]])],
+		  [AC_MSG_RESULT([yes])
+		   AC_DEFINE_UNQUOTED([HAVE_STRUCT_MMSGHDR],
+				      [1], [Have struct mmsghdr])],
+		  [AC_MSG_RESULT([no])])
 
 HAVE_NEWFSTATAT=
-AC_CHECK_DECL([SYS_newfstatat],
+AC_CHECK_DECL([__NR_newfstatat],
 	      [HAVE_NEWFSTATAT=1],
 	      [HAVE_NEWFSTATAT=0],
-	      [#include <sys/syscall.h>])
-AC_DEFINE_UNQUOTED([HAVE_NEWFSTATAT], [$HAVE_NEWFSTATAT], ['Have newfstatat() system call'])
+	      [#include <asm/unistd.h>])
+if test x"$HAVE_NEWFSTATAT" = x"1"; then
+	AC_DEFINE_UNQUOTED([HAVE_NEWFSTATAT], [1], [Have newfstatat() system call])
+fi
 AC_SUBST([HAVE_NEWFSTATAT])
-
-save_CPPFLAGS=$CPPFLAGS
-CPPFLAGS="-I$srcdir/t $CPPFLAGS"
-AC_CHECK_TYPES([struct user_regs_struct, struct pt_regs],,,[#include "headers.h"])
-AC_CHECK_SIZEOF([struct user_regs_struct],,[#include "headers.h"])
-AC_CHECK_SIZEOF([struct pt_regs],,[#include "headers.h"])
-CPPFLAGS=$save_CPPFLAGS
 
 dnl check for functions
 AC_CHECK_FUNCS([asprintf],      [], [AC_MSG_ERROR([I need asprintf])])
@@ -267,7 +292,6 @@ AC_CHECK_FUNCS_ONCE(m4_flatten([
 	open64
 	openat
 	openat64
-	ptrace
 	remove
 	renameat
 	rmdir
@@ -315,27 +339,45 @@ AC_DEFINE_UNQUOTED([SYDBOX_DEBUG], [$SYDBOX_DEBUG], ['Enable debug support (requ
 AC_SUBST([SYDBOX_DEBUG])
 
 dnl check for process_vm_readv and process_vm_writev
+STRUCT_IOVEC_WARN=0
 PROCESS_VM_WARN=0
 m4_define([include_process_vm_headers], [
-	   #ifdef HAVE_ASM_UNISTD_H
+	   #include <sys/types.h>
 	   #include <asm/unistd.h>
-	   #endif
 	   #ifdef HAVE_SYS_UIO_H
 	   #include <sys/uio.h>
 	   #endif
+           #include <unistd.h>
 ])
-AC_CHECK_DECL([__NR_process_vm_readv],  [],
+AC_MSG_CHECKING([struct iovec])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([include_process_vm_headers],
+		  [[struct iovec *iovec;]])],
+		  [AC_MSG_RESULT([yes])
+		   STRUCT_IOVEC_WARN=1],
+		  [AC_MSG_RESULT([no])
+		   STRUCT_IOVEC_WARN=0])
+
+AC_CHECK_DECL([__NR_process_vm_readv],
+	      [PROCESS_VM_WARN=0],
 	      [PROCESS_VM_WARN=1],
 	      [include_process_vm_headers])
-AC_CHECK_DECL([__NR_process_vm_writev],  [],
+AC_CHECK_DECL([__NR_process_vm_writev],
+	      [PROCESS_VM_WARN=0],
 	      [PROCESS_VM_WARN=1],
 	      [include_process_vm_headers])
 
+if test x"$STRUCT_IOVEC_WARN" = x"0" -a x"$PROCESS_VM_WARN" = x"0"
+then
+	AC_MSG_WARN(["Neither struct iovec, nor process_vm_{read,write}v found, using /proc/pid/mem"])
+	SYDBOX_DEF_PROC_MEM=1
+else
+	SYDBOX_DEF_PROC_MEM=0
+fi
+AC_DEFINE_UNQUOTED([SYDBOX_DEF_PROC_MEM], [$SYDBOX_DEF_PROC_MEM], [Default to reading /proc/pid/mem])
+
 dnl check for pidfd_open and pidfd_getfd.
 m4_define([include_pidfd_headers], [
-	   #ifdef HAVE_ASM_UNISTD_H
 	   #include <asm/unistd.h>
-	   #endif
 	   #ifdef HAVE_SYS_SYSCALL_H
 	   #include <sys/syscall.h>
 	   #endif
@@ -436,7 +478,43 @@ AC_CONFIG_FILES([Makefile
 		 t/valgrind/Makefile])
 AC_OUTPUT
 
+if test -x ./tao/tao.pl; then
+	dnl We don't distribute this file and the fortune cookie in the tarball.
+	./tao/tao.pl
+else
+	dnl Krad ASCII ART#!#@$!@#$
+	dnl Randomly store the name of one of the ASCII Art files in FILENAME
+	dnl Source: from nmap/configure.ac
+	FILENAME=`ls $srcdir/tao/art/art*.txt 2>/dev/null | $AWK '
+    BEGIN {
+        srand();
+    }
+
+    {
+        lines[[++d]] = $0
+    }
+
+    END {
+        # This makes AWKs random numbers more random
+        print lines[[int(rand()*49139)%d+1]];
+    }
+    '`
+dnl Print the file to screen, if any such file exists (i.e. $FILENAME is not empty)
+	if test "$FILENAME"; then
+		cat "$FILENAME"
+	fi
+fi
+echo
+echo "Configured with"
+echo "- debug:$WANT_DEBUG"
+echo "- dump:$WANT_DUMP_BUILTIN"
+echo "- static:$enable_static"
+cat ./tao/make.txt
+
 PIDFD_WARN=0
+if test x"$SYDBOX_DEF_PROC_MEM" = x"1"; then
+	AC_MSG_WARN([SydBox won't use cross memory attach and will read from /proc/pid/mem.])
+fi
 if test x"$PIDFD_OPEN_WARN" = x"1"; then
 	AC_MSG_WARN([__NR_pidfd_open not declared! Setting pidfd_open to 434.])
 	PIDFD_WARN=1

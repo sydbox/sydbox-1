@@ -46,8 +46,12 @@
 
 /* System call numbers */
 #include "config.h"
-#ifdef HAVE_ASM_UNISTD_H
-# include <asm/unistd.h>
+#include <asm/unistd.h>
+#if !defined(__NR_process_vm_readv)
+# define __NR_process_vm_readv 310
+#endif
+#if !defined(__NR_process_vm_writev)
+# define __NR_process_vm_writev 311
 #endif
 #if !(defined(__NR_pidfd_open) && defined(__NR_pidfd_getfd))
 # ifndef __NR_pidfd_open

@@ -6,7 +6,6 @@ use strict;
 use warnings;
 use feature 'say';
 use JSON 'decode_json';
-use Data::Dumper;
 
 my %alloc;
 foreach my $line ( <STDIN> ) {
