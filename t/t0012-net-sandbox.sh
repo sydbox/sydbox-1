@@ -5,7 +5,7 @@
 test_description='test network sandboxing'
 . ./test-lib.sh
 
-for ns_mem_access in 3; do
+for ns_mem_access in 0 1 2 3; do
     test_expect_success DIG "network sandboxing = allow [memory_access:${ns_mem_access}]" '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
