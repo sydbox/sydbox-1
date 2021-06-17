@@ -100,14 +100,14 @@ for ns_mem_access in 0 1 2 3; do
         syd-bind-ipv6-port.py 65534
 '
 
-# TODO: Continue moving the python scripts in HERE docs to test-bin/
+# TODO: Continue moving the python3 scripts in HERE docs to test-bin/
     test_expect_success PY3 \
         "network sandboxing for bind works to allowlist IPv4 address with port zero [memory_access:${ns_mem_access}]" '
     test_expect_code 0 sydbox \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         -m allowlist/network/bind+LOOPBACK@0 \
-        python <<EOF
+        python3 <<EOF
 import errno, socket, sys
 
 addr = socket.getaddrinfo("127.0.0.1", 0)[0][4]
@@ -132,7 +132,7 @@ EOF
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         -m allowlist/network/bind+LOOPBACK6@0 \
-        python <<EOF
+        python3 <<EOF
 import errno, socket, sys
 
 addr = socket.getaddrinfo("::1", 0)[0][4]
