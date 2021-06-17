@@ -128,6 +128,7 @@ coverity-tarball: coverity-build
 .PHONY: coveralls
 coveralls:
 	coveralls \
+		--exclude t \
 		--exclude tests \
 		--exclude target \
 		--gcov-options '\-lp'
