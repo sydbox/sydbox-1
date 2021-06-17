@@ -1795,9 +1795,9 @@ test_lazy_prereq JQ '
 	jq --version
 '
 
-test_lazy_prereq PY3 "
-	python --version | grep -iq 'Python 3'
-"
+test_lazy_prereq PY3 '
+	python3 --version | grep -iq "Python 3"
+'
 
 test_lazy_prereq TRINITY '
 	trinity --help
