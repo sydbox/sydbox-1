@@ -141,7 +141,7 @@ bpf_dump() {
 
 bpf_action() {
 	test -s "$1" &&
-	grep -iPz \
+	grep -qiPz \
 		"(?s)\n(\s*)#\s*$2 action\s*\n\s*action $3;\s*\n" \
 		"$1"
 }
