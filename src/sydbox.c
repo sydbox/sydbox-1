@@ -192,7 +192,7 @@ static int process_proc(struct syd_process *p)
 	{
 		int memfd;
 		if ((memfd = syd_proc_mem_open(p->pid)) < 0) {
-			r = -memfd;
+			r = memfd;
 			p->memfd = -1;
 			if (proc_esrch(-r)) {
 				p->flags |= SYD_KILLED;
