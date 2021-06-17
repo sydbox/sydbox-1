@@ -5,7 +5,11 @@ CLEANFILES= \
 	    *.gcda \
 	    *.gcno \
 	    *.gcov
-EXTRA_DIST= wildtest.txt
+EXTRA_DIST= \
+	    trinity.syd-2 \
+	    wildtest.txt
 
 syddir=$(libexecdir)/$(PACKAGE)/t/test-data
-syd_DATA= wildtest.txt
+syd_DATA= \
+	  trinity.syd-2 \
+	  wildtest.txt

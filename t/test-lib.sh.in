@@ -1502,6 +1502,7 @@ HOME="$TRASH_DIRECTORY"
 SHOEBOX="$HOME/sydcore"
 export HOME SHOEBOX
 
+TESTR=$(readlink -f "$TEST_DIRECTORY")
 HOMER=$(readlink -f "$HOME")
 HOMER="${HOMER%/}"
 HOME_BASE="${TRASH_BASE%/}"
@@ -1794,8 +1795,12 @@ test_lazy_prereq JQ '
 	jq --version
 '
 
-test_lazy_prereq PY3 '
+test_lazy_prereq PY3 "
 	python --version | grep -iq 'Python 3'
+"
+
+test_lazy_prereq TRINITY '
+	trinity --help
 '
 
 # Check if we're running on buildhost.
