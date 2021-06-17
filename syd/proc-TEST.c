@@ -128,7 +128,8 @@ static void test_proc_comm(void)
 		r = syd_proc_comm(pid, comm, comm_len);
 		if (r < 0)
 			fail_msg("syd_proc_comm failed: %d %s", errno, strerror(errno));
-		else if ((r = strcmp(comm, comm_real)) != 0)
+		comm[comm_len - 1] = '\0';
+		if ((r = strcmp(comm, comm_real)) != 0)
 			fail_msg("comm: strcmp('%s', '%s') = %d", comm, comm_real, r);
 
 		r = syd_proc_comm(pid, comm_trunc, comm_trunc_len);
