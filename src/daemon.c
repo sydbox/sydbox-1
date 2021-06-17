@@ -164,7 +164,7 @@ int change_background(void)
 	}
 #endif
 
-	int r;
+	int r = 0;
 	int stdin_fd = devnull_fd;
 	int stdout_fd = devnull_fd;
 	int stderr_fd = devnull_fd;
