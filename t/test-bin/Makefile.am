@@ -50,6 +50,15 @@ threads_execve_CFLAGS= $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 threads_execve_LDADD= $(PTHREAD_LIBS)
 
 syddir=$(libexecdir)/$(PACKAGE)/t/test-bin
+syd_SCRIPTS= \
+	syd-bind-auto-unix-socket.py \
+	syd-bind-ipv4-port.py \
+	syd-bind-ipv6-port.py \
+	syd-connect-ipv4-0.py \
+	syd-connect-ipv4.py \
+	syd-connect-ipv6-0.py \
+	syd-connect-ipv6.py \
+	syd-connect-unix.py
 syd_PROGRAMS= wildtest realpath_mode-1 sockmatchtest \
 	      syd-true syd-true-static syd-true-fork syd-true-fork-static syd-true-pthread \
 	      syd-false syd-false-static syd-false-fork syd-false-fork-static syd-false-pthread \
@@ -57,6 +66,7 @@ syd_PROGRAMS= wildtest realpath_mode-1 sockmatchtest \
 	      syd-abort-pthread syd-abort-pthread-static syd-fstatat syd-mkdir-p syd-open-static \
 	      threads_execve
 
+check_SCRIPTS= $(syd_SCRIPTS)
 check_PROGRAMS= $(syd_PROGRAMS)
 
 .PHONY: check-build

@@ -45,23 +45,7 @@ for ns_mem_access in 0 1 2 3; do
     test_expect_code 111 sydbox \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
-        python <<EOF
-import errno, socket, sys
-
-addr = socket.getaddrinfo("127.0.0.1", 22)[0][4]
-probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-try:
-    probe.connect(addr)
-except OSError as e:
-    sys.exit(e.errno)
-except Exception as e:
-    sys.stderr.write("Unexpected exception: %r\n" % e)
-    sys.exit(0)
-else:
-    sys.exit(0)
-finally:
-   probe.close()
-EOF
+        syd-connect-ipv4.py
 '
 
     test_expect_success HAVE_IPV6,PY3 \
@@ -69,25 +53,7 @@ EOF
     test_expect_code 111 sydbox \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
-        python <<EOF
-import errno, socket, sys
-
-addr = socket.getaddrinfo("::1", 22)[0][4]
-probe = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-try:
-    probe.connect(addr)
-except OSError as e:
-    if e.errno == errno.ECONNREFUSED:
-        sys.stderr.write("OK: connect returned ECONNREFUSED\n")
-    sys.exit(e.errno)
-except Exception as e:
-    sys.stderr.write("Unexpected exception: %r\n" % e)
-    sys.exit(0)
-else:
-    sys.exit(0)
-finally:
-   probe.close()
-EOF
+        syd-connect-ipv6.py
 '
 
     test_expect_success PY3 \
@@ -97,25 +63,7 @@ EOF
     test_expect_code 99 sydbox \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
-        python <<EOF
-import errno, socket, sys
-
-addr = "$pdir"
-probe = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-try:
-    probe.bind(addr)
-except OSError as e:
-    if e.errno == errno.EADDRNOTAVAIL:
-        sys.stderr.write("OK: bind returned EADDRNOTAVAIL\n")
-    sys.exit(e.errno)
-except Exception as e:
-    sys.stderr.write("Unexpected exception: %r\n" % e)
-    sys.exit(0)
-else:
-    sys.exit(0)
-finally:
-   probe.close()
-EOF
+        syd-connect-unix.py "$pdir"
 '
 
     test_expect_success PY3 \
@@ -123,25 +71,7 @@ EOF
     test_expect_code 99 sydbox \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
-        python <<EOF
-import errno, socket, sys
-
-addr = socket.getaddrinfo("127.0.0.1", 0)[0][4]
-probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-try:
-    probe.bind(addr)
-except OSError as e:
-    if e.errno == errno.EADDRNOTAVAIL:
-        sys.stderr.write("OK: bind returned EADDRNOTAVAIL\n")
-    sys.exit(e.errno)
-except Exception as e:
-    sys.stderr.write("Unexpected exception: %r\n" % e)
-    sys.exit(0)
-else:
-    sys.exit(0)
-finally:
-   probe.close()
-EOF
+        syd-connect-ipv4-0.py
 '
 
     test_expect_success PY3 \
@@ -149,25 +79,7 @@ EOF
     test_expect_code 99 sydbox \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
-        python <<EOF
-import errno, socket, sys
-
-addr = socket.getaddrinfo("::1", 0)[0][4]
-probe = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-try:
-    probe.bind(addr)
-except OSError as e:
-    if e.errno == errno.EADDRNOTAVAIL:
-        sys.stderr.write("OK: bind returned EADDRNOTAVAIL\n")
-    sys.exit(e.errno)
-except Exception as e:
-    sys.stderr.write("Unexpected exception: %r\n" % e)
-    sys.exit(0)
-else:
-    sys.exit(0)
-finally:
-   probe.close()
-EOF
+        syd-connect-ipv6-0.py
 '
 
     test_expect_success PY3 \
@@ -176,23 +88,7 @@ EOF
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         -m allowlist/network/bind+LOOPBACK@65534 \
-        python <<EOF
-import errno, socket, sys
-
-addr = socket.getaddrinfo("127.0.0.1", 65534)[0][4]
-probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-try:
-    probe.bind(addr)
-except OSError as e:
-    sys.exit(e.errno)
-except Exception as e:
-    sys.stderr.write("Unexpected exception: %r\n" % e)
-    sys.exit(128)
-else:
-    sys.exit(0)
-finally:
-   probe.close()
-EOF
+        syd-bind-ipv4-port.py 65534
 '
 
     test_expect_success PY3 \
@@ -201,25 +97,10 @@ EOF
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         -m allowlist/network/bind+LOOPBACK6@65534 \
-        python <<EOF
-import errno, socket, sys
-
-addr = socket.getaddrinfo("::1", 65534)[0][4]
-probe = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-try:
-    probe.bind(addr)
-except OSError as e:
-    sys.exit(e.errno)
-except Exception as e:
-    sys.stderr.write("Unexpected exception: %r\n" % e)
-    sys.exit(128)
-else:
-    sys.exit(0)
-finally:
-   probe.close()
-EOF
+        syd-bind-ipv6-port.py 65534
 '
 
+# TODO: Continue moving the python scripts in HERE docs to test-bin/
     test_expect_success PY3 \
         "network sandboxing for bind works to allowlist IPv4 address with port zero [memory_access:${ns_mem_access}]" '
     test_expect_code 0 sydbox \
@@ -273,49 +154,13 @@ EOF
         "network sandboxing for bind works to auto-allowlist UNIX socket [memory_access:${ns_mem_access}]" '
 pdir="$(unique_dir)" &&
 mkdir "$pdir" &&
-cd "$pdir" &&
+pushd "$pdir" &&
 test_expect_code 0 sydbox \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         -m "allowlist/network/bind+unix:$HOMER/${pdir}/test.socket" \
-        python <<EOF
-import errno, socket, sys, os
-
-addr = "./test.socket"
-probe = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-try:
-    probe.bind(addr)
-except OSError as e:
-    sys.exit(e.errno)
-except Exception as e:
-    sys.stderr.write("bind: Unexpected exception: %r\n" % e)
-    sys.exit(1)
-else:
-    probe.listen(0)
-    pid = os.fork()
-    if pid == 0:
-        probe = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        try:
-            probe.connect(addr)
-        except OSError as e:
-            os._exit(e.errno)
-        except Exception as e:
-            sys.stderr.write("connect: Unexpected exception: %r\n" % e)
-            os._exit(1)
-        else:
-            os._exit(0)
-    else:
-        _, _ = probe.accept()
-        pid, status = os.waitpid(pid, 0)
-        if os.WIFEXITED(status):
-            sys.exit(os.WEXITSTATUS(status))
-        elif os.WIFTERMINATED(status):
-            sys.exit(-os.WTERMSIG(status))
-        else:
-            sys.exit(128)
-finally:
-    probe.close()
-EOF
+        syd-bind-auto-unix-socket.py &&
+popd
 '
 done
 
