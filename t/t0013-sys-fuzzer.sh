@@ -24,12 +24,11 @@ for syscall_name in \
         mount umount{,2}
 do
     for memory_access in 0 1 2 3; do
-        test_expect_failure EXPENSIVE,TRINITY \
+        test_expect_success EXPENSIVE,TRINITY \
             "fuzzing $syscall_name does not generate any failures [memory_access:$memory_access]" '
         sydbox \
             -M '$memory_access' \
             -c "${TEST_DIRECTORY}/test-data/trinity.syd-2" \
-            -m "allowlist/read+${HOMER}/***" \
             -m "allowlist/write+${HOMER}/***" \
             -- timeout -k3 15 trinity -q --stats -l off -N64 -c '$syscall_name'
 '

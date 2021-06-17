@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 core/sandbox/exec:off
-core/sandbox/read:deny
+core/sandbox/read:allow
 core/sandbox/write:deny
 core/sandbox/network:deny
 
@@ -38,34 +38,13 @@ core/match/no_wildcard:literal
 
 #allowlist/exec+
 
-allowlist/read+/etc/ld.so.cache
-allowlist/read+/lib*/***
-allowlist/read+/usr/lib*/***
-allowlist/read+/usr/*/lib*/***
-allowlist/read+/dev/***
-allowlist/read+/sys/***
-allowlist/read+/proc/***
+denylist/read+/etc/shadow
 
+allowlist/write+/dev/***
 allowlist/write+/proc/***
+allowlist/write+/sys/***
 
-allowlist/write+/dev/stdout
-allowlist/write+/dev/stderr
-allowlist/write+/dev/zero
-allowlist/write+/dev/null
-allowlist/write+/dev/full
-allowlist/write+/dev/console
-allowlist/write+/dev/random
-allowlist/write+/dev/urandom
-allowlist/write+/dev/ptmx
-allowlist/write+/dev/fd/***
-allowlist/write+/dev/tty*
-allowlist/write+/dev/pty*
-allowlist/write+/dev/tts
-allowlist/write+/dev/pts
-allowlist/write+/dev/shm/***
-allowlist/write+/dev/dri/***
 allowlist/write+/selinux/context/***
-allowlist/write+/sys/kernel/debug/***
 allowlist/write+/tmp/***
 allowlist/write+/var/tmp/***
 allowlist/write+/var/cache/***
