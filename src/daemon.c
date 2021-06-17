@@ -204,6 +204,8 @@ out:
 		close(stdout_fd);
 	if (r)
 		return r;
+	if (!background)
+		return 0;
 	errno = 0;
 	setsid();
 	return -errno;
