@@ -1287,6 +1287,8 @@ wait_for_notify_fd:
 				reap_zombies(NULL, -1);
 				if (!process_count_alive())
 					break;
+				if (check_interrupt() != 0)
+					break;
 				goto wait_for_notify_fd;
 			} else if (r == -ESRCH) {
 				reap_zombies(lookup_process(pid), pid);
