@@ -13,7 +13,7 @@ MAINTAINERCLEANFILES= \
 
 EXTRA_DIST= \
 	    autogen.sh \
-	    tak/make.txt \
+	    tao/make.txt \
 	    tao/art/art-pink-floyd.txt \
 	    tao/art/art-piper.txt \
 	    tao/art/art-see-emily-play.txt
