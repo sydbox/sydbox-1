@@ -1550,15 +1550,10 @@ out:
 	return r;
 }
 
-static inline void free_pathlookup(char *pathname)
-{
-	free(pathname);
-}
-
 static pid_t startup_child(char **argv)
 {
 	int r, pfd[2];
-	char *pathname;
+	char *pathname = NULL;
 	pid_t pid = 0;
 
 	bool noexec = streq(argv[0], SYDBOX_NOEXEC_NAME);
@@ -1600,6 +1595,7 @@ static pid_t startup_child(char **argv)
 			die_errno("seccomp load failed");
 		}
 		cleanup();
+		free(sydbox);
 		if (noexec)
 			_exit(getenv(SYDBOX_NOEXEC_ENV) ?
 				atoi(getenv(SYDBOX_NOEXEC_ENV)) :
@@ -1609,7 +1605,7 @@ static pid_t startup_child(char **argv)
 		execv(pathname, argv);
 		fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
 			pathname, errno, strerror(errno));
-		free(pathname);
+		free(pathname); /* not NULL because noexec is handled above. */
 		_exit(EXIT_FAILURE);
 	}
 
@@ -1618,7 +1614,8 @@ static pid_t startup_child(char **argv)
 
 	if (sydbox->export_path)
 		free(sydbox->export_path);
-	free_pathlookup(pathname);
+	if (pathname)
+		free(pathname);
 
 	sydbox->execve_pid = pid;
 	sydbox->execve_wait = true;
@@ -1652,18 +1649,6 @@ static pid_t startup_child(char **argv)
 	return pid;
 }
 
-static inline void free_program_invocation_name(char *name)
-{
-	if (name)
-		free(name);
-}
-
-static inline void free_sydbox(sydbox_t **syd)
-{
-	free(*syd);
-	*syd = NULL;
-}
-
 void cleanup(void)
 {
 	assert(sydbox);
@@ -1672,6 +1657,9 @@ void cleanup(void)
 		close(sydbox->seccomp_fd);
 	if (sydbox->notify_fd >= 0)
 		close(sydbox->notify_fd);
+
+	if (sydbox->program_invocation_name)
+		free(sydbox->program_invocation_name);
 
 	const char *path;
 	syd_process_t *proc_node;
@@ -2076,5 +2064,6 @@ out:
 	}
 	dump(DUMP_ALLOC, 0, NULL);
 	dump(DUMP_CLOSE);
+	free(sydbox);
 	return exit_code;
 }
