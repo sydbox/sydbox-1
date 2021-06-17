@@ -14,7 +14,10 @@ my %alloc;
 $alloc{'sum'} = 0;
 foreach my $line ( <STDIN> ) {
 	chomp($line);
-	my $data = decode_json ($line);
+	my $data;
+	eval {
+		$data = decode_json($line);
+	} or next;
 	next unless $data->{'event'};
 	next unless $data->{'event'}->{'name'} eq 'alloc';
 	next unless $data->{'func'} eq 'sum';
