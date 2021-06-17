@@ -750,18 +750,16 @@ int sysinit_seccomp(void)
 	case SYDBOX_EXPORT_BPF:
 		if (seccomp_export_bpf(sydbox->ctx, export_fd) < 0)
 			say_errno("seccomp_export_bpf");
-		if (close_fd)
-			close(export_fd);
 		break;
 	case SYDBOX_EXPORT_PFC:
 		if (seccomp_export_pfc(sydbox->ctx, export_fd) < 0)
 			say_errno("seccomp_export_pfc");
-		if (close_fd)
-			close(export_fd);
 		break;
 	default:
 		break;
 	}
+	if (close_fd)
+		close(export_fd);
 	if ((r = seccomp_load(sydbox->ctx)) < 0)
 		return -r;
 	if (use_notify()) {
