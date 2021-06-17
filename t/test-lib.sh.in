@@ -1786,6 +1786,10 @@ test_lazy_prereq DIG '
 	dig -v
 '
 
+test_lazy_prereq GREP_P '
+	grep -P --help
+'
+
 test_lazy_prereq JQ '
 	jq --version
 '

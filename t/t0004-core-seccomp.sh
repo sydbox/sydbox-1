@@ -27,55 +27,52 @@ test_expect_success 'export bpf options to file' '
     grep "invalid architecture action" out
 '
 
-# perl -e '$f=join("",<>); print $& if $f=~/foo\nbar.*\n/m' file
-# perl -n000e 'print $& while /^foo.*\nbar.*\n/mg' file
-
-test_expect_success 'invalid architecture action is kill ' '
+test_expect_success GREP_P 'invalid architecture action is kill ' '
     sydbox noexec &&
     test_bpf_action "invalid architecture" KILL
 '
 
-test_expect_success 'default action is allow' '
+test_expect_success GREP_P 'default action is allow' '
     sydbox noexec &&
     test_bpf_action default ALLOW
 '
 
-test_expect_success 'default action is allow with --bpf-only' '
+test_expect_success GREP_P 'default action is allow with --bpf-only' '
     sydbox -b noexec &&
     test_bpf_action default ALLOW
 '
 
-test_expect_success 'default action is permission denied with Level 1 restrictions' '
+test_expect_success GREP_P 'default action is permission denied with Level 1 restrictions' '
     sydbox -b -m core/restrict/general:1 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
-test_expect_success 'default action is permission denied with -b and Level 1 restrictions' '
+test_expect_success GREP_P 'default action is permission denied with -b and Level 1 restrictions' '
     sydbox -b -m core/restrict/general:1 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
-test_expect_success 'default action is permission denied with Level 2 restrictions' '
+test_expect_success GREP_P 'default action is permission denied with Level 2 restrictions' '
     sydbox -b -m core/restrict/general:2 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
-test_expect_success 'default action is permission denied with -b and Level 2 restrictions' '
+test_expect_success GREP_P 'default action is permission denied with -b and Level 2 restrictions' '
     sydbox -b -m core/restrict/general:2 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
-test_expect_success 'default action is permission denied with Level 3 restrictions' '
+test_expect_success GREP_P 'default action is permission denied with Level 3 restrictions' '
     sydbox -b -m core/restrict/general:3 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
-test_expect_success 'default action is permission denied with -b and Level 3 restrictions' '
+test_expect_success GREP_P 'default action is permission denied with -b and Level 3 restrictions' '
     sydbox -b -m core/restrict/general:3 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
-test_expect_success 'default action is allow with read sandboxing bpf' '
+test_expect_success GREP_P 'default action is allow with read sandboxing bpf' '
     sydbox \
         -m core/sandbox/read:bpf \
         -m core/sandbox/write:off \
@@ -85,7 +82,7 @@ test_expect_success 'default action is allow with read sandboxing bpf' '
     test_bpf_action default ALLOW
 '
 
-test_expect_success 'default action is allow with write sandboxing bpf' '
+test_expect_success GREP_P 'default action is allow with write sandboxing bpf' '
     sydbox \
         -m core/sandbox/read:off \
         -m core/sandbox/write:bpf \
