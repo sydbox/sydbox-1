@@ -80,22 +80,22 @@ you need **Sydbox-2.0.1** or later.
 
 |  .  | @                                                                       |
 |-----|:------------------------------------------------------------------------|
-| Tar | https://dev.exherbo.org/~alip/sydbox/sydbox-2.1.0.tar.bz2               |
-| SHA | https://dev.exherbo.org/~alip/sydbox/sydbox-2.1.0.tar.bz2.sha1sum       |
-| GPG | https://dev.exherbo.org/~alip/sydbox/sydbox-2.1.0.tar.bz2.sha1sum.asc   |
+| Tar | https://dev.exherbo.org/~alip/sydbox/sydbox-2.1.1.tar.bz2               |
+| SHA | https://dev.exherbo.org/~alip/sydbox/sydbox-2.1.1.tar.bz2.sha1sum       |
+| GPG | https://dev.exherbo.org/~alip/sydbox/sydbox-2.1.1.tar.bz2.sha1sum.asc   |
 | Git | https://git.exherbo.org/git/sydbox-1.git                                |
 | Ann | https://pink.exherbo.org/sydbox-v2.0.1/                                 |
 
 - Browse: https://git.exherbo.org/sydbox-1.git/
 - Exheres:
   - [sydbox.exlib](https://git.exherbo.org/arbor.git/tree/packages/sys-apps/sydbox/sydbox.exlib)
-  - [sydbox-2.1.0.exheres-0](https://git.exherbo.org/arbor.git/tree/packages/sys-apps/sydbox/sydbox-2.0.2.exheres-0)
+  - [sydbox-2.1.1.exheres-0](https://git.exherbo.org/arbor.git/tree/packages/sys-apps/sydbox/sydbox-2.1.1.exheres-0)
 
 You can check the build options using `sydbox --version`:
 
 ```
 $ sydbox --version
-sydbox-2.1.0
+sydbox-2.1.1
 Options: dump:yes seccomp:yes ipv6:yes netlink:yes
 ```
 
