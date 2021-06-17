@@ -12,6 +12,7 @@
 
 #include "sydbox.h"
 #include "compiler.h"
+#include "daemon.h"
 #include "dump.h"
 
 #include <time.h>
@@ -124,6 +125,11 @@ usage: "PACKAGE" [-hvb] [-d <fd|path|tmp>] [-a arch...] \n\
                       Warning: Modes 2 and 3 may run into too many processes errors.\n\
                       Use another mode or adapt the sysctl fs.nr_open as necessary if\n\
                       this is the case.\n\
+-I class[:data]    -- Modifies the IO scheduling priority of the program.\n\
+                      Class can be 0 for none, 1 for real time, 2 for best\n\
+                      effort and 3 for idle.\n\
+                      Data can be from 0 to 7 inclusive.\n\
+-N level           -- Modifies the scheduling priority of the program.\n\
 --dry-run          -- Run under inspection without denying system calls\n\
 --export=<bpf|pfc> -- Export the seccomp filters to standard error on startup\n\
 --test             -- Test if various runtime requirements are functional and exit\n\
@@ -1549,9 +1555,7 @@ static inline void free_pathlookup(char *pathname)
 	free(pathname);
 }
 
-static pid_t startup_child(char **argv,
-			   const char *restrict root_directory,
-			   const char *restrict working_directory)
+static pid_t startup_child(char **argv)
 {
 	int r, pfd[2];
 	char *pathname;
@@ -1573,10 +1577,22 @@ static pid_t startup_child(char **argv,
 		sydbox->in_child = true;
 		sydbox->seccomp_fd = pfd[1];
 
-		if (root_directory && chroot(root_directory) < 0)
-			die_errno("chroot(`%s')", root_directory);
-		if (working_directory && chdir(working_directory) < 0)
-			die_errno("chdir(`%s')", working_directory);
+		if (change_umask() < 0)
+			say_errno("change_umask");
+		if (change_nice() < 0)
+			say_errno("change_nice");
+		if (change_ionice() < 0)
+			say_errno("change_ionice");
+		if (change_root_directory() < 0)
+			die_errno("change_root_directory");
+		if (change_working_directory() < 0)
+			die_errno("change_working_directory");
+		if (change_group() < 0)
+			die_errno("change_group");
+		if (change_user() < 0)
+			die_errno("change_user");
+		if (change_background() < 0)
+			die_errno("change_background");
 		if ((r = sysinit_seccomp()) < 0) {
 			errno = -r;
 			if (errno == ENOTTY || errno == ENOENT)
@@ -1588,6 +1604,8 @@ static pid_t startup_child(char **argv,
 			_exit(getenv(SYDBOX_NOEXEC_ENV) ?
 				atoi(getenv(SYDBOX_NOEXEC_ENV)) :
 				0);
+		if (get_startas())
+			argv[0] = (char *)get_startas();
 		execv(pathname, argv);
 		fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
 			pathname, errno, strerror(errno));
@@ -1685,6 +1703,7 @@ void cleanup(void)
 int main(int argc, char **argv)
 {
 	int opt, i, r, opt_t[4];
+	char *c;
 	const char *env;
 	struct utsname buf_uts;
 
@@ -1716,20 +1735,17 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	char *root_directory = NULL;
-	char *working_directory = NULL;
-
 	/* Long options are present for compatibility with sydbox-0.
 	 * Thus they are not documented!
 	 */
 	int options_index;
 	char *profile_name;
 	struct option long_options[] = {
-		{"profile",	required_argument,	NULL,	0},
+		{"dry-run",	no_argument,		NULL,	0},
+		{"profile",	required_argument,	NULL,	1},
 		{"help",	no_argument,		NULL,	'h'},
 		{"version",	no_argument,		NULL,	'v'},
 		{"bpf",		no_argument,		NULL,	'b'},
-		{"dry-run",	no_argument,		NULL,	'N'},
 		{"config",	required_argument,	NULL,	'c'},
 		{"magic",	required_argument,	NULL,	'm'},
 		{"env",		required_argument,	NULL,	'E'},
@@ -1740,6 +1756,15 @@ int main(int argc, char **argv)
 		{"chdir",	required_argument,	NULL,	'D'},
 		{"chroot",	required_argument,	NULL,	'C'},
 		{"memaccess",	required_argument,	NULL,	'M'},
+		{"background",	no_argument,		NULL,	'B'},
+		{"stdout",	required_argument,	NULL,	'0'},
+		{"stderr",	required_argument,	NULL,	'1'},
+		{"startas",	required_argument,	NULL,	'A'},
+		{"ionice",	required_argument,	NULL,	'I'},
+		{"nice",	required_argument,	NULL,	'N'},
+		{"umask",	required_argument,	NULL,	'K'},
+		{"uid",		required_argument,	NULL,	'U'},
+		{"gid",		required_argument,	NULL,	'G'},
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -1747,10 +1772,13 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "a:bc:d:e:C:D:m:E:M:thv", long_options,
-				  &options_index)) != EOF) {
+	while ((opt = getopt_long(argc, argv, "a:A:bBc:d:e:C:D:m:E:M:I:N:K:thv1:2:U:G:",
+				  long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
+			sydbox->permissive = true;
+			break;
+		case 1:
 			/* special case for backwards compatibility */
 			profile_name = xmalloc(sizeof(char) * (strlen(optarg) + 2));
 			profile_name[0] = SYDBOX_PROFILE_CHAR;
@@ -1824,14 +1852,42 @@ int main(int argc, char **argv)
 				die("invalid magic: `%s': %s",
 				    optarg, magic_strerror(r));
 			break;
+		case 'A':
+			set_startas(xstrdup(optarg));
+			break;
+		case 'B':
+			set_background(true);
+			break;
+		case '1':
+			set_redirect_stdout(xstrdup(optarg));
+			break;
+		case '2':
+			set_redirect_stderr(xstrdup(optarg));
+			break;
 		case 'C':
-			root_directory = xstrdup(optarg);
+			set_root_directory(xstrdup(optarg));
 			break;
 		case 'D':
-			working_directory = xstrdup(optarg);
+			set_working_directory(xstrdup(optarg));
+			break;
+		case 'I':
+			c = strchr(optarg, ':');
+			if (!c)
+				set_ionice(atoi(optarg), 0);
+			else
+				set_ionice(atoi(optarg), atoi(c + 1));
 			break;
 		case 'N':
-			sydbox->permissive = true;
+			set_nice(atoi(optarg));
+			break;
+		case 'K':
+			set_umask(atoi(optarg));
+			break;
+		case 'U':
+			set_uid(atoi(optarg));
+			break;
+		case 'G':
+			set_gid(atoi(optarg));
 			break;
 		case 'E':
 			if (putenv(optarg))
@@ -1972,22 +2028,18 @@ int main(int argc, char **argv)
 
 	/* STARTUP_CHILD must not be called before the signal handlers get
 	   installed below as they are inherited into the spawned process. */
-	init_signals();
-	pid_t pid = startup_child(&argv[optind],
-				  root_directory,
-				  working_directory);
-	if (root_directory)
-		free(root_directory);
-	if (working_directory)
-		free(working_directory);
 	int exit_code;
+	pid_t pid;
 	if (use_notify()) {
+		init_signals();
+		pid = startup_child(&argv[optind]);
 		syd_process_t *current = new_process_or_kill(pid);
 		init_process_data(current, NULL);
 		dump(DUMP_STARTUP, pid);
 		(void)notify_loop(current);
 	} else {
 		int status;
+		startup_child(&argv[optind]);
 		for (;;) {
 			errno = 0;
 			pid = waitpid(-1, &status, __WALL);

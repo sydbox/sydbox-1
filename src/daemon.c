@@ -142,12 +142,27 @@ int change_working_directory(void)
 int change_background(void)
 {
 	int devnull_fd = -1;
+	int tty_fd = -1;
 
 	if (background) {
 		devnull_fd = open("/dev/null", O_RDWR);
 		if (devnull_fd < 0)
 			return -errno;
+#ifdef TIOCNOTTY
+		tty_fd = open("/dev/tty", O_RDWR);
+		if (tty_fd < 0)
+			say_errno("open(`/dev/tty')");
+#endif
 	}
+
+#ifdef TIOCNOTTY
+	if (tty_fd >= 0) {
+		if (ioctl(tty_fd, TIOCNOTTY, 0) < 0)
+			say_errno("ioctl");
+		if (close(tty_fd) < 0)
+			say_errno("close(`/dev/tty')");
+	}
+#endif
 
 	int stdin_fd = devnull_fd;
 	int stdout_fd = devnull_fd;
