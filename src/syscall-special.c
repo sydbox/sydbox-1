@@ -291,9 +291,10 @@ static int write_stat(syd_process_t *current, unsigned int buf_index, bool exten
 		return false;
 	}
 #else
-	if (current->abi != ABI_DEFAULT) {
-		say("don't know the size of stat buffer for ABI %d", current->abi);
-		say("skipped stat() buffer write");
+	if (current->arch != SCMP_ARCH_NATIVE) {
+		say("don't know the size of stat buffer for ARCH %"PRIu32,
+		    current->arch);
+		say("skipped stat() buffer write.");
 		return false;
 	}
 #endif
