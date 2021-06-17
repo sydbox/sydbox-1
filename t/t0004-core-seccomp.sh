@@ -92,8 +92,8 @@ test_expect_success GREP_P 'default action is allow with write sandboxing bpf' '
     test_bpf_action default ALLOW
 '
 
-test_expect_failure 'default action is allow with exec sandboxing bpf' '
-    test_expect_code 1 sydbox \
+test_expect_success 'default action is allow with exec sandboxing bpf' '
+    sydbox \
         -m core/sandbox/read:off \
         -m core/sandbox/write:bpf \
         -m core/sandbox/exec:bpf \
