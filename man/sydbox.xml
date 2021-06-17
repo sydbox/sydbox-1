@@ -6,21 +6,21 @@
 ]>
 
 <!--
-   Copyright (c) 2011, 2012, 2013, 2015, 2018, 2020, 2021 Ali Polatel <alip@exherbo.org>
+   Copyright (c) 2011, 2012, 2013, 2015, 2018, 2020, 2021 Alï Polatel <alip@exherbo.org>
    SPDX-License-Identifier: GPL-2.0-only
 -->
 
 <refentry id="sydbox" lang="en">
   <refentryinfo>
-    <title>sydbox</title>
+    <title>SydBox</title>
     <productname>sydbox</productname>
 
     <authorgroup>
       <author>
         <contrib>Developer</contrib>
-        <firstname>Ali</firstname>
+        <firstname>Alï</firstname>
         <surname>Polatel</surname>
-        <email>alip@exherbo.org</email>
+        <email>alïp@exherbo.org</email>
       </author>
     </authorgroup>
   </refentryinfo>
@@ -2021,15 +2021,19 @@
     <title>See Also</title>
     <para>
       <citerefentry><refentrytitle>sydfmt</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-      <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>strace</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
       <citerefentry><refentrytitle>seccomp</refentrytitle><manvolnum>2</manvolnum></citerefentry>,
-      <citerefentry><refentrytitle>strace</refentrytitle><manvolnum>1</manvolnum></citerefentry>.
+      <citerefentry><refentrytitle>seccomp_init</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>seccomp_load</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>seccomp_attr_set</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>seccomp_rule_add</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
     </para>
   </refsect1>
 
   <refsect1 id="copyright">
     <title>COPYRIGHT</title>
 
+    <para><constant>SPDX-License-Identifier:</constant> <varname>GPL-2.0-only</varname></para>
     <para>Copyright &#169; 2010, 2011, 2012, 2013, 2014, 2015, 2018, 2020, 2021 Ali Polatel <email>alip@exherbo.org</email></para>
   </refsect1>
 </refentry>
