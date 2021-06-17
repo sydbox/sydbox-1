@@ -1472,15 +1472,6 @@ notify_respond:
 				jump = true;
 			goto out;
 		}
-		if (update_mem_now && current->update_mem) {
-			update_mem_now = false;
-			process_reopen_proc_mem(-1, current, true);
-			if (!process_alive(current)) {
-				if (process_count_alive() == 0)
-					jump = true;
-				goto out;
-			}
-		}
 		if ((r = seccomp_notify_respond(sydbox->notify_fd,
 						sydbox->response)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
