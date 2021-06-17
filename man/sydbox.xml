@@ -40,7 +40,8 @@
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
       <itemizedlist>
-        <listitem><para><command>sydbox <arg choice="opt">-hvbN</arg> <arg choice="opt">-d &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >-e &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >-C directory</arg> <arg choice="opt" >-D directory</arg> <arg choice="opt" >-M 0..3</arg> <arg choice="opt" rep="repeat">-c pathspec</arg> <arg choice="opt" rep="repeat">-m magic</arg> <arg choice="opt" rep="repeat">-E var</arg> <arg choice="opt" rep="repeat">-E var=val</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
+        <listitem><para><command>sydbox <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..3</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt" >--chdir directory</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--startas name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
+        <listitem><para><command>sydbox <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="req">noexec</arg></command></para></listitem>
         <listitem><para><command>sydbox --test</command></para></listitem>
       </itemizedlist>
     </cmdsynopsis>
@@ -131,7 +132,6 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-N</option></term>
         <term><option>--dry-run</option></term>
         <listitem>
           <simpara>
@@ -184,64 +184,6 @@
             <varname>SYDBOX_NOEXEC</varname> or <constant>0</constant>
             if the variable is not set. The exit happens after preparing all the
             requested restrictions and right before process execution.
-            </simpara>
-          </note>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term><option>-a</option> <varname>arch</varname></term>
-        <term><option>--arch</option>=<varname>arch</varname></term>
-        <listitem>
-          <simpara>
-            Filter system calls for the given architecture, may be repeated
-          </simpara>
-          <simpara>
-            Available architectures are
-            <constant>native</constant>,
-            <constant>x86_64</constant>,
-            <constant>x86</constant>,
-            <constant>x86</constant>,
-            <constant>x32</constant>,
-            <constant>arm</constant>,
-            <constant>aarch64</constant>,
-            <constant>mips</constant>,
-            <constant>mips64</constant>,
-            <constant>ppc</constant>,
-            <constant>ppc64</constant>,
-            <constant>ppc64le</constant>,
-            <constant>s390</constant>,
-            <constant>s390x</constant>,
-            <constant>parisc</constant>,
-            <constant>parisc64</constant>, and
-            <constant>riscv64</constant>.
-          </simpara>
-          <simpara>
-            default: <constant>native</constant>, may be repeated.
-          </simpara>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term><option>-C</option> <varname>directory</varname></term>
-        <term><option>--chroot</option>=<varname>directory</varname></term>
-        <listitem>
-          <simpara>
-            Chroot to this directory before starting the daemon.
-          </simpara>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term><option>-D</option> <varname>directory</varname></term>
-        <term><option>--chdir</option>=<varname>directory</varname></term>
-        <listitem>
-          <simpara>
-            Change directory to this directory before starting the program.
-          </simpara>
-          <note>
-            <simpara>
-              Path to the chdir should be relative to the chroot.
             </simpara>
           </note>
         </listitem>
@@ -304,6 +246,39 @@
       </varlistentry>
 
       <varlistentry>
+        <term><option>-a</option> <varname>arch</varname></term>
+        <term><option>--arch</option>=<varname>arch</varname></term>
+        <listitem>
+          <simpara>
+            Filter system calls for the given architecture, may be repeated
+          </simpara>
+          <simpara>
+            Available architectures are
+            <constant>native</constant>,
+            <constant>x86_64</constant>,
+            <constant>x86</constant>,
+            <constant>x86</constant>,
+            <constant>x32</constant>,
+            <constant>arm</constant>,
+            <constant>aarch64</constant>,
+            <constant>mips</constant>,
+            <constant>mips64</constant>,
+            <constant>ppc</constant>,
+            <constant>ppc64</constant>,
+            <constant>ppc64le</constant>,
+            <constant>s390</constant>,
+            <constant>s390x</constant>,
+            <constant>parisc</constant>,
+            <constant>parisc64</constant>, and
+            <constant>riscv64</constant>.
+          </simpara>
+          <simpara>
+            default: <constant>native</constant>, may be repeated.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
         <term><option>-c</option> <filename>pathspec</filename></term>
         <term><option>--config</option>=<filename>pathspec</filename></term>
         <listitem>
@@ -326,11 +301,142 @@
       </varlistentry>
 
       <varlistentry>
+        <term><option>-C</option> <varname>directory</varname></term>
+        <term><option>--chroot</option>=<varname>directory</varname></term>
+        <listitem>
+          <simpara>
+            Chroot to this directory before starting the daemon.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-D</option> <varname>directory</varname></term>
+        <term><option>--chdir</option>=<varname>directory</varname></term>
+        <listitem>
+          <simpara>
+            Change directory to this directory before starting the program.
+          </simpara>
+          <note>
+            <simpara>
+              Path to the chdir should be relative to the chroot.
+            </simpara>
+          </note>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
         <term><option>-E</option> <varname>var=val</varname></term>
         <term><option>--env</option>=<varname>var=val</varname></term>
         <listitem>
           <simpara>
             Put <varname>var=val</varname> in the environment for command, may be repeated
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-I</option> <varname>class[:data]</varname></term>
+        <term><option>--ionice</option>=<varname>class[:data]</varname></term>
+        <listitem>
+          <simpara>
+            Modifies <emphasis>the IO scheduling priority</emphasis> of the program.
+            Class can be <constant>0</constant> for <varname>none</varname>,
+            <constant>1</constant> for <varname>real time</varname>,
+            <constant>2</constant> for <varname>best effort</varname>,
+            and <constant>3</constant> for <varname>idle</varname>.
+            Data can be from <constant>0</constant> to <constant>7</constant> inclusive.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-N</option> <varname>level</varname></term>
+        <term><option>--nice</option>=<varname>level</varname></term>
+        <listitem>
+          <simpara>
+            Modifies <emphasis>the scheduling priority</emphasis> of the program.
+            A niceness of <constant>-20</constant> is <varname>the highest priority</varname>,
+            and <constant>19</constant> is <varname>the lowest priority</varname>.
+            The default niceness for processes is inherited from its parent process
+            and is usually <constant>0</constant>.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-B</option></term>
+        <term><option>--background</option></term>
+        <listitem>
+          <simpara>
+            Force the program into the background.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-1</option> <varname>logfile</varname></term>
+        <term><option>--stdout</option>=<varname>logfile</varname></term>
+        <listitem>
+          <simpara>
+            Redirect the standard output of the process to logfile when started with
+            <option>--background</option>. The logfile Must be an absolute pathname,
+            but relative to the path optionally given with <option>--chroot</option>.
+            The logfile can also be a named pipe.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-2</option> <varname>logfile</varname></term>
+        <term><option>--stderr</option>=<varname>logfile</varname></term>
+        <listitem>
+          <simpara>
+            Redirect the standard error  of the process to logfile when started with
+            <option>--background</option>. The logfile Must be an absolute pathname,
+            but relative to the path optionally given with <option>--chroot</option>.
+            The logfile can also be a named pipe.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-A</option> <varname>name</varname></term>
+        <term><option>--startas</option>=<varname>name</varname></term>
+        <listitem>
+          <simpara>
+            Change the process name of the program to name.  This just changes
+            the first argument passed to the program.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-K</option> <varname>mode</varname></term>
+        <term><option>--umask</option>=<varname>mode</varname></term>
+        <listitem>
+          <simpara>
+            Set <emphasis>the file mode creation mask</emphasis> of the program.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-U</option> <varname>user-id</varname></term>
+        <term><option>--uid</option>=<varname>user-id</varname></term>
+        <listitem>
+          <simpara>
+            Change user to the user with the given <emphasis>user id</emphasis>.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-G</option> <varname>group-id</varname></term>
+        <term><option>--gid</option>=<varname>group-id</varname></term>
+        <listitem>
+          <simpara>
+            Change group to the group with the given <emphasis>group id</emphasis>.
           </simpara>
         </listitem>
       </varlistentry>

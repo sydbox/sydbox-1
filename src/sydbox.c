@@ -91,53 +91,25 @@ static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
 "PACKAGE"-"VERSION GITVERSION" -- seccomp based application sandbox\n\
-usage: "PACKAGE" [-hvb] [-d <fd|path|tmp>] [-a arch...] \n\
-                     [-c pathspec...] [-m magic...]\n\
-                     [-E var=val...] {command [arg...]}\n\
-       "PACKAGE" --dry-run [-d <fd|path|tmp>] {command [arg...]}\n\
+usage: "PACKAGE" [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
+              [--export <bpf|pfc:filename>] [--memaccess 0..3]\n\
+              [--arch arch...] [--config pathspec...] [--magic magic...]\n\
+              [--chroot directory] [--chdir directory]\n\
+              [--env var...] [--env var=val...]\n\
+              [--ionice class:data] [--nice level]\n\
+              [--background] [--stdout logfile] [--stderr logfile]\n\
+              [--startas name] [--umask mode]\n\
+              [--uid user-id] [--gid group-id] {command [arg...]}\n\
+       "PACKAGE" [--export <bpf|pfc:filename>]\n\
+              [--arch arch...] [--config pathspec...]\n\
+              [--magic command...] {noexec}\n\
        "PACKAGE" --test\n\
--h                 -- Show usage and exit\n\
--v                 -- Show version and exit\n\
--c pathspec        -- Path spec to the configuration file, may be repeated\n\
--m magic           -- Run a magic command during init, may be repeated\n\
--E var=val         -- Put var=val in the environment for command, may be repeated\n\
--E var             -- Remove var from the environment for command, may be repeated\n\
--a <arch>          -- Filter system calls for the given architecture, may be repeated\n\
-                      native,x86_64,x86,x32,arm,aarch64,mips,mips64,ppc,ppc64\n\
-                             ppc64le,s390,s390x,parisc,parisc64,riscv64\n\
-                      default: native\n\
--b                 -- Run in bpf only mode, no seccomp user notifications\n\
--d <fd|path|tmp>   -- Dump system call information to the given file descriptor\n\
-                      Use a number to dump to a file descriptor,\n\
-                      use a string to dump to a path, and\n\
-                      use `tmp' to dump to a temporary file.\n\
--D <path>          -- Chdir to this directory before starting the program\n\
--C <path>          -- Chroot to this directory before starting the daemon\n\
-                      Path to the chdir should be relative to the chroot\n\
--M <mode>          -- Mode on using cross memory attach or /proc/pid/mem:\n\
-                      Mode 0: Use cross memory attach if available, use /proc otherwise.\n\
-                      Mode 1: Use /proc/pid/mem unconditionally.\n\
-                      Mode 2: Use cross memory attach if available, use /proc otherwise,\n\
-                              open file once, do not reopen the file each call.\n\
-                      Mode 3: Use /proc/pid/mem unconditionally,\n\
-                              open file once, do not reopen the file each call.\n\
-                      default: 0\n\
-                      Warning: Modes 2 and 3 may run into too many processes errors.\n\
-                      Use another mode or adapt the sysctl fs.nr_open as necessary if\n\
-                      this is the case.\n\
--I class[:data]    -- Modifies the IO scheduling priority of the program.\n\
-                      Class can be 0 for none, 1 for real time, 2 for best\n\
-                      effort and 3 for idle.\n\
-                      Data can be from 0 to 7 inclusive.\n\
--N level           -- Modifies the scheduling priority of the program.\n\
---dry-run          -- Run under inspection without denying system calls\n\
---export=<bpf|pfc> -- Export the seccomp filters to standard error on startup\n\
---test             -- Test if various runtime requirements are functional and exit\n\
 \n\
 Hey you, out there beyond the wall,\n\
 Breaking bottles in the hall,\n\
 Can you help me?\n\
 \n\
+Read the "PACKAGE"(1) manual page for more information.\n\
 Send bug reports to \"" PACKAGE_BUGREPORT "\"\n\
 Attaching poems encourages consideration tremendously.\n");
 	exit(code);
