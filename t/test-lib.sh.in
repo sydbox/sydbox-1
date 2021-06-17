@@ -912,12 +912,6 @@ maybe_teardown_pfc () {
 maybe_teardown_strace () {
 	SYDBOX_STRACE_ENABLED=
 	export SYDBOX_STRACE_ENABLED
-	if test -s "$SHOEBOX_STRACE"; then
-		echo >&4 "STRACE: T${TEST_NAME}.${TEST_NUMBER}.${test_count}"
-		cat >&4 "$SHOEBOX_STRACE"
-		echo >&4 '--<8--'
-	fi
-	# rm -f "$SHOEBOX_STRACE"
 }
 
 maybe_teardown_valgrind () {
@@ -1022,19 +1016,21 @@ maybe_setup_strace () {
 	if test -n "$SYDBOX_STRACE_ENABLED"
 	then
 		i=1
-		SHOEBOX_STRACE=$TRASH_DIRECTORY/${this_test}.${test_count}.strace
+		SHOEBOX_STRACE="$TEST_RESULTS_BASE.${test_count}.strace"
 		while true; do
-			shoe=$(printf '%s.%02d' "$SHOEBOX_STRACE" "$i")
+			if test "$i" -eq 1; then
+				shoe=$(printf '%s' "$SHOEBOX_STRACE")
+			else
+				shoe=$(printf '%s.%02d' "$SHOEBOX_STRACE" "$i")
+			fi
 			if test -f "$shoe"
 			then
 				i=$(expr "$i" + 1)
 			else
 				SHOEBOX_STRACE="${shoe}"
-				export SHOEBOX_STRACE
 				break
 			fi
 		done
-		# rm -f "$SHOEBOX_STRACE"
 	fi
 	export SYDBOX_STRACE_ENABLED # To used by bin-wrappers/sydbox
 	export SHOEBOX_STRACE        # To be used by bin-wrappers/sydbox

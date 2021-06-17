@@ -10,10 +10,8 @@ fi
 
 eexec() {
 	if test -n "$SYDBOX_STRACE_ENABLED"; then
-		echo >&4 "> SYD: strace -f -o shoebox.strace -- $*"
 		exec strace -f -o "$SHOEBOX_STRACE" -- "$@"
 	else
-		echo >&4 "> SYD: $*"
 		exec "$@"
 	fi
 }
