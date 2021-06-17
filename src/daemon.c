@@ -164,26 +164,46 @@ int change_background(void)
 	}
 #endif
 
+	int r;
 	int stdin_fd = devnull_fd;
 	int stdout_fd = devnull_fd;
 	int stderr_fd = devnull_fd;
 
 	if (redirect_stdout &&
 	    (stdout_fd = open(redirect_stdout, O_WRONLY | O_CREAT | O_APPEND,
-			      S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) < 0)
-		return -errno;
+			      S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) < 0) {
+		r = -errno;
+		goto out;
+	}
 	if (redirect_stderr &&
 	    (stderr_fd = open(redirect_stderr, O_WRONLY | O_CREAT | O_APPEND,
-			      S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) < 0)
-		return -errno;
+			      S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) < 0) {
+		r = -errno;
+		goto out;
+	}
 
-	if (background && dup2(stdin_fd, STDIN_FILENO) < 0)
-		return -errno;
-	if ((background || redirect_stdout) && dup2(stdout_fd, STDOUT_FILENO) < 0)
-		return -errno;
+	if (background && dup2(stdin_fd, STDIN_FILENO) < 0) {
+		r = -errno;
+		goto out;
+	}
+	if ((background || redirect_stdout) && dup2(stdout_fd, STDOUT_FILENO) < 0) {
+		r = -errno;
+		goto out;
+	}
 	if ((background || redirect_stderr) && dup2(stderr_fd, STDERR_FILENO) < 0)
-		return -errno;
+		r = -errno;
 
+out:
+	if (devnull_fd >= 0)
+		close(devnull_fd);
+	if (stdin_fd >= 0 && stdin_fd != devnull_fd)
+		close(stdin_fd);
+	if (stderr_fd >= 0 && stderr_fd != devnull_fd)
+		close(stderr_fd);
+	if (stdout_fd >= 0 && stdout_fd != devnull_fd)
+		close(stdout_fd);
+	if (r)
+		return r;
 	errno = 0;
 	setsid();
 	return -errno;
