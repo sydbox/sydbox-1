@@ -154,13 +154,13 @@ EOF
         "network sandboxing for bind works to auto-allowlist UNIX socket [memory_access:${ns_mem_access}]" '
 pdir="$(unique_dir)" &&
 mkdir "$pdir" &&
-pushd "$pdir" &&
+cd "$pdir" &&
 test_expect_code 0 sydbox \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         -m "allowlist/network/bind+unix:$HOMER/${pdir}/test.socket" \
         syd-bind-auto-unix-socket.py &&
-popd
+cd "$HOMER"
 '
 done
 
