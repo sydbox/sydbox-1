@@ -68,6 +68,7 @@ syd_PROGRAMS= wildtest realpath_mode-1 sockmatchtest \
 
 check_SCRIPTS= $(syd_SCRIPTS)
 check_PROGRAMS= $(syd_PROGRAMS)
+EXTRA_DIST+= $(syd_SCRIPTS)
 
 .PHONY: check-build
 check-build:
