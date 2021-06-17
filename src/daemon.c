@@ -182,20 +182,13 @@ int change_background(void)
 		goto out;
 	}
 
-	if (background && dup2(stdin_fd, STDIN_FILENO) < 0) {
-		r = -errno;
-		goto out;
-	}
-	if ((background || redirect_stdout) && dup2(stdout_fd, STDOUT_FILENO) < 0) {
-		r = -errno;
-		goto out;
-	}
-	if ((background || redirect_stderr) && dup2(stderr_fd, STDERR_FILENO) < 0) {
-		r = -errno;
-		goto out;
-	}
+	if (background && dup2(stdin_fd, STDIN_FILENO) < 0)
+		return -errno;
+	if ((background || redirect_stdout) && dup2(stdout_fd, STDOUT_FILENO) < 0)
+		return -errno;
+	if ((background || redirect_stderr) && dup2(stderr_fd, STDERR_FILENO) < 0)
+		return -errno;
 
-out:
 	errno = 0;
 	setsid();
 	return -errno;
