@@ -814,6 +814,12 @@ out:
 	return r;
 }
 
+static volatile sig_atomic_t child_notified;
+static void test_seccomp_sig_chld(int sig)
+{
+	child_notified = true;
+}
+
 int test_seccomp(bool report)
 {
 	int r = 0;
@@ -925,6 +931,7 @@ out:
 		say_errno("pidfd_getfd(%d)", pid);
 		goto out;
 	}
+	signal(SIGCHLD, test_seccomp_sig_chld);
 	kill(pid, SIGCONT);
 
 	struct pollfd pollfd;
@@ -933,7 +940,9 @@ out:
 	errno = 0;
 restart_poll:
 	if ((r = poll(&pollfd, 1, 1000)) < 0) {
-		if (!errno || errno == EINTR)
+		if (child_notified)
+			goto wait;
+		else if (!errno || errno == EINTR)
 			goto restart_poll;
 		r = -errno;
 		goto out;
@@ -1009,6 +1018,7 @@ notify_respond:
 	}
 
 	int wstatus;
+wait:
 	if (waitpid(pid, &wstatus, __WALL) < 0)
 		die_errno("waitpid");
 	if (WIFEXITED(wstatus))
