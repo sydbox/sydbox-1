@@ -967,8 +967,10 @@ static inline bool process_is_alive(pid_t pid, pid_t tgid)
 	if (!process_kill(pid, tgid, 0)) {
 		return false;
 	} else if ((r = proc_stat(pid, &info)) < 0) {
-		if (r != -ENOENT && r != -ESRCH)
+		if (r != -ENOENT && r != -ESRCH) {
+			errno = -r;
 			say_errno("proc_stat(%d)", pid);
+		}
 		return false;
 	} else if (info.state == 'Z') {
 		// Zombie process, not alive.
