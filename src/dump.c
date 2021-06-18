@@ -74,8 +74,7 @@ static void dump_errno(int err_no)
 
 static void dump_format(const char *argv0, const char *pathname,
 			const char *runas,
-			const char*const*arch_opt,
-			const char*const*arch_const)
+			const char*const*arch)
 {
 	int r;
 	char *b_argv0 = NULL;
@@ -98,13 +97,6 @@ static void dump_format(const char *argv0, const char *pathname,
 		j_path = json_escape_str(&b_path, pathname);
 
 	/* Step 2: Generate JSON array from architectures. */
-	const char * const*arch;
-	if (arch_opt[0] != NULL)
-		arch = (const char *const*)arch_opt;
-	else if (arch_const[0] != NULL)
-		arch = arch_const;
-	else
-		arch = NULL; /* should not happen. */
 	char j_arch[(SYD_SECCOMP_ARCH_ARGV_SIZ * (16 + 1)) + 2 /* [] */];
 	j_arch[0] = '[';
 	char *j_arch_ptr = j_arch + 1;
@@ -341,9 +333,8 @@ void dump(enum dump what, ...)
 		const char *argv0 = va_arg(ap, const char *);
 		const char *path = va_arg(ap, const char *);
 		const char *runas = va_arg(ap, const char *);
-		const char *const*arch_opt = va_arg(ap, const char *const*);
-		const char *const*arch_const = va_arg(ap, const char *const*);
-		dump_format(argv0, path, runas, arch_opt, arch_const);
+		const char *const*arch = va_arg(ap, const char *const*);
+		dump_format(argv0, path, runas, arch);
 		dump_cycle();
 		va_end(ap);
 		return;

@@ -60,33 +60,15 @@ static volatile sig_atomic_t child_notified;
 static sigset_t empty_set, blocked_set;
 static struct sigaction child_sa;
 
-/* Libseccomp Architecture Handling */
+/* Libseccomp Architecture Handling
+ *
+ * SYD_SECCOMP_ARCH_ARGV_SIZ should include all the architectures,
+ * see the manual page seccomp_arch_add(3) for a list and another
+ * additional space for the terminating NULL pointer (used to loop
+ * over the array to free the strings).
+ */
 static char *arch_argv[SYD_SECCOMP_ARCH_ARGV_SIZ] = { NULL };
-static const char *arch_argv_const[SYD_SECCOMP_ARCH_ARGV_SIZ] = { NULL };
 static size_t arch_argv_idx;
-static size_t arch_const_idx;
-static const char *const libseccomp_arch[SYD_SECCOMP_ARCH_ARGV_SIZ] = {
-		"x86",
-		"x86_64",
-		"x32",
-		"arm",
-		"aarch64",
-		"mips",
-		"mips64",
-		"mips64n32",
-		"mipsel",
-		"mipsel64",
-		"mipsel64n32",
-		"ppc",
-		"ppc64",
-		"ppc64le",
-		"s390",
-		"s390x",
-		"parisc",
-		"parisc64",
-		"riscv64",
-		NULL,
-};
 
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
@@ -1604,8 +1586,7 @@ static pid_t startup_child(char **argv)
 	}
 
 	/* All ready, initialise dump */
-	dump(DUMP_INIT, argv[0], pathname, get_startas(),
-	     arch_argv, arch_argv_const);
+	dump(DUMP_INIT, argv[0], pathname, get_startas(), arch_argv);
 	/* We may free the elements of arch_argv now,
 	 * they are no longer required. */
 	for (size_t i = 0; arch_argv[i] != NULL; i++)
@@ -2067,59 +2048,9 @@ int main(int argc, char **argv)
 	 */
 	if (arch_argv_idx == 0) {
 		/* User has specified no architectures.
-		 * use/try all the valid architectures:
+		 * use/try all the valid architectures defined at compile-time.
 		 */
-		bool say_arch = false;
-#if SYDBOX_HAVE_DUMP_BUILTIN
-		if (sydbox->dump_fd > 0)
-			say_arch = true;
-#endif
-		for (size_t k = 0; libseccomp_arch[k] != NULL; k++) {
-			bool valid = false;
-			const char *a = libseccomp_arch[k];
-			arch = arch_from_string(a);
-			if ((r = syd_seccomp_arch_is_valid(arch, &valid)) != 0) {
-				if (say_arch) {
-					say("! Architecture %s support check failed: "
-					    "%d %s", a, -r, strerror(-r));
-					say("+ Continuing...");
-				}
-				if (r == -EINVAL)
-					say("? Architecture %s name is "
-					    "correct?", a);
-				continue;
-			} else if (!valid) {
-				/* Skip invalid architectures. */
-				if (say_arch)
-					say("- Architecture %s is not "
-					    "supported.", a);
-				continue;
-			}
-
-			int add = seccomp_arch_add(sydbox->ctx, arch);
-			switch (add) {
-			case 0:		/* Architecture successfully added. */
-				if (say_arch)
-					say("+ Architecture %s added.",
-					    a);
-				break;
-			case -EDOM:	/* Ignore invalid architecture. */
-				if (say_arch)
-					say("! Architecture %s is not supported.",
-					    a);
-				continue;
-			case -EEXIST:	/* Architecture already present is ok. */
-				if (say_arch)
-					say("+ Architecture %s is already "
-					    "filtered.", a);
-				break;
-			default:
-				errno = -add;
-				die_errno("seccomp_arch_add(arch=\"%s\")",
-					  a);
-			}
-			arch_argv_const[arch_const_idx++] = a;
-		}
+#include "syd_seccomp_arch_default.c"
 	} else {
 		/* Else, we plan to remove the native architecture of libseccomp.
 		 * If the user passes --arch native, we are not going to

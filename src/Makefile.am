@@ -58,6 +58,7 @@ noinst_HEADERS+= \
 		 #profile_parser.y \
 		 #profile_scanner.l \
 		 sc_map.h \
+		 sc_map_syd.h \
 		 serializer.h \
 		 sha1dc/sha1.h \
 		 sha1dc/ubc_check.h \

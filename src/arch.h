@@ -12,5 +12,6 @@
 #include <seccomp.h>
 
 int32_t arch_from_string(const char *arch);
+const char *arch_to_string(uint32_t arch);
 
 #endif
