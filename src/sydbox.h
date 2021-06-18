@@ -38,7 +38,7 @@
 #include "arch.h"
 #include "compiler.h"
 
-#include "sc_map.h"
+#include "sc_map_syd.h"
 #include "sha1dc_syd.h"
 #include "hex.h"
 

@@ -1727,15 +1727,19 @@ void cleanup(void)
 
 	const char *path;
 	syd_process_t *proc_node;
-	sc_map_foreach_value(&sydbox->config.proc_pid_auto, path)
-		free((char *)path);
-	sc_map_foreach_value(&sydbox->tree, proc_node) {
-		if (proc_node->flags & SYD_KILLED)
-			proc_node->flags &= ~SYD_KILLED;
-		remove_process_node(proc_node);
+	if (!sc_map_freed(&sydbox->config.proc_pid_auto)) {
+		sc_map_foreach_value(&sydbox->config.proc_pid_auto, path)
+			free((char *)path);
+		sc_map_term_64s(&sydbox->config.proc_pid_auto);
 	}
-	sc_map_term_64s(&sydbox->config.proc_pid_auto);
-	sc_map_term_64v(&sydbox->tree);
+	if (!sc_map_freed(&sydbox->tree)) {
+		sc_map_foreach_value(&sydbox->tree, proc_node) {
+			if (proc_node->flags & SYD_KILLED)
+				proc_node->flags &= ~SYD_KILLED;
+			remove_process_node(proc_node);
+		}
+		sc_map_term_64v(&sydbox->tree);
+	}
 
 	filter_free();
 	// reset_sandbox(&sydbox->config.box_static);
