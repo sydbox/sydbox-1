@@ -60,6 +60,34 @@ static volatile sig_atomic_t child_notified;
 static sigset_t empty_set, blocked_set;
 static struct sigaction child_sa;
 
+/* Libseccomp Architecture Handling */
+static char *arch_argv[SYD_SECCOMP_ARCH_ARGV_SIZ] = { NULL };
+static const char *arch_argv_const[SYD_SECCOMP_ARCH_ARGV_SIZ] = { NULL };
+static size_t arch_argv_idx;
+static size_t arch_const_idx;
+static const char *const libseccomp_arch[SYD_SECCOMP_ARCH_ARGV_SIZ] = {
+		"x86",
+		"x86_64",
+		"x32",
+		"arm",
+		"aarch64",
+		"mips",
+		"mips64",
+		"mips64n32",
+		"mipsel",
+		"mipsel64",
+		"mipsel64n32",
+		"ppc",
+		"ppc64",
+		"ppc64le",
+		"s390",
+		"s390x",
+		"parisc",
+		"parisc64",
+		"riscv64",
+		NULL,
+};
+
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
 static void sig_alrm(int sig);
@@ -1576,7 +1604,13 @@ static pid_t startup_child(char **argv)
 	}
 
 	/* All ready, initialise dump */
-	dump(DUMP_INIT, argv[0], pathname, get_startas());
+	dump(DUMP_INIT, argv[0], pathname, get_startas(),
+	     arch_argv, arch_argv_const);
+	/* We may free the elements of arch_argv now,
+	 * they are no longer required. */
+	for (size_t i = 0; arch_argv[i] != NULL; i++)
+		free(arch_argv[i]);
+	arch_argv[0] = NULL;
 
 	if (!noexec && !pathname)
 		die_errno("can't exec `%s'", argv[0]);
@@ -1715,8 +1749,8 @@ int main(int argc, char **argv)
 	struct utsname buf_uts;
 
 	int32_t arch;
-	size_t arch_argv_idx = 0;
-	char *arch_argv[32] = { NULL };
+	uint32_t arch_native = seccomp_arch_native();
+	// memset(arch_argv, 0, sizeof(char) * ARCH_ARGV_SIZ);
 
 	/* Early initialisations */
 	init_early();
@@ -1759,7 +1793,6 @@ int main(int argc, char **argv)
 		{"arch",	required_argument,	NULL,	'a'},
 		{"dump",	no_argument,		NULL,	'd'},
 		{"export",	required_argument,	NULL,	'e'},
-		{"test",	no_argument,		NULL,	't'},
 		{"chdir",	required_argument,	NULL,	'D'},
 		{"chroot",	required_argument,	NULL,	'C'},
 		{"memaccess",	required_argument,	NULL,	'M'},
@@ -1772,6 +1805,7 @@ int main(int argc, char **argv)
 		{"umask",	required_argument,	NULL,	'K'},
 		{"uid",		required_argument,	NULL,	'U'},
 		{"gid",		required_argument,	NULL,	'G'},
+		{"test",	no_argument,		NULL,	't'},
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -1794,9 +1828,10 @@ int main(int argc, char **argv)
 			free(profile_name);
 			break;
 		case 'a':
-			if (arch_argv_idx >= 32)
+			if (arch_argv_idx >= SYD_SECCOMP_ARCH_ARGV_SIZ - 1)
 				die("too many -a arguments");
 			arch_argv[arch_argv_idx++] = xstrdup(optarg);
+			arch_argv[arch_argv_idx] = NULL;
 			break;
 		case 'b':
 			sydbox->bpf_only = true;
@@ -1928,7 +1963,7 @@ int main(int argc, char **argv)
 				    buf_uts.version);
 			}
 			if (os_release >= KERNEL_VERSION(5,6,0))
-				say("[*] Linux kernel is 5.6.0 or newer, good. ");
+				say("[*] Linux kernel is 5.6.0 or newer, good.");
 			else
 				say("warning: Your Linux kernel is too old "
 				    "to support seccomp bpf and seccomp "
@@ -2001,6 +2036,7 @@ int main(int argc, char **argv)
 	}
 
 	/* initialize Secure Computing */
+	bool using_arch_native = true; /* Loaded by libseccomp by default. */
 	if (sydbox->config.restrict_general > 0)
 		sydbox->seccomp_action = SCMP_ACT_ERRNO(EPERM);
 	else
@@ -2010,25 +2046,114 @@ int main(int argc, char **argv)
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
 		say("can't optimize seccomp filter (%d %s), continuing...",
 		    -r, strerror(-r));
+	/* This is added by default by libseccomp,
+	 * so no need to do it manually.
 	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_NATIVE);
+	 */
+	if (arch_argv_idx == 0) {
+		/* User has specified no architectures.
+		 * use/try all the valid architectures:
+		 */
+		bool say_arch = false;
+#if SYDBOX_HAVE_DUMP_BUILTIN
+		if (sydbox->dump_fd > 0)
+			say_arch = true;
+#endif
+		for (size_t k = 0; libseccomp_arch[k] != NULL; k++) {
+			bool valid = false;
+			const char *a = libseccomp_arch[k];
+			arch = arch_from_string(a);
+			if ((r = syd_seccomp_arch_is_valid(arch, &valid)) != 0) {
+				if (say_arch) {
+					say("! Architecture %s support check failed: "
+					    "%d %s", a, -r, strerror(-r));
+					say("+ Continuing...");
+				}
+				if (r == -EINVAL)
+					say("? Architecture %s name is "
+					    "correct?", a);
+				continue;
+			} else if (!valid) {
+				/* Skip invalid architectures. */
+				if (say_arch)
+					say("- Architecture %s is not "
+					    "supported.", a);
+				continue;
+			}
+
+			int add = seccomp_arch_add(sydbox->ctx, arch);
+			switch (add) {
+			case 0:		/* Architecture successfully added. */
+				if (say_arch)
+					say("+ Architecture %s added.",
+					    a);
+				break;
+			case -EDOM:	/* Ignore invalid architecture. */
+				if (say_arch)
+					say("! Architecture %s is not supported.",
+					    a);
+				continue;
+			case -EEXIST:	/* Architecture already present is ok. */
+				if (say_arch)
+					say("+ Architecture %s is already "
+					    "filtered.", a);
+				break;
+			default:
+				errno = -add;
+				die_errno("seccomp_arch_add(arch=\"%s\")",
+					  a);
+			}
+			arch_argv_const[arch_const_idx++] = a;
+		}
+	} else {
+		/* Else, we plan to remove the native architecture of libseccomp.
+		 * If the user passes --arch native, we are not going to
+		 * remove it.
+		 */
+		using_arch_native = false;
+	}
 	for (i = arch_argv_idx - 1; i >= 0; i--) {
 		if (arch_argv[i] == NULL)
 			continue;
 		arch = arch_from_string(arch_argv[i]);
-		if (arch < 0) {
-			errno = EINVAL;
-			die_errno("invalid architecture %s", arch_argv[i]);
+		if (arch < 0)
+			die("invalid architecture `%s'", arch_argv[i]);
+		if ((uint32_t)arch == SCMP_ARCH_NATIVE ||
+		    (uint32_t)arch == arch_native)
+			continue; /* native is valid. */
+		bool valid = false;
+		if ((r = syd_seccomp_arch_is_valid(arch, &valid)) != 0) {
+			errno = -r;
+			say("architecture support check failed, "
+			    "continuing...");
+		} else if (!valid) {
+			die("unsupported architecture `%s'", arch_argv[i]);
 		}
+	}
 
-		r = seccomp_arch_add(sydbox->ctx, (uint32_t)arch);
-		if (r == -EINVAL) {
-			say("architecture %s: not ok, continuing..",
-			    arch_argv[i]);
-			say("system calls in arch %s will be killed!",
-			    arch_argv[i]);
+	for (i = arch_argv_idx - 1; i >= 0; i--) {
+		if (arch_argv[i] == NULL)
+			continue;
+		arch = arch_from_string(arch_argv[i]);
+		if (arch < 0)
+			assert_not_reached();
+		if ((uint32_t)arch == SCMP_ARCH_NATIVE ||
+		    (uint32_t)arch == arch_native)
+			using_arch_native = true;
+		if ((r = seccomp_arch_add(sydbox->ctx, (uint32_t)arch)) != 0 &&
+		    r != -EEXIST) {
+			say("architecture %s: not ok (%d %s), continuing..",
+			    arch_argv[i], -r, strerror(-r));
+			say("system calls in arch %s may result in process kill, "
+			    "hang, or misfunction!", arch_argv[i]);
 		}
+	}
 
-		free(arch_argv[i]);
+	if (!using_arch_native &&
+	    ((r = seccomp_arch_remove(sydbox->ctx, SCMP_ARCH_NATIVE)) != 0 ||
+	     (r = seccomp_arch_remove(sydbox->ctx, arch_native)) != 0)) {
+		errno = -r;
+		say_errno("error removing native architecture");
 	}
 
 	/*

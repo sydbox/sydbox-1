@@ -128,6 +128,7 @@
 # define SYDBOX_NOEXEC_ENV "SYDBOX_NOEXEC"
 #endif
 
+#define SYD_SECCOMP_ARCH_ARGV_SIZ 20
 #include <errno.h>
 #define syd_rule_add_return(ctx, ...) { \
 	int _r = seccomp_rule_add(ctx, __VA_ARGS__); \

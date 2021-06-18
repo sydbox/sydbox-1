@@ -71,8 +71,11 @@ static void dump_errno(int err_no)
 		err_no, errno2name(err_no));
 }
 
+
 static void dump_format(const char *argv0, const char *pathname,
-			const char *runas)
+			const char *runas,
+			const char*const*arch_opt,
+			const char*const*arch_const)
 {
 	int r;
 	char *b_argv0 = NULL;
@@ -94,7 +97,40 @@ static void dump_format(const char *argv0, const char *pathname,
 	else
 		j_path = json_escape_str(&b_path, pathname);
 
-	/* Step 2: Calculate the SHA1 checksum of the
+	/* Step 2: Generate JSON array from architectures. */
+	const char * const*arch;
+	if (arch_opt[0] != NULL)
+		arch = (const char *const*)arch_opt;
+	else if (arch_const[0] != NULL)
+		arch = arch_const;
+	else
+		arch = NULL; /* should not happen. */
+	char j_arch[(SYD_SECCOMP_ARCH_ARGV_SIZ * (16 + 1)) + 2 /* [] */];
+	j_arch[0] = '[';
+	char *j_arch_ptr = j_arch + 1;
+	if (arch) {
+		for (size_t i = 0; arch[i] != NULL; i++) {
+			if (i > 0) {
+				j_arch_ptr[0] = ',';
+				j_arch_ptr++;
+			}
+			j_arch_ptr[0] = '\0';
+
+			j_arch_ptr[0] = '"'; j_arch_ptr++;
+			j_arch_ptr[0] = '\0';
+
+			size_t len = strlen(arch[i]);
+			strlcpy(j_arch_ptr, arch[i], len + 1);
+			j_arch_ptr += len;
+
+			j_arch_ptr[0] = '"'; j_arch_ptr++;
+			j_arch_ptr[0] = '\0';
+		}
+	}
+	j_arch_ptr[0] = ']';
+	j_arch_ptr[1] = '\0';
+
+	/* Step 3: Calculate the SHA1 checksum of the
 	 * pathname to the command to be executed by
 	 * SydBox. This should be enabled with the
 	 * magic command core/trace/program_checksum
@@ -111,12 +147,13 @@ static void dump_format(const char *argv0, const char *pathname,
 	fprintf(fp, "{"
 		J(id)"%llu,"
 		J(syd)"%d,"
+		J(arch)"%s,"
 		J(cmd)"{"J(name)"\"%s\","
 			 J(as)"\"%s\","
 			 J(hash)"\"%s\","
-			 J(path)"\"%s\"}}",
+			 J(path)"\"%s\"}",
 		id++, SYDBOX_API_VERSION,
-		j_argv0, j_runas,
+		j_arch, j_argv0, j_runas,
 		sydbox->hash, j_path);
 
 	if (b_argv0)
@@ -304,7 +341,9 @@ void dump(enum dump what, ...)
 		const char *argv0 = va_arg(ap, const char *);
 		const char *path = va_arg(ap, const char *);
 		const char *runas = va_arg(ap, const char *);
-		dump_format(argv0, path, runas);
+		const char *const*arch_opt = va_arg(ap, const char *const*);
+		const char *const*arch_const = va_arg(ap, const char *const*);
+		dump_format(argv0, path, runas, arch_opt, arch_const);
 		dump_cycle();
 		va_end(ap);
 		return;
