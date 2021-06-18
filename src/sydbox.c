@@ -1621,6 +1621,7 @@ static pid_t startup_child(char **argv)
 				errno = EINVAL;
 			die_errno("seccomp load failed");
 		}
+		seccomp_release(sydbox->ctx);
 		cleanup();
 		free(sydbox);
 		if (noexec)
@@ -1635,6 +1636,7 @@ static pid_t startup_child(char **argv)
 		free(pathname); /* not NULL because noexec is handled above. */
 		_exit(EXIT_FAILURE);
 	}
+	seccomp_release(sydbox->ctx);
 
 	/* write end of the pipe is not used. */
 	close(pfd[1]);
