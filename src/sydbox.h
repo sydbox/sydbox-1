@@ -823,6 +823,8 @@ int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argv
 ssize_t syd_write_vm_data(syd_process_t *current, long addr, char *src,
 			  size_t len);
 
+int syd_seccomp_arch_is_valid(uint32_t arch, bool *result);
+uint8_t test_seccomp_arch(void);
 int test_cross_memory_attach(bool report);
 int test_proc_mem(bool report);
 int test_pidfd(bool report);
@@ -987,8 +989,6 @@ static inline bool use_notify(void)
 
 	return false;
 }
-
-int syd_seccomp_arch_is_valid(uint32_t arch, bool *result);
 
 void syd_hash_sha1_init(void);
 void syd_hash_sha1_update(const void *data, size_t len);

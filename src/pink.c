@@ -820,6 +820,151 @@ static void test_seccomp_sig_chld(int sig)
 	child_notified = true;
 }
 
+/*
+ * Writes if architecture is valid in the second argument.
+ * Return value 0 means succesful detection.
+ * > 0 means test process terminated by this signal value.
+ * < 0 means one of the seccomp calls in the test process returned this negated
+ * errno.
+ * The second argument is definitely updated only when return value is 0.
+ * Otherwise its state is undefined.
+ */
+int syd_seccomp_arch_is_valid(uint32_t arch, bool *result)
+{
+	int r;
+
+	if (!result)
+		return -ENOMEM;
+
+	pid_t pid = fork();
+	if (pid < 0) {
+		return -errno;
+	} else if (pid == 0) {
+		scmp_filter_ctx ctx;
+		if (!(ctx = seccomp_init(SCMP_ACT_ALLOW)))
+			_exit(errno);
+		if ((r = seccomp_arch_add(ctx, arch)) != 0 &&
+		    r != -EEXIST)
+			_exit(-r);
+		if ((r = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM),
+					  SCMP_SYS(getpid), 0)) != 0)
+			_exit(-r);
+		if ((r = seccomp_load(ctx)) != 0)
+			_exit(-r);
+		_exit(0);
+	}
+
+	int status;
+restart_waitpid:
+	if (waitpid(pid, &status, 0) < 0) {
+		if (errno == EINTR)
+			goto restart_waitpid;
+		return -errno;
+	}
+
+	r = 0;
+	bool valid = false;
+	if (WIFEXITED(status)) {
+		r = WEXITSTATUS(status);
+		if (r == 0)
+			valid = true;
+		else if (r == EDOM) /* invalid architecture */
+			r = 0; /* valid = false; */
+		else
+			r = -r; /* negate errno */
+	} else if (WIFSIGNALED(status)) {
+		int sig = WTERMSIG(status);
+		say("architecture test process terminated with %#x", sig);
+		r = sig;
+	}
+	*result = valid;
+	return r;
+}
+
+uint8_t test_seccomp_arch(void)
+{
+	int r;
+	bool valid = false;
+	uint8_t arch_num_total = 0;
+	uint8_t arch_num_valid = 0;
+#define ack "[93m***[00;00m"
+#define nack "[92m!!![00;00m"
+#define yes "supported"
+#define no "not supported"
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_NATIVE, &valid);
+	printf("--- native is %svalid.\n", valid ? "" : "not ");
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_X86, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s x86 is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_X32, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s x32 is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_X86_64, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s x86_64 is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_ARM, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s arm is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_AARCH64, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s aarch64 is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_MIPS, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s mips is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_MIPS64, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s mips64 is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_MIPS64N32, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s mips64n32 is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_MIPSEL, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s mipsel is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_MIPSEL64, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s mipsel64 is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_MIPSEL64N32, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s mipsel64n32 is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_PPC, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s ppc is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_PPC64, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s ppc64 is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_PPC64LE, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s ppc64le is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_S390, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s s390 is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_S390X, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s s390x is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_PARISC, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s parisc is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_PARISC64, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s parisc64 is %s.\n", valid ? ack : nack, valid ? yes : no);
+	r = syd_seccomp_arch_is_valid(SCMP_ARCH_RISCV64, &valid);
+	++arch_num_total; if (!r && valid) { ++arch_num_valid; }
+	printf("%s riscv64 is %s.\n", valid ? ack : nack, valid ? yes : no);
+#undef ack
+#undef nack
+#undef yes
+#undef no
+
+	const struct scmp_version *v = seccomp_version();
+	say("[>] libseccomp-%d.%d.%d supports %u architectures.",
+	    v->major, v->minor, v->micro,
+	    arch_num_total);
+	say("[>] 1 native, %u valid, %u invalid on this system.",
+	    arch_num_valid, arch_num_total - arch_num_valid);
+
+	return arch_num_valid;
+}
+
 int test_seccomp(bool report)
 {
 	int r = 0;

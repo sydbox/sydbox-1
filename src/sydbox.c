@@ -1717,7 +1717,7 @@ void cleanup(void)
 
 int main(int argc, char **argv)
 {
-	int opt, i, r, opt_t[4];
+	int opt, i, r, opt_t[5];
 	char *c;
 	const char *env;
 	struct utsname buf_uts;
@@ -1930,24 +1930,35 @@ int main(int argc, char **argv)
 				    buf_uts.release,
 				    buf_uts.version);
 			}
+			say("[>] Checking for libseccomp architectures...");
+			/* test_seccomp_arch() returns the number of valid
+			 * architectures. */
+			opt_t[0] = test_seccomp_arch() == 0 ? EDOM : 0;
 			say("[>] Checking for requirements...");
-			opt_t[0] = test_cross_memory_attach(true);
-			opt_t[1] = test_proc_mem(true);
-			opt_t[2] = test_pidfd(true);
-			opt_t[3] = test_seccomp(true);
+			opt_t[1] = test_cross_memory_attach(true);
+			opt_t[2] = test_proc_mem(true);
+			opt_t[3] = test_pidfd(true);
+			opt_t[4] = test_seccomp(true);
 			r = 0;
-			for (i = 0; i < 4; i++) {
+			for (i = 0; i < 5; i++) {
 				if (opt_t[i] != 0) {
 					r = opt_t[i];
 					break;
 				}
 			}
 			if (opt_t[0] != 0) {
+				say("[!] Failed to detect any valid libseccomp "
+				    "architecture.");
+				say("[!] This is probably a bug with the "
+				    "architecture detection code.");
+				say("[!] Please report, thank you.");
+			}
+			if (opt_t[1] != 0) {
 				say("Enable CONFIG_CROSS_MEMORY_ATTACH "
 				    "in your kernel configuration "
 				    "for cross memory attach to work.");
 			}
-			if (opt_t[0] != 0 && opt_t[1] != 0) {
+			if (opt_t[1] != 0 && opt_t[2] != 0) {
 				say("warning: Neither cross memory attach "
 				    "nor /proc/pid/mem interface is "
 				    "available.");
