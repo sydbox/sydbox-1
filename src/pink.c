@@ -815,9 +815,17 @@ out:
 }
 
 static volatile sig_atomic_t child_notified;
-static void test_seccomp_sig_chld(int sig)
+static void test_seccomp_sig_chld(int sig, siginfo_t *info, void *ucontext)
 {
-	child_notified = true;
+	switch (info->si_code) {
+	case CLD_EXITED:
+	case CLD_KILLED:
+	case CLD_DUMPED:
+		child_notified = true;
+		break;
+	default:
+		break;
+	}
 }
 
 /*
@@ -1076,8 +1084,13 @@ out:
 		say_errno("pidfd_getfd(%d)", pid);
 		goto out;
 	}
-	signal(SIGCHLD, test_seccomp_sig_chld);
 	kill(pid, SIGCONT);
+
+	struct sigaction sa;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_sigaction = test_seccomp_sig_chld;
+	sa.sa_flags = SA_RESTART | SA_SIGINFO;
+	sigaction(SIGCHLD, &sa, NULL);
 
 	struct pollfd pollfd;
 	pollfd.fd = fd;
