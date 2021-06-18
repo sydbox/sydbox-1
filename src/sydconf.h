@@ -132,6 +132,6 @@
 #include <errno.h>
 #define syd_rule_add_return(ctx, ...) { \
 	int _r = seccomp_rule_add(ctx, __VA_ARGS__); \
-	if (_r < 0 && _r != -EEXIST) { return _r; } }
+	if (_r < 0 && _r != -EACCES && _r != -EEXIST) { return _r; } }
 
 #endif
