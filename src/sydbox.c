@@ -145,7 +145,7 @@ Attaching poems encourages consideration tremendously.\n");
 
 int path_to_hex(const char *pathname)
 {
-	int fd = open(pathname, O_RDONLY|O_CLOEXEC);
+	int fd = open(pathname, O_RDONLY|O_CLOEXEC|O_LARGEFILE);
 	if (fd == -1) {
 		int save_errno = errno;
 		sprintf(sydbox->hash, "<open:%d>", save_errno);
