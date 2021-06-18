@@ -45,6 +45,7 @@ noinst_HEADERS+= \
 		 dump.h \
 		 errno2name.h \
 		 file.h \
+		 hex.h \
 		 macro.h \
 		 path.h \
 		 pathlookup.h \
@@ -57,6 +58,9 @@ noinst_HEADERS+= \
 		 #profile_parser.y \
 		 #profile_scanner.l \
 		 sc_map.h \
+		 serializer.h \
+		 sha1dc/sha1.h \
+		 sha1dc/ubc_check.h \
 		 sockmatch.h \
 		 sockmap.h \
 		 util.h \
@@ -70,6 +74,7 @@ sydbox_SOURCES= \
 		 errno2name.c \
 		 file.c \
 		 filter.c \
+		 hex.c \
 		 path.c \
 		 pathlookup.c \
 		 pink.c \
@@ -78,6 +83,10 @@ sydbox_SOURCES= \
 		 pathmatch.c \
 		 procmatch.c \
 		 sc_map.c \
+		 serializer.c \
+		 sha1dc/sha1.c \
+		 sha1dc/ubc_check.c \
+		 sha1dc_syd.c \
 		 sockmatch.c \
 		 acl-queue.c \
 		 util.c \

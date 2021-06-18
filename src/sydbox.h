@@ -31,13 +31,15 @@
 #include "acl-queue.h"
 #include "bsd-compat.h"
 #include "procmatch.h"
-#include "sc_map.h"
 #include "sockmatch.h"
 #include "sockmap.h"
 #include "util.h"
 #include "xfunc.h"
 #include "arch.h"
 #include "compiler.h"
+
+#include "sc_map.h"
+#include "sha1dc_syd.h"
 
 /* Definitions */
 #ifdef KERNEL_VERSION
@@ -601,6 +603,9 @@ struct sydbox {
 	scmp_filter_ctx ctx;
 	struct filter *filter;
 
+	/* SHA-1 Contxt */
+	syd_SHA_CTX sha1;
+
 	/* Global configuration */
 	config_t config;
 };
@@ -776,6 +781,21 @@ static inline size_t process_count_alive(void)
 		r += 1;
 	}
 	return r;
+}
+
+static inline void syd_hash_sha1_init(void)
+{
+	syd_SHA1_Init(&sydbox->sha1);
+}
+
+static inline void syd_hash_sha1_update(const void *data, size_t len)
+{
+	syd_SHA1_Update(&sydbox->sha1, data, len);
+}
+
+static inline void syd_hash_sha1_final(unsigned char *hash)
+{
+	syd_SHA1_Final(hash, &sydbox->sha1);
 }
 
 /* Global functions */
