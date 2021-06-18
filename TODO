@@ -1,5 +1,9 @@
 # Sydbox
 
+- Use a hash table without memory allocation for the process table.
+  This is an idea:
+    https://github.com/vi/macro_robinhood_hash
+    https://gist.github.com/vi/42c4d7bc854653a17e9085c8831c6dcd
 - Add check for struct iovec in configure.ac and use /proc/pid/mem otherwise.
 - Avoid unnecessary printf usage in dump.c
 - Finish the rework on tests
