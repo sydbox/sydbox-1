@@ -419,11 +419,6 @@ static const sysentry_t syscall_entries[] = {
 	},
 };
 
-size_t syscall_entries_max(void)
-{
-	return ELEMENTSOF(syscall_entries);
-}
-
 void sysinit(void)
 {
 	systable_init();
