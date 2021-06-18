@@ -62,6 +62,7 @@ noinst_HEADERS+= \
 		 serializer.h \
 		 sha1dc/sha1.h \
 		 sha1dc/ubc_check.h \
+		 syd_seccomp_arch_default.c \
 		 sockmatch.h \
 		 sockmap.h \
 		 util.h \
@@ -69,7 +70,6 @@ noinst_HEADERS+= \
 		 sydconf.h \
 		 sydbox.h
 sydbox_SOURCES= \
-		 $(noinst_HEADERS) \
 		 arch.c \
 		 daemon.c \
 		 errno2name.c \

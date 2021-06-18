@@ -1744,7 +1744,7 @@ int main(int argc, char **argv)
 	const char *env;
 	struct utsname buf_uts;
 
-	int32_t arch;
+	uint32_t arch;
 	uint32_t arch_native = seccomp_arch_native();
 	// memset(arch_argv, 0, sizeof(char) * ARCH_ARGV_SIZ);
 
@@ -2062,7 +2062,7 @@ int main(int argc, char **argv)
 		if (arch_argv[i] == NULL)
 			continue;
 		arch = arch_from_string(arch_argv[i]);
-		if (arch < 0)
+		if (arch == UINT32_MAX)
 			die("invalid architecture `%s'", arch_argv[i]);
 		if ((uint32_t)arch == SCMP_ARCH_NATIVE ||
 		    (uint32_t)arch == arch_native)
@@ -2081,7 +2081,7 @@ int main(int argc, char **argv)
 		if (arch_argv[i] == NULL)
 			continue;
 		arch = arch_from_string(arch_argv[i]);
-		if (arch < 0)
+		if (arch == UINT32_MAX)
 			assert_not_reached();
 		if ((uint32_t)arch == SCMP_ARCH_NATIVE ||
 		    (uint32_t)arch == arch_native)

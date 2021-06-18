@@ -8,7 +8,7 @@
 #include <string.h>
 #include "arch.h"
 
-int32_t arch_from_string(const char *arch) {
+uint32_t arch_from_string(const char *arch) {
 	if (!strcmp(arch, "native")) { return SCMP_ARCH_NATIVE; }
 	else if (!strcmp(arch, "x86_64")) { return SCMP_ARCH_X86_64; }
 	else if (!strcmp(arch, "x86")) { return SCMP_ARCH_X86; }
@@ -29,7 +29,7 @@ int32_t arch_from_string(const char *arch) {
 	else if (!strcmp(arch, "parisc")) { return SCMP_ARCH_PARISC; }
 	else if (!strcmp(arch, "parisc64")) { return SCMP_ARCH_PARISC64; }
 	else if (!strcmp(arch, "riscv64")) { return SCMP_ARCH_RISCV64; }
-	else return -1;
+	else return UINT32_MAX;
 }
 
 const char *arch_to_string(uint32_t arch)
