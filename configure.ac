@@ -327,6 +327,12 @@ LIBSECCOMP_REQUIRED=2.4.3
 PKG_CHECK_MODULES([libseccomp], [libseccomp >= $LIBSECCOMP_REQUIRED],,
 		  AC_MSG_ERROR([sydbox requires libseccomp-$LIBSECCOMP_REQUIRED or newer]))
 
+dnl check for libseccomp architectures
+m4_sinclude([m4/syd-seccomp-arch-check.m4])
+m4_sinclude([m4/syd-seccomp-arch-define.m4])
+
+dnl AC_MSG_WARN(["Libseccomp arch check unavailable during cross compiling"])
+dnl AC_MSG_WARN(["
 dnl check for debugging support (requires libunwind)
 LIBUNWIND_REQUIRED=1.1
 
@@ -488,38 +494,43 @@ AC_CONFIG_FILES([Makefile
 		 t/valgrind/Makefile])
 AC_OUTPUT
 
-if test -x ./tao/tao.pl; then
-	dnl We don't distribute this file and the fortune cookie in the tarball.
-	./tao/tao.pl
-else
-	dnl Krad ASCII ART#!#@$!@#$
-	dnl Randomly store the name of one of the ASCII Art files in FILENAME
-	dnl Source: from nmap/configure.ac
-	FILENAME=`ls $srcdir/tao/art/art*.txt 2>/dev/null | $AWK '
-    BEGIN {
-        srand();
-    }
-
-    {
-        lines[[++d]] = $0
-    }
-
-    END {
-        # This makes AWKs random numbers more random
-        print lines[[int(rand()*49139)%d+1]];
-    }
-    '`
-dnl Print the file to screen, if any such file exists (i.e. $FILENAME is not empty)
-	if test "$FILENAME"; then
-		cat "$FILENAME"
-	fi
-fi
-echo
 echo "Build options:"
 echo "- debug:$WANT_DEBUG"
 echo "- dump:$WANT_DUMP_BUILTIN"
 echo "- static:$enable_static"
-cat ./tao/make.txt
+echo "Secure Computing Architecture Support:"
+echo "- x86: ${SYD_SECCOMP_X86_OK:-?}"
+echo "- x86_64: ${SYD_SECCOMP_X86_64_OK:-?}"
+echo "- x32: ${SYD_SECCOMP_X32_OK:-?}"
+echo "- arm: ${SYD_SECCOMP_ARM_OK:-?}"
+echo "- aarch64: ${SYD_SECCOMP_AARCH64_OK:-?}"
+echo "- mips: ${SYD_SECCOMP_MIPS_OK:-?}"
+echo "- mips64: ${SYD_SECCOMP_MIPS64_OK:-?}"
+echo "- mips64n32: ${SYD_SECCOMP_MIPS64N32_OK:-?}"
+echo "- mipsel: ${SYD_SECCOMP_MIPSEL_OK:-?}"
+echo "- mipsel64: ${SYD_SECCOMP_MIPSEL64_OK:-?}"
+echo "- mipsel64n32: ${SYD_SECCOMP_MIPSEL64N32_OK:-?}"
+echo "- ppc: ${SYD_SECCOMP_PPC_OK:-?}"
+echo "- ppc64: ${SYD_SECCOMP_PPC64_OK:-?}"
+echo "- ppc64le: ${SYD_SECCOMP_PPC64LE_OK:-?}"
+echo "- s390: ${SYD_SECCOMP_S390_OK:-?}"
+echo "- s390x: ${SYD_SECCOMP_S390X_OK:-?}"
+echo "- parisc: ${SYD_SECCOMP_PARISC_OK:-?}"
+echo "- parisc64: ${SYD_SECCOMP_PARISC64_OK:-?}"
+echo "- riscv64: ${SYD_SECCOMP_RISCV64_OK:-?}"
+
+if test x"$SYD_ARCH_CROSS_COMPILE_WARN" = x"yes"; then
+	AC_MSG_WARN([SydBox does not support cross-compiling for added architectures yet.])
+	AC_MSG_WARN([This build will only have support for the native architecture of the system.])
+	AC_MSG_WARN([This means you may not use SydBox to sandbox programs])
+	AC_MSG_WARN([running under a non-native architecture.])
+	AC_MSG_WARN([These programs will be killed by SydBox' seccomp filter immediately.])
+	AC_MSG_WARN([To support cross-compiling, someone should])
+	AC_MSG_WARN([move the SYD_ARCH_* defines out of the file])
+	AC_MSG_WARN([m4/syd-secomp-arch-define.m4 and add a configuration option])
+	AC_MSG_WARN([to specify the architectures that libseccomp supports, such as])
+	AC_MSG_WARN([--enable-seccomp-host=x86,x86_64,x32,arm,aarch64,...])
+fi
 
 PIDFD_WARN=0
 if test x"$SYDBOX_DEF_PROC_MEM" = x"1"; then
@@ -546,3 +557,32 @@ then
 	AC_MSG_WARN([SydBox may not work correctly with your kernel version v$KERNEL_VERSION!])
 	AC_MSG_WARN([Try updating your kernel headers or using a newer Linux kernel version.])
 fi
+
+if test -x ./tao/tao.pl; then
+	dnl We don't distribute this file and the fortune cookie in the tarball.
+	./tao/tao.pl
+else
+	dnl Krad ASCII ART#!#@$!@#$
+	dnl Randomly store the name of one of the ASCII Art files in FILENAME
+	dnl Source: from nmap/configure.ac
+	FILENAME=`ls $srcdir/tao/art/art*.txt 2>/dev/null | $AWK '
+    BEGIN {
+        srand();
+    }
+
+    {
+        lines[[++d]] = $0
+    }
+
+    END {
+        # This makes AWKs random numbers more random
+        print lines[[int(rand()*49139)%d+1]];
+    }
+    '`
+dnl Print the file to screen, if any such file exists (i.e. $FILENAME is not empty)
+	if test "$FILENAME"; then
+		cat "$FILENAME"
+	fi
+fi
+
+cat ./tao/make.txt
