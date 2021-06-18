@@ -40,6 +40,7 @@
 
 #include "sc_map.h"
 #include "sha1dc_syd.h"
+#include "hex.h"
 
 /* Definitions */
 #ifdef KERNEL_VERSION
@@ -246,6 +247,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
 	MAGIC_KEY_CORE_TRACE_INTERRUPT,
 	MAGIC_KEY_CORE_TRACE_MEMORY_ACCESS,
+	MAGIC_KEY_CORE_TRACE_PROGRAM_CHECKSUM,
 	MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK,
 
 	MAGIC_KEY_EXEC,
@@ -536,9 +538,10 @@ struct config {
 	/* same for these, not inherited: global */
 	bool use_seize;
 	bool use_toolong_hack;
+	uint8_t prog_hash:2; /* 0: disabled, 1: initial execve, 2: all execves */
 #define SYDBOX_CONFIG_MEMACCESS_REOPEN_MIN 2
 #define SYDBOX_CONFIG_MEMACCESS_MAX 3
-	uint32_t mem_access;
+	uint8_t mem_access:3;
 
 	/* Per-process sandboxing data */
 	sandbox_t box_static;
@@ -603,8 +606,9 @@ struct sydbox {
 	scmp_filter_ctx ctx;
 	struct filter *filter;
 
-	/* SHA-1 Contxt */
+	/* SHA-1 Context and Hash */
 	syd_SHA_CTX sha1;
+	char hash[SYD_SHA1_HEXSZ];
 
 	/* Global configuration */
 	config_t config;
@@ -984,6 +988,13 @@ static inline bool use_notify(void)
 	return false;
 }
 
+int syd_seccomp_arch_is_valid(uint32_t arch, bool *result);
+
+void syd_hash_sha1_init(void);
+void syd_hash_sha1_update(const void *data, size_t len);
+void syd_hash_sha1_final(unsigned char *hash);
+int path_to_hex(const char *pathname);
+
 void systable_init(void);
 void systable_free(void);
 void systable_add_full(long no, uint32_t arch, const char *name,
@@ -1016,6 +1027,8 @@ int magic_set_violation_raise_safe(const void *val, syd_process_t *current);
 int magic_query_violation_raise_safe(syd_process_t *current);
 int magic_set_trace_memory_access(const void *val, syd_process_t *current);
 int magic_query_trace_memory_access(syd_process_t *current);
+int magic_set_trace_program_checksum(const void *val, syd_process_t *current);
+int magic_query_trace_program_checksum(syd_process_t *current);
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current);
 int magic_query_trace_use_toolong_hack(syd_process_t *current);
 int magic_set_restrict_general(const void *val, syd_process_t *current);

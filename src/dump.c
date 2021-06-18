@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <time.h>
 
+#include "serializer.h"
 #include "errno2name.h"
 #include "proc.h"
 
@@ -70,14 +71,44 @@ static void dump_errno(int err_no)
 		err_no, errno2name(err_no));
 }
 
-static void dump_format(void)
+static void dump_format(const char *argv0, const char *runas,
+			const char *hash, const char *pathname)
 {
+	char *b_argv0 = NULL;
+	char *b_runas = NULL;
+	char *b_path = NULL;
+	char *j_argv0, *j_runas, *j_path;
+
+	if (!argv0 || !argv0[0])
+		j_argv0 = "";
+	else
+		j_argv0 = json_escape_str(&b_argv0, argv0);
+	if (!runas || !runas[0])
+		j_runas = "";
+	else
+		j_runas = json_escape_str(&b_runas, runas);
+	if (!pathname || !pathname[0])
+		j_path = "";
+	else
+		j_path = json_escape_str(&b_path, pathname);
+
 	fprintf(fp, "{"
 		J(id)"%llu,"
-		J(shoebox)"%d,"
-		J(name)"\"%s\"}",
-		id++, DUMP_FMT,
-		sydbox->program_invocation_name);
+		J(syd)"%d,"
+		J(cmd)"{"J(name)"\"%s\","
+			 J(as)"\"%s\","
+			 J(hash)"\"%s\","
+			 J(path)"\"%s\"}}",
+		id++, SYDBOX_API_VERSION,
+		j_argv0, j_runas,
+		hash, j_path);
+
+	if (b_argv0)
+		free(b_argv0);
+	if (b_runas)
+		free(b_runas);
+	if (b_path)
+		free(b_path);
 }
 
 static void dump_proc_statinfo(const struct proc_statinfo *info)
@@ -229,8 +260,6 @@ static int dump_init(void)
 		die_errno("fcntl");
 	nodump = 1;
 
-	dump_format();
-	dump_cycle();
 	return 0;
 }
 
@@ -244,8 +273,6 @@ void dump(enum dump what, ...)
 
 	if (dump_init() != 0)
 		return;
-	if (what == DUMP_INIT)
-		return;
 	if (what == DUMP_CLOSE) {
 		dump_close();
 		return;
@@ -255,11 +282,24 @@ void dump(enum dump what, ...)
 		return;
 	}
 
-	if (!inspected_i(what))
+	va_start(ap, what);
+	if (what == DUMP_INIT) {
+		const char *argv0 = va_arg(ap, const char *);
+		const char *runas = va_arg(ap, const char *);
+		const char *hash = va_arg(ap, const char *);
+		const char *path = va_arg(ap, const char *);
+		dump_format(argv0, runas, hash, path);
+		dump_cycle();
+		va_end(ap);
 		return;
+	}
+
+	if (!inspected_i(what)) {
+		va_end(ap);
+		return;
+	}
 
 	time(&now);
-	va_start(ap, what);
 
 	if (what == DUMP_ASSERT) {
 		const char *expr = va_arg(ap, const char *);

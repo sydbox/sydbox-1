@@ -19,8 +19,8 @@
 #if SYDBOX_DUMP || SYDBOX_HAVE_DUMP_BUILTIN
 
 #include <errno.h>
+#include "sydconf.h"
 
-# define DUMP_FMT  1
 # define DUMP_ENV  "SHOEBOX"    /* read pathname from environment variable */
 # define DUMP_NAME "sydcore"  /* Default dump name */
 

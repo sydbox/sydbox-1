@@ -279,6 +279,14 @@ static const struct key key_table[] = {
 		.set    = magic_set_trace_memory_access,
 		.query  = magic_query_trace_memory_access,
 	},
+	[MAGIC_KEY_CORE_TRACE_PROGRAM_CHECKSUM] = {
+		.name   = "program_checksum",
+		.lname  = "core.trace.program_checksum",
+		.parent = MAGIC_KEY_CORE_TRACE,
+		.type   = MAGIC_TYPE_INTEGER,
+		.set    = magic_set_trace_program_checksum,
+		.query  = magic_query_trace_program_checksum,
+	},
 	[MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK] = {
 		.name   = "use_toolong_hack",
 		.lname  = "core.trace.use_toolong_hack",

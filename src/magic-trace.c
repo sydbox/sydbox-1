@@ -9,7 +9,7 @@
 
 int magic_set_trace_memory_access(const void *val, syd_process_t *current)
 {
-	if (sydbox->config.mem_access > SYDBOX_CONFIG_MEMACCESS_MAX)
+	if (PTR_TO_UINT32(val) > SYDBOX_CONFIG_MEMACCESS_MAX)
 		return MAGIC_RET_INVALID_VALUE;
 	sydbox->config.mem_access = PTR_TO_UINT32(val);
 	return MAGIC_RET_OK;
@@ -18,6 +18,19 @@ int magic_set_trace_memory_access(const void *val, syd_process_t *current)
 int magic_query_trace_memory_access(syd_process_t *current)
 {
 	return sydbox->config.mem_access;
+}
+
+int magic_set_trace_program_checksum(const void *val, syd_process_t *current)
+{
+	if (PTR_TO_UINT32(val) > 2)
+		return MAGIC_RET_INVALID_VALUE;
+	sydbox->config.prog_hash = PTR_TO_UINT32(val);
+	return MAGIC_RET_OK;
+}
+
+int magic_query_trace_program_checksum(syd_process_t *current)
+{
+	return sydbox->config.prog_hash;
 }
 
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current)

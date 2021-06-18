@@ -115,6 +115,50 @@ Attaching poems encourages consideration tremendously.\n");
 	exit(code);
 }
 
+int path_to_hex(const char *pathname)
+{
+	int fd = open(pathname, O_RDONLY|O_CLOEXEC);
+	if (fd == -1) {
+		int save_errno = errno;
+		sprintf(sydbox->hash, "<open:%d>", save_errno);
+		return -save_errno;
+	}
+
+#define PATH_TO_HEX_BUFSIZ (1024*1024)
+	char buf[PATH_TO_HEX_BUFSIZ];
+	ssize_t nread;
+	unsigned char hash[SYD_SHA1_RAWSZ];
+	int r = 0;
+	syd_hash_sha1_init();
+	for (;;) {
+		errno = 0;
+		nread = read(fd, buf + r, PATH_TO_HEX_BUFSIZ - r);
+		if (!nread) {
+			r = 0;
+			break;
+		}
+		if (nread > 0)
+			r += nread;
+		if (errno == EINTR ||
+		    (nread > 0 && (size_t)r < PATH_TO_HEX_BUFSIZ)) {
+			continue;
+		} else if (nread < 0 && r == 0) { /* not partial read */
+			int save_errno = errno;
+			sprintf(sydbox->hash, "<read:%d>", save_errno);
+			r = -save_errno;
+			break;
+		}
+		syd_hash_sha1_update(buf, r);
+		r = 0;
+	}
+	close(fd);
+	if (r == 0) {
+		syd_hash_sha1_final(hash);
+		strlcpy(sydbox->hash, hash_to_hex(hash), SYD_SHA1_HEXSZ);
+	}
+	return r;
+}
+
 #if SYDBOX_DEBUG
 static void print_addr_info(FILE *f, unw_word_t ip)
 {
@@ -1087,6 +1131,7 @@ static void init_early(void)
 	sydbox->permissive = false;
 	sydbox->export_mode = SYDBOX_EXPORT_NUL;
 	sydbox->export_path = NULL;
+	sydbox->hash[0] = '\0';
 	if (!sc_map_init_64v(&sydbox->tree,
 			     SYDBOX_PROCMAP_CAP,
 			     SYDBOX_MAP_LOAD_FAC)) {
@@ -1526,12 +1571,27 @@ static pid_t startup_child(char **argv)
 	bool noexec = streq(argv[0], SYDBOX_NOEXEC_NAME);
 	if (!noexec) {
 		pathname = path_lookup(argv[0]);
-		if (!pathname)
-			die_errno("can't exec `%s'", argv[0]);
+		/* calculate checksum. */
+		if (magic_query_trace_program_checksum(NULL) > 0) {
+			if (pathname && (r = path_to_hex(pathname)) < 0) {
+				errno = -r;
+				say_errno("can't calculate checksum of file "
+					  "`%s'", pathname);
+			}
+		}
+	} else {
+		strlcpy(sydbox->hash, "<noexec>", sizeof("<noexec>"));
 	}
+
+	/* All ready, initialise dump */
+	dump(DUMP_INIT,
+	     argv[0], get_startas(),
+	     sydbox->hash, pathname);
+
+	if (!noexec && !pathname)
+		die_errno("can't exec `%s'", argv[0]);
 	if (pipe2(pfd, O_CLOEXEC|O_DIRECT) < 0)
 		die_errno("can't pipe");
-
 	pid = fork();
 	if (pid < 0)
 		die_errno("can't fork");
@@ -1974,13 +2034,6 @@ int main(int argc, char **argv)
 	setenv("SYDBOX_API_VERSION", STRINGIFY(SYDBOX_API_VERSION), 1);
 	setenv("SYDBOX_ACTIVE", THE_PIPER, 1);
 
-	/* Poison! */
-	if (streq(argv[optind], "/bin/sh"))
-		fprintf(stderr, "[01;35m" PINK_FLOYD "[00;00m");
-
-	/* All ready, initialize dump */
-	dump(DUMP_INIT);
-
 	/* STARTUP_CHILD must not be called before the signal handlers get
 	   installed below as they are inherited into the spawned process. */
 	int exit_code;
@@ -2034,3 +2087,20 @@ out:
 	free(sydbox);
 	return exit_code;
 }
+
+/*************** CHECKSUM CALCULATION *****************************************/
+inline void syd_hash_sha1_init(void)
+{
+	syd_SHA1_Init(&sydbox->sha1);
+}
+
+inline void syd_hash_sha1_update(const void *data, size_t len)
+{
+	syd_SHA1_Update(&sydbox->sha1, data, len);
+}
+
+inline void syd_hash_sha1_final(unsigned char *hash)
+{
+	syd_SHA1_Final(hash, &sydbox->sha1);
+}
+/*********** END OF CHECKSUM CALCULATION **************************************/
