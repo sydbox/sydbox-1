@@ -590,7 +590,8 @@ struct sydbox {
 	char *export_path;
 
 	uint32_t seccomp_action;
-	pid_t execve_pid;
+	pid_t sydbox_pid; /* Process ID of the SydBox process. */
+	pid_t execve_pid; /* Process ID of the process SydBox executes. */
 
 	/* Program invocation name (for the child) */
 	char *program_invocation_name;

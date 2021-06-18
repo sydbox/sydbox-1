@@ -1616,6 +1616,13 @@ static pid_t startup_child(char **argv)
 		die_errno("can't exec `%s'", argv[0]);
 	if (pipe2(pfd, O_CLOEXEC|O_DIRECT) < 0)
 		die_errno("can't pipe");
+
+	/*
+	 * Mark SydBox's process id so that the seccomp filtering can
+	 * apply the unconditional restrictions about SydBox process
+	 * receiving any signal other than SIGCHLD.
+	 */
+	sydbox->sydbox_pid = getpid();
 	pid = fork();
 	if (pid < 0)
 		die_errno("can't fork");

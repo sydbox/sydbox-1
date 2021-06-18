@@ -25,6 +25,12 @@
 #include <sys/vt.h>
 #include <asm/unistd.h>
 
+#include <sys/types.h>
+#include <signal.h>
+#ifdef HAVE_ASM_SIGNAL_H
+#include <asm/signal.h>
+#endif
+
 /*
  * ++ Note on Level 0 and TOCTOU attacks ++
  *
@@ -747,6 +753,83 @@ static int filter_general_level_0(void)
 #ifdef __SNR_pidfd_getfd
 	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
 			    __NR_pidfd_getfd, 0);
+#endif
+
+
+	/*
+	 * ++ Restricting signal handling between Sydbox and the
+	 * sandboxed process: SydBox permits only SIGCHLD from the
+	 * initial child. Other signals sent to SydBox's process id
+	 * are denied with ESRCH which denotes the process or
+	 * process group does not exist. This approach renders the
+	 * sandboxing SydBox process safe against any unexpected
+	 * signals.
+	 */
+	//int sys_kill[] = { SCMP_SYS(kill), SCMP_SYS(tkill), -1 };
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+			    SCMP_SYS(kill), 2,
+			    SCMP_A0_64( SCMP_CMP_EQ,
+					sydbox->sydbox_pid,
+					sydbox->sydbox_pid ),
+			    SCMP_A1( SCMP_CMP_NE, SIGCHLD, SIGCHLD ));
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+			    SCMP_SYS(tkill), 2,
+			    SCMP_A0_64( SCMP_CMP_EQ,
+					sydbox->sydbox_pid,
+					sydbox->sydbox_pid ),
+			    SCMP_A1( SCMP_CMP_NE, SIGCHLD, SIGCHLD ));
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+			    SCMP_SYS(tgkill), 2,
+			    SCMP_A1_64( SCMP_CMP_EQ,
+					sydbox->sydbox_pid,
+					sydbox->sydbox_pid ),
+			    SCMP_A2( SCMP_CMP_NE, SIGCHLD, SIGCHLD ));
+
+
+	/*
+	 * Deny pidfd_send_signal() to send any signal which
+	 * has the default action of term, core and stop
+	 * with ESRCH which denotes the process or process group
+	 * does not exist.
+	 */
+#ifdef __NR_pidfd_send_signal
+	const long kill_signals[] = {
+		SIGHUP, SIGINT, SIGQUIT, SIGILL,
+		SIGABRT, SIGFPE, SIGKILL, SIGSEGV,
+		SIGSEGV, SIGPIPE, SIGALRM, SIGTERM,
+		SIGUSR1, SIGUSR2, SIGSTOP, SIGTSTP,
+		SIGTTIN, SIGTTOU,
+
+		SIGBUS, SIGPOLL, SIGPROF, SIGSYS,
+		SIGTRAP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+
+#ifdef SIGIOT
+		SIGIOT,
+#endif
+#ifdef SIGEMT
+		SIGEMT,
+#endif
+#ifdef SIGSTKFLT
+		SIGSTKFLT,
+#endif
+#ifdef SIGIO
+		SIGIO,
+#endif
+#ifdef SIGINFO
+		SIGINFO,
+#endif
+#ifdef SIGLOST
+		SIGLOST,
+#endif
+		LONG_MAX,
+	};
+	for (size_t i = 0; kill_signals[i] != LONG_MAX; i++) {
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+				    SCMP_SYS(pidfd_send_signal), 1,
+				    SCMP_A1( SCMP_CMP_EQ,
+					     kill_signals[i],
+					     kill_signals[i]));
+	}
 #endif
 
 	/*

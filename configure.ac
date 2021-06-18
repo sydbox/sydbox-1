@@ -206,6 +206,7 @@ AC_CHECK_HEADERS(m4_flatten([
 	sys/user.h
 	sys/wait.h
 	sys/syscall.h
+	asm/signal.h
 	linux/fs.h
 	linux/mount.h
 	linux/openat2.h
