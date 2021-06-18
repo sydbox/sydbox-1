@@ -49,6 +49,12 @@ tasks:
 - make: |
     cd sydbox
     make -j V=1
+- test: |
+    cd sydbox
+    ./src/sydbox --test
+- arch: |
+    cd sydbox
+    ./src/sydbox -d2 true
 - check: |
     cd sydbox
     make -j V=1 check && touch .check_ok
