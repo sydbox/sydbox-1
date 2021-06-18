@@ -1571,22 +1571,12 @@ static pid_t startup_child(char **argv)
 	bool noexec = streq(argv[0], SYDBOX_NOEXEC_NAME);
 	if (!noexec) {
 		pathname = path_lookup(argv[0]);
-		/* calculate checksum. */
-		if (magic_query_trace_program_checksum(NULL) > 0) {
-			if (pathname && (r = path_to_hex(pathname)) < 0) {
-				errno = -r;
-				say_errno("can't calculate checksum of file "
-					  "`%s'", pathname);
-			}
-		}
 	} else {
 		strlcpy(sydbox->hash, "<noexec>", sizeof("<noexec>"));
 	}
 
 	/* All ready, initialise dump */
-	dump(DUMP_INIT,
-	     argv[0], get_startas(),
-	     sydbox->hash, pathname);
+	dump(DUMP_INIT, argv[0], pathname, get_startas());
 
 	if (!noexec && !pathname)
 		die_errno("can't exec `%s'", argv[0]);

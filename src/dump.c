@@ -71,14 +71,16 @@ static void dump_errno(int err_no)
 		err_no, errno2name(err_no));
 }
 
-static void dump_format(const char *argv0, const char *runas,
-			const char *hash, const char *pathname)
+static void dump_format(const char *argv0, const char *pathname,
+			const char *runas)
 {
+	int r;
 	char *b_argv0 = NULL;
 	char *b_runas = NULL;
 	char *b_path = NULL;
 	char *j_argv0, *j_runas, *j_path;
 
+	/* Step 1: Generate escaped JSON strings. */
 	if (!argv0 || !argv0[0])
 		j_argv0 = "";
 	else
@@ -92,6 +94,20 @@ static void dump_format(const char *argv0, const char *runas,
 	else
 		j_path = json_escape_str(&b_path, pathname);
 
+	/* Step 2: Calculate the SHA1 checksum of the
+	 * pathname to the command to be executed by
+	 * SydBox. This should be enabled with the
+	 * magic command core/trace/program_checksum
+	 * by setting it to 1 or 2.
+	 */
+	if (magic_query_trace_program_checksum(NULL) > 0) {
+		if (pathname && (r = path_to_hex(pathname)) < 0) {
+			errno = -r;
+			say_errno("can't calculate checksum of file "
+				  "`%s'", pathname);
+		}
+	}
+
 	fprintf(fp, "{"
 		J(id)"%llu,"
 		J(syd)"%d,"
@@ -101,7 +117,7 @@ static void dump_format(const char *argv0, const char *runas,
 			 J(path)"\"%s\"}}",
 		id++, SYDBOX_API_VERSION,
 		j_argv0, j_runas,
-		hash, j_path);
+		sydbox->hash, j_path);
 
 	if (b_argv0)
 		free(b_argv0);
@@ -282,16 +298,17 @@ void dump(enum dump what, ...)
 		return;
 	}
 
+
 	va_start(ap, what);
 	if (what == DUMP_INIT) {
 		const char *argv0 = va_arg(ap, const char *);
-		const char *runas = va_arg(ap, const char *);
-		const char *hash = va_arg(ap, const char *);
 		const char *path = va_arg(ap, const char *);
-		dump_format(argv0, runas, hash, path);
+		const char *runas = va_arg(ap, const char *);
+		dump_format(argv0, path, runas);
 		dump_cycle();
 		va_end(ap);
 		return;
+
 	}
 
 	if (!inspected_i(what)) {
