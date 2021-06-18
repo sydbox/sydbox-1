@@ -13,6 +13,7 @@
  */
 
 #include "sydbox.h"
+#include "daemon.h"
 
 #include <errno.h>
 #include <signal.h>
@@ -22,6 +23,34 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/vt.h>
+#include <asm/unistd.h>
+
+/*
+ * ++ Note on Level 0 and TOCTOU attacks ++
+ *
+ * Level 0 filter is always applied regardless of the value of
+ * the magic command core/restrict/general.
+ * This is important to improve the security of the sandbox as
+ * circumventing the sandbox by a TOCTOU attack is arguably less likely
+ * with these system calls permitted.
+ */
+/* See the individual rules at filter_general_level_0() function for further
+ * limitations on set{u,g}id, process_vm_{read,write}v etc. or see the
+ * manual page. **/
+static const int filter_gen_level0[] = {
+	SCMP_SYS(gettid),
+	SCMP_SYS(getpid),
+	SCMP_SYS(getgid),
+	SCMP_SYS(geteuid),
+	SCMP_SYS(getegid),
+	SCMP_SYS(getppid),
+	SCMP_SYS(getpgrp),
+	SCMP_SYS(getgroups),
+	SCMP_SYS(getresuid),
+	SCMP_SYS(getresgid),
+	SCMP_SYS(getpgid),
+	SCMP_SYS(getsid),
+};
 
 static const int filter_gen_level1[] = {
 	SCMP_SYS(close),
@@ -661,6 +690,260 @@ static int filter_rt_sigaction(void)
 	return 0;
 }
 
+static int filter_general_level_0(void)
+{
+	int r;
+
+	/* Note, seccomp returns EEXIST if the rule already exists,
+	 * and EACCES when one attempts to add a rule with the same
+	 * action as the default action, ie the rule is redundant.
+	 * We do not error in these two cases and resume operation.
+	 */
+	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level0); i++) {
+		if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
+					  filter_gen_level0[i], 0)) &&
+		    r != -EEXIST &&
+		    r != -EACCES) {
+			char *name;
+			name = seccomp_syscall_resolve_num_arch(filter_gen_level0[i],
+								SCMP_ARCH_NATIVE);
+			errno = -r;
+			say_errno("Sandbox failed to add syscall index %d (NR=%d) "
+				  "name \"%s\" to Level 0. Received libseccomp error",
+				  i, filter_gen_level0[i],
+				  name ? name : "?");
+			if (name)
+				free(name);
+			return r;
+		}
+	}
+
+	/*
+	 * ++ Restricting process memory read/write operations.
+	 *
+	 * This is a defense against possible TOCTOU attacks. The system calls
+	 * process_vm_readv and process_vm_writev are never permitted in
+	 * SydBox. TODO: In addition for user-space sandboxing mode SydBox
+	 * unconditionally disallows access to /proc/$pid/mem for both read
+	 * and write based open calls.
+	 */
+#ifdef __NR_process_vm_readv
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EFAULT),
+			    SCMP_SYS(process_vm_readv), 0);
+#endif
+#ifdef __NR_process_vm_writev
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EFAULT),
+			    SCMP_SYS(process_vm_writev), 0);
+#endif
+	/*
+	 * FIXME: Load these two calls below outside libseccomp,
+	 * as they are not supported yet, hence the __SNR
+	 * rather than the __NR ifdef check below.
+	 */
+#ifdef __SNR_process_madvise
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EFAULT),
+			    __NR_process_madvise, 0);
+#endif
+#ifdef __SNR_pidfd_getfd
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+			    __NR_pidfd_getfd, 0);
+#endif
+
+	/*
+	 * ++ Restricting system calls with user/group ID arguments.
+	 *
+	 * Two modes:
+	 *
+	 * 1. --uid=<uid>, --gid=<gid> command line switches restrict
+	 * the user to this user id only. This means the user is in a
+	 * cage and can not change to any other user or group or both
+	 * user and group depending on the combination of flags.
+	 *
+	 * 2. set{u,g}id to {user,group} IDs below a certain minimum
+	 * are not permitted. This is default unless at least one of
+	 * the command line switches --uid or --gid is given in which
+	 * case the restrictions for the respective user or group identity
+	 * is changed to 1.
+	 *
+	 * Pick the default minimum IDs using an empirical observation
+	 * of /etc/passwd and /etc/group on a recent Exherbo system
+	 * of the author. See the excerpts below.
+	 *
+         * TODO: Make the limits configurable via
+	 *       core/trace/restrict_{u,g}id_m{in,ax}.
+         *
+	 * ++++ Deny Mode:
+	 * Deny the system calls with EINVAL which denotes the
+	 * {user,group} ID specified in {u,g}id is not valid in
+	 * this user namespace.
+	 *
+	 * The excerpts are files /etc/{passwd,group}.
+	 * `alip' is the user name of the author and their
+	 * user ID, 1000 is the common beginning number of
+	 * user accounts on a Linux system.
+	 *
+	 * The default restriction is to *never* allow
+	 * user ID changes to any user from root to operator,
+	 * inclusive, ie 0..11, which gives us the first rule:
+	 *
+	 * 1. A user may not change their user identity to any
+	 *    user identity lower than 12 under SydBox unless
+	 *    user specified --uid on the command line.
+	 *
+	 * ++++ /etc/passwd with User ID < 400 @ 2021.06.18 15:38 CEST
+	 * 0        root:x:0:0:root
+	 * 1        bin:x:1:1:bin
+	 * 2        daemon:x:2:2:daemon
+	 * 3        adm:x:3:4:adm
+	 * 4        lp:x:4:7:lp
+	 * 5        sync:x:5:0:sync
+	 * 6        shutdown:x:6:0:shutdown
+	 * 7        halt:x:7:0:halt
+	 * 9        news:x:9:13:news
+	 * 10       uucp:x:10:14:uucp
+	 * 11       operator:x:11:0:operator
+	 * 16       cron:x:16:16:cron services
+	 * 22       sshd:x:22:22:SSH Daemon
+	 * 70       postgres:x:70:70:PostgreSQL daemon
+	 * 72       tcpdump:x:72:72:User for tcpdump
+	 * 81       apache:x:81:81:Apache HTTP server
+	 * 101      uuidd:x:101:403:UUID generator helper daemon
+	 * 102      messagebus:x:102:405:D-Bus system daemon
+	 * 103      paludisbuild:x:103:443:Paludis package manager
+	 * 123      ntp:x:123:123:NTP daemon
+	 * 303      dhcpcd:x:303:303:User for dhcpcd
+	 * 399      mlocate:x:399:399:
+	 * 972      rrdtool:x:972:995:RRDtool user
+	 * 973      pulse:x:973:997:pulseaudio daemon
+	 * 975      man:x:975:999:man-db
+	 * 976      ldap:x:976:103:OpenLDAP service daemon
+	 * 977      ulogd:x:977:977:ulogd.init
+	 * 979      pcscd:x:979:105:PCSC smart card daemon user
+	 * 980      utmp:x:980:406:skarnet-utmps
+	 * 981      clamav:x:981:106:Clam AntiVirus
+	 * 982      polkitd:x:982:107:User for polkitd
+	 * 983      timidity:x:983:18:Timidity++ daemon
+	 * 984      bitlbee:x:984:108:Used by the bitlbee IM to IRC gateway
+	 * 985      tor:x:985:109:Tor daemon
+	 * 986      privoxy:x:986:110:Privoxy daemon
+	 * 987      polipo:x:987:111:Polipo daemon
+	 * 988      uptimed:x:988:100:
+	 * 989      icecc:x:989:113:icecream daemon
+	 * 990      postfix:x:990:115:Postfix services
+	 * 991      dovenull:x:991:117:dovecot 2.0 login user
+	 * 992      dovecot:x:992:118:dovecot 2.0 user for trusted processes
+	 * 993      _smtpq:x:993:119:SMTP queue user
+	 * 994      _smtpf:x:994:120:SMTP filter user
+	 * 995      _smtpd:x:995:121:SMTP Daemon
+	 * 996      znc:x:996:122:Used by the znc IRC Bouncer
+	 * 997      nginx:x:997:398:user for nginx HTTP server
+	 * 999      wizard:x:999:402:Games-Master
+	 * 1000     alip:x:1000:1000:
+	 * ++++
+	 *
+	 * Default restriction for changing group identity is similar to
+	 * the default restriction for changing user identity. Here the
+	 * restriction is to not permit any change of user identity in
+	 * the range root and uucp inclusive. This is [0..14]. The
+	 * exception about the command line flag --gid applies.
+	 *
+	 * ++++ /etc/group with Group ID < 1000 @ 2021.06.18 15:46 CEST
+	 * 0        root:x:0:root
+	 * 1        bin:x:1:root,bin,daemon
+	 * 2        daemon:x:2:root,bin,daemon
+	 * 3        sys:x:3:root,bin,adm
+	 * 4        adm:x:4:root,adm,daemon
+	 * 5        tty:x:5:paludisbuild
+	 * 6        disk:x:6:root,adm
+	 * 7        lp:x:7:lp
+	 * 8        mem:x:8
+	 * 9        kmem:x:9
+	 * 10       wheel:x:10:root
+	 * 11       floppy:x:11:root
+	 * 12       mail:x:12
+	 * 13       news:x:13:news
+	 * 14       uucp:x:14:uucp
+	 * 16       cron:x:16:
+	 * 17       console:x:17
+	 * 18       audio:x:18:
+	 * 19       cdrom:x:19:
+	 * 20       dialout:x:20
+	 * 22       sshd:x:22
+	 * 26       tape:x:26:root
+	 * 27       video:x:27:root
+	 * 70       postgres:x:70
+	 * 72       tcpdump:x:72
+	 * 80       cdrw:x:80
+	 * 81       apache:x:81
+	 * 85       usb:x:85:
+	 * 100      users:x:100:alip
+	 * 101      pulse-rt:x:101
+	 * 102      jackuser:x:102
+	 * 103      ldap:x:103
+	 * 104      scard:x:104
+	 * 105      pcscd:x:105
+	 * 106      clamav:x:106
+	 * 107      polkitd:x:107
+	 * 108      bitlbee:x:108
+	 * 109      tor:x:109
+	 * 110      privoxy:x:110
+	 * 111      polipo:x:111
+	 * 112      lpadmin:x:112
+	 * 113      icecc:x:113
+	 * 114      kvm:x:114
+	 * 115      postfix:x:115
+	 * 116      postdrop:x:116
+	 * 117      dovenull:x:117
+	 * 118      dovecot:x:118
+	 * 119      _smtpq:x:119
+	 * 120      _smtpf:x:120
+	 * 121      _smtpd:x:121
+	 * 122      znc:x:122
+	 * 123      ntp:x:123
+	 * 303      dhcpcd:x:303
+	 * 398      nginx:x:398:
+	 * 399      mlocate:x:399
+	 * 400      hugepagers:x:400:
+	 * 401      input:x:401
+	 * 402      games:x:402:alip
+	 * 403      uuidd:x:403
+	 * 404      plugdev:x:404
+	 * 405      messagebus:x:405
+	 * 406      utmp:x:406
+	 * 443      paludisbuild:x:443
+	 * 977      ulogd:x:977
+	 * 995      rrdtool:x:995
+	 * 996      pulse-access:x:996
+	 * 997      pulse:x:997
+	 * 999      man:x:999
+	 * 1000     alip:x:1000
+	 */
+#define SYD_UID_MIN 11 /* operator */
+	uid_t user_uid = get_uid();
+	if (user_uid == 0) {
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL),
+				    SCMP_SYS(setuid), 1,
+				    SCMP_A0( SCMP_CMP_LE, SYD_UID_MIN, SYD_UID_MIN ));
+	} else {
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+				    SCMP_SYS(setuid), 1,
+				    SCMP_A0( SCMP_CMP_NE, user_uid, user_uid ));
+	}
+
+#define SYD_GID_MIN 14 /* uucp */
+	gid_t user_gid = get_gid();
+	if (user_gid == 0) {
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL),
+				    SCMP_SYS(setgid), 1,
+				    SCMP_A0( SCMP_CMP_LE, SYD_GID_MIN, SYD_GID_MIN ));
+	} else {
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+				    SCMP_SYS(setuid), 1,
+				    SCMP_A0( SCMP_CMP_NE, user_gid, user_gid ));
+	}
+	return 0;
+}
+
 static int filter_general_level_1(void)
 {
 	int r;
@@ -674,7 +957,7 @@ static int filter_general_level_1(void)
 								SCMP_ARCH_NATIVE);
 			errno = -r;
 			say_errno("Sandbox failed to add syscall index %d (NR=%d) "
-				  "name \"%s\", received libseccomp error",
+				  "name \"%s\" to Level 1. Received libseccomp error",
 				  i, filter_gen_level1[i],
 				  name ? name : "?");
 			if (name)
@@ -702,7 +985,7 @@ static int filter_general_level_2(void)
 								SCMP_ARCH_NATIVE);
 			errno = -r;
 			say_errno("Sandbox failed to add syscall index %d (NR=%d) "
-				  "name \"%s\", received libseccomp error",
+				  "name \"%s\" to Level 2. Received libseccomp error",
 				  i, filter_gen_level2[i],
 				  name ? name : "?");
 			if (name)
@@ -748,7 +1031,7 @@ static int filter_general_level_3(void)
 								SCMP_ARCH_NATIVE);
 			errno = -r;
 			say_errno("Sandbox failed to add syscall index %d (NR=%d) "
-				  "name \"%s\", received libseccomp error",
+				  "name \"%s\" to Level 3. Received libseccomp error",
 				  i, filter_gen_level3[i],
 				  name ? name : "?");
 			if (name)
@@ -785,6 +1068,7 @@ static int filter_general_level_3(void)
 
 int filter_general(void)
 {
+	int r;
 	static const int allow_calls[] = {
 		SCMP_SYS(exit),
 		SCMP_SYS(exit_group),
@@ -800,6 +1084,12 @@ int filter_general(void)
 					    allow_calls[i], 0);
 	}
 
+	/*
+	 * Level 0 filter is applied unconditionally
+	 * regardless of the current restriction level.
+	 */
+	if ((r = filter_general_level_0()) < 0)
+		return r;
 	switch (sydbox->config.restrict_general) {
 	case 0:
 		return 0;

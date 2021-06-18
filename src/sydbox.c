@@ -1633,10 +1633,14 @@ static pid_t startup_child(char **argv)
 			die_errno("change_root_directory");
 		if (change_working_directory() < 0)
 			die_errno("change_working_directory");
-		if (change_group() < 0)
-			die_errno("change_group");
-		if (change_user() < 0)
-			die_errno("change_user");
+		if (change_group() < 0) {
+			say_errno("change_group");
+			say("continuing...");
+		}
+		if (change_user() < 0) {
+			say_errno("change_user");
+			say("continuing...");
+		}
 		if (change_background() < 0)
 			die_errno("change_background");
 		if ((r = sysinit_seccomp()) < 0) {
