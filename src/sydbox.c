@@ -1913,6 +1913,11 @@ int main(int argc, char **argv)
 			sydbox->config.mem_access = opt;
 			break;
 		case 't':
+			say("[>] Checking for libseccomp architectures...");
+			/* test_seccomp_arch() returns the number of valid
+			 * architectures. */
+			opt_t[0] = test_seccomp_arch() == 0 ? EDOM : 0;
+			say("[>] Checking for requirements...");
 			if (uname(&buf_uts) < 0) {
 				say_errno("uname");
 			} else {
@@ -1922,11 +1927,12 @@ int main(int argc, char **argv)
 				    buf_uts.release,
 				    buf_uts.version);
 			}
-			say("[>] Checking for libseccomp architectures...");
-			/* test_seccomp_arch() returns the number of valid
-			 * architectures. */
-			opt_t[0] = test_seccomp_arch() == 0 ? EDOM : 0;
-			say("[>] Checking for requirements...");
+			if (os_release >= KERNEL_VERSION(5,6,0))
+				say("[*] Linux kernel is 5.6.0 or newer, good. ");
+			else
+				say("warning: Your Linux kernel is too old "
+				    "to support seccomp bpf and seccomp "
+				    "user notify. Please update your kernel.");
 			opt_t[1] = test_cross_memory_attach(true);
 			opt_t[2] = test_proc_mem(true);
 			opt_t[3] = test_pidfd(true);

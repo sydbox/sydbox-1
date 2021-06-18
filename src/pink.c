@@ -897,8 +897,8 @@ uint8_t test_seccomp_arch(void)
 	uint8_t arch_num_valid = 0;
 #define ack "[93m***[00;00m"
 #define nack "[92m!!![00;00m"
-#define yes "supported"
-#define no "not supported"
+#define yes "valid on this system"
+#define no "not valid on this system"
 	r = syd_seccomp_arch_is_valid(SCMP_ARCH_NATIVE, &valid);
 	printf("--- native is %svalid.\n", valid ? "" : "not ");
 	r = syd_seccomp_arch_is_valid(SCMP_ARCH_X86, &valid);
