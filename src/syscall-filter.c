@@ -768,23 +768,16 @@ static int filter_general_level_0(void)
 	//int sys_kill[] = { SCMP_SYS(kill), SCMP_SYS(tkill), -1 };
 	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
 			    SCMP_SYS(kill), 2,
-			    SCMP_A0_64( SCMP_CMP_EQ,
-					sydbox->sydbox_pid,
-					sydbox->sydbox_pid ),
-			    SCMP_A1( SCMP_CMP_NE, SIGCHLD, SIGCHLD ));
+			    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
+			    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
 	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
 			    SCMP_SYS(tkill), 2,
-			    SCMP_A0_64( SCMP_CMP_EQ,
-					sydbox->sydbox_pid,
-					sydbox->sydbox_pid ),
-			    SCMP_A1( SCMP_CMP_NE, SIGCHLD, SIGCHLD ));
+			    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
+			    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
 	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
 			    SCMP_SYS(tgkill), 2,
-			    SCMP_A1_64( SCMP_CMP_EQ,
-					sydbox->sydbox_pid,
-					sydbox->sydbox_pid ),
-			    SCMP_A2( SCMP_CMP_NE, SIGCHLD, SIGCHLD ));
-
+			    SCMP_A1_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
+			    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
 
 	/*
 	 * Deny pidfd_send_signal() to send any signal which
