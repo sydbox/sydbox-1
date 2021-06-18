@@ -787,21 +787,6 @@ static inline size_t process_count_alive(void)
 	return r;
 }
 
-static inline void syd_hash_sha1_init(void)
-{
-	syd_SHA1_Init(&sydbox->sha1);
-}
-
-static inline void syd_hash_sha1_update(const void *data, size_t len)
-{
-	syd_SHA1_Update(&sydbox->sha1, data, len);
-}
-
-static inline void syd_hash_sha1_final(unsigned char *hash)
-{
-	syd_SHA1_Final(hash, &sydbox->sha1);
-}
-
 /* Global functions */
 int syd_kill(pid_t pid, pid_t tgid, int sig);
 int syd_read_syscall(syd_process_t *current, long *sysnum);
