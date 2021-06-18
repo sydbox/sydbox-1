@@ -42,33 +42,26 @@ static uint32_t action_simple(int deny_errno, enum sandbox_mode mode)
 static int filter_simple(long sys_num, int deny_errno,
 			 enum sandbox_mode mode)
 {
-	int r;
 	uint32_t action = action_simple(deny_errno, mode);
 
 	if (action == sydbox->seccomp_action)
 		return 0;
 
-	if ((r = seccomp_rule_add(sydbox->ctx, action,
-				  sys_num, 0)) < 0)
-		return r;
-
+	syd_rule_add_return(sydbox->ctx, action, sys_num, 0);
 	return 0;
 }
 
 static int filter_socketcall(enum pink_socket_subcall call, int deny_errno,
 			     enum sandbox_mode mode)
 {
-	int r;
 	uint32_t action = action_simple(deny_errno, mode);
 
 	if (action == sydbox->seccomp_action)
 		return 0;
 
-	if ((r = seccomp_rule_add(sydbox->ctx, action,
-				  SCMP_SYS(socketcall), 1,
-				  SCMP_CMP(1, SCMP_CMP_EQ, call))) < 0)
-		return r;
-
+	syd_rule_add_return(sydbox->ctx, action,
+			    SCMP_SYS(socketcall), 1,
+			    SCMP_CMP(1, SCMP_CMP_EQ, call));
 	return 0;
 }
 

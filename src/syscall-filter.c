@@ -610,21 +610,16 @@ static int filter_open_readonly()
 		return 0;
 
 	for (unsigned i = 0; i < ELEMENTSOF(open_readonly_flags); i++) {
-		int r;
-		r = seccomp_rule_add(sydbox->ctx, action,
-				     SCMP_SYS(open), 1,
-				     SCMP_A1( SCMP_CMP_EQ,
-					      open_readonly_flags[i],
-					      open_readonly_flags[i] ));
-		if (r < 0)
-			return r;
-		r = seccomp_rule_add(sydbox->ctx, action,
-				     SCMP_SYS(openat), 1,
-				     SCMP_A2( SCMP_CMP_EQ,
-					      open_readonly_flags[i],
-					      open_readonly_flags[i] ));
-		if (r < 0)
-			return r;
+		syd_rule_add_return(sydbox->ctx, action,
+				    SCMP_SYS(open), 1,
+				    SCMP_A1( SCMP_CMP_EQ,
+					     open_readonly_flags[i],
+					     open_readonly_flags[i] ));
+		syd_rule_add_return(sydbox->ctx, action,
+				    SCMP_SYS(openat), 1,
+				    SCMP_A2( SCMP_CMP_EQ,
+					     open_readonly_flags[i],
+					     open_readonly_flags[i] ));
 	}
 
 	return 0;
@@ -632,23 +627,20 @@ static int filter_open_readonly()
 
 static int filter_time(void)
 {
-	int r;
 	uint32_t action = SCMP_ACT_ALLOW;
 
 	if (action == sydbox->seccomp_action)
 		return 0;
 
-	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
-				  SCMP_SYS(time), 1,
-				  SCMP_CMP(0, SCMP_CMP_EQ, 0))) < 0)
-		return r;
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW,
+			    SCMP_SYS(time), 1,
+			    SCMP_CMP(0, SCMP_CMP_EQ, 0))
 
 	return 0;
 }
 
 static int filter_rt_sigaction(void)
 {
-	int r;
 	int param[] = { SIGINT, SIGTERM, SIGPIPE, SIGUSR1, SIGUSR2, SIGHUP,
 		SIGCHLD, SIGSEGV, SIGILL, SIGFPE, SIGBUS, SIGSYS, SIGIO,
 #ifdef SIGXFSZ
@@ -661,10 +653,9 @@ static int filter_rt_sigaction(void)
 		return 0;
 
 	for (unsigned short i = 0; i < ELEMENTSOF(param); i++) {
-		if ((r = seccomp_rule_add(sydbox->ctx, action,
-					  SCMP_SYS(rt_sigaction), 1,
-					  SCMP_CMP(0, SCMP_CMP_EQ, param[i]))) < 0)
-			return r;
+		syd_rule_add_return(sydbox->ctx, action,
+				    SCMP_SYS(rt_sigaction), 1,
+				    SCMP_CMP(0, SCMP_CMP_EQ, param[i]));
 	}
 
 	return 0;
@@ -676,7 +667,8 @@ static int filter_general_level_1(void)
 
 	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level1); i++) {
 		if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
-					  filter_gen_level1[i], 0))) {
+					  filter_gen_level1[i], 0)) &&
+		    r != -EEXIST) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(filter_gen_level1[i],
 								SCMP_ARCH_NATIVE);
@@ -703,7 +695,8 @@ static int filter_general_level_2(void)
 
 	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level2); i++) {
 		if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
-					  filter_gen_level2[i], 0))) {
+					  filter_gen_level2[i], 0)) &&
+		    r != -EEXIST) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(filter_gen_level2[i],
 								SCMP_ARCH_NATIVE);
@@ -730,9 +723,8 @@ static int filter_general_level_2(void)
 	// So our only solution seems to be allowing all fstatat calls, which
 	// means that an attacker can stat() anything on the filesystem. That's
 	// not a great solution, but I can't find a better one.
-	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
-				  SCMP_SYS(newfstatat), 0)))
-		return r;
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW,
+			    SCMP_SYS(newfstatat), 0);
 #endif
 
 	if ((r = filter_time()) < 0)
@@ -749,7 +741,8 @@ static int filter_general_level_3(void)
 
 	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level3); i++) {
 		if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
-					  filter_gen_level3[i], 0))) {
+					  filter_gen_level3[i], 0)) &&
+		    r != -EEXIST) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(filter_gen_level3[i],
 								SCMP_ARCH_NATIVE);
@@ -776,9 +769,8 @@ static int filter_general_level_3(void)
 	// So our only solution seems to be allowing all fstatat calls, which
 	// means that an attacker can stat() anything on the filesystem. That's
 	// not a great solution, but I can't find a better one.
-	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
-				  SCMP_SYS(newfstatat), 0)))
-		return r;
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW,
+			    SCMP_SYS(newfstatat), 0);
 #endif
 
 	if ((r = filter_open_readonly()) < 0)
@@ -803,12 +795,9 @@ int filter_general(void)
 	};
 
 	if (sydbox->seccomp_action != SCMP_ACT_ALLOW) {
-		for (unsigned int i = 0; i < ELEMENTSOF(allow_calls); i++) {
-			int r;
-			if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
-						  allow_calls[i], 0)) < 0)
-				return r;
-		}
+		for (unsigned int i = 0; i < ELEMENTSOF(allow_calls); i++)
+			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW,
+					    allow_calls[i], 0);
 	}
 
 	switch (sydbox->config.restrict_general) {
@@ -827,71 +816,59 @@ int filter_general(void)
 
 static int filter_mmap_restrict_shared(int sys_mmap)
 {
-	int r;
-
-	if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
-				  sys_mmap, 2,
-				  SCMP_A2( SCMP_CMP_MASKED_EQ,
-					   PROT_WRITE, PROT_WRITE ),
-				  SCMP_A3( SCMP_CMP_MASKED_EQ,
-					   MAP_SHARED, MAP_SHARED ))))
-		return r;
-
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+			    sys_mmap, 2,
+			    SCMP_A2( SCMP_CMP_MASKED_EQ,
+				     PROT_WRITE, PROT_WRITE ),
+			    SCMP_A3( SCMP_CMP_MASKED_EQ,
+				     MAP_SHARED, MAP_SHARED ));
 	return 0;
 }
 
 static int filter_mmap_restrict(int sys_mmap)
 {
-	int r;
 	uint32_t action = SCMP_ACT_ALLOW;
 
 	if (action == sydbox->seccomp_action)
 		return 0;
 
-	if ((r = seccomp_rule_add(sydbox->ctx, action,
-				  sys_mmap, 2,
-				  SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ),
-				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE))))
-		return r;
-	if ((r = seccomp_rule_add(sydbox->ctx, action,
+	syd_rule_add_return(sydbox->ctx, action,
+			    sys_mmap, 2,
+			    SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ),
+			    SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE));
+	syd_rule_add_return(sydbox->ctx, action,
 				  sys_mmap, 2,
 				  SCMP_CMP(2, SCMP_CMP_EQ, PROT_NONE),
-				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE))))
-		return r;
-	if ((r = seccomp_rule_add(sydbox->ctx, action,
+				  SCMP_CMP(3, SCMP_CMP_EQ,
+					   MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE))
+	syd_rule_add_return(sydbox->ctx, action,
 				  sys_mmap, 2,
 				  SCMP_CMP(2, SCMP_CMP_EQ,
 					   PROT_READ|PROT_WRITE),
-				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE|MAP_ANONYMOUS))))
-		return r;
-	if ((r = seccomp_rule_add(sydbox->ctx, action,
+				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE|MAP_ANONYMOUS));
+	syd_rule_add_return(sydbox->ctx, action,
 				  sys_mmap, 2,
 				  SCMP_CMP(2, SCMP_CMP_EQ,
 					   PROT_READ|PROT_WRITE),
-				  SCMP_CMP(3, SCMP_CMP_EQ,MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK))))
-		return r;
-	if ((r = seccomp_rule_add(sydbox->ctx, action,
+				  SCMP_CMP(3, SCMP_CMP_EQ,MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK));
+	syd_rule_add_return(sydbox->ctx, action,
 				  sys_mmap, 2,
 				  SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ|PROT_WRITE),
-				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE))))
-		return r;
-	if ((r = seccomp_rule_add(sydbox->ctx, action,
+				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE));
+	syd_rule_add_return(sydbox->ctx, action,
 				  sys_mmap, 2,
 				  SCMP_CMP(2, SCMP_CMP_EQ,
 					   PROT_READ|PROT_WRITE),
 				  SCMP_CMP(3, SCMP_CMP_EQ,
-					   MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS))))
-		return r;
-	if ((r = seccomp_rule_add(sydbox->ctx, action,
+					   MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS));
+	syd_rule_add_return(sydbox->ctx, action,
 				  sys_mmap, 2,
 				  SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ|PROT_EXEC),
 				  SCMP_CMP(3, SCMP_CMP_EQ,
-					   MAP_PRIVATE|MAP_DENYWRITE))))
-		return r;
+					   MAP_PRIVATE|MAP_DENYWRITE));
 	if (sydbox->seccomp_action != SCMP_ACT_ERRNO(EPERM))
-		if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
-					  sys_mmap, 0)))
-			return r;
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+				    sys_mmap, 0);
 	return 0;
 }
 
@@ -938,12 +915,11 @@ int filter_mprotect(void)
 		r = seccomp_rule_add(sydbox->ctx, action,
 				     SCMP_SYS(mprotect), 0);
 	}
-	return r;
+	return r == -EEXIST ? 0 : r;
 }
 
 int filter_ioctl(void)
 {
-	int r;
 	static const unsigned long request[] = {
 		TCGETS,
 		TIOCGLCKTRMIOS,
@@ -1020,18 +996,15 @@ int filter_ioctl(void)
 
 	if (sydbox->seccomp_action != SCMP_ACT_ALLOW)
 		for (unsigned short i = 0; i < ELEMENTSOF(request); i++)
-			if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
+			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW,
 						  SCMP_SYS(ioctl), 1,
 						  SCMP_CMP(1, SCMP_CMP_EQ,
-							   request[i]))) < 0)
-				return r;
+							   request[i]));
 	if (sydbox->config.restrict_ioctl &&
-	    sydbox->seccomp_action != SCMP_ACT_ERRNO(EPERM) &&
-	    (r = seccomp_rule_add(sydbox->ctx,
-				  SCMP_ACT_ERRNO(EPERM),
-				  SCMP_SYS(ioctl), 0)) < 0)
-		return r;
-
+	    sydbox->seccomp_action != SCMP_ACT_ERRNO(EPERM))
+		syd_rule_add_return(sydbox->ctx,
+				    SCMP_ACT_ERRNO(EPERM),
+				    SCMP_SYS(ioctl), 0);
 	return 0;
 }
 

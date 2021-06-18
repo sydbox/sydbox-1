@@ -826,14 +826,13 @@ int sysexit(syd_process_t *current)
 static int
 rule_add_action(uint32_t action, int sysnum)
 {
-	return seccomp_rule_add(sydbox->ctx, action, sysnum, 0);
+	syd_rule_add_return(sydbox->ctx, action, sysnum, 0);
+	return 0;
 }
 
 static int rule_add_access(uint32_t action, int sysnum,
 			   int access_mode, int access_flag)
 {
-	int r;
-
 	if (action == sydbox->seccomp_action)
 		return 0;
 
@@ -841,13 +840,11 @@ static int rule_add_access(uint32_t action, int sysnum,
 	 * TODO: For simplicity we ignore bitwise OR'ed modes here,
 	 * e.g: R_OK|W_OK
 	 */
-	if ((r = seccomp_rule_add(sydbox->ctx, action,
+	syd_rule_add_return(sydbox->ctx, action,
 				  sysnum, 1,
 				  SCMP_CMP( access_mode,
 					    SCMP_CMP_EQ,
-					    access_flag, access_flag ))) < 0)
-		return r;
-
+					    access_flag, access_flag ));
 	return 0;
 }
 
@@ -889,18 +886,13 @@ rule_add_open_rd(uint32_t action, int sysnum, int open_flag)
 		return 0;
 
 	/* FIXME: duplication with syscall-filter.c:filter_open_readonly() */
-	for (unsigned i = 0; i < ELEMENTSOF(open_readonly_flags); i++) {
-		int r;
-		r = seccomp_rule_add(sydbox->ctx, action,
+	for (unsigned i = 0; i < ELEMENTSOF(open_readonly_flags); i++)
+		syd_rule_add_return(sydbox->ctx, action,
 				     sysnum, 1,
 				     SCMP_CMP( open_flag,
 					       SCMP_CMP_EQ,
 					       open_readonly_flags[i],
 					       open_readonly_flags[i] ));
-		if (r < 0)
-			return r;
-	}
-
 	return 0;
 }
 
@@ -916,15 +908,11 @@ rule_add_open_wr(uint32_t action, int sysnum, int open_flag)
 		O_CREAT,
 	};
 
-	for (unsigned int i = 0; i < ELEMENTSOF(flag); i++) {
-		int r;
-		r = seccomp_rule_add(sydbox->ctx, action, sysnum,
-				     1,
-				     SCMP_CMP( open_flag, SCMP_CMP_MASKED_EQ,
-					       flag[i], flag[i]));
-		if (r < 0)
-			return r;
-	}
+	for (unsigned int i = 0; i < ELEMENTSOF(flag); i++)
+		syd_rule_add_return(sydbox->ctx, action, sysnum,
+				    1,
+				    SCMP_CMP( open_flag, SCMP_CMP_MASKED_EQ,
+					      flag[i], flag[i]));
 
 	return 0;
 }
