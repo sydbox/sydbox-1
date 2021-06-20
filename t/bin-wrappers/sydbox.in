@@ -56,12 +56,16 @@ eexec() {
 		fi
 	elif test -n "$SYDBOX_STRACE_ENABLED"; then
 		if test -z "$SYDBOX_TEST_INSTALLED"; then
-			exec @BUILD_EXEC_PREFIX@ strace -o "$SHOEBOX_STRACE" \
+			exec strace -o "$SHOEBOX_STRACE" \
 				$SYDBOX_STRACE_OPTIONS \
+				--
+				@BUILD_EXEC_PREFIX@ \
+				-- \
 				"$@"
 		else
 			exec strace -o "$SHOEBOX_STRACE" \
 				$SYDBOX_STRACE_OPTIONS \
+				-- \
 				"$@"
 		fi
 	else
