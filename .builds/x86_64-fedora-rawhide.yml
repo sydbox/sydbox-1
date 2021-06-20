@@ -50,7 +50,7 @@ tasks:
 - conf_static: |
     cd sydbox
     ./autogen.sh
-    CFLAGS="-O0 -g -ggdb" ./configure --enable-static
+    CFLAGS="-O0 -g -ggdb" ./configure --enable-maintainer-mode --prefix=/usr --enable-static
 - make_static: |
     cd sydbox
     make -j V=1
@@ -74,7 +74,7 @@ tasks:
 - conf: |
     cd sydbox
     ./autogen.sh
-    CFLAGS="-O0 -g -ggdb" ./configure --disable-static
+    CFLAGS="-O0 -g -ggdb" ./configure --enable-maintainer-mode --prefix=/usr --disable-static
 - make: |
     cd sydbox
     make -j V=1
