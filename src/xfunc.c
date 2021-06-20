@@ -174,7 +174,7 @@ void say_errno(const char *fmt, ...)
 	va_start(ap, fmt);
 	vsay(stderr, fmt, ap);
 	va_end(ap);
-	say(" (errno:%d|%s| %s)", save_errno, errno2name(save_errno),
+	say(" (errno:%d|%s %s)", save_errno, errno2name(save_errno),
 	    strerror(save_errno));
 
 	errno = save_errno;
@@ -188,7 +188,7 @@ void die_errno(const char *fmt, ...)
 	va_start(ap, fmt);
 	vsay(stderr, fmt, ap);
 	va_end(ap);
-	say(" (errno:%d|%s| %s)", save_errno, errno2name(save_errno),
+	say(" (errno:%d|%s %s)", save_errno, errno2name(save_errno),
 	    strerror(save_errno));
 
 	syd_abort(SIGTERM);
