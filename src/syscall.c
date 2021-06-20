@@ -602,12 +602,17 @@ int sysinit_seccomp_load(void)
 			    (mode_w == SANDBOX_ALLOW || mode_w == SANDBOX_DENY)) {
 				r = rule_add_open_wr_notify(sysnum,
 							    flag);
-				if (r < 0)
+				if (r < 0) {
+					errno = -r;
+					say_errno("invalid write notify");
 					return r;
+				}
 				user_notified = true;
 			} else if (mode_w == SANDBOX_DENY &&
 				   (r = rule_add_open_wr_eperm(sysnum,
 							       flag)) < 0) {
+				errno = -r;
+				say_errno("invalid write bpf");
 				return r;
 			}
 		} else {
