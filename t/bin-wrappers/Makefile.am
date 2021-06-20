@@ -10,7 +10,7 @@ EXTRA_DIST=
 if ENABLE_STATIC
 BUILD_EXEC_PREFIX=
 else
-BUILD_EXEC_PREFIX= $(LIBTOOL) --mode=execute --
+BUILD_EXEC_PREFIX= $(top_srcdir)/$(LIBTOOL) --mode=execute --
 endif
 
 sydbox: sydbox.in Makefile
