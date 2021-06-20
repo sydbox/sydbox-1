@@ -81,6 +81,7 @@ noinst_HEADERS+= \
 		 pathdecode.h \
 		 pathmatch.h \
 		 procmatch.h \
+		 syscall_open_ro.lst \
 		 syscall_open_syd.h \
 		 #profile_parser.y \
 		 #profile_scanner.l \
