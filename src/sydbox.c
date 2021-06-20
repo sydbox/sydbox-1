@@ -1671,6 +1671,7 @@ static pid_t startup_child(char **argv)
 	} else {
 		int fd;
 		if ((r = parent_read_int(&fd)) < 0) {
+			errno = -r;
 			say_errno("failed to load seccomp filters");
 			say("Invalid sandbox options given.");
 			exit(-r);

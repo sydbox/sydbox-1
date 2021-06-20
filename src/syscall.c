@@ -755,15 +755,16 @@ int sysinit_seccomp(void)
 	}
 	if (close_fd)
 		close(export_fd);
-	if ((r = seccomp_load(sydbox->ctx)) < 0)
-		return -r;
+	r = seccomp_load(sydbox->ctx);
 	if (use_notify()) {
-		int fd;
-		if ((fd = seccomp_notify_fd(sydbox->ctx)) < 0)
-			return -errno;
+		int fd = r;
+		if (r == 0 && (fd = seccomp_notify_fd(sydbox->ctx)) < 0)
+			fd = -errno;
 		if (parent_write_int(fd))
 			return -errno;
 	}
+	if (r)
+		return -r;
 
 	seccomp_release(sydbox->ctx);
 	sydbox->ctx = NULL;
