@@ -7,7 +7,6 @@
 
 #define arch_ok(ret) ((ret) == 0 || (ret) == -EEXIST)
 
-char *in_sydbox_test = getenv("IN_SYDBOX_TEST");
 #define SAY_ERRNO(msg) if (!in_sydbox_test) { say_errno((msg)); }
 
 #ifdef SYD_ARCH_X86

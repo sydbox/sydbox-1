@@ -2052,6 +2052,7 @@ int main(int argc, char **argv)
 		/* User has specified no architectures.
 		 * use/try all the valid architectures defined at compile-time.
 		 */
+		SYD_GCC_ATTR((unused))char *in_sydbox_test = getenv("IN_SYDBOX_TEST");
 #include "syd_seccomp_arch_default.c"
 	} else {
 		/* Else, we plan to remove the native architecture of libseccomp.
