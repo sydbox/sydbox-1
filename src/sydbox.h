@@ -702,9 +702,6 @@ typedef struct syscall_info syscall_info_t;
 /* Global variables */
 extern sydbox_t *sydbox;
 
-#define OPEN_READONLY_FLAG_MAX 1024
-extern const int open_readonly_flags[OPEN_READONLY_FLAG_MAX];
-
 #if SYDBOX_HAVE_DUMP_BUILTIN
 # define inspecting() ((sydbox) && (sydbox->dump_fd) != 0)
 #else
@@ -1164,5 +1161,7 @@ int sys_sendmsg(syd_process_t *current);
 int sys_recvmsg(syd_process_t *current);
 
 int sysx_chdir(syd_process_t *current);
+
+int rule_add_open_rd(uint32_t action, int sysnum, int open_flag);
 
 #endif

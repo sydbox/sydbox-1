@@ -13,11 +13,12 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <seccomp.h>
+
 #include "pink.h"
 #include "macro.h"
 #include "proc.h"
-
-#include <seccomp.h>
+#include "syscall_open_syd.h"
 
 static int rule_add_action(uint32_t action, int sysnum);
 
@@ -37,7 +38,6 @@ static int rule_add_access_ex(uint32_t action, int sysnum, int access_mode);
 #define rule_add_access_ex_notify(sysnum, access_mode) \
 	(rule_add_access_wr(SCMP_ACT_NOTIFY, (sysnum), (access_mode)))
 
-static int rule_add_open_rd(uint32_t action, int sysnum, int open_flag);
 static int rule_add_open_wr(uint32_t action, int sysnum, int open_flag);
 #define rule_add_open_rd_eperm(sysnum, open_flag) \
 	(rule_add_open_rd(SCMP_ACT_ERRNO(EPERM), (sysnum), (open_flag)))
@@ -875,20 +875,19 @@ static int rule_add_access_ex(uint32_t action, int sysnum, int access_mode)
 	return 0;
 }
 
-static int
+int
 rule_add_open_rd(uint32_t action, int sysnum, int open_flag)
 {
 	if (action == sydbox->seccomp_action)
 		return 0;
 
-	/* FIXME: duplication with syscall-filter.c:filter_open_readonly() */
-	for (unsigned i = 0; i < ELEMENTSOF(open_readonly_flags); i++)
+	for (unsigned i = 0; i < ELEMENTSOF(open_readonly_flags); i++) {
 		syd_rule_add_return(sydbox->ctx, action,
-				     sysnum, 1,
-				     SCMP_CMP( open_flag,
-					       SCMP_CMP_EQ,
-					       open_readonly_flags[i],
-					       open_readonly_flags[i] ));
+				    sysnum, 1,
+				    SCMP_CMP( open_flag, SCMP_CMP_EQ,
+					     open_readonly_flags[i] ));
+	}
+
 	return 0;
 }
 

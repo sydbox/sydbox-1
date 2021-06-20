@@ -1,6 +1,9 @@
 AM_MAKEFLAGS= --no-print-directory
-BUILT_SOURCES=
+BUILT_SOURCES= \
+	       syscall_open_ro.lst \
+	       syscall_open_syd.h
 CLEANFILES= \
+	    $(BUILT_SOURCES) \
 	    gmon.out \
 	    *.gcda \
 	    *.gcno \
@@ -11,6 +14,17 @@ noinst_HEADERS=
 noinst_SCRIPTS= \
 		kingbee.py
 EXTRA_DIST+= $(noinst_SCRIPTS)
+
+syscall_open_syd.h: Makefile syscall_open_ro.lst syscall_open_syd.h.in
+	$(PYTHON) ./syd-syscall-open.py < syscall_open_ro.lst > $@ ||\
+		rm $@
+
+syscall_open_ro.lst: Makefile
+	$(GREP) -h '#define O_' $(SYD_INCLUDEDIR)/{,bits,asm,linux}/fcntl.h |\
+		$(AWK) '{print $$2}' |\
+		$(EGREP) -v 'O_ACCMODE|O_RDONLY|O_WRONLY|O_RDWR|O_DIRECTORY|O_PATH' |\
+		$(SORT) > $@ ||\
+		rm $@
 
 DEFS+= \
        -DIN_SYDBOX=1 \
@@ -55,6 +69,7 @@ noinst_HEADERS+= \
 		 pathdecode.h \
 		 pathmatch.h \
 		 procmatch.h \
+		 syscall_open_syd.h \
 		 #profile_parser.y \
 		 #profile_scanner.l \
 		 sc_map.h \

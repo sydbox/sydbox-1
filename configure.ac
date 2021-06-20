@@ -91,7 +91,11 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_MKDIR_P
+AC_PROG_GREP
+AC_PROG_EGREP
 AC_PROG_SED
+AC_PROG_AWK
+AC_PATH_PROG([SORT], [sort])
 LT_INIT
 AC_PROG_YACC
 AM_PROG_LEX
@@ -206,7 +210,9 @@ AC_CHECK_HEADERS(m4_flatten([
 	sys/user.h
 	sys/wait.h
 	sys/syscall.h
+	asm/fcntl.h
 	asm/signal.h
+	linux/fcntl.h
 	linux/fs.h
 	linux/mount.h
 	linux/openat2.h
@@ -428,6 +434,16 @@ AC_MSG_RESULT([$WANT_DUMP_BUILTIN])
 AM_CONDITIONAL([SYDBOX_HAVE_DUMP_BUILTIN], test x"$WANT_DUMP_BUILTIN" = x"yes")
 AC_DEFINE_UNQUOTED([SYDBOX_HAVE_DUMP_BUILTIN], [$SYDBOX_WANT_DUMP_BUILTIN], [Enable builtin event dumper])
 AC_SUBST([SYDBOX_WANT_DUMP_BUILTIN])
+
+dnl Mark default include directory for Makefile
+dnl This is used to generate open flags
+SYD_INCLUDEDIR="$includedir"
+AC_SUBST([SYD_INCLUDEDIR])
+AC_ARG_VAR([PYTHON], [path to the Python interpreter])
+AM_PATH_PYTHON([2.3.0])
+if test x"$PYTHON" = x ; then
+	AC_MSG_ERROR([Python-2.3 or later is required to build SydBox, use PYTHON environment variable])
+fi
 
 dnl extra CFLAGS
 SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wno-unused-parameter -Wno-missing-field-initializers"

@@ -1,0 +1,11 @@
+#ifndef SYD_SYSCALL_OPEN_H
+#define SYD_SYSCALL_OPEN_H 1
+
+#include <fcntl.h>
+
+#define OPEN_READONLY_FLAG_MAX @OPEN_READONLY_FLAG_MAX@
+static const int open_readonly_flags[OPEN_READONLY_FLAG_MAX] = {
+	@OPEN_READONLY_FLAGS@
+};
+
+#endif
