@@ -1,6 +1,101 @@
 # Syd's Box
 
-<img src="https://dev.exherbo.org/~alip/images/sydbox160.png" alt="SydBox" title="img: That cat's something I can't explain!"/>
+<table>
+<td>
+<a href="https://repology.org/project/awesome/versions">
+  <img alt="Repology:SydBox"
+       src="https://repology.org/badge/version-for-repo/exherbo/sydbox.svg"
+       title="Repology:SydBox"
+       style="border: 0px; margin: 0px"
+  />
+</a></td>
+<td>
+<a href="https://img.shields.io/badge/stability-mature-008000.svg">
+  <img alt="stability:pre-release"
+       src="https://img.shields.io/badge/stability-pre--release-48c9b0.svg"
+       title="Code is fairly settled and is use in production systems.
+Backwards-compatibility will be maintained unless serious issues are
+discovered and consensus on a better solution is reached."
+       style="border: 0px; margin: 0px"
+  />
+</a></td>
+<td>
+<a href="https://scan.coverity.com/projects/sydbox">
+  <img alt="Coverity:SydBox"
+       src="https://scan.coverity.com/projects/sydbox/badge.svg"
+       title="Coverity:SydBox"
+       style="border: 0px; margin: 0px"
+  />
+</a></td>
+<td>
+<a href='https://coveralls.io/gitlab/sydbox/sydbox'>
+<img alt='Coverage:SydBox'
+     title='Coverage:SydBox'
+     style='border: 0px; margin: 0px;'
+     src='https://coveralls.io/repos/gitlab/sydbox/sydbox/badge.svg'
+/></a></td>
+<td>
+<a href='https://builds.sr.ht/~alip'>
+<img alt='Sourcehut.Builds:SydBox'
+     title='Sourcehut.Builds:SydBox'
+     style='border: 0px; margin: 0px;'
+     src='https://builds.sr.ht/~alip.svg'
+/></a></td>
+<td>
+<a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html">
+    <img alt="SPDX-License-Identifier: GPL-2.0-only"
+        title="SPDX-License-Identifier: GPL-2.0-only"
+        src="https://img.shields.io/badge/License-GPL%20v2-blue.svg"
+        style="border: 0px; margin: 0px"
+    />
+</a></td>
+<td>
+<tr><td>
+<a href="https://www.exherbo.org/docs/gettingstarted.html">
+<img
+    src="https://dev.exherbo.org/~alip/images/zebrapig.png"
+    alt="ZebraPig"
+    title="I AM ZEBRAPIG"
+    style="border: 0px; margin: 0px"
+/>
+</a></td>
+<td>
+<a href="https://www.gnu.org/philosophy/philosophy.html">
+<img
+    src="https://dev.exherbo.org/~alip/images/gnu.png"
+    alt="Heckert"
+    title="Heckert"
+    style="border: 0px; margin: 0px"
+/>
+</td>
+<td>
+<a href="https://www.kernel.org/category/about.html">
+<img
+    src="https://dev.exherbo.org/~alip/images/tux.png"
+    alt="TuX"
+    title="TuX"
+    style="border: 0px; margin: 0px"
+/>
+</a></td>
+<td>
+<a href="https://github.com/seccomp/libseccomp">
+<img
+    src="https://dev.exherbo.org/~alip/images/libseccomp.png"
+    alt="LibSecComp"
+    title="LibSecComp"
+    style="border: 0px; margin: 0px"
+/>
+</a></td>
+<td>
+<a href="https://sydbox.exherbo.org">
+<img
+    src="https://dev.exherbo.org/~alip/images/sydbox160.png"
+    alt="SydBox"
+    title="That cat's something I can't explain!"
+    style="border: 0px; margin: 0px"
+/></a></td>
+</td></tr>
+</tr></table>
 
 SydBox is a [seccomp](http://man7.org/linux/man-pages/man2/seccomp.2.html) based
 sandbox for modern [Linux](https://kernel.org) machines to sandbox unwanted process
