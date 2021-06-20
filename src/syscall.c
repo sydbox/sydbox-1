@@ -8,6 +8,7 @@
 #include "sydbox.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <asm/unistd.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -684,7 +685,13 @@ int sysinit_seccomp_load(void)
 	static const char *const calls[] = {
 		"execve", "execveat",
 		"chdir", "fchdir",
-		"clone", "clone3",
+		"clone",
+#ifdef __NR_clone2
+		"clone2",
+#endif
+#ifdef __NR_clone3
+		"clone3",
+#endif
 		"fork", "vfork",
 	};
 	if (user_notified) {
