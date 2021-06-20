@@ -10,5 +10,5 @@
 
 #include "sc_map.h"
 
-#define sc_map_freed(map) ((map)->size == 0)
+#define sc_map_freed(map) (!(map)->alloc && (map)->size == 0)
 #endif

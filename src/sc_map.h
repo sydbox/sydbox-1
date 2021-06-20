@@ -76,6 +76,7 @@
 		uint32_t size;                                                 \
 		uint32_t load_fac;                                             \
 		uint32_t remap;                                                \
+		bool alloc;                                                    \
 		bool used;                                                     \
 		bool oom;                                                      \
 		bool found;                                                    \

@@ -87,6 +87,7 @@
 	static const struct sc_map_item_##name empty_items_##name[2];          \
                                                                                \
 	static const struct sc_map_##name sc_map_empty_##name = {              \
+		.alloc = false,                                                \
 		.cap = 1,                                                      \
 		.mem = (struct sc_map_item_##name *) &empty_items_##name[1]};  \
                                                                                \
@@ -129,7 +130,10 @@
                                                                                \
 		t = sc_map_alloc_##name(&cap, 1);                              \
 		if (t == NULL) {                                               \
+			m->alloc = false;                                      \
 			return false;                                          \
+		} else {                                                       \
+			m->alloc = true;                                       \
 		}                                                              \
                                                                                \
 		m->mem = t;                                                    \
@@ -179,7 +183,10 @@
 		cap = m->cap;                                                  \
 		new = sc_map_alloc_##name(&cap, 2);                            \
 		if (new == NULL) {                                             \
+			m->alloc = false;                                      \
 			return false;                                          \
+		} else {                                                       \
+			m->alloc = true;                                       \
 		}                                                              \
                                                                                \
 		mod = cap - 1;                                                 \
