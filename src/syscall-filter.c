@@ -739,42 +739,11 @@ static int filter_general_level_0(void)
 			    __NR_pidfd_getfd, 0);
 #endif
 	if (use_notify()) {
-#ifdef __NR_process_vm_readv
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
-				    SCMP_SYS(process_vm_readv), 1,
-				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ));
-#endif
-#ifdef __NR_process_vm_writev
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
-				    SCMP_SYS(process_vm_writev), 1,
-				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ));
-#endif
-
-		/*
-		 * ++ Restricting signal handling between Sydbox and the
-		 * sandboxed process: SydBox permits only SIGCHLD from the
-		 * initial child. Other signals sent to SydBox's process id
-		 * are denied with ESRCH which denotes the process or
-		 * process group does not exist. This approach renders the
-		 * sandboxing SydBox process safe against any unexpected
-		 * signals.
-		 */
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-				    SCMP_SYS(kill), 2,
-				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
-				    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-				    SCMP_SYS(tkill), 2,
-				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
-				    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-				    SCMP_SYS(tgkill), 2,
-				    SCMP_A1_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
-				    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-				    SCMP_SYS(tgkill), 2,
-				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
-				    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
+		const pid_t protect_pids[] = {
+			sydbox->execve_pid,
+			sydbox->sydbox_pid,
+			INT_MAX,
+		};
 
 		/*
 		 * Deny pidfd_send_signal() to send any signal which
@@ -816,11 +785,50 @@ static int filter_general_level_0(void)
 		for (size_t i = 0; kill_signals[i] != LONG_MAX; i++) {
 			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
 					    SCMP_SYS(pidfd_send_signal), 1,
-					    SCMP_A1( SCMP_CMP_EQ,
-						     kill_signals[i],
-						     kill_signals[i]));
+					    SCMP_A1( SCMP_CMP_EQ, kill_signals[i] ));
 		}
 #endif
+		for (size_t i = 0; protect_pids[i] != INT_MAX; i++) {
+			pid_t pid = protect_pids[i];
+#ifdef __NR_process_vm_readv
+			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+					    SCMP_SYS(process_vm_readv), 1,
+					    SCMP_A0_64( SCMP_CMP_EQ,
+							pid ));
+			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+					    SCMP_SYS(process_vm_readv), 1,
+					    SCMP_A0_64( SCMP_CMP_EQ,
+							pid ));
+#endif
+#ifdef __NR_process_vm_writev
+			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+					    SCMP_SYS(process_vm_writev), 1,
+					    SCMP_A0_64( SCMP_CMP_EQ,
+							pid ));
+#endif
+
+			/*
+			 * ++ Restricting signal handling between Sydbox and the
+			 * sandboxed process: SydBox permits only SIGCHLD from the
+			 * initial child. Other signals sent to SydBox's process id
+			 * are denied with ESRCH which denotes the process or
+			 * process group does not exist. This approach renders the
+			 * sandboxing SydBox process safe against any unexpected
+			 * signals.
+			 */
+			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+					    SCMP_SYS(kill), 2,
+					    SCMP_A0_64( SCMP_CMP_EQ, pid ),
+					    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
+			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+					    SCMP_SYS(tkill), 2,
+					    SCMP_A0_64( SCMP_CMP_EQ, pid ),
+					    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
+			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+					    SCMP_SYS(tgkill), 2,
+					    SCMP_A1_64( SCMP_CMP_EQ, pid ),
+					    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
+		}
 	}
 
 	/*

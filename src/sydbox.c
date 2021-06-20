@@ -1608,6 +1608,7 @@ static pid_t startup_child(char **argv)
 	if (pid < 0)
 		die_errno("can't fork");
 	else if (pid == 0) {
+		sydbox->execve_pid = getpid();
 		sydbox->in_child = true;
 		sydbox->seccomp_fd = pfd[1];
 
