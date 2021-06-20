@@ -65,11 +65,7 @@ eexec() {
 				"$@"
 		fi
 	else
-		if test -z "$SYDBOX_TEST_INSTALLED"; then
-			exec @BUILD_EXEC_PREFIX@ "$@"
-		else
-			exec "$@"
-		fi
+		exec "$@"
 	fi
 }
 
