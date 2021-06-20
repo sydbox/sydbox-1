@@ -10,9 +10,5 @@
 
 #include "sc_map.h"
 
-#define sc_map_freed(map) \
-	((map)->load_fac == 0 &&\
-	 (map)->remap == 0 &&\
-	 (map)->used == false &&\
-	 (map)->found == false)
+#define sc_map_freed(map) ((map)->size == 0)
 #endif
