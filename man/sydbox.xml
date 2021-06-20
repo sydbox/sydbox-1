@@ -26,7 +26,9 @@
   </refentryinfo>
 
   <refmeta>
-    <refentrytitle>sydbox</refentrytitle>
+    <refentrytitle>
+      <ulink url="https://sydbox.exherbo.org">sydbox</ulink>
+    </refentrytitle>
     <manvolnum>1</manvolnum>
     <refmiscinfo class="source">sydbox-&SYDBOX_VERSION;</refmiscinfo>
     <refmiscinfo class="manual">Sydbox-&SYDBOX_VERSION;</refmiscinfo>
@@ -53,19 +55,59 @@
     <para>
       <command>sydbox</command> is a
       <citerefentry><refentrytitle>seccomp</refentrytitle><manvolnum>2</manvolnum></citerefentry>
-      based sandboxing utility for modern Linux machines to sandbox unwanted process access to
+      based sandboxing utility for modern Linux[>=5.6] machines to sandbox unwanted process access to
       filesystem and network resources.
     </para>
 
-    <para>
+     <para>
+      <command>sydbox</command> requires <emphasis>no root access</emphasis> and
+        <emphasis>no
+          <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+        </emphasis>
+          rights. They don't depend on any specific Linux kernel option to function.
+      The only dependency is libseccomp which is available on many different architectures,
+          including <constant>x86</constant>, <constant>x86_64</constant>,
+            <constant>x32</constant>, <constant>arm</constant>,
+            <constant>aarch64</constant>, <constant>mips</constant>,
+            <constant>mips64</constant>...
+        </para>
+      <para>
+      This makes it very easy for a regular user to use.
+      This is the motto of SydBox:
+      <emphasis>
+        bring easy, simple, flexible and powerful security to the Linux user!
+      </emphasis>
+      </para>
+   <para>
       The basic idea of <command>sydbox</command> is to run a command under certain restrictions.
       These restrictions define which system calls the command is permitted to run and which argument
       values are permitted for the given system call. The restrictions may be applied via two ways.
       <varname>seccomp-bpf</varname> can be used to apply simple Secure Computing user filters to
       run sandboxing fully on kernel space, and <varname>seccomp-notify</varname> functionality can
       be used to run sandboxing on kernel space and fallback to user space to dereference pointer
-      arguments of system calls (pathnames, socket addresses, etc.) and make dynamic decisions
-      about the action to take.
+      arguments of system calls -- which are one of
+      <ulink url="https://en.wikipedia.org/wiki/Path_(computing)">pathname</ulink>,
+      <ulink url="https://en.wikipedia.org/wiki/Unix_domain_socket">UNIX socket address</ulink>,
+      <ulink url="https://en.wikipedia.org/wiki/IPv4">IPv4</ulink> or
+      <ulink url="https://en.wikipedia.org/wiki/IPv6">IPv6</ulink>
+      network address -- and make dynamic decisions
+      using `rsync`-like <ulink url="https://en.wikipedia.org/wiki/Wildcard_character">wildcards</ulink>
+      such as `allowlist/write+/home/sydbox/***`, or
+      `allowlist/write+/run/user/*/pulse`
+      for <ulink url="https://en.wikipedia.org/wiki/Path_(computing)">pathnames</ulink>,
+      and using
+      <ulink url="https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing">CIDR</ulink>
+      notation such as
+      `allowlist/network/connect+inet:127.0.0.1/8@9050`, or
+      `allowlist/network/connect+inet6:::1/8@9050`
+      for
+      <ulink url="https://en.wikipedia.org/wiki/IPv4">IPv4</ulink> and
+      <ulink url="https://en.wikipedia.org/wiki/IPv6">IPv6</ulink> addresses
+      and perform an action which is by default denying the system call with an
+      appropriate error -- which is usually **permission denied** -- or
+      kill the process running the system call, or kill all processes at once
+      with <ulink url="https://en.wikipedia.org/wiki/Signal_(IPC)#SIGKILL">
+      <constant>SIGKILL</constant></ulink>.
     </para>
     <para>
       <varname>seccomp-bpf</varname> filters are extremely fast and secure yet somewhat limited.
@@ -2027,6 +2069,37 @@
       <citerefentry><refentrytitle>seccomp_load</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
       <citerefentry><refentrytitle>seccomp_attr_set</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
       <citerefentry><refentrytitle>seccomp_rule_add</refentrytitle><manvolnum>3</manvolnum></citerefentry>,
+    </para>
+    <para>
+      <itemizedlist>
+      <listitem>
+        <ulink url="https://en.wikipedia.org/wiki/Seccomp">Wikipedia:Seccomp</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="https://en.wikipedia.org/wiki/Sandbox_(computer_security)">Wikipedia:Sandbox_(computer_security)</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="https://en.wikipedia.org/wiki/Path_(computing)">Wikipedia:Path(computing)</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="https://en.wikipedia.org/wiki/Unix_domain_socket">Wikipedia:Unix_domain_socket</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="https://en.wikipedia.org/wiki/IPv4">IPv4</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="https://en.wikipedia.org/wiki/IPv6">IPv6</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="https://en.wikipedia.org/wiki/Wildcard_character">Wikipedia:Wildcard_character</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing">Wikipedia:Classless_Inter-Domain_Routing</ulink>
+      </listitem>
+      <listitem>
+        <ulink url="https://en.wikipedia.org/wiki/Signal_(IPC)#SIGKILL">SIGKILL</ulink>
+      </listitem>
+      </itemizedlist>
     </para>
   </refsect1>
 
