@@ -8,13 +8,60 @@ else
 	opt_export=
 fi
 
+case "$SYDBOX_VALGRIND_MODE" in
+memcheck-fast)
+	;;
+memcheck)
+	VALGRIND_VERSION=$(valgrind --version)
+	VALGRIND_MAJOR=$(expr "$VALGRIND_VERSION" : '[^0-9]*\([0-9]*\)')
+	VALGRIND_MINOR=$(expr "$VALGRIND_VERSION" : '[^0-9]*[0-9]*\.\([0-9]*\)')
+	test 3 -gt "$VALGRIND_MAJOR" ||
+	test 3 -eq "$VALGRIND_MAJOR" -a 4 -gt "$VALGRIND_MINOR" ||
+	TOOL_OPTIONS="$TOOL_OPTIONS
+		--leak-check=full
+		--show-leak-kinds=all
+		--show-reachable=yes
+		--trace-children=no
+		--track-origins=yes
+		--track-fds=yes
+		--error-limit=no
+		--suppressions=$SYDBOX_VALGRIND/default.supp
+		--gen-suppressions=all
+	"
+	;;
+*)
+	TOOL_OPTIONS="--tool=$SYDBOX_VALGRIND_MODE"
+esac
+
 eexec() {
-	if test -n "$SYDBOX_STRACE_ENABLED"; then
+	if test -n "$SYDBOX_VALGRIND_ENABLED" &&
+		if test -z "$SYDBOX_TEST_INSTALLED"
+			exec @BUILD_EXEC_PREFIX@ valgrind -q \
+				--error-exitcode=126 \
+				--time-stamp=yes \
+				$TOOL_OPTIONS \
+				--log-fd=4 \
+				--input-fd=4 \
+				$SYDBOX_VALGRIND_OPTIONS \
+				"$@"
+		else
+			exec valgrind -q \
+				--error-exitcode=126 \
+				--time-stamp=yes \
+				$TOOL_OPTIONS \
+				--log-fd=4 \
+				--input-fd=4 \
+				$SYDBOX_VALGRIND_OPTIONS \
+				"$@"
+		fi
+	elif test -n "$SYDBOX_STRACE_ENABLED"; then
 		exec strace -ff -o "$SHOEBOX_STRACE" -- "$@"
 	else
 		exec "$@"
 	fi
 }
+
+
 
 if test -z "$SYDBOX_TEST_INSTALLED"
 then

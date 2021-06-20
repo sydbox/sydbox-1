@@ -7,6 +7,12 @@ CLEANFILES= \
 	    *.gcov
 EXTRA_DIST=
 
+if ENABLE_STATIC
+BUILD_EXEC_PREFIX=
+else
+BUILD_EXEC_PREFIX= $(LIBTOOL) --mode=execute --
+endif
+
 sydbox: sydbox.in Makefile
 	$(AM_V_GEN)
 	$(AM_V_at)$(SED) -e 's:@TOP_BUILDDIR@:$(abs_top_builddir):g' \
