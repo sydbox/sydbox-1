@@ -19,6 +19,7 @@
 #include "pink.h"
 #include "macro.h"
 #include "proc.h"
+#include "sc_map_syd.h"
 #include "syscall_open_syd.h"
 
 static int rule_add_action(uint32_t action, int sysnum);
@@ -894,12 +895,22 @@ rule_add_open_rd(uint32_t action, int sysnum, int open_flag)
 	if (action == sydbox->seccomp_action)
 		return 0;
 
-	for (unsigned i = 0; i < ELEMENTSOF(open_readonly_flags); i++) {
+	struct sc_map_64v map;
+	if (!sc_map_init_64v(&map, OPEN_READONLY_FLAG_MAX, 0))
+		return -ENOMEM;
+
+	for (size_t i = 0; i < OPEN_READONLY_FLAG_MAX; i++) {
+		int flag = open_readonly_flags[i];
+		sc_map_get_64v(&map, flag);
+		if (sc_map_found(&map))
+			continue;
+		sc_map_put_64v(&map, flag, NULL);
 		syd_rule_add_return(sydbox->ctx, action,
 				    sysnum, 1,
-				    SCMP_CMP( open_flag, SCMP_CMP_EQ,
-					     open_readonly_flags[i] ));
+				    SCMP_CMP( open_flag, SCMP_CMP_EQ, flag ));
 	}
+
+	sc_map_term_64v(&map);
 
 	return 0;
 }
@@ -920,7 +931,7 @@ rule_add_open_wr(uint32_t action, int sysnum, int open_flag)
 		syd_rule_add_return(sydbox->ctx, action, sysnum,
 				    1,
 				    SCMP_CMP64( open_flag, SCMP_CMP_MASKED_EQ,
-					      flag[i], flag[i]));
+						flag[i], flag[i]));
 	}
 
 	return 0;
