@@ -11,6 +11,7 @@
  */
 
 #include <stddef.h>
+#include <errno.h>
 
 #define CASE(x) case x: return #x
 
