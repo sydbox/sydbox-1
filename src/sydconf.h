@@ -2,6 +2,13 @@
  * sydbox/sydconf.h
  *
  * Copyright (c) 2010, 2011, 2012, 2013, 2021 Ali Polatel <alip@exherbo.org>
+ * Based in part upon strace/src/clone.c which is:
+ *   Copyright (c) 1999-2000 Wichert Akkerman <wichert@cistron.nl>
+ *   Copyright (c) 2002-2005 Roland McGrath <roland@redhat.com>
+ *   Copyright (c) 2008 Jan Kratochvil <jan.kratochvil@redhat.com>
+ *   Copyright (c) 2009-2013 Denys Vlasenko <dvlasenk@redhat.com>
+ *   Copyright (c) 2006-2015 Dmitry V. Levin <ldv@strace.io>
+ *   Copyright (c) 2014-2021 The strace developers.
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
@@ -55,6 +62,40 @@
 #endif
 #define MAX_ARG_STRLEN (PAGE_SIZE * 32)
 #define MAX_ARG_STRINGS 0x7FFFFFFF
+
+#if defined IA64
+# define SYD_CLONE_ARG_FLAGS	0
+# define SYD_CLONE_ARG_STACK	1
+# define SYD_CLONE_ARG_STACKSIZE(sysnum)	((sysnum) == __NR_clone2 ? 2 : -1)
+# define SYD_CLONE_ARG_PTID(sysnum)	((sysnum) == __NR_clone2 ? 3 : 2)
+# define SYD_CLONE_ARG_CTID(sysnum)	((sysnum) == __NR_clone2 ? 4 : 3)
+# define SYD_CLONE_ARG_TLS(sysnum)	((sysnum) == __NR_clone2 ? 5 : 4)
+#elif defined S390 || defined S390X
+# define SYD_CLONE_ARG_STACK	0
+# define SYD_CLONE_ARG_FLAGS	1
+# define SYD_CLONE_ARG_PTID	2
+# define SYD_CLONE_ARG_CTID	3
+# define SYD_CLONE_ARG_TLS	4
+#elif defined X86_64 || defined X32
+/* x86 personality processes have the last two arguments flipped. */
+# define SYD_CLONE_ARG_FLAGS	0
+# define SYD_CLONE_ARG_STACK	1
+# define SYD_CLONE_ARG_PTID	2
+# define SYD_CLONE_ARG_CTID(arch)	((arch != SCMP_ARCH_X86) ? 3 : 4)
+# define SYD_CLONE_ARG_TLS(arch)	((arch != SCMP_ARCH_X86) ? 4 : 3)
+#elif defined ALPHA || defined TILE || defined OR1K || defined CSKY
+# define SYD_CLONE_ARG_FLAGS	0
+# define SYD_CLONE_ARG_STACK	1
+# define SYD_CLONE_ARG_PTID	2
+# define SYD_CLONE_ARG_CTID	3
+# define SYD_CLONE_ARG_TLS	4
+#else
+# define SYD_CLONE_ARG_FLAGS	0
+# define ARG_STACK	1
+# define ARG_PTID	2
+# define ARG_TLS	3
+# define ARG_CTID	4
+#endif
 
 /* Configuration */
 #ifndef SYDBOX_PATH_MAX

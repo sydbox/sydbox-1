@@ -1248,13 +1248,10 @@ static int event_clone(syd_process_t *current, const char clone_type,
 
 	if (!current->new_clone_flags) {
 		switch (clone_type) {
+		case 'c':
 		case 'f':
 		case 'v':
-		case 'c':
 			current->new_clone_flags = pack_clone_flags(clone_flags);
-			break;
-		case '3': /* Cannot decode argument, treat as non-thread */
-			current->new_clone_flags = 0;
 			break;
 		default:
 			assert_not_reached();
@@ -1505,15 +1502,17 @@ notify_receive:
 
 		if (!name) {
 			;
-		} else if (!strcmp(name, "clone")) {
-			event_clone(current, 'c', current->args[2]);
-		} else if (!strcmp(name, "fork")) {
+		} else if (streq(name, "clone")) {
+			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
+		} else if (streq(name, "clone2")) {
+			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
+		} else if (streq(name, "clone3")) {
+			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
+		} else if (streq(name, "fork")) {
 			event_clone(current, 'f', 0);
-		} else if (!strcmp(name, "vfork")) {
+		} else if (streq(name, "vfork")) {
 			event_clone(current, 'v', 0);
-		} else if (!strcmp(name, "clone3")) {
-			event_clone(current, '3', 0);
-		} else if (!strcmp(name, "chdir") || !strcmp(name, "fchdir")) {
+		} else if (streq(name, "chdir") || !strcmp(name, "fchdir")) {
 			current->flags &= ~SYD_IN_CLONE;
 			current->update_cwd = true;
 		} else { /* all system calls including exec end up here. */

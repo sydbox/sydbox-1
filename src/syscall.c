@@ -683,8 +683,9 @@ int sysinit_seccomp_load(void)
 
 	static const char *const calls[] = {
 		"execve", "execveat",
-		"clone", "fork", "vfork", "clone3",
 		"chdir", "fchdir",
+		"clone", "clone3",
+		"fork", "vfork",
 	};
 	if (user_notified) {
 		for (unsigned short i = 0; i < 8; i++) {

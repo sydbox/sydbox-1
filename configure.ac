@@ -2,6 +2,13 @@ dnl
 dnl sydbox/configure.ac
 dnl
 dnl Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2018, 2021 Ali Polatel <alip@exherbo.org>
+dnl Based in part upon strace:configure.ac which is:
+dnl   Copyright (c) 1999-2001 Wichert Akkerman <wichert@deephackmode.org>
+dnl   Copyright (c) 2002-2009 Roland McGrath <roland@redhat.com>
+dnl   Copyright (c) 2006-2016 Dmitry V. Levin <ldv@strace.io>
+dnl   Copyright (c) 2008-2015 Mike Frysinger <vapier@gentoo.org>
+dnl   Copyright (c) 2015 Elvira Khabirova <lineprinter0@gmail.com>
+dnl   Copyright (c) 2002-2021 The strace developers.
 dnl SPDX-License-Identifier: GPL-2.0-only
 
 dnl Program, version
@@ -140,6 +147,244 @@ linux*)
 	AC_MSG_ERROR([Operating system $host_os is not supported by sydbox])
 	;;
 esac
+
+dnl Check for supported architecture
+dnl begin architecture import from strace
+AC_MSG_CHECKING([for supported architecture])
+arch_m32=
+arch_mx32=
+cc_flags_m32=-m32
+cc_flags_mx32=-mx32
+karch=
+karch_m32=
+karch_mx32=
+case "$host_cpu" in
+aarch64*)
+	arch=aarch64
+	karch=arm64
+	arch_m32=arm
+	cc_flags_m32=
+	AC_DEFINE([AARCH64], 1, [Define for the AArch64 architecture.])
+	;;
+alpha*)
+	arch=alpha
+	arch_enable_Werror=no
+	AC_DEFINE([ALPHA], 1, [Define for the Alpha architecture.])
+	;;
+arc*)
+	arch=arc
+	AC_DEFINE([ARC], 1, [Define for the ARC architecture.])
+	;;
+arm*)
+	arch=arm
+	AC_DEFINE([ARM], 1, [Define for the ARM architecture.])
+	;;
+avr32*)
+	arch=avr32
+	AC_DEFINE([AVR32], 1, [Define for the AVR32 architecture.])
+	;;
+bfin)
+	arch=bfin
+	arch_enable_Werror=no
+	AC_DEFINE([BFIN], 1, [Define for the Blackfin architecture.])
+	;;
+csky*)
+	arch=csky
+	AC_DEFINE([CSKY], 1, [Define for the C-SKY architecture])
+	;;
+hppa*|parisc*)
+	arch=hppa
+	karch=parisc
+	AC_DEFINE([HPPA], 1, [Define for the HPPA architecture.])
+	;;
+i[[3456]]86|pentium)
+	arch=i386
+	karch=x86
+	AC_DEFINE([I386], 1, [Define for the i386 architecture.])
+	;;
+ia64)
+	arch=ia64
+	AC_DEFINE([IA64], 1, [Define for the IA64 architecture.])
+	;;
+m68k)
+	arch=m68k
+	AC_DEFINE([M68K], 1, [Define for the m68k architecture.])
+	;;
+metag*)
+	arch=metag
+	AC_DEFINE([METAG], 1, [Define for the Meta architecture.])
+	;;
+microblaze*)
+	arch=microblaze
+	arch_enable_Werror=no
+	AC_DEFINE([MICROBLAZE], 1, [Define for the MicroBlaze architecture.])
+	;;
+mips*)
+	arch=mips
+	AC_DEFINE([MIPS], 1, [Define for the MIPS architecture.])
+	;;
+nios2*)
+	arch=nios2
+	AC_DEFINE([NIOS2], 1, [Define for the Nios-II architecture.])
+	;;
+or1k*)
+	arch=or1k
+	AC_DEFINE([OR1K], 1, [Define for the OpenRISC 1000 architecture.])
+	;;
+powerpc*)
+	karch=powerpc
+	karch_m32=powerpc
+	AC_DEFINE([POWERPC], 1, [Define for the PowerPC architecture.])
+	AC_TRY_COMPILE(
+[#ifndef __LP64__
+# error 32 bit
+#endif], [], arch=powerpc64, arch=powerpc)
+	if test "$arch" = "powerpc64"; then
+		# $ac_cv_c_bigendian is defined by AC_C_BIGENDIAN
+		case "$ac_cv_c_bigendian" in
+		no)
+			arch=powerpc64le
+			AC_DEFINE([POWERPC64LE], 1,
+				  [Define for the little endian PowerPC64 architecture.])
+			;;
+		*)
+			arch_m32=powerpc
+			AC_DEFINE([POWERPC64], 1,
+				  [Define for the big endian PowerPC64 architecture.])
+			;;
+		esac
+	fi
+	;;
+riscv64*)
+	arch=riscv64
+	karch=riscv
+	AC_DEFINE([RISCV64], 1, [Define for the RISC-V 64-bit architecture])
+	;;
+s390)
+	arch=s390
+	AC_DEFINE([S390], 1, [Define for the S390 architecture.])
+	;;
+s390x)
+	arch=s390x
+	karch=s390
+	arch_m32=s390
+	cc_flags_m32=-m31
+	AC_DEFINE([S390X], 1, [Define for the S390x architecture.])
+	;;
+sh64*)
+	arch=sh64
+	AC_DEFINE([SH64], 1, [Define for the SH64 architecture.])
+	;;
+sh*)
+	arch=sh
+	AC_DEFINE([SH], 1, [Define for the SH architecture.])
+	;;
+sparc64*)
+	arch=sparc64
+	karch=sparc
+	arch_m32=sparc
+	AC_DEFINE([SPARC64], 1, [Define for the SPARC64 architecture.])
+	;;
+sparc*)
+	arch=sparc
+	AC_DEFINE([SPARC], 1, [Define for the SPARC architecture.])
+	;;
+tile*)
+	arch=tile
+	AC_DEFINE([TILE], 1, [Define for the Tile architecture])
+	;;
+x86?64*)
+	karch=x86
+	karch_m32=x86
+	karch_mx32=x86
+	arch_m32=i386
+	AC_TRY_COMPILE(
+[#ifndef __ILP32__
+# error not x32
+#endif], [], arch=x32, arch=x86_64)
+	if test "$arch" = "x86_64"; then
+		arch_mx32=x32
+		AC_DEFINE([X86_64], 1, [Define for the 64bit AMD x86-64 architecture.])
+	else
+		AC_DEFINE([X32], 1, [Define for the 32bit AMD x86-64 architecture.])
+	fi
+	;;
+xtensa*)
+	arch=xtensa
+	AC_DEFINE([XTENSA], 1, [Define for the Xtensa architecture])
+	;;
+*)
+	AC_MSG_RESULT([NO!])
+	AC_MSG_ERROR([architecture $host_cpu is not supported by strace])
+	;;
+esac
+AC_MSG_RESULT($arch)
+
+arch_native=$arch
+
+test -n "$arch_m32" ||
+	arch_m32=$arch
+test -n "$arch_mx32" ||
+	arch_mx32=$arch
+
+test -n "$karch" ||
+	karch=$arch
+test -n "$karch_m32" ||
+	karch_m32=$arch_m32
+test -n "$karch_mx32" ||
+	karch_mx32=$arch_mx32
+
+AC_SUBST(arch)
+AC_SUBST(arch_m32)
+AC_SUBST(arch_mx32)
+AC_SUBST(karch)
+AC_SUBST(karch_m32)
+AC_SUBST(karch_mx32)
+AC_SUBST(cc_flags_m32)
+AC_SUBST(cc_flags_mx32)
+AC_SUBST(arch_native)
+
+MIPS_ABI=
+if test "$arch" = mips; then
+	AC_CACHE_CHECK([for _MIPS_SIM], [st_cv__MIPS_SIM],
+		       [AC_COMPUTE_INT([st_cv__MIPS_SIM], [_MIPS_SIM], ,
+				       [AC_MSG_FAILURE([_MIPS_SIM cannot be determined])])])
+
+	# requires GCC >= 3.4
+	AC_CACHE_CHECK([for MIPS ABI], [st_cv_mips_abi],
+		[AC_COMPILE_IFELSE(
+			[AC_LANG_PROGRAM(, [[int i[_MIPS_SIM == _ABIO32 ? 1 : - 1];]])],
+			[st_cv_mips_abi=o32],
+		[AC_COMPILE_IFELSE(
+			[AC_LANG_PROGRAM(, [[int i[_MIPS_SIM == _ABIN32 ? 1 : - 1];]])],
+			[st_cv_mips_abi=n32],
+		[AC_COMPILE_IFELSE(
+			[AC_LANG_PROGRAM(, [[int i[_MIPS_SIM == _ABI64 ? 1 : - 1];]])],
+			[st_cv_mips_abi=n64],
+			[st_cv_mips_abi=unknown])])])])
+
+	case "$st_cv_mips_abi" in
+		o32) AC_DEFINE([LINUX_MIPSO32], [1], [Define for _ABIO32.]);;
+		n32) AC_DEFINE([LINUX_MIPSN32], [1], [Define for _ABIN32.]);;
+		n64) AC_DEFINE([LINUX_MIPSN64], [1], [Define for _ABI64.]);;
+		*) AC_MSG_ERROR([Unsupported _MIPS_SIM]);;
+	esac
+	MIPS_ABI="$st_cv_mips_abi"
+fi
+AC_SUBST(MIPS_ABI)
+
+AC_ARG_ENABLE([arm-oabi],
+	      [AS_HELP_STRING([--enable-arm-oabi],
+			      [enable OABI support on ARM EABI])],
+	      [], [enable_arm_oabi=no])
+case "$enable_arm_oabi" in
+	yes) enable_arm_oabi=1 ;;
+	no) enable_arm_oabi=0 ;;
+	*) AC_MSG_ERROR([bad value $enable_arm_oabi for arm-oabi option]) ;;
+esac
+AC_DEFINE_UNQUOTED([ENABLE_ARM_OABI], [$enable_arm_oabi],
+		   [Define to 1 if you want OABI support on ARM EABI.])
+dnl done architecture import from strace
 
 dnl check for sizes
 AC_CHECK_SIZEOF([int])
