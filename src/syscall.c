@@ -914,7 +914,7 @@ rule_add_open_wr(uint32_t action, int sysnum, int open_flag)
 	for (unsigned int i = 0; i < ELEMENTSOF(flag); i++) {
 		syd_rule_add_return(sydbox->ctx, action, sysnum,
 				    1,
-				    SCMP_CMP( open_flag, SCMP_CMP_MASKED_EQ,
+				    SCMP_CMP64( open_flag, SCMP_CMP_MASKED_EQ,
 					      flag[i], flag[i]));
 	}
 
