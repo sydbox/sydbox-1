@@ -725,14 +725,6 @@ static int filter_general_level_0(void)
 	 * unconditionally disallows access to /proc/$pid/mem for both read
 	 * and write based open calls.
 	 */
-#ifdef __NR_process_vm_readv
-	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EFAULT),
-			    SCMP_SYS(process_vm_readv), 0);
-#endif
-#ifdef __NR_process_vm_writev
-	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EFAULT),
-			    SCMP_SYS(process_vm_writev), 0);
-#endif
 	/*
 	 * FIXME: Load these two calls below outside libseccomp,
 	 * as they are not supported yet, hence the __SNR
@@ -746,76 +738,114 @@ static int filter_general_level_0(void)
 	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
 			    __NR_pidfd_getfd, 0);
 #endif
+	if (use_notify()) {
+#ifdef __NR_process_vm_readv
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+				    SCMP_SYS(process_vm_readv), 1,
+				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ));
+		/* TODO: sydbox->sydbox_pid+1 may not always be the child
+		 * process ID, but it's a safe bet. */
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+				    SCMP_SYS(process_vm_readv), 1,
+				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid+1 ));
+#endif
+#ifdef __NR_process_vm_writev
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+				    SCMP_SYS(process_vm_writev), 1,
+				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ));
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+				    SCMP_SYS(process_vm_writev), 1,
+				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid+1 ));
+#endif
 
+		/*
+		 * ++ Restricting signal handling between Sydbox and the
+		 * sandboxed process: SydBox permits only SIGCHLD from the
+		 * initial child. Other signals sent to SydBox's process id
+		 * are denied with ESRCH which denotes the process or
+		 * process group does not exist. This approach renders the
+		 * sandboxing SydBox process safe against any unexpected
+		 * signals.
+		 */
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+				    SCMP_SYS(kill), 2,
+				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
+				    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+				    SCMP_SYS(kill), 2,
+				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid+1 ),
+				    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+				    SCMP_SYS(tkill), 2,
+				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
+				    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+				    SCMP_SYS(tkill), 2,
+				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid+1 ),
+				    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+				    SCMP_SYS(tgkill), 2,
+				    SCMP_A1_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
+				    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+				    SCMP_SYS(tgkill), 2,
+				    SCMP_A1_64( SCMP_CMP_EQ, sydbox->sydbox_pid+1 ),
+				    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+				    SCMP_SYS(tgkill), 2,
+				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
+				    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+				    SCMP_SYS(tgkill), 2,
+				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid+1 ),
+				    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
 
-	/*
-	 * ++ Restricting signal handling between Sydbox and the
-	 * sandboxed process: SydBox permits only SIGCHLD from the
-	 * initial child. Other signals sent to SydBox's process id
-	 * are denied with ESRCH which denotes the process or
-	 * process group does not exist. This approach renders the
-	 * sandboxing SydBox process safe against any unexpected
-	 * signals.
-	 */
-	//int sys_kill[] = { SCMP_SYS(kill), SCMP_SYS(tkill), -1 };
-	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-			    SCMP_SYS(kill), 2,
-			    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
-			    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
-	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-			    SCMP_SYS(tkill), 2,
-			    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
-			    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
-	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-			    SCMP_SYS(tgkill), 2,
-			    SCMP_A1_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
-			    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
-
-	/*
-	 * Deny pidfd_send_signal() to send any signal which
-	 * has the default action of term, core and stop
-	 * with ESRCH which denotes the process or process group
-	 * does not exist.
-	 */
+		/*
+		 * Deny pidfd_send_signal() to send any signal which
+		 * has the default action of term, core and stop
+		 * with ESRCH which denotes the process or process group
+		 * does not exist.
+		 */
 #ifdef __NR_pidfd_send_signal
-	const long kill_signals[] = {
-		SIGHUP, SIGINT, SIGQUIT, SIGILL,
-		SIGABRT, SIGFPE, SIGKILL, SIGSEGV,
-		SIGSEGV, SIGPIPE, SIGALRM, SIGTERM,
-		SIGUSR1, SIGUSR2, SIGSTOP, SIGTSTP,
-		SIGTTIN, SIGTTOU,
+		const long kill_signals[] = {
+			SIGHUP, SIGINT, SIGQUIT, SIGILL,
+			SIGABRT, SIGFPE, SIGKILL, SIGSEGV,
+			SIGSEGV, SIGPIPE, SIGALRM, SIGTERM,
+			SIGUSR1, SIGUSR2, SIGSTOP, SIGTSTP,
+			SIGTTIN, SIGTTOU,
 
-		SIGBUS, SIGPOLL, SIGPROF, SIGSYS,
-		SIGTRAP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+			SIGBUS, SIGPOLL, SIGPROF, SIGSYS,
+			SIGTRAP, SIGVTALRM, SIGXCPU, SIGXFSZ,
 
 #ifdef SIGIOT
-		SIGIOT,
+			SIGIOT,
 #endif
 #ifdef SIGEMT
-		SIGEMT,
+			SIGEMT,
 #endif
 #ifdef SIGSTKFLT
-		SIGSTKFLT,
+			SIGSTKFLT,
 #endif
 #ifdef SIGIO
-		SIGIO,
+			SIGIO,
 #endif
 #ifdef SIGINFO
-		SIGINFO,
+			SIGINFO,
 #endif
 #ifdef SIGLOST
-		SIGLOST,
+			SIGLOST,
 #endif
-		LONG_MAX,
-	};
-	for (size_t i = 0; kill_signals[i] != LONG_MAX; i++) {
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-				    SCMP_SYS(pidfd_send_signal), 1,
-				    SCMP_A1( SCMP_CMP_EQ,
-					     kill_signals[i],
-					     kill_signals[i]));
+			LONG_MAX,
+		};
+		for (size_t i = 0; kill_signals[i] != LONG_MAX; i++) {
+			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+					    SCMP_SYS(pidfd_send_signal), 1,
+					    SCMP_A1( SCMP_CMP_EQ,
+						     kill_signals[i],
+						     kill_signals[i]));
+		}
+#endif
 	}
-#endif
 
 	/*
 	 * ++ Restricting system calls with user/group ID arguments.
