@@ -18,7 +18,9 @@ EXTRA_DIST+= $(noinst_SCRIPTS)
 SYD_FCNTL_INCLUDES= \
 	$(SYD_INCLUDEDIR)/fcntl.h \
 	$(SYD_INCLUDEDIR)/asm/fcntl.h \
+	$(SYD_INCLUDEDIR)/asm-generic/fcntl.h \
 	$(SYD_INCLUDEDIR)/bits/fcntl.h \
+	$(SYD_INCLUDEDIR)/sys/fcntl.h \
 	$(SYD_INCLUDEDIR)/linux/fcntl.h
 
 syscall_open_syd.h: Makefile syscall_open_ro.lst syscall_open_syd.h.in
@@ -29,10 +31,10 @@ syscall_open_ro.lst: Makefile
 	$(AM_V_GEN)
 	$(AM_V_at)for include in $(SYD_FCNTL_INCLUDES); do \
 		test -e "$$include" || continue ; \
-		$(GREP) -h '#define O_' "$$include" |\
+		$(EGREP) -h '#[[:space:]]*define[[:space:]]+O_' "$$include" |\
 			$(AWK) '{print $$2}' |\
 			$(EGREP) -v 'O_ACCMODE|O_RDONLY|O_WRONLY|O_RDWR|O_DIRECTORY|O_PATH' ;\
-	done | $(SORT) > "$@" || rm -f "$@"
+	done | $(SORT) -u > "$@" || rm -f "$@"
 	$(AM_V_at)sh -c 'test -s "$@" || echo "Failed to generate read-only open flags"'
 	$(AM_V_at)sh -c 'test -s "$@" || exit 1'
 
