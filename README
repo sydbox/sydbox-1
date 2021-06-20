@@ -50,7 +50,25 @@ discovered and consensus on a better solution is reached."
     />
 </a></td>
 <td>
-<tr><td>
+<tr>
+<td>
+<a href="https://sydbox.exherbo.org">
+<img
+    src="https://dev.exherbo.org/~alip/images/sydbox160.png"
+    alt="SydBox"
+    title="That cat's something I can't explain!"
+    style="border: 0px; margin: 0px"
+/></a></td>
+<td>
+<a href="https://github.com/seccomp/libseccomp">
+<img
+    src="https://dev.exherbo.org/~alip/images/libseccomp.png"
+    alt="LibSecComp"
+    title="LibSecComp"
+    style="border: 0px; margin: 0px"
+/>
+</a></td>
+<td>
 <a href="https://www.exherbo.org/docs/gettingstarted.html">
 <img
     src="https://dev.exherbo.org/~alip/images/zebrapig.png"
@@ -77,23 +95,6 @@ discovered and consensus on a better solution is reached."
     style="border: 0px; margin: 0px"
 />
 </a></td>
-<td>
-<a href="https://github.com/seccomp/libseccomp">
-<img
-    src="https://dev.exherbo.org/~alip/images/libseccomp.png"
-    alt="LibSecComp"
-    title="LibSecComp"
-    style="border: 0px; margin: 0px"
-/>
-</a></td>
-<td>
-<a href="https://sydbox.exherbo.org">
-<img
-    src="https://dev.exherbo.org/~alip/images/sydbox160.png"
-    alt="SydBox"
-    title="That cat's something I can't explain!"
-    style="border: 0px; margin: 0px"
-/></a></td>
 </td></tr>
 </tr></table>
 
