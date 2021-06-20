@@ -130,8 +130,21 @@
 
 #define SYD_SECCOMP_ARCH_ARGV_SIZ 20
 #include <errno.h>
-#define syd_rule_add_return(ctx, ...) { \
+#if defined(SYDBOX_DUMP) && SYDBOX_DUMP
+# define syd_rule_add(ctx, ...) { \
+	r = seccomp_rule_add(ctx, __VA_ARGS__); \
+	if (r == -EINVAL) { abort(); }}
+# define syd_rule_add_return(ctx, ...) { \
 	int _r = seccomp_rule_add(ctx, __VA_ARGS__); \
-	if (_r < 0 && _r != -EACCES && _r != -EEXIST) { return _r; } }
+	if (_r < 0 && _r != -EACCES && _r != -EEXIST) { return _r; } \
+	else if (_r == -EINVAL) { abort(); }}
+#else
+# define syd_rule_add(ctx, ...) { \
+	r = seccomp_rule_add(ctx, __VA_ARGS__); }
+# define syd_rule_add_return(ctx, ...) { \
+	int _r = seccomp_rule_add(ctx, __VA_ARGS__); \
+	if (_r < 0 && _r != -EACCES && _r != -EEXIST) { return _r; }}
+#endif
+
 
 #endif

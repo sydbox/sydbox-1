@@ -706,10 +706,9 @@ static int filter_general_level_0(void)
 	 * We do not error in these two cases and resume operation.
 	 */
 	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level0); i++) {
-		if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
-					  filter_gen_level0[i], 0)) &&
-		    r != -EEXIST &&
-		    r != -EACCES) {
+		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, filter_gen_level0[i],
+			     0);
+		if (r && r != -EEXIST && r != -EACCES) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(filter_gen_level0[i],
 								SCMP_ARCH_NATIVE);
@@ -1025,9 +1024,9 @@ static int filter_general_level_1(void)
 	int r;
 
 	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level1); i++) {
-		if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
-					  filter_gen_level1[i], 0)) &&
-		    r != -EEXIST) {
+		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, filter_gen_level1[i],
+			     0);
+		if (r && r != -EEXIST) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(filter_gen_level1[i],
 								SCMP_ARCH_NATIVE);
@@ -1053,9 +1052,9 @@ static int filter_general_level_2(void)
 	int r;
 
 	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level2); i++) {
-		if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
-					  filter_gen_level2[i], 0)) &&
-		    r != -EEXIST) {
+		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, filter_gen_level2[i],
+			     0);
+		if (r && r != -EEXIST) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(filter_gen_level2[i],
 								SCMP_ARCH_NATIVE);
@@ -1099,9 +1098,9 @@ static int filter_general_level_3(void)
 	int r;
 
 	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level3); i++) {
-		if ((r = seccomp_rule_add(sydbox->ctx, SCMP_ACT_ALLOW,
-					  filter_gen_level3[i], 0)) &&
-		    r != -EEXIST) {
+		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, filter_gen_level3[i],
+			     0);
+		if (r && r != -EEXIST) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(filter_gen_level3[i],
 								SCMP_ARCH_NATIVE);
@@ -1268,18 +1267,17 @@ int filter_mprotect(void)
 		return 0;
 
 	if (sydbox->config.restrict_mmap) {
-		r = seccomp_rule_add(sydbox->ctx, action,
-				     SCMP_SYS(mprotect), 1,
-				     SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ));
+		syd_rule_add(sydbox->ctx, action,
+			     SCMP_SYS(mprotect), 1,
+			     SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ));
 		if (!r) {
-			r = seccomp_rule_add(sydbox->ctx, action,
-					     SCMP_SYS(mprotect), 1,
-					     SCMP_CMP(2, SCMP_CMP_EQ,
-						      PROT_READ|PROT_WRITE));
+			syd_rule_add(sydbox->ctx, action,
+				     SCMP_SYS(mprotect), 1,
+				     SCMP_CMP(2, SCMP_CMP_EQ,
+					      PROT_READ|PROT_WRITE));
 		}
 	} else {
-		r = seccomp_rule_add(sydbox->ctx, action,
-				     SCMP_SYS(mprotect), 0);
+		syd_rule_add(sydbox->ctx, action, SCMP_SYS(mprotect), 0);
 	}
 	return r == -EEXIST ? 0 : r;
 }
