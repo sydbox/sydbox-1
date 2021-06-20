@@ -743,19 +743,11 @@ static int filter_general_level_0(void)
 		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
 				    SCMP_SYS(process_vm_readv), 1,
 				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ));
-		/* TODO: sydbox->sydbox_pid+1 may not always be the child
-		 * process ID, but it's a safe bet. */
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
-				    SCMP_SYS(process_vm_readv), 1,
-				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid+1 ));
 #endif
 #ifdef __NR_process_vm_writev
 		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
 				    SCMP_SYS(process_vm_writev), 1,
 				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ));
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
-				    SCMP_SYS(process_vm_writev), 1,
-				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid+1 ));
 #endif
 
 		/*
@@ -772,16 +764,8 @@ static int filter_general_level_0(void)
 				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
 				    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
 		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-				    SCMP_SYS(kill), 2,
-				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid+1 ),
-				    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
 				    SCMP_SYS(tkill), 2,
 				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
-				    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-				    SCMP_SYS(tkill), 2,
-				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid+1 ),
 				    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
 		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
 				    SCMP_SYS(tgkill), 2,
@@ -789,15 +773,7 @@ static int filter_general_level_0(void)
 				    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
 		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
 				    SCMP_SYS(tgkill), 2,
-				    SCMP_A1_64( SCMP_CMP_EQ, sydbox->sydbox_pid+1 ),
-				    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-				    SCMP_SYS(tgkill), 2,
 				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
-				    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-				    SCMP_SYS(tgkill), 2,
-				    SCMP_A0_64( SCMP_CMP_EQ, sydbox->sydbox_pid+1 ),
 				    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
 
 		/*
