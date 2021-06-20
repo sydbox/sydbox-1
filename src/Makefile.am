@@ -15,16 +15,23 @@ noinst_SCRIPTS= \
 		kingbee.py
 EXTRA_DIST+= $(noinst_SCRIPTS)
 
+SYD_FCNTL_INCLUDES= \
+	$(SYD_INCLUDEDIR)/fcntl.h \
+	$(SYD_INCLUDEDIR)/asm/fcntl.h \
+	$(SYD_INCLUDEDIR)/bits/fcntl.h \
+	$(SYD_INCLUDEDIR)/linux/fcntl.h
+
 syscall_open_syd.h: Makefile syscall_open_ro.lst syscall_open_syd.h.in
 	$(PYTHON) ./syd-syscall-open.py < syscall_open_ro.lst > $@ ||\
 		rm $@
 
 syscall_open_ro.lst: Makefile
-	$(GREP) -h '#define O_' $(SYD_INCLUDEDIR)/{,bits,asm,linux}/fcntl.h |\
-		$(AWK) '{print $$2}' |\
-		$(EGREP) -v 'O_ACCMODE|O_RDONLY|O_WRONLY|O_RDWR|O_DIRECTORY|O_PATH' |\
-		$(SORT) > $@ ||\
-		rm $@
+	for include in $(SYD_FCNTL_INCLUDES); do \
+		test -e "$$include" || continue ; \
+		$(GREP) -h '#define O_' "$$include" |\
+			$(AWK) '{print $$2}' |\
+			$(EGREP) -v 'O_ACCMODE|O_RDONLY|O_WRONLY|O_RDWR|O_DIRECTORY|O_PATH' ; \
+	done | $(SORT) > $@ || rm "$@"
 
 DEFS+= \
        -DIN_SYDBOX=1 \
