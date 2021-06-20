@@ -111,7 +111,7 @@ SydBox uses autotools. To build, simply do `./configure`, `make`, `make -j check
 and `sudo make install`. By default this will produce a statically linked *SydBox* binary.
 If you want use dynamic linking, give the `--disable-static` option to `./configure`.
 
-To use SydBox you need a [Linux](https://kernel.org) kernel with version 5.11 or
+To use SydBox you need a [Linux](https://kernel.org) kernel with version 5.6 or
 newer which includes [the secure computing mode](https://en.wikipedia.org/wiki/Seccomp)
 with the `SECCOMP_USER_NOTIF_FLAG_CONTINUE` facility,
 and the system calls
