@@ -100,7 +100,7 @@ discovered and consensus on a better solution is reached."
 SydBox is a [seccomp](http://man7.org/linux/man-pages/man2/seccomp.2.html) based
 sandbox for modern [Linux](https://kernel.org) machines to sandbox unwanted process
 access to filesystem and network resources.
-SydBox is a [seccomp-bpf](http://man7.org/linux/man-pages/man2/seccomp.2.html)) &amp;
+SydBox is a [seccomp-bpf](http://man7.org/linux/man-pages/man2/seccomp.2.html) &amp;
 [seccomp-notify](https://git.kernel.org/linus/fb3c5386b382d4097476ce9647260fc89b34afdb)
 based sandbox for modern Linux machines to sandbox unwanted process access to
 file system and network resources.
