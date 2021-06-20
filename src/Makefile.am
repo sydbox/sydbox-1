@@ -26,12 +26,15 @@ syscall_open_syd.h: Makefile syscall_open_ro.lst syscall_open_syd.h.in
 		rm $@
 
 syscall_open_ro.lst: Makefile
-	for include in $(SYD_FCNTL_INCLUDES); do \
+	$(AM_V_GEN)
+	$(AM_V_at)for include in $(SYD_FCNTL_INCLUDES); do \
 		test -e "$$include" || continue ; \
 		$(GREP) -h '#define O_' "$$include" |\
 			$(AWK) '{print $$2}' |\
-			$(EGREP) -v 'O_ACCMODE|O_RDONLY|O_WRONLY|O_RDWR|O_DIRECTORY|O_PATH' ; \
-	done | $(SORT) > $@ || rm "$@"
+			$(EGREP) -v 'O_ACCMODE|O_RDONLY|O_WRONLY|O_RDWR|O_DIRECTORY|O_PATH' ;\
+	done | $(SORT) > "$@" || rm -f "$@"
+	$(AM_V_at)sh -c 'test -s "$@" || echo "Failed to generate read-only open flags"'
+	$(AM_V_at)sh -c 'test -s "$@" || exit 1'
 
 DEFS+= \
        -DIN_SYDBOX=1 \
