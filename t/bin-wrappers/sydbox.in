@@ -55,7 +55,7 @@ eexec() {
 				"$@"
 		fi
 	elif test -n "$SYDBOX_STRACE_ENABLED"; then
-		exec strace -ff -o "$SHOEBOX_STRACE" -- "$@"
+		exec strace -f -o "$SHOEBOX_STRACE" -- "$@"
 	else
 		exec "$@"
 	fi
