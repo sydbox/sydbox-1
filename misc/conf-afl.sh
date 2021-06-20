@@ -7,7 +7,7 @@ cd "$root"
 ./autogen.sh
 exec env \
     CC=afl-gcc CXX=afl-g++ \
-    ./configure --prefix=/usr \
+    "$root"/./configure --prefix=/usr \
     --disable-code-coverage \
     --enable-maintainer-mode \
     --disable-static \

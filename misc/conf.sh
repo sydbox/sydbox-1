@@ -5,8 +5,8 @@ root=$(git rev-parse --show-toplevel)
 . "$root"/misc/prep-env.sh
 cd "$root"
 ./autogen.sh
-exec ./configure --prefix=/usr \
+exec "$root"/./configure --prefix=/usr \
     --disable-code-coverage \
     --enable-maintainer-mode \
-    --disable-static \
+    --enable-static \
     --disable-dependency-tracking
