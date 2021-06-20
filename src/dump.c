@@ -139,14 +139,14 @@ static void dump_format(const char *argv0, const char *pathname,
 	fprintf(fp, "{"
 		J(id)"%llu,"
 		J(syd)"%d,"
-		J(arch)"%s,"
 		J(cmd)"{"J(name)"\"%s\","
+			 J(path)"\"%s\","
 			 J(as)"\"%s\","
-			 J(hash)"\"%s\","
-			 J(path)"\"%s\"}",
+			 J(hash)"\"%s\"},"
+		J(arch)"%s}",
 		id++, SYDBOX_API_VERSION,
-		j_arch, j_argv0, j_runas,
-		sydbox->hash, j_path);
+		j_argv0, j_path, j_runas,
+		sydbox->hash, j_arch);
 
 	if (b_argv0)
 		free(b_argv0);
