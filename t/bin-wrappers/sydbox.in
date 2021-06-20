@@ -58,14 +58,12 @@ eexec() {
 		if test -z "$SYDBOX_TEST_INSTALLED"; then
 			exec strace -o "$SHOEBOX_STRACE" \
 				$SYDBOX_STRACE_OPTIONS \
-				--
 				@BUILD_EXEC_PREFIX@ \
 				-- \
 				"$@"
 		else
 			exec strace -o "$SHOEBOX_STRACE" \
 				$SYDBOX_STRACE_OPTIONS \
-				-- \
 				"$@"
 		fi
 	else
