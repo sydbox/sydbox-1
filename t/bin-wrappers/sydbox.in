@@ -34,8 +34,8 @@ memcheck)
 esac
 
 eexec() {
-	if test -n "$SYDBOX_VALGRIND_ENABLED" &&
-		if test -z "$SYDBOX_TEST_INSTALLED"
+	if test -n "$SYDBOX_VALGRIND_ENABLED"; then
+		if test -z "$SYDBOX_TEST_INSTALLED"; then
 			exec @BUILD_EXEC_PREFIX@ valgrind -q \
 				--error-exitcode=126 \
 				--time-stamp=yes \
