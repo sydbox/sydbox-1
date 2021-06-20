@@ -18,6 +18,7 @@ sydbox: sydbox.in Makefile
 	$(AM_V_at)$(SED) -e 's:@TOP_BUILDDIR@:$(abs_top_builddir):g' \
 			 -e 's:@BINDIR@:$(bindir):g' \
 			 -e 's:@LIBEXECDIR@:$(libexecdir):g' \
+			 -e 's:@BUILD_EXEC_PREFIX@:$(BUILD_EXEC_PREFIX):g' \
 			 < $< > $@
 	$(AM_V_at)chmod +x $@
 EXTRA_DIST+= sydbox.in
