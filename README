@@ -120,7 +120,7 @@ These restrictions define which system calls the command is permitted to run and
 values are permitted for the given system call. The restrictions may be applied via two ways.
 [seccomp-bpf](https://man7.org/linux/man-pages/man2/seccomp.2.html) can be used to apply
 simple Secure Computing user filters to run sandboxing fully on kernel space,
-and [seccomp-notify](https://man7.org/linux/man-pages/man2/seccomp.2.html) functionality can
+and [seccomp-notify](https://git.kernel.org/linus/fb3c5386b382d4097476ce9647260fc89b34afdb) functionality can
 be used to run sandboxing on kernel space and fallback to user space to dereference pointer
 arguments of system calls -- which are one of
 [pathname](https://en.wikipedia.org/wiki/Path_(computing)),
@@ -129,14 +129,17 @@ arguments of system calls -- which are one of
 [IPv6](https://en.wikipedia.org/wiki/IPv6)
 network address -- and make dynamic decisions
 using `rsync`-like [wildcards](https://en.wikipedia.org/wiki/Wildcard_character)
-such as `allowlist/write+/home/sydbox/***`, or
-`allowlist/write+/run/user/*/pulse`
+such as
+[`allowlist/write+/home/sydbox/***`](https://sydbox.exherbo.org/#pattern-matching)
+, or
+[`allowlist/write+/run/user/*/pulse`](https://sydbox.exherbo.org/#pattern-matching)
 for [pathnames](https://en.wikipedia.org/wiki/Path_(computing)),
 and using
 [CIDR](https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing)
 notation such as
-`allowlist/network/connect+inet:127.0.0.1/8@9050`, or
-`allowlist/network/connect+inet6:::1/8@9050`
+[`allowlist/network/connect+inet:127.0.0.1/8@9050`](https://sydbox.exherbo.org/#address-matching)
+, or
+[`allowlist/network/connect+inet6:::1/8@9050`](https://sydbox.exherbo.org/#address-matching)
 for
 [IPv4](https://en.wikipedia.org/wiki/IPv4) and
 [IPv6](https://en.wikipedia.org/wiki/IPv6) addresses
