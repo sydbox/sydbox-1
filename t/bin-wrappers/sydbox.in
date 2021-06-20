@@ -54,19 +54,24 @@ eexec() {
 				$SYDBOX_VALGRIND_OPTIONS \
 				"$@"
 		fi
-	fi
-	if test -z "$SYDBOX_TEST_INSTALLED"; then
-		exec @BUILD_EXEC_PREFIX@ strace -o "$SHOEBOX_STRACE" \
-			$SYDBOX_STRACE_OPTIONS \
-			"$@"
+	elif test -n "$SYDBOX_STRACE_ENABLED"; then
+		if test -z "$SYDBOX_TEST_INSTALLED"; then
+			exec @BUILD_EXEC_PREFIX@ strace -o "$SHOEBOX_STRACE" \
+				$SYDBOX_STRACE_OPTIONS \
+				"$@"
+		else
+			exec strace -o "$SHOEBOX_STRACE" \
+				$SYDBOX_STRACE_OPTIONS \
+				"$@"
+		fi
 	else
-		exec strace -o "$SHOEBOX_STRACE" \
-			$SYDBOX_STRACE_OPTIONS \
-			"$@"
+		if test -z "$SYDBOX_TEST_INSTALLED"; then
+			exec @BUILD_EXEC_PREFIX@ "$@"
+		else
+			exec "$@"
+		fi
 	fi
 }
-
-
 
 if test -z "$SYDBOX_TEST_INSTALLED"
 then
