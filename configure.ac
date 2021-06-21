@@ -440,6 +440,7 @@ AC_CHECK_HEADER([sys/socket.h],  [], AC_MSG_ERROR([I need sys/socket.h]))
 AC_CHECK_HEADER([ctype.h],       [], AC_MSG_ERROR([I need ctype.h]))
 AC_CHECK_HEADER([arpa/inet.h],   [], AC_MSG_ERROR([I need arpa/inet.h]))
 AC_CHECK_HEADER([netdb.h],       [], AC_MSG_ERROR([I need netdb.h]))
+AC_CHECK_HEADER([poll.h],        [], AC_MSG_ERROR([I need poll.h]))
 AC_CHECK_HEADER([sched.h],       [], AC_MSG_ERROR([I need sched.h]))
 AC_CHECK_HEADER([asm/unistd.h],  [], AC_MSG_ERROR([I need asm/unistd.h]))
 

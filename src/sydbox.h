@@ -624,14 +624,10 @@ typedef int (*sysfilter_t) (uint32_t arch);
 
 struct sysentry {
 	const char *name;
-	long no; /* Used only if `name' is NULL.
-		  * May be used to implement virtual system calls.
-		  */
-	sysfunc_t notify;
-	sysfunc_t exit;
+	long no;
 
-	/* XXX: Debug */
-	bool user_notif:1;
+	/* Seccomp Notify callback */
+	sysfunc_t notify;
 
 	/* Apply a simple seccomp filter (bpf-only, no ptrace) */
 	sysfilter_t filter;
@@ -974,14 +970,7 @@ void syd_hash_sha1_update(const void *data, size_t len);
 void syd_hash_sha1_final(unsigned char *hash);
 int path_to_hex(const char *pathname);
 
-void systable_init(void);
-void systable_free(void);
-void systable_add_full(long no, uint32_t arch, const char *name,
-		       sysfunc_t fenter, sysfunc_t fexit);
-void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit);
-const sysentry_t *systable_lookup(long no, uint32_t arch);
-
-void sysinit(void);
+int sysinit(scmp_filter_ctx scmp_ctx);
 int sysinit_seccomp(void);
 int sysinit_seccomp_load(void);
 int sysnotify(syd_process_t *current);

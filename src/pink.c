@@ -1096,7 +1096,7 @@ int test_seccomp(bool report)
 
 		errno = 0;
 		count = atomic_write(pfd[1], &fd, sizeof(int));
-		if (count != sizeof(int)) {
+		if (count < 0 || (size_t)count != sizeof(int)) {
 			if (!errno)
 				errno = EINVAL;
 			r = -errno;

@@ -56,56 +56,93 @@ static int rule_add_open_wr(uint32_t action, int sysnum, int open_flag);
  */
 static const sysentry_t syscall_entries[] = {
 	{
-		.name = "mmap2",
-		.filter = filter_mmap2,
-	},
-	{
 		.name = "mmap",
+		.no = SCMP_SYS(mmap),
 		.filter = filter_mmap,
 	},
 	{
 		.name = "mprotect",
+		.no = SCMP_SYS(mprotect),
 		.filter = filter_mprotect,
 	},
 	{
-		.name = "ioctl",
-		.filter = filter_ioctl,
+		.name = "mmap2",
+		.no = SCMP_SYS(mmap2),
+		.filter = filter_mmap2,
 	},
 
 	{
+		.name = "open",
+		.no = SCMP_SYS(open),
+		.notify = sys_open,
+		.open_flag = 1,
+		.sandbox_read = true,
+		.sandbox_write = true,
+	},
+	{
+		.name = "openat",
+		.no = SCMP_SYS(openat),
+		.notify = sys_openat,
+		.open_flag = 2,
+		.sandbox_read = true,
+		.sandbox_write = true,
+	},
+#ifdef __SNR_openat2
+	{
+		.name = "openat2",
+		.no = SCMP_SYS(openat2),
+		.notify = sys_openat2,
+		.sandbox_read = true,
+		.sandbox_write = true,
+	},
+#endif
+
+	{
 		.name = "stat",
+		.no = SCMP_SYS(stat),
 		.notify = sys_stat,
 		.magic_lock_off = true,
 	},
 	{
 		.name = "lstat",
-		.user_notif = true,
+		.no = SCMP_SYS(lstat),
 		.notify = sys_stat,
 		.magic_lock_off = true,
 	},
 	{
 		.name = "statx",
+		.no = SCMP_SYS(statx),
 		.notify = sys_statx,
 		.magic_lock_off = true,
 	},
 	{
 		.name = "stat64",
+		.no = SCMP_SYS(stat64),
 		.notify = sys_stat,
 		.magic_lock_off = true,
 	},
 	{
 		.name = "lstat64",
+		.no = SCMP_SYS(lstat64),
 		.notify = sys_stat,
 		.magic_lock_off = true,
 	},
 	{
 		.name = "newfstatat",
+		.no = SCMP_SYS(newfstatat),
 		.notify = sys_fstatat,
 		.magic_lock_off = true,
 	},
 
 	{
+		.name = "ioctl",
+		.no = SCMP_SYS(ioctl),
+		.filter = filter_ioctl,
+	},
+
+	{
 		.name = "access",
+		.no = SCMP_SYS(access),
 		.notify = sys_access,
 		.sandbox_read = true,
 		.sandbox_write = true,
@@ -114,6 +151,7 @@ static const sysentry_t syscall_entries[] = {
 	},
 	{
 		.name = "faccessat",
+		.no = SCMP_SYS(faccessat),
 		.notify = sys_faccessat,
 		.sandbox_read = true,
 		.sandbox_write = true,
@@ -122,6 +160,7 @@ static const sysentry_t syscall_entries[] = {
 	},
 	{
 		.name = "faccessat2",
+		.no = SCMP_SYS(faccessat2),
 		.notify = sys_faccessat2,
 		.sandbox_read = true,
 		.sandbox_write = true,
@@ -130,199 +169,208 @@ static const sysentry_t syscall_entries[] = {
 	},
 
 	{
-		.name = "open",
-		.notify = sys_open,
-		.open_flag = 1,
-		.sandbox_read = true,
-		.sandbox_write = true,
+		.name = "execve",
+		.no = SCMP_SYS(execve),
+		.notify = sys_execve,
+		.sandbox_exec = true,
 	},
 	{
-		.name = "openat",
-		.notify = sys_openat,
-		.open_flag = 2,
-		.sandbox_read = true,
-		.sandbox_write = true,
+		.name = "execveat",
+		.no = SCMP_SYS(execveat),
+		.notify = sys_execveat,
+		.sandbox_exec = true,
 	},
-#ifdef __NR_openat2
-	{
-		.name = "openat2",
-		.notify = sys_openat2,
-		.sandbox_read = true,
-		.sandbox_write = true,
-	},
-#endif
 
 	{
 		.name = "creat",
+		.no = SCMP_SYS(creat),
 		.notify = sys_creat,
 		.sandbox_write = true,
 	},
 
 	{
 		.name = "chmod",
+		.no = SCMP_SYS(chmod),
 		.notify = sys_chmod,
 		.sandbox_write = true,
 	},
 	{
 		.name = "fchmodat",
+		.no = SCMP_SYS(fchmodat),
 		.notify = sys_fchmodat,
 		.sandbox_write = true,
 	},
 
 	{
 		.name = "chown",
+		.no = SCMP_SYS(chown),
 		.notify = sys_chown,
 		.sandbox_write = true,
 	},
 	{
 		.name = "chown32",
+		.no = SCMP_SYS(chown32),
 		.notify = sys_chown,
 		.sandbox_write = true,
 	},
 	{
 		.name = "lchown",
+		.no = SCMP_SYS(lchown),
 		.notify = sys_lchown,
 		.sandbox_write = true,
 	},
 	{
 		.name = "lchown32",
+		.no = SCMP_SYS(lchown32),
 		.notify = sys_lchown,
 		.sandbox_write = true,
 	},
 	{
 		.name = "fchownat",
+		.no = SCMP_SYS(fchownat),
 		.notify = sys_fchownat,
 		.sandbox_write = true,
 	},
 
 	{
 		.name = "mkdir",
+		.no = SCMP_SYS(mkdir),
 		.notify = sys_mkdir,
 		.sandbox_write = true,
 	},
 	{
 		.name = "mkdirat",
+		.no = SCMP_SYS(mkdirat),
 		.notify = sys_mkdirat,
 		.sandbox_write = true,
 	},
 
 	{
 		.name = "mknod",
+		.no = SCMP_SYS(mknod),
 		.notify = sys_mknod,
 		.sandbox_write = true,
 	},
 	{
 		.name = "mknodat",
+		.no = SCMP_SYS(mknodat),
 		.notify = sys_mknodat,
 		.sandbox_write = true,
 	},
 
 	{
 		.name = "rmdir",
+		.no = SCMP_SYS(rmdir),
 		.notify = sys_rmdir,
 		.sandbox_write = true,
 	},
 
 	{
 		.name = "truncate",
+		.no = SCMP_SYS(truncate),
 		.notify = sys_truncate,
 		.sandbox_write = true,
 	},
 	{
 		.name = "truncate64",
+		.no = SCMP_SYS(truncate64),
 		.notify = sys_truncate,
 		.sandbox_write = true,
 	},
 
 	{
 		.name = "utime",
+		.no = SCMP_SYS(utime),
 		.notify = sys_utime,
 		.sandbox_write = true,
 	},
 	{
 		.name = "utimes",
+		.no = SCMP_SYS(utimes),
 		.notify = sys_utimes,
 		.sandbox_write = true,
 	},
 	{
 		.name = "utimensat",
+		.no = SCMP_SYS(utimensat),
 		.notify = sys_utimensat,
 		.sandbox_write = true,
 	},
 	{
 		.name = "futimesat",
+		.no = SCMP_SYS(futimesat),
 		.notify = sys_futimesat,
 		.sandbox_write = true,
 	},
 
 	{
 		.name = "unlink",
+		.no = SCMP_SYS(unlink),
 		.notify = sys_unlink,
 		.sandbox_write = true,
 	},
 	{
 		.name = "unlinkat",
+		.no = SCMP_SYS(unlinkat),
 		.notify = sys_unlinkat,
 		.sandbox_write = true,
 	},
 
 	{
 		.name = "link",
+		.no = SCMP_SYS(link),
 		.notify = sys_link,
 		.sandbox_write = true,
 	},
 	{
 		.name = "linkat",
+		.no = SCMP_SYS(linkat),
 		.notify = sys_linkat,
 		.sandbox_write = true,
 	},
 
 	{
 		.name = "rename",
+		.no = SCMP_SYS(rename),
 		.notify = sys_rename,
 		.sandbox_write = true,
 	},
 	{
 		.name = "renameat",
+		.no = SCMP_SYS(renameat),
 		.notify = sys_renameat,
 		.sandbox_write = true,
 	},
 	{
 		.name = "renameat2",
+		.no = SCMP_SYS(renameat2),
 		.notify = sys_renameat,
 		.sandbox_write = true,
 	},
 
 	{
 		.name = "symlink",
+		.no = SCMP_SYS(symlink),
 		.notify = sys_symlink,
 		.sandbox_write = true,
 	},
 	{
 		.name = "symlinkat",
+		.no = SCMP_SYS(symlinkat),
 		.notify = sys_symlinkat,
 		.sandbox_write = true,
 	},
 
 	{
-		.name = "execve",
-		.notify = sys_execve,
-		.sandbox_exec = true,
-	},
-	{
-		.name = "execveat",
-		.notify = sys_execveat,
-		.sandbox_exec = true,
-	},
-
-	{
 		.name = "socketcall",
+		.no = SCMP_SYS(socketcall),
 		.notify = sys_socketcall,
 		.sandbox_network = true,
 		.rule_rewrite = true,
 	},
 	{
 		.name = "bind",
+		.no = SCMP_SYS(bind),
 		.filter = filter_bind,
 		.notify = sys_bind,
 		.sandbox_network = true,
@@ -330,6 +378,7 @@ static const sysentry_t syscall_entries[] = {
 	},
 	{
 		.name = "connect",
+		.no = SCMP_SYS(connect),
 		.filter = filter_connect,
 		.notify = sys_connect,
 		.sandbox_network = true,
@@ -337,6 +386,7 @@ static const sysentry_t syscall_entries[] = {
 	},
 	{
 		.name = "sendto",
+		.no = SCMP_SYS(sendto),
 		.filter = filter_sendto,
 		.notify = sys_sendto,
 		.sandbox_network = true,
@@ -344,30 +394,35 @@ static const sysentry_t syscall_entries[] = {
 	},
 	{
 		.name = "listen",
+		.no = SCMP_SYS(listen),
 		.notify = sys_listen,
 		.sandbox_network = true,
 		.rule_rewrite = true,
 	},
 	{
 		.name = "accept",
+		.no = SCMP_SYS(accept),
 		.notify = sys_accept,
 		.sandbox_network = true,
 		.rule_rewrite = true,
 	},
 	{
 		.name = "accept4",
+		.no = SCMP_SYS(accept4),
 		.notify = sys_accept,
 		.sandbox_network = true,
 		.rule_rewrite = true,
 	},
 	{
 		.name = "getsockname",
+		.no = SCMP_SYS(getsockname),
 		.notify = sys_getsockname,
 		.sandbox_network = true,
 		.rule_rewrite = true,
 	},
 	{
 		.name = "sendmsg",
+		.no = SCMP_SYS(sendmsg),
 		.filter = filter_sendmsg,
 		.notify = sys_sendmsg,
 		.sandbox_network = true,
@@ -375,6 +430,7 @@ static const sysentry_t syscall_entries[] = {
 	},
 	{
 		.name = "recvmsg",
+		.no = SCMP_SYS(recvmsg),
 		.filter = filter_recvmsg,
 		.notify = sys_recvmsg,
 		.sandbox_network = true,
@@ -383,69 +439,79 @@ static const sysentry_t syscall_entries[] = {
 
 	{
 		.name = "listxattr",
+		.no = SCMP_SYS(listxattr),
 		.notify = sys_listxattr,
 		.sandbox_read = true,
 	},
 	{
 		.name = "llistxattr",
+		.no = SCMP_SYS(llistxattr),
 		.notify = sys_llistxattr,
 		.sandbox_read = true,
 	},
 	{
 		.name = "setxattr",
+		.no = SCMP_SYS(setxattr),
 		.notify = sys_setxattr,
 		.sandbox_write = true,
 	},
 	{
 		.name = "lsetxattr",
+		.no = SCMP_SYS(lsetxattr),
 		.notify = sys_lsetxattr,
 		.sandbox_write = true,
 	},
 	{
 		.name = "removexattr",
+		.no = SCMP_SYS(removexattr),
 		.notify = sys_removexattr,
 		.sandbox_write = true,
 	},
 	{
 		.name = "lremovexattr",
+		.no = SCMP_SYS(lremovexattr),
 		.notify = sys_lremovexattr,
 		.sandbox_write = true,
 	},
 
 	{
 		.name = "mount",
+		.no = SCMP_SYS(mount),
 		.notify = sys_mount,
 		.sandbox_write = true,
 	},
 	{
 		.name = "umount",
+		.no = SCMP_SYS(umount),
 		.notify = sys_umount,
 		.sandbox_write = true,
 	},
 	{
 		.name = "umount2",
+		.no = SCMP_SYS(umount2),
 		.notify = sys_umount2,
 		.sandbox_write = true,
 	},
 };
 
-void sysinit(void)
+int sysinit(scmp_filter_ctx ctx)
 {
-	systable_init();
-
+	if (!ctx)
+		return -EINVAL;
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		if (syscall_entries[i].name) {
-			systable_add(syscall_entries[i].name,
-				     syscall_entries[i].notify,
-				     syscall_entries[i].exit);
-		} else {
-			for (size_t j = 0; j < ABIS_SUPPORTED; j++)
-				systable_add_full(syscall_entries[i].no,
-						  abi[j], NULL,
-						  syscall_entries[i].notify,
-						  syscall_entries[i].exit);
-		}
+		int r;
+		uint8_t prio = (uint8_t)(ELEMENTSOF(syscall_entries) - i);
+		if ((r = seccomp_syscall_priority(ctx,
+						  syscall_entries[i].no,
+						  prio)) == 0)
+			continue;
+		errno = -r;
+		say_errno("error setting priority %"PRIu8
+			  " for system call `%s', "
+			  "continuing...",
+			  prio, syscall_entries[i].name);
 	}
+	return 0;
 }
 
 static int apply_simple_filter(const sysentry_t *entry, uint32_t arch)
@@ -478,7 +544,7 @@ int parent_write_int(int message)
 
 	errno = 0;
 	count = atomic_write(sydbox->seccomp_fd, &message, sizeof(int));
-	if (count != sizeof(int)) {
+	if (count < 0 || (size_t)count != sizeof(int)) {
 		if (!errno)
 			errno = EINVAL;
 		die_errno("can't write int to pipe: %zu != %zu", count,
@@ -603,7 +669,6 @@ int sysinit_seccomp_load(void)
 							      flag);
 				if (r < 0)
 					return r;
-				//user_notified = true;
 			} else if (mode_w == SANDBOX_DENY &&
 			    (r = rule_add_access_wr_eperm(sysnum,
 							  flag)) < 0) {
@@ -620,7 +685,6 @@ int sysinit_seccomp_load(void)
 							      flag);
 				if (r < 0)
 					return r;
-				//user_notified = true;
 			} else if (mode_x == SANDBOX_DENY &&
 			    (r = rule_add_access_ex_eperm(sysnum,
 							  flag)) < 0) {
@@ -640,7 +704,6 @@ int sysinit_seccomp_load(void)
 							    flag);
 				if (r < 0)
 					return r;
-				//user_notified = true;
 			} else if (mode_r == SANDBOX_DENY &&
 			    (r = rule_add_open_rd_eperm(sysnum,
 							flag)) < 0) {
@@ -691,8 +754,6 @@ int sysinit_seccomp_load(void)
 			if (syscall_entries[i].magic_lock_off && use_notify()) {
 				if (lock == LOCK_SET)
 					continue;
-				// say("this is magic1: %s", syscall_entries[i].name);
-				// user_notified = true;
 				action = SCMP_ACT_NOTIFY;
 				if (action == sydbox->seccomp_action)
 					continue;
@@ -721,7 +782,6 @@ int sysinit_seccomp_load(void)
 			} else if ((mode == SANDBOX_ALLOW ||
 				    mode == SANDBOX_DENY) && use_notify()) {
 				action = SCMP_ACT_NOTIFY;
-				//user_notified = true;
 				if (action == sydbox->seccomp_action)
 					continue;
 			} else if (syscall_entries[i].magic_lock_off) {
@@ -747,7 +807,6 @@ int sysinit_seccomp_load(void)
 			} else if ((mode == SANDBOX_ALLOW ||
 				    mode == SANDBOX_DENY) && use_notify()) {
 				action = SCMP_ACT_NOTIFY;
-				//user_notified = true;
 				if (action == sydbox->seccomp_action)
 					continue;
 			} else if (mode == SANDBOX_DENY) {
@@ -955,9 +1014,8 @@ int sysinit_seccomp(void)
 	seccomp_release(sydbox->ctx);
 	sydbox->ctx = NULL;
 
-	/* Keep the seccomp_fd open to write the exit code.
-	   close(sydbox->seccomp_fd);
-	*/
+	close(sydbox->seccomp_fd);
+	sydbox->seccomp_fd = -1;
 	return 0;
 }
 
@@ -982,26 +1040,6 @@ int sysnotify(syd_process_t *current)
 	if (entry->notify)
 		r = entry->notify(current);
 
-	return r;
-}
-
-int sysexit(syd_process_t *current)
-{
-	int r;
-	const sysentry_t *entry;
-
-	assert(current);
-
-#if !WRITE_RETVAL_ON_ENTRY
-	if ((r = restore(current)) < 0)
-		say("error writing syscall return value: %d (%s)",
-		    -r, strerror(-r));
-#endif
-
-	entry = systable_lookup(current->sysnum, current->arch);
-	r = (entry && entry->exit) ? entry->exit(current) : 0;
-
-	reset_process(current);
 	return r;
 }
 

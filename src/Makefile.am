@@ -136,7 +136,6 @@ sydbox_SOURCES= \
 		 syscall-special.c \
 		 syscall-filter.c \
 		 syscall.c \
-		 systable.c \
 		 config.c \
 		 sydbox.c
 sydfmt_SOURCES= \

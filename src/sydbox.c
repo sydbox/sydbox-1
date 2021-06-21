@@ -1153,20 +1153,25 @@ static int wait_for_notify_fd(void)
 	pollfd.fd = sydbox->notify_fd;
 	pollfd.events = POLLIN;
 	errno = 0;
-	if ((r = poll(&pollfd, 1, 0)) < 0) {
+	sigprocmask(SIG_SETMASK, &empty_set, NULL);
+	r = poll(&pollfd, 1, -1);
+	sigprocmask(SIG_BLOCK, &blocked_set, NULL);
+	if (r == -1) {
 		if (!errno || errno == EINTR)
 			return -ETIMEDOUT;
-		return -errno;
+		else
+			return -errno;
+	} else {
+		short revents = pollfd.revents;
+		if (!r && !revents)
+			return -ETIMEDOUT;
+		else if (revents & POLLIN)
+			return 0;
+		else if (revents & POLLHUP || revents & POLLERR)
+			return -ESRCH;
+		else if (revents & POLLNVAL)
+			return -EINVAL;
 	}
-	short revents = pollfd.revents;
-	if (!r && !revents)
-		return -ETIMEDOUT;
-	if (revents & POLLIN)
-		return 0;
-	if (revents & POLLHUP || revents & POLLERR)
-		return -ESRCH;
-	if (revents & POLLNVAL)
-		return -EINVAL;
 	assert_not_reached();
 }
 
@@ -1931,8 +1936,6 @@ void cleanup_for_child(void)
 	ACLQ_FREE(acl_node, &sydbox->config.filter_read, xfree);
 	ACLQ_FREE(acl_node, &sydbox->config.filter_write, xfree);
 	ACLQ_FREE(acl_node, &sydbox->config.filter_network, free_sockmatch);
-
-	systable_free();
 }
 
 void cleanup_for_sydbox(void)
@@ -2233,7 +2236,6 @@ int main(int argc, char **argv)
 		config_parse_spec(env);
 
 	config_done();
-	sysinit();
 
 	/* Late validations for options */
 	if (!sydbox->config.restrict_general &&
@@ -2263,9 +2265,25 @@ int main(int argc, char **argv)
 		say("can't set sysrawrc attribute for seccomp filter (%d %s), "
 		    "continuing...",
 		    -r, strerror(-r));
+#if 0
+	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_TSYNC, 1)) < 0)
+		say("can't set tsync attribute for seccomp filter (%d %s), "
+		    "continuing...",
+		    -r, strerror(-r));
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
 		say("can't optimize seccomp filter (%d %s), continuing...",
 		    -r, strerror(-r));
+#endif
+#if SYDBOX_HAVE_DUMP_BUILTIN
+	if (sydbox->dump_fd > 0) {
+		if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_LOG, 1)) < 0)
+			say("can't log attribute for seccomp filter (%d %s), "
+			    "continuing...", -r, strerror(-r));
+	}
+#endif
+	/* Set system call priorities */
+	sysinit(sydbox->ctx);
+
 	/* This is added by default by libseccomp,
 	 * so no need to do it manually.
 	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_NATIVE);
