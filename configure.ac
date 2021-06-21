@@ -231,6 +231,14 @@ or1k*)
 	arch=or1k
 	AC_DEFINE([OR1K], 1, [Define for the OpenRISC 1000 architecture.])
 	;;
+parisc64*)
+	arch=parisc64
+	AC_DEFINE([PARISC64], 1, [Define for the PARISC64 architecture.])
+	;;
+parisc*)
+	arch=parisc
+	AC_DEFINE([PARISC], 1, [Define for the PARISC architecture.])
+	;;
 powerpc*)
 	karch=powerpc
 	karch_m32=powerpc

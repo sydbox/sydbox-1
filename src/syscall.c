@@ -22,8 +22,6 @@
 #include "sc_map_syd.h"
 #include "syscall_open_syd.h"
 
-static int rule_add_action(uint32_t action, int sysnum);
-
 static int rule_add_access_rd(uint32_t action, int sysnum, int access_mode);
 static int rule_add_access_wr(uint32_t action, int sysnum, int access_mode);
 static int rule_add_access_ex(uint32_t action, int sysnum, int access_mode);
@@ -321,56 +319,66 @@ static const sysentry_t syscall_entries[] = {
 		.name = "socketcall",
 		.notify = sys_socketcall,
 		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 	{
 		.name = "bind",
 		.filter = filter_bind,
 		.notify = sys_bind,
 		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 	{
 		.name = "connect",
 		.filter = filter_connect,
 		.notify = sys_connect,
 		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 	{
 		.name = "sendto",
 		.filter = filter_sendto,
 		.notify = sys_sendto,
 		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 	{
 		.name = "listen",
 		.notify = sys_listen,
 		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 	{
 		.name = "accept",
 		.notify = sys_accept,
 		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 	{
 		.name = "accept4",
 		.notify = sys_accept,
 		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 	{
 		.name = "getsockname",
 		.notify = sys_getsockname,
 		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 	{
 		.name = "sendmsg",
 		.filter = filter_sendmsg,
 		.notify = sys_sendmsg,
 		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 	{
 		.name = "recvmsg",
 		.filter = filter_recvmsg,
 		.notify = sys_recvmsg,
 		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 
 	{
@@ -484,7 +492,19 @@ int sysinit_seccomp_load(void)
 	int r;
 	uint32_t action;
 	long sysnum;
-	bool user_notified = false;
+	//SYD_GCC_ATTR((unused)) bool user_notified = false;
+#ifdef SAY
+#undef SAY
+#endif
+#ifdef SAY_ERRNO
+#undef SAY_ERNNO
+#endif
+#define SAY(...) do { \
+	if (sydbox->dump_fd > 0) { say(__VA_ARGS__); } \
+	} while (0)
+#define SAY_ERRNO(...) do { \
+	if (sydbox->dump_fd > 0) { say_errno(__VA_ARGS__); } \
+	} while (0)
 
 	if ((r = filter_general()) < 0)
 		return r;
@@ -495,236 +515,374 @@ int sysinit_seccomp_load(void)
 			return r;
 	}
 
+	size_t arch_max;
+	for (arch_max = 0; sydbox->arch[arch_max] != UINT32_MAX; arch_max++)
+		/* nothing*/;
+	struct sc_map_32 name_map;
+	if (!sc_map_init_32(&name_map, ELEMENTSOF(syscall_entries), 0))
+		return -ENOMEM;
+	struct sc_map_64s scno_map;
+	if (!sc_map_init_64s(&scno_map, ELEMENTSOF(syscall_entries), 0))
+		return -ENOMEM;
 	sandbox_t *box = box_current(NULL);
-	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		if (syscall_entries[i].name)
-			sysnum = seccomp_syscall_resolve_name(syscall_entries[i].name);
-		else
-			sysnum = syscall_entries[i].no;
-		if (sysnum == __NR_SCMP_ERROR)
-			die_errno("can't lookup system call name:%s",
-				  syscall_entries[i].name);
-		if (sysnum < 0) {
-			/* say("unknown system call name:%s, continuing...",
-			    syscall_entries[i].name); */
-			continue;
-		}
-
-		int flag;
-		bool is_open = false, is_access = false;
-		if (syscall_entries[i].access_mode) {
-			is_access = true;
-			flag = syscall_entries[i].access_mode;
-		} else if (syscall_entries[i].open_flag) {
-			is_open = true;
-			flag = syscall_entries[i].open_flag;
-		}
-		if (is_access) {
-			enum sandbox_mode mode_r = box->mode.sandbox_read;
-			enum sandbox_mode mode_w = box->mode.sandbox_write;
-			enum sandbox_mode mode_x = box->mode.sandbox_exec;
-
-			if (mode_r == SANDBOX_BPF &&
-			    (r = rule_add_access_rd_eperm(sysnum,
-							  flag)) < 0)
-					return r;
-			if (use_notify() &&
-			    (mode_r == SANDBOX_ALLOW || mode_r == SANDBOX_DENY)) {
-				r = rule_add_access_rd_notify(sysnum,
-							      flag);
-				if (r < 0)
-					return r;
-				user_notified = true;
-			} else if (mode_r == SANDBOX_DENY &&
-			    (r = rule_add_access_rd_eperm(sysnum,
-							  flag)) < 0) {
-					return r;
-			}
-
-			if (mode_w == SANDBOX_BPF &&
-			    (r = rule_add_access_wr_eperm(sysnum,
-							  flag)) < 0)
-					return r;
-			if (use_notify() &&
-			    (mode_w == SANDBOX_ALLOW || mode_w == SANDBOX_DENY)) {
-				r = rule_add_access_wr_notify(sysnum,
-							      flag);
-				if (r < 0)
-					return r;
-				user_notified = true;
-			} else if (mode_w == SANDBOX_DENY &&
-			    (r = rule_add_access_wr_eperm(sysnum,
-							  flag)) < 0) {
-					return r;
-			}
-
-			if (mode_x == SANDBOX_BPF &&
-			    (r = rule_add_access_ex_eperm(sysnum,
-							  flag)) < 0)
-					return r;
-			if (use_notify() &&
-			    (mode_x == SANDBOX_ALLOW || mode_x == SANDBOX_DENY)) {
-				r = rule_add_access_ex_notify(sysnum,
-							      flag);
-				if (r < 0)
-					return r;
-				user_notified = true;
-			} else if (mode_x == SANDBOX_DENY &&
-			    (r = rule_add_access_ex_eperm(sysnum,
-							  flag)) < 0) {
-					return r;
-			}
-		} else if (is_open) {
-			enum sandbox_mode mode_r = box->mode.sandbox_read;
-			enum sandbox_mode mode_w = box->mode.sandbox_write;
-
-			if (mode_r == SANDBOX_BPF &&
-			    (r = rule_add_open_rd_eperm(sysnum,
-							flag)) < 0)
-					return r;
-			if (use_notify() &&
-			    (mode_r == SANDBOX_ALLOW || mode_r == SANDBOX_DENY)) {
-				r = rule_add_open_rd_notify(sysnum,
-							    flag);
-				if (r < 0)
-					return r;
-				user_notified = true;
-			} else if (mode_r == SANDBOX_DENY &&
-			    (r = rule_add_open_rd_eperm(sysnum,
-							flag)) < 0) {
-					return r;
-			}
-
-			if (mode_w == SANDBOX_BPF &&
-			    (r = rule_add_open_wr_eperm(sysnum,
-							flag)) < 0)
-					return r;
-			if (use_notify() &&
-			    (mode_w == SANDBOX_ALLOW || mode_w == SANDBOX_DENY)) {
-				r = rule_add_open_wr_notify(sysnum,
-							    flag);
-				if (r < 0) {
-					errno = -r;
-					say_errno("invalid write notify");
-					return r;
-				}
-				user_notified = true;
-			} else if (mode_w == SANDBOX_DENY &&
-				   (r = rule_add_open_wr_eperm(sysnum,
-							       flag)) < 0) {
-				errno = -r;
-				say_errno("invalid write bpf");
-				return r;
-			}
-		} else {
-			int mode;
-			enum lock_state lock = LOCK_UNSET;
-			if (syscall_entries[i].sandbox_network) {
-				mode = box->mode.sandbox_network;
-			} else if (syscall_entries[i].sandbox_exec) {
-				mode = box->mode.sandbox_exec;
-			} else if (syscall_entries[i].sandbox_write) {
-				mode = box->mode.sandbox_write;
-			} else if (syscall_entries[i].sandbox_read) {
-				mode = box->mode.sandbox_read;
-			} else if (syscall_entries[i].magic_lock_off) {
-				lock = sydbox->config.box_static.magic_lock;
-				mode = -1;
+	for (size_t j = 0; sydbox->arch[j] != UINT32_MAX; j++) {
+		sc_map_clear_32(&name_map);
+		for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
+			if (syscall_entries[i].name) {
+				sysnum = seccomp_syscall_resolve_name_rewrite(
+					sydbox->arch[j],
+					syscall_entries[i].name
+				);
 			} else {
+				sysnum = syscall_entries[i].no;
+			}
+			if (sysnum == __NR_SCMP_ERROR)
+				die_errno("can't lookup system call name:%s",
+					  syscall_entries[i].name);
+			else if (sysnum < 0) {
+				/* SAY("unknown system call name:%s, continuing...",
+				    syscall_entries[i].name); */
+				continue;
+			}
+			sc_map_put_32(&name_map, sysnum, sydbox->arch[j]);
+			if (sc_map_found(&name_map)) {
+				SAY("not adding duplicate system call: %s",
+				    syscall_entries[i].name);
+				continue;
+			}
+			sc_map_put_64s(&scno_map, sysnum,
+				       syscall_entries[i].name);
+			if (sc_map_found(&scno_map)) {
+				SAY("not adding duplicate system call: %s",
+				    syscall_entries[i].name);
 				continue;
 			}
 
-			if (syscall_entries[i].magic_lock_off && use_notify()) {
-				if (lock == LOCK_SET)
-					continue;
-				action = SCMP_ACT_NOTIFY;
-				user_notified = true;
-			} else if (syscall_entries[i].magic_lock_off) {
-				if (lock == LOCK_SET)
-					continue;
-				action = SCMP_ACT_ALLOW;
-				if (action == sydbox->seccomp_action)
-					continue;
-			} else if (mode == SANDBOX_OFF) {
-				if (!filter_includes(sysnum))
-					continue;
-				action = SCMP_ACT_ALLOW;
-				if (action == sydbox->seccomp_action)
-					continue;
-			} else if (mode == SANDBOX_BPF) {
-				action = SCMP_ACT_ERRNO(EPERM);
-				if (action == sydbox->seccomp_action)
-					continue;
-			} else if ((mode == SANDBOX_ALLOW ||
-				    mode == SANDBOX_DENY) && use_notify()) {
-				action = SCMP_ACT_NOTIFY;
-				user_notified = true;
-			} else if (mode == SANDBOX_DENY) {
-				action = SCMP_ACT_ERRNO(EPERM);
-				if (action == sydbox->seccomp_action)
-					continue;
-			} else if (mode == SANDBOX_ALLOW) {
-				if (!filter_includes(sysnum))
-					continue;
-				action = SCMP_ACT_ALLOW;
-				if (action == sydbox->seccomp_action)
-					continue;
-			} else { /* if (mode == -1) */
-				sysentry_t entry = syscall_entries[i];
-				say("seccomp system call inconsistency "
-				    "detected.");
-				say("name:%s mode=%d bpf_only=%s "
-				    "lock:%s use_notify=%s",
-				    entry.name,
-				    mode,
-				    sydbox->bpf_only ? "t" : "f",
-				    entry.magic_lock_off ? "t" : "f",
-				    use_notify() ? "t" : "f");
-				assert_not_reached();
+			int flag;
+			bool is_open = false, is_access = false;
+			if (syscall_entries[i].access_mode) {
+				is_access = true;
+				flag = syscall_entries[i].access_mode;
+			} else if (syscall_entries[i].open_flag) {
+				is_open = true;
+				flag = syscall_entries[i].open_flag;
 			}
+			if (is_access) {
+				enum sandbox_mode mode_r = box->mode.sandbox_read;
+				enum sandbox_mode mode_w = box->mode.sandbox_write;
+				enum sandbox_mode mode_x = box->mode.sandbox_exec;
 
-			if ((r = rule_add_action(action, sysnum)) < 0)
-				return r;
+				if (mode_w == SANDBOX_BPF &&
+				    (r = rule_add_access_wr_eperm(sysnum,
+								  flag)) < 0)
+						return r;
+				if (use_notify() &&
+				    (mode_w == SANDBOX_ALLOW || mode_w == SANDBOX_DENY)) {
+					r = rule_add_access_wr_notify(sysnum,
+								      flag);
+					if (r < 0)
+						return r;
+					//user_notified = true;
+				} else if (mode_w == SANDBOX_DENY &&
+				    (r = rule_add_access_wr_eperm(sysnum,
+								  flag)) < 0) {
+						return r;
+				}
+
+				if (mode_r == SANDBOX_BPF &&
+				    (r = rule_add_access_rd_eperm(sysnum,
+								  flag)) < 0)
+						return r;
+				if (use_notify() &&
+				    (mode_r == SANDBOX_ALLOW || mode_r == SANDBOX_DENY)) {
+					r = rule_add_access_rd_notify(sysnum,
+								      flag);
+					if (r < 0)
+						return r;
+					//user_notified = true;
+				} else if (mode_r == SANDBOX_DENY &&
+				    (r = rule_add_access_rd_eperm(sysnum,
+								  flag)) < 0) {
+						return r;
+				}
+
+				if (mode_x == SANDBOX_BPF &&
+				    (r = rule_add_access_ex_eperm(sysnum,
+								  flag)) < 0)
+						return r;
+				if (use_notify() &&
+				    (mode_x == SANDBOX_ALLOW || mode_x == SANDBOX_DENY)) {
+					r = rule_add_access_ex_notify(sysnum,
+								      flag);
+					if (r < 0)
+						return r;
+					//user_notified = true;
+				} else if (mode_x == SANDBOX_DENY &&
+				    (r = rule_add_access_ex_eperm(sysnum,
+								  flag)) < 0) {
+						return r;
+				}
+			} else if (is_open) {
+				enum sandbox_mode mode_r = box->mode.sandbox_read;
+				enum sandbox_mode mode_w = box->mode.sandbox_write;
+
+				if (mode_w == SANDBOX_BPF &&
+				    (r = rule_add_open_wr_eperm(sysnum,
+								flag)) < 0)
+						return r;
+				if (use_notify() &&
+				    (mode_w == SANDBOX_ALLOW || mode_w == SANDBOX_DENY)) {
+					r = rule_add_open_wr_notify(sysnum,
+								    flag);
+					if (r < 0) {
+						errno = -r;
+						SAY_ERRNO("invalid write notify");
+						return r;
+					}
+					//user_notified = true;
+				} else if (mode_w == SANDBOX_DENY &&
+					   (r = rule_add_open_wr_eperm(sysnum,
+								       flag)) < 0) {
+					errno = -r;
+					SAY_ERRNO("invalid write bpf");
+					return r;
+				}
+
+				if (mode_r == SANDBOX_BPF &&
+				    (r = rule_add_open_rd_eperm(sysnum,
+								flag)) < 0)
+						return r;
+				if (use_notify() &&
+				    (mode_r == SANDBOX_ALLOW || mode_r == SANDBOX_DENY)) {
+					r = rule_add_open_rd_notify(sysnum,
+								    flag);
+					if (r < 0)
+						return r;
+					//user_notified = true;
+				} else if (mode_r == SANDBOX_DENY &&
+				    (r = rule_add_open_rd_eperm(sysnum,
+								flag)) < 0) {
+						return r;
+				}
+			} else {
+				int mode;
+				bool is_exec = false, is_net = false;
+				enum lock_state lock = LOCK_UNSET;
+				if (syscall_entries[i].sandbox_network) {
+					mode = box->mode.sandbox_network;
+					is_net = true;
+				} else if (syscall_entries[i].sandbox_exec) {
+					mode = box->mode.sandbox_exec;
+					is_exec = true;
+				} else if (syscall_entries[i].sandbox_write) {
+					mode = box->mode.sandbox_write;
+				} else if (syscall_entries[i].sandbox_read) {
+					mode = box->mode.sandbox_read;
+				} else if (syscall_entries[i].magic_lock_off) {
+					lock = sydbox->config.box_static.magic_lock;
+					mode = -1;
+				} else {
+					continue;
+				}
+
+				if (syscall_entries[i].magic_lock_off && use_notify()) {
+					if (lock == LOCK_SET)
+						continue;
+					// say("this is magic1: %s", syscall_entries[i].name);
+					// user_notified = true;
+					action = SCMP_ACT_NOTIFY;
+					if (action == sydbox->seccomp_action)
+						continue;
+				} else if (syscall_entries[i].magic_lock_off) {
+					if (lock == LOCK_SET)
+						continue;
+					action = use_notify()
+						? SCMP_ACT_NOTIFY
+						: SCMP_ACT_ALLOW;
+					// say("this is magic2: %s", syscall_entries[i].name);
+					if (action == sydbox->seccomp_action)
+						continue;
+				} else if (mode == SANDBOX_OFF) {
+					if (!filter_includes(sydbox->arch[j],
+							     sysnum))
+						continue;
+					// say("this is magic3: %s", syscall_entries[i].name);
+					action = ((is_exec|is_net) && use_notify())
+						? SCMP_ACT_NOTIFY
+						: SCMP_ACT_ALLOW;
+					if (action == sydbox->seccomp_action)
+						continue;
+				} else if (mode == SANDBOX_BPF) {
+					action = SCMP_ACT_ERRNO(EPERM);
+					if (action == sydbox->seccomp_action)
+						continue;
+				} else if ((mode == SANDBOX_ALLOW ||
+					    mode == SANDBOX_DENY) && use_notify()) {
+					action = SCMP_ACT_NOTIFY;
+					//user_notified = true;
+					if (action == sydbox->seccomp_action)
+						continue;
+				} else if (syscall_entries[i].magic_lock_off) {
+					if (lock == LOCK_SET)
+						continue;
+					action = use_notify()
+						? SCMP_ACT_NOTIFY
+						: SCMP_ACT_ALLOW;
+					if (action == sydbox->seccomp_action)
+						continue;
+				} else if (mode == SANDBOX_OFF) {
+					if (!filter_includes(sydbox->arch[j],
+							     sysnum))
+						continue;
+					action = (is_exec && use_notify())
+						? SCMP_ACT_NOTIFY
+						: SCMP_ACT_ALLOW;
+					if (action == sydbox->seccomp_action)
+						continue;
+				} else if (mode == SANDBOX_BPF) {
+					action = SCMP_ACT_ERRNO(EPERM);
+					if (action == sydbox->seccomp_action)
+						continue;
+				} else if ((mode == SANDBOX_ALLOW ||
+					    mode == SANDBOX_DENY) && use_notify()) {
+					action = SCMP_ACT_NOTIFY;
+					//user_notified = true;
+					if (action == sydbox->seccomp_action)
+						continue;
+				} else if (mode == SANDBOX_DENY) {
+					action = SCMP_ACT_ERRNO(EPERM);
+					if (action == sydbox->seccomp_action)
+						continue;
+				} else if (mode == SANDBOX_ALLOW) {
+					if (!filter_includes(sydbox->arch[j],
+							     sysnum))
+						continue;
+					action = (is_exec && use_notify())
+						? SCMP_ACT_NOTIFY
+						: SCMP_ACT_ALLOW;
+					if (action == sydbox->seccomp_action)
+						continue;
+				} else { /* if (mode == -1) */
+					sysentry_t entry = syscall_entries[i];
+					SAY("seccomp system call inconsistency "
+					    "detected.");
+					SAY("name:%s mode=%d bpf_only=%s "
+					    "lock:%s use_notify=%s",
+					    entry.name,
+					    mode,
+					    sydbox->bpf_only ? "t" : "f",
+					    entry.magic_lock_off ? "t" : "f",
+					    use_notify() ? "t" : "f");
+					assert_not_reached();
+				}
+
+				bool rule_rewrite = syscall_entries[i].rule_rewrite;
+				if (rule_rewrite &&
+				    (r = rule_add_action_exact(action, sysnum)) < 0) {
+					errno = -r;
+					if (r == -EACCES ||
+					    r == -EOPNOTSUPP ||
+					    r == -EFAULT) {
+						continue;
+					} else {
+						SAY_ERRNO("can't add action %u "
+							  "for %s",
+							  action,
+							  syscall_entries[i].name);
+						return r;
+					}
+				} else if ((r = rule_add_action_exact(action, sysnum)) < 0) {
+					errno = -r;
+					if (r == -EACCES ||
+					    r == -EOPNOTSUPP ||
+					    r == -EFAULT) {
+						continue;
+					} else {
+						SAY_ERRNO("can't add action %u "
+							  "for %s",
+							  action,
+							  syscall_entries[i].name);
+						return r;
+					}
+				}
+			}
 		}
 	}
+	sc_map_clear_32(&name_map);
+	sc_map_clear_64s(&scno_map);
+	sc_map_term_32(&name_map);
+	sc_map_term_64s(&scno_map);
 
 	static const char *const calls[] = {
 		"execve", "execveat",
 		"chdir", "fchdir",
 		"clone",
-#ifdef __NR_clone2
+#if defined(__NR_clone) && (__NR_clone != __NR_clone2)
 		"clone2",
 #endif
-#ifdef __NR_clone3
+#if defined(__NR_clone3) && (__NR_clone3 != __NR_clone)
 		"clone3",
 #endif
 		"fork", "vfork",
 	};
-	if (user_notified) {
-		for (unsigned short i = 0; i < 8; i++) {
-			if (i < 2 && box->mode.sandbox_exec != SANDBOX_OFF)
+	if (!sc_map_init_32(&name_map, ELEMENTSOF(calls), 0))
+		return -ENOMEM;
+	if (!sc_map_init_64s(&scno_map, ELEMENTSOF(calls), 0))
+		return -ENOMEM;
+	for (size_t j = 0; sydbox->arch[j] != UINT32_MAX; j++) {
+		sc_map_clear_32(&name_map);
+		for (size_t i = 0; i < ELEMENTSOF(calls); i++) {
+			if (startswith(calls[i], "execve") &&
+			    box->mode.sandbox_exec != SANDBOX_OFF)
 				continue; /* execve* already added */
-			sysnum = seccomp_syscall_resolve_name(calls[i]);
-			if (sysnum == __NR_SCMP_ERROR)
-				die_errno("can't lookup system call name:%s",
+			SAY("adding special system call:%s "
+			    "to the bpf filter...", calls[i]);
+			sysnum = seccomp_syscall_resolve_name_rewrite(sydbox->arch[j],
+								      calls[i]);
+			if (sysnum == __NR_SCMP_ERROR) {
+				//SAY_ERRNO("can't lookup system call name:%s "
+				//	  "continuing...",
+				//	  calls[i]);
+				continue;
+			} else if (sysnum < 0) {
+				SAY_ERRNO("unknown system call name:%s "
+					  "continuing...",
 					  calls[i]);
-			else if (sysnum < 0) {
-				/* say("unknown system call name:%s, continuing...",
-				    calls[i]); */
 				continue;
 			}
-			if ((r = rule_add_action(SCMP_ACT_NOTIFY, sysnum)) < 0) {
+			sc_map_put_32(&name_map, sysnum, sydbox->arch[j]);
+			if (sc_map_found(&name_map)) {
+				//SAY("not adding duplicate system call: %s",
+				//    calls[i]);
+				continue;
+			}
+			sc_map_put_64s(&scno_map, sysnum,
+				       syscall_entries[i].name);
+			if (sc_map_found(&scno_map)) {
+				//SAY("not adding duplicate system call: %s",
+				//    calls[i]);
+				continue;
+			}
+
+			if ((r = rule_add_action_exact(SCMP_ACT_NOTIFY, sysnum)) < 0) {
 				errno = -r;
-				say_errno("can't add notify for %s, continuing...",
-					  calls[i]);
+				if (r != -EFAULT)
+					SAY_ERRNO("can't add notify for %s, "
+						  "continuing...",
+						  calls[i]);
 				continue;
 			}
 		}
 	}
+	sc_map_term_32(&name_map);
+	sc_map_term_64s(&scno_map);
 
-	// say("seccomp filter count: %d, no open filter count: %d", n, n - 4);
-	// free(f);
+	SAY("Loading %u bpf filters into the kernel...",
+	    sydbox->filter_count);
 	return 0;
+
+#undef SAY
+#undef SAY_ERRNO
 }
 
 int sysinit_seccomp(void)
@@ -771,6 +929,23 @@ int sysinit_seccomp(void)
 		close(export_fd);
 	r = seccomp_load(sydbox->ctx);
 	if (use_notify()) {
+		/*
+		 * libseccomp won't honour all seccomp errno's,
+		 * such as EBUSY, we detect duplicate listeners
+		 * with it below.
+		 * Quoting from kernel/seccomp.c
+		 if (has_duplicate_listener(prepared)) {
+			ret = -EBUSY;
+			goto out;
+	 	 }
+		 */
+		r = (errno == EBUSY) ? -EBUSY : r;
+		if (r < 0) {
+			say_errno("seccomp_load failed with %u bpf filters",
+				  sydbox->filter_count);
+			if (r == -EBUSY)
+				say("seccomp_load: duplicate listener in bpf?");
+		}
 		int fd = r;
 		if (r == 0 && (fd = seccomp_notify_fd(sydbox->ctx)) < 0)
 			fd = -errno;
@@ -833,25 +1008,32 @@ int sysexit(syd_process_t *current)
 	return r;
 }
 
-static int
+int
 rule_add_action(uint32_t action, int sysnum)
 {
 	syd_rule_add_return(sydbox->ctx, action, sysnum, 0);
 	return 0;
 }
 
+int
+rule_add_action_exact(uint32_t action, int sysnum)
+{
+	syd_rule_add_exact_return(sydbox->ctx, action, sysnum, 0);
+	return 0;
+}
+
+
 static int rule_add_access(uint32_t action, int sysnum,
 			   int access_mode, int access_flag)
 {
-	if (action == sydbox->seccomp_action)
-		return 0;
+	if (action_bpf_default(action))
+		return true;
 
 	/*
 	 * TODO: For simplicity we ignore bitwise OR'ed modes here,
 	 * e.g: R_OK|W_OK
 	 */
-	syd_rule_add_return(sydbox->ctx, action,
-				  sysnum, 1,
+	syd_rule_add_exact_return(sydbox->ctx, action, sysnum, 1,
 				  SCMP_CMP( access_mode,
 					    SCMP_CMP_EQ,
 					    access_flag, access_flag ));
@@ -861,6 +1043,9 @@ static int rule_add_access(uint32_t action, int sysnum,
 static int rule_add_access_rd(uint32_t action, int sysnum, int access_mode)
 {
 	int r;
+
+	if (action_bpf_default(action))
+		return true;
 
 	if ((r = rule_add_access(action, sysnum, access_mode, F_OK)) < 0 ||
 	    (r = rule_add_access(action, sysnum, access_mode, R_OK)) < 0)
@@ -873,6 +1058,9 @@ static int rule_add_access_wr(uint32_t action, int sysnum, int access_mode)
 {
 	int r;
 
+	if (action_bpf_default(action))
+		return true;
+
 	if ((r = rule_add_access(action, sysnum, access_mode, W_OK)) < 0)
 		return r;
 
@@ -883,6 +1071,9 @@ static int rule_add_access_ex(uint32_t action, int sysnum, int access_mode)
 {
 	int r;
 
+	if (action_bpf_default(action))
+		return true;
+
 	if ((r = rule_add_access(action, sysnum, access_mode, X_OK)) < 0)
 		return r;
 
@@ -892,8 +1083,8 @@ static int rule_add_access_ex(uint32_t action, int sysnum, int access_mode)
 int
 rule_add_open_rd(uint32_t action, int sysnum, int open_flag)
 {
-	if (action == sydbox->seccomp_action)
-		return 0;
+	if (action_bpf_default(action))
+		return true;
 
 	struct sc_map_64v map;
 	if (!sc_map_init_64v(&map, OPEN_READONLY_FLAG_MAX, 0))
@@ -905,9 +1096,9 @@ rule_add_open_rd(uint32_t action, int sysnum, int open_flag)
 		if (sc_map_found(&map))
 			continue;
 		sc_map_put_64v(&map, flag, NULL);
-		syd_rule_add_return(sydbox->ctx, action,
-				    sysnum, 1,
-				    SCMP_CMP( open_flag, SCMP_CMP_EQ, flag ));
+		syd_rule_add_exact_return(sydbox->ctx, action,
+					  sysnum, 1,
+					  SCMP_CMP( open_flag, SCMP_CMP_EQ, flag ));
 	}
 
 	sc_map_term_64v(&map);
@@ -918,8 +1109,8 @@ rule_add_open_rd(uint32_t action, int sysnum, int open_flag)
 static int
 rule_add_open_wr(uint32_t action, int sysnum, int open_flag)
 {
-	if (action == sydbox->seccomp_action)
-		return 0;
+	if (action_bpf_default(action))
+		return true;
 
 	const int flag[] = {
 		O_WRONLY,
@@ -928,10 +1119,10 @@ rule_add_open_wr(uint32_t action, int sysnum, int open_flag)
 	};
 
 	for (unsigned int i = 0; i < ELEMENTSOF(flag); i++) {
-		syd_rule_add_return(sydbox->ctx, action, sysnum,
-				    1,
-				    SCMP_CMP64( open_flag, SCMP_CMP_MASKED_EQ,
-						flag[i], flag[i]));
+		syd_rule_add_exact_return(sydbox->ctx, action, sysnum,
+					  1,
+					  SCMP_CMP64( open_flag, SCMP_CMP_MASKED_EQ,
+						      flag[i], flag[i]));
 	}
 
 	return 0;

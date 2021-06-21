@@ -771,6 +771,8 @@ restart_waitpid:
 			}
 		}
 	}
+
+	child_notified = pid;
 }
 
 static unsigned get_os_release(void)
@@ -977,11 +979,11 @@ static void reap_zombies(syd_process_t *current, pid_t pid)
 
 	syd_process_t *node;
 	sc_map_foreach_value(&sydbox->tree, node) {
-		if (node->flags & SYD_KILLED) {
+		if (!process_is_alive(node->pid, node->tgid)) {
+			remove_process_node(node);
+		} else if (node->flags & SYD_KILLED) {
 			if (!(node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE)))
 				remove_process_node(node);
-		} else if (!process_is_alive(node->pid, node->tgid)) {
-			remove_process_node(node);
 		}
 	}
 }
@@ -1132,6 +1134,8 @@ static void init_early(void)
 	sydbox->execve_wait = false;
 	sydbox->exit_code = EXIT_SUCCESS;
 	sydbox->program_invocation_name = NULL;
+	sydbox->arch[0] = UINT32_MAX;
+	sydbox->filter_count = 0;
 	sydbox->seccomp_fd = -1;
 	sydbox->notify_fd = -1;
 #if SYDBOX_HAVE_DUMP_BUILTIN
@@ -1367,6 +1371,12 @@ wait_for_notify_fd:
 notify_receive:
 		if ((r = seccomp_notify_receive(sydbox->notify_fd,
 						sydbox->request)) < 0) {
+			if (errno == ENOTTY)
+				r = -ENOENT;
+			else {
+				say_errno("seccomp_notify_receive");
+				r = -errno;
+			}
 			if (r == -ECANCELED || r == -EINTR) {
 				goto notify_receive;
 			} else if (r == -ENOENT) {
@@ -1377,7 +1387,12 @@ notify_receive:
 				 * when we were able to acquire the rw lock.
 				 */
 				reap_zombies(lookup_process(pid), pid);
-				continue;
+				if (process_count_alive() == 0) {
+					jump = true;
+					goto out;
+				} else {
+					continue;
+				}
 			} else {
 				/* TODO use:
 				 * __NR_pidfd_send_signal to kill the process
@@ -1533,6 +1548,12 @@ notify_respond:
 		}
 		if ((r = seccomp_notify_respond(sydbox->notify_fd,
 						sydbox->response)) < 0) {
+			if (errno == ENOTTY)
+				r = -ENOENT;
+			else {
+				say_errno("seccomp_notify_receive");
+				r = -errno;
+			}
 			if (r == -ECANCELED || r == -EINTR) {
 				goto notify_respond;
 			} else if (r == -ENOENT) {
@@ -1543,6 +1564,12 @@ notify_respond:
 				 * when we were able to acquire the rw lock.
 				 */
 				reap_zombies(current, -1);
+				if (process_count_alive() == 0) {
+					jump = true;
+					goto out;
+				} else {
+					continue;
+				}
 			} else {
 				/* TODO use:
 				 * __NR_pidfd_send_signal to kill the process
@@ -1728,12 +1755,12 @@ void cleanup(void)
 	// reset_sandbox(&sydbox->config.box_static);
 
 	struct acl_node *acl_node;
-	ACLQ_FREE(acl_node, &sydbox->config.exec_kill_if_match, free);
-	ACLQ_FREE(acl_node, &sydbox->config.exec_resume_if_match, free);
+	ACLQ_FREE(acl_node, &sydbox->config.exec_kill_if_match, xfree);
+	ACLQ_FREE(acl_node, &sydbox->config.exec_resume_if_match, xfree);
 
-	ACLQ_FREE(acl_node, &sydbox->config.filter_exec, free);
-	ACLQ_FREE(acl_node, &sydbox->config.filter_read, free);
-	ACLQ_FREE(acl_node, &sydbox->config.filter_write, free);
+	ACLQ_FREE(acl_node, &sydbox->config.filter_exec, xfree);
+	ACLQ_FREE(acl_node, &sydbox->config.filter_read, xfree);
+	ACLQ_FREE(acl_node, &sydbox->config.filter_write, xfree);
 	ACLQ_FREE(acl_node, &sydbox->config.filter_network, free_sockmatch);
 
 	systable_free();
@@ -1741,7 +1768,8 @@ void cleanup(void)
 
 int main(int argc, char **argv)
 {
-	int opt, i, r, opt_t[5];
+	int opt, r, opt_t[5];
+	size_t i;
 	char *c;
 	const char *env;
 	struct utsname buf_uts;
@@ -2061,7 +2089,9 @@ int main(int argc, char **argv)
 		 */
 		using_arch_native = false;
 	}
-	for (i = arch_argv_idx - 1; i >= 0; i--) {
+#if 0
+#error skip validation check, autotools handles this.
+	for (i = arch_argv_idx - 1; i; i--) {
 		if (arch_argv[i] == NULL)
 			continue;
 		arch = arch_from_string(arch_argv[i]);
@@ -2073,14 +2103,15 @@ int main(int argc, char **argv)
 		bool valid = false;
 		if ((r = syd_seccomp_arch_is_valid(arch, &valid)) != 0) {
 			errno = -r;
-			say("architecture support check failed, "
-			    "continuing...");
+			say("architecture support check failed for %s "
+			    "continuing...", arch_argv[i]);
 		} else if (!valid) {
 			die("unsupported architecture `%s'", arch_argv[i]);
 		}
 	}
+#endif
 
-	for (i = arch_argv_idx - 1; i >= 0; i--) {
+	for (i = arch_argv_idx - 1; i; i--) {
 		if (arch_argv[i] == NULL)
 			continue;
 		arch = arch_from_string(arch_argv[i]);
@@ -2105,6 +2136,10 @@ int main(int argc, char **argv)
 		say_errno("error removing native architecture");
 	}
 
+	for (i = 0; arch_argv[i] != NULL; i++)
+		sydbox->arch[i] = arch_from_string(arch_argv[i]);
+	sydbox->arch[i] = UINT32_MAX;
+
 	/*
 	 * Initial program_invocation_name to be used for P_COMM(current).
 	 * Saves one proc_comm() call.
@@ -2128,6 +2163,7 @@ int main(int argc, char **argv)
 		init_process_data(current, NULL);
 		dump(DUMP_STARTUP, pid);
 		(void)notify_loop(current);
+		for (;!child_notified;); /* wait for child to send SIGCHLD */
 	} else {
 		int status;
 		startup_child(&argv[optind]);

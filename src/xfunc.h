@@ -94,6 +94,8 @@ extern char *syd_strndup(const char *src, size_t n);
 extern int syd_asprintf(char **strp, const char *fmt, ...)
 	SYD_GCC_ATTR((format (printf, 2, 3)));
 
+extern void xfree(void *ptr);
+
 extern void *xmalloc(size_t size)
 	SYD_GCC_ATTR((malloc));
 extern void *xcalloc(size_t nmemb, size_t size)

@@ -194,6 +194,12 @@ void die_errno(const char *fmt, ...)
 	syd_abort(SIGTERM);
 }
 
+inline void xfree(void *ptr)
+{
+	if (ptr)
+		free(ptr);
+}
+
 inline void *syd_malloc(size_t size)
 {
 	dump(DUMP_ALLOC, size, "malloc");

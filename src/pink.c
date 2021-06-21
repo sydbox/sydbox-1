@@ -856,11 +856,32 @@ int syd_seccomp_arch_is_valid(uint32_t arch, bool *result)
 		if ((r = seccomp_arch_add(ctx, arch)) != 0 &&
 		    r != -EEXIST)
 			_exit(-r);
+		uint32_t sys_getpid = seccomp_syscall_resolve_name("getpid");
 		if ((r = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM),
-					  SCMP_SYS(getpid), 0)) != 0)
-			_exit(-r);
-		if ((r = seccomp_load(ctx)) != 0)
-			_exit(-r);
+					  sys_getpid, 0)) != 0) {
+			if (r == -EOPNOTSUPP) {
+				say_errno("error adding syscall getpid:%u "
+					  "for architecture %#x",
+					  sys_getpid, arch);
+				_exit(-EOPNOTSUPP);
+			} else if (r == -EACCES || r == -EFAULT) {
+				_exit(0);
+			} else {
+				_exit(-r);
+			}
+		}
+		if ((r = seccomp_load(ctx)) != 0) {
+			if (r == -EOPNOTSUPP) {
+				say_errno("error adding syscall getpid:%u "
+					  "for architecture %#x",
+					  sys_getpid, arch);
+				_exit(-EOPNOTSUPP);
+			} else if (r == -EACCES || r == -EFAULT) {
+				_exit(0);
+			} else {
+				_exit(-r);
+			}
+		}
 		_exit(0);
 	}
 

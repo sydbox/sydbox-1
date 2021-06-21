@@ -593,13 +593,22 @@ static const int filter_gen_level3[] = {
 */
 };
 
-bool filter_includes(int sysnum)
+bool filter_includes(uint32_t arch, int sysnum)
 {
 	size_t max;
 	const int *filter;
+	static const char *level0_names[] = {
+		"execve", "execveat",
+		"chdir", "chdirat",
+		"clone",
+		"clone2",
+		"clone3",
+		"fork", "vfork",
+	};
+
 	switch (sydbox->config.restrict_general) {
 	case 0:
-		return false;
+		break; /* Level 0 is checked unconditionally, below */
 	case 1:
 		filter = filter_gen_level1;
 		max = ELEMENTSOF(filter_gen_level1);
@@ -614,6 +623,22 @@ bool filter_includes(int sysnum)
 		break;
 	default:
 		assert_not_reached();
+	}
+
+	/* Check Level 0 first */
+	for (size_t i = 0; i < ELEMENTSOF(level0_names); i++) {
+		int nr = seccomp_syscall_resolve_name_rewrite(arch,
+							      level0_names[i]);
+		if (nr == __NR_SCMP_ERROR)
+			continue;
+		else if (nr < 0) {
+			say("unknown system call:%s "
+			    "continuing...",
+			    level0_names[i]);
+			continue;
+		} else if (nr == sysnum) {
+			return true;
+		}
 	}
 
 	for (size_t i = 0; i < max; i++)
@@ -1150,7 +1175,6 @@ static int filter_general_level_3(void)
 
 int filter_general(void)
 {
-	int r;
 	static const int allow_calls[] = {
 		SCMP_SYS(exit),
 		SCMP_SYS(exit_group),
@@ -1166,12 +1190,6 @@ int filter_general(void)
 					    allow_calls[i], 0);
 	}
 
-	/*
-	 * Level 0 filter is applied unconditionally
-	 * regardless of the current restriction level.
-	 */
-	if ((r = filter_general_level_0()) < 0)
-		return r;
 	switch (sydbox->config.restrict_general) {
 	case 0:
 		return 0;
@@ -1184,6 +1202,16 @@ int filter_general(void)
 	default:
 		return -EINVAL;
 	}
+
+	/*
+	 * Level 0 filter is applied unconditionally
+	 * regardless of the current restriction level.
+	 */
+	int r;
+	if ((r = filter_general_level_0()) < 0)
+		return r;
+
+	return 0;
 }
 
 static int filter_mmap_restrict_shared(int sys_mmap)

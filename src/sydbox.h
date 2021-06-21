@@ -570,12 +570,12 @@ typedef struct config config_t;
 
 struct sydbox {
 	/* This is true if an access violation has occured, false otherwise. */
-	bool violation;
+	bool violation:1;
 
-	bool execve_wait;
-	bool permissive;
-	bool bpf_only;
-	bool in_child;
+	bool execve_wait:1;
+	bool permissive:1;
+	bool bpf_only:1;
+	bool in_child:1;
 
 	int exit_code;
 	int execve_pidfd;
@@ -607,6 +607,8 @@ struct sydbox {
 	/* SecComp Context */
 	scmp_filter_ctx ctx;
 	struct filter *filter;
+	uint16_t filter_count;
+	uint32_t arch[SYD_SECCOMP_ARCH_ARGV_SIZ];
 
 	/* SHA-1 Context and Hash */
 	syd_SHA_CTX sha1;
@@ -654,6 +656,7 @@ struct sysentry {
 	bool sandbox_exec:1;
 	bool sandbox_network:1;
 	bool magic_lock_off:1; /* used for magic stat() */
+	bool rule_rewrite:1; /* used for socketcall(), bind(), connect() et al. */
 };
 typedef struct sysentry sysentry_t;
 
@@ -757,6 +760,9 @@ extern sydbox_t *sydbox;
 
 #define proc_esrch(err_no)  ((err_no) == ENOENT || (err_no) == ESRCH)
 #define process_alive(p) ((p) && !((p)->flags & SYD_KILLED))
+
+#define action_bpf_default(action) ((action) != SCMP_ACT_NOTIFY &&\
+				    (action) == sydbox->seccomp_action)
 
 static inline uint32_t process_count(void)
 {
@@ -1082,7 +1088,7 @@ static inline void init_sysinfo(syscall_info_t *info)
 	memset(info, 0, sizeof(syscall_info_t));
 }
 
-bool filter_includes(int sysnum);
+bool filter_includes(uint32_t arch, int sysnum);
 int filter_general(void);
 int filter_open(void);
 int filter_openat(void);
@@ -1163,6 +1169,8 @@ int sys_recvmsg(syd_process_t *current);
 
 int sysx_chdir(syd_process_t *current);
 
+int rule_add_action(uint32_t action, int sysnum);
+int rule_add_action_exact(uint32_t action, int sysnum);
 int rule_add_open_rd(uint32_t action, int sysnum, int open_flag);
 
 #endif
