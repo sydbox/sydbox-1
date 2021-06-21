@@ -64,7 +64,7 @@ int kill_one(syd_process_t *node, int fatal_sig)
 	r = syd_proc_comm(node->pid, comm, sizeof(comm));
 	fprintf(stderr, "sydbox: SIG<%d> -> %d <%s> ", fatal_sig,
 		node->pid, r == 0 ? comm : "?");
-	r = kill(node->pid, fatal_sig);
+	r = syd_pidfd_send_signal(node->pidfd, fatal_sig, NULL, 0);
 
 	for (i = 0; i < 3; i++) {
 		usleep(10000);

@@ -62,25 +62,27 @@ static sigset_t empty_set, blocked_set;
 static struct sigaction child_sa;
 
 /* Signal handling with C11 atomics */
-static volatile sig_atomic_t child_pid;
+static volatile atomic_int child_pid = ATOMIC_VAR_INIT(0);
+static volatile atomic_int child_exit_status = ATOMIC_VAR_INIT(0);
 static volatile atomic_bool child_exited = ATOMIC_VAR_INIT(false);
 static volatile atomic_bool child_stopped = ATOMIC_VAR_INIT(false);
 static volatile atomic_bool child_continued = ATOMIC_VAR_INIT(false);
-static bool check_child_atomic(const volatile atomic_bool *state);
+static bool check_child_atomic(const volatile atomic_bool *state,
+			       int *interrupt);
 
-static inline bool check_child_exited(void)
+static inline bool check_child_exited(int *interrupt)
 {
-	return check_child_atomic(&child_exited);
+	return check_child_atomic(&child_exited, interrupt);
 }
 
 static inline bool check_child_continued(void)
 {
-	return check_child_atomic(&child_continued);
+	return check_child_atomic(&child_continued, NULL);
 }
 
 static inline bool check_child_stopped(void)
 {
-	return check_child_atomic(&child_stopped);
+	return check_child_atomic(&child_stopped, NULL);
 }
 
 /* Libseccomp Architecture Handling
@@ -411,6 +413,19 @@ void reset_process(syd_process_t *p)
 			p->repr[i] = NULL;
 		}
 	}
+}
+
+static inline void set_child_exit_status(void)
+{
+	int exit_status = syd_get_int(&child_exit_status);
+
+	if (WIFEXITED(exit_status))
+		sydbox->exit_code = WEXITSTATUS(exit_status);
+	else if (WIFSIGNALED(exit_status))
+		sydbox->exit_code = WTERMSIG(exit_status) + 128;
+	else
+		sydbox->exit_code = 128;
+	say("setting exit code to %d", sydbox->exit_code);
 }
 
 static inline void save_exit_code(int exit_code)
@@ -763,12 +778,12 @@ static void sig_chld(int sig, siginfo_t *info, void *ucontext)
 	switch (info->si_code) {
 	case CLD_EXITED:
 		if (pid == sydbox->execve_pid)
-			save_exit_code(info->si_status);
+			syd_set_int(&child_exit_status, info->si_status);
 		break;
 	case CLD_KILLED:
 	case CLD_DUMPED:
 		if (pid == sydbox->execve_pid)
-			save_exit_signal(info->si_status);
+			syd_set_int(&child_exit_status, info->si_status);
 		break;
 	case CLD_CONTINUED:
 		syd_set_state(&child_continued, true);
@@ -787,33 +802,21 @@ restart_waitpid:
 		if (pid < 0) {
 			if (errno == EINTR)
 				goto restart_waitpid;
-			else if (errno != ECHILD)
-				say_errno("waitpid");
+			/* else if (errno != ECHILD)
+				; say_errno("waitpid"); */
 			break;
 		} else if (pid == sydbox->execve_pid) {
-			if (WIFEXITED(status)) {
-				sydbox->exit_code = WEXITSTATUS(status);
-			} else if (WIFSIGNALED(status)) {
-				sydbox->exit_code = 128 + WTERMSIG(status);
-			} else {
-				sydbox->exit_code = 128;
-			}
+			syd_set_int(&child_exit_status, status);
 		}
 	}
 
 	switch (info->si_code) {
 	case CLD_EXITED:
-		if (pid == sydbox->execve_pid)
-			save_exit_code(info->si_status);
-		child_pid = pid;
-		syd_set_state(&child_exited, true);
-		break;
 	case CLD_KILLED:
 	case CLD_DUMPED:
-		if (pid == sydbox->execve_pid)
-			save_exit_signal(info->si_status);
-		child_pid = pid;
+		syd_set_int(&child_pid, pid);
 		syd_set_state(&child_exited, true);
+		SYD_GCC_ATTR((fallthrough));
 	default:
 		return;
 	}
@@ -1055,6 +1058,8 @@ static bool process_kill(pid_t pid, pid_t tgid, int sig)
 
 static inline bool process_is_alive(pid_t pid, pid_t tgid)
 {
+	return process_kill(pid, tgid, 0);
+#if 0
 	int r;
 	struct proc_statinfo info;
 
@@ -1071,6 +1076,7 @@ static inline bool process_is_alive(pid_t pid, pid_t tgid)
 		return false;
 	}
 	return true;
+#endif
 }
 
 static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current,
@@ -1145,7 +1151,7 @@ static int wait_for_notify_fd(void)
 	pollfd.fd = sydbox->notify_fd;
 	pollfd.events = POLLIN;
 	errno = 0;
-	if ((r = poll(&pollfd, 1, 1000)) < 0) {
+	if ((r = poll(&pollfd, 1, 0)) < 0) {
 		if (!errno || errno == EINTR)
 			return -ETIMEDOUT;
 		return -errno;
@@ -1271,7 +1277,8 @@ static int handle_interrupt(int sig)
 	}
 }
 
-static bool check_child_atomic(const volatile atomic_bool *state)
+static bool check_child_atomic(const volatile atomic_bool *state,
+			       int *interrupt)
 {
 	int sig;
 	bool value = false;
@@ -1279,6 +1286,8 @@ static bool check_child_atomic(const volatile atomic_bool *state)
 	sigprocmask(SIG_SETMASK, &empty_set, NULL);
 	if ((sig = syd_get_int(&interrupted))) {
 		handle_interrupt(sig);
+		if (interrupt)
+			*interrupt = sig;
 		syd_set_int(&interrupted, 0);
 	}
 	if (syd_get_state(state))
@@ -1289,7 +1298,7 @@ static bool check_child_atomic(const volatile atomic_bool *state)
 }
 
 
-
+#if 0
 static int check_interrupt(void)
 {
 	int r = 0, sig;
@@ -1303,6 +1312,7 @@ static int check_interrupt(void)
 
 	return r;
 }
+#endif
 
 static int event_clone(syd_process_t *current, const char clone_type,
 		       long clone_flags)
@@ -1382,7 +1392,7 @@ static int event_syscall(syd_process_t *current)
 
 static int notify_loop(syd_process_t *current)
 {
-	int r;
+	int r, sig;
 	pid_t pid;
 
 	if ((r = seccomp_notify_alloc(&sydbox->request,
@@ -1402,26 +1412,26 @@ static int notify_loop(syd_process_t *current)
 wait_for_notify_fd:
 		if ((r = wait_for_notify_fd()) < 0) {
 			if (r == -ETIMEDOUT) {
-				if (check_child_exited()) {
-					pid = child_pid;
-					reap_zombies(lookup_process(pid), pid);
+				sig = 0;
+				if (check_child_exited(&sig)) {
+					pid = syd_get_int(&child_pid);
+					if (pid) {
+						set_child_exit_status();
+						reap_zombies(lookup_process(pid), pid);
+						if (!process_count_alive())
+							break;
+					}
+					syd_set_int(&child_pid, 0);
 					syd_set_state(&child_exited, false);
-				} else {
+				} else if (sig) {
 					reap_zombies(NULL, -1);
 				}
-				if (process_count_alive()) {
-					;/* say("process count after poll: %zu",
-					    process_count_alive()); */
-				} else {
+				if (sig != SIGCHLD)
 					break;
-				}
 				goto wait_for_notify_fd;
 			} else if (r == -ESRCH) {
 				reap_zombies(NULL, -1);
-				if (!process_count_alive())
-					break;
-				else
-					goto wait_for_notify_fd;
+				goto wait_for_notify_fd;
 			} else {
 				errno = -r;
 				say_errno("poll");
@@ -1448,43 +1458,40 @@ notify_receive:
 				 * the time we were woken and
 				 * when we were able to acquire the rw lock.
 				 */
-				if (check_child_exited()) {
-					reap_zombies(lookup_process(child_pid),
-						     child_pid);
+				sig = 0;
+				pid_t my_pid = 0;
+				if (check_child_exited(&sig)) {
+					my_pid = syd_get_int(&child_pid);
+					if (my_pid) {
+						set_child_exit_status();
+						reap_zombies(lookup_process(my_pid),
+							     my_pid);
+						if (!process_count_alive())
+							break;
+					}
+					syd_set_int(&child_pid, 0);
 					syd_set_state(&child_exited, false);
 				}
-				if (pid != child_pid)
+				if (pid != my_pid)
 					reap_zombies(lookup_process(pid), pid);
-				if (process_count_alive() == 0) {
+				if (sig != SIGCHLD) {
 					jump = true;
 					goto out;
-				} else {
-					/* say("process count alive after receive: "
-					    "%zu.",
-					    process_count_alive()); */
-					continue;
 				}
 			} else {
-				/* TODO use:
-				 * __NR_pidfd_send_signal to kill the process
-				 * on abnormal exit.
-				 */
+				errno = -r;
 				say_errno("seccomp_notify_receive");
+				say("abnormal error code from seccomp, "
+				    "aborting!");
+				say("Please submit a bug to "
+				    "<"PACKAGE_BUGREPORT">");
+				handle_interrupt(SIGTERM);
 				break;
 			}
 		}
 
-		if (sydbox->request->id == 0 && sydbox->request->pid == 0) {
-			reap_zombies(NULL, -1);
-			if (process_count_alive() == 0)
-				break;
-			else {
-				/* say("process count after seccomp footer: "
-				    "%zu.",
-				    process_count_alive()); */
-				continue;
-			}
-		}
+		if (sydbox->request->id == 0 && sydbox->request->pid == 0)
+			continue;
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
 		sydbox->response->flags |= SECCOMP_USER_NOTIF_FLAG_CONTINUE;
@@ -1500,29 +1507,11 @@ notify_receive:
 				current->flags |= SYD_KILLED;
 				remove_process_node(current);
 			}
-			if (process_count_alive() == 0)
-				jump = true;
 			goto out;
 		} else if (current &&
 			   process_reopen_proc_mem(-1,
 						   current,
 						   true) == -ESRCH) {
-			if (process_count_alive() == 0)
-				jump = true;
-			goto notify_respond;
-		}
-
-		/* Search early for exit before getting a process entry. */
-		if (name && (!strcmp(name, "exit") || !strcmp(name, "exit_group"))) {
-			//if (pid == sydbox->execve_pid)
-			//	sydbox->exit_code = sydbox->request->data.args[0];
-			reap_zombies(current, -1);
-			if (process_count_alive() == 0) {
-				jump = true;
-			} else {
-				;/* say("process count after exit: %zu",
-				    process_count_alive()); */
-			}
 			goto notify_respond;
 		}
 
@@ -1563,12 +1552,6 @@ notify_receive:
 				}
 				P_EXECVE_PID(current) = 0;
 				reap_zombies(NULL, -1);
-				if (!process_count_alive()) {
-					break;
-				} else {
-					;/* say("process count after execve: %zu",
-					    process_count_alive()); */
-				}
 			}
 			current->flags &= ~SYD_IN_CLONE;
 			event_exec(current);
@@ -1630,8 +1613,6 @@ notify_respond:
 				current->flags |= SYD_KILLED;
 				remove_process_node(current);
 			}
-			if (process_count_alive() == 0)
-				jump = true;
 			goto out;
 		}
 		if ((r = seccomp_notify_respond(sydbox->notify_fd,
@@ -1652,20 +1633,15 @@ notify_respond:
 				 * when we were able to acquire the rw lock.
 				 */
 				reap_zombies(current, -1);
-				if (process_count_alive() == 0) {
-					jump = true;
-					goto out;
-				} else {
-					continue;
-				}
+				continue;
 			} else {
-				/* TODO use:
-				 * __NR_pidfd_send_signal to kill the process
-				 * on abnormal exit.
-				 */
-				say_errno("seccomp_notify_respond");
-				// proc_info(sydbox->execve_pid);
-				break;
+				errno = -r;
+				say_errno("seccomp_notify_receive");
+				say("abnormal error code from seccomp, "
+				    "aborting!");
+				say("Please submit a bug to "
+				    "<"PACKAGE_BUGREPORT">");
+				handle_interrupt(SIGTERM);
 			}
 		}
 out:
@@ -1675,7 +1651,19 @@ out:
 			break;
 
 		/* We handled quick cases, we are permitted to interrupt now. */
-		if (check_interrupt() != 0)
+		sig = 0;
+		if (check_child_exited(&sig)) {
+			pid = syd_get_int(&child_pid);
+			if (pid) {
+				set_child_exit_status();
+				reap_zombies(lookup_process(pid), pid);
+				if (!process_count_alive())
+					break;
+			}
+			syd_set_int(&child_pid, 0);
+			syd_set_state(&child_exited, false);
+		}
+		if (sig != SIGCHLD)
 			break;
 	}
 

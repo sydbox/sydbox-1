@@ -174,7 +174,7 @@
 #endif
 
 #ifndef SYD_EXEC_TIMEOUT
-# define SYD_EXEC_TIMEOUT 7
+# define SYD_EXEC_TIMEOUT 3
 #endif
 #ifndef SYD_EXEC_SLEEP_STEP_SEC
 # define SYD_EXEC_SLEEP_STEP_SEC 0
