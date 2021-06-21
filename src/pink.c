@@ -34,6 +34,8 @@
 #include <linux/un.h>
 #undef sockaddr_un
 
+#include "syd/syd.h"
+
 #ifndef HAVE_STRUCT_MMSGHDR
 struct mmsghdr {
 	struct msghdr msg_hdr;
@@ -588,9 +590,23 @@ ssize_t syd_write_data(syd_process_t *current, long addr, void *buf,
 	return process_vm_write(current, addr, buf, count);
 }
 
+static volatile atomic_bool test_child_notify = ATOMIC_VAR_INIT(false);
+static void test_seccomp_sig_chld(int sig, siginfo_t *info, void *ucontext)
+{
+	switch (info->si_code) {
+	case CLD_EXITED:
+	case CLD_KILLED:
+	case CLD_DUMPED:
+		syd_set_state(&test_child_notify, true);
+		break;
+	default:
+		break;
+	}
+}
+
 int test_cross_memory_attach(bool report)
 {
-	int pipefd[2];
+	int pipefd[2], r;
 
 	if (pipe(pipefd) < 0)
 		die_errno("pipe");
@@ -623,15 +639,16 @@ int test_cross_memory_attach(bool report)
 	remote[0].iov_base = (void *)addr;
 	local[0].iov_len = remote[0].iov_len = len;
 
+	r = 0;
 	if (pink_process_vm_readv(pid, local, 1, remote, 1, 0) < 0) {
-		int save_errno = errno;
+		r = -errno;
 		say_errno("process_vm_readv");
 		if (report && (errno == ENOSYS || errno == EPERM)) {
 			say("warning: Your system does not support process_vm_readv");
 			say("warning: Please enable CONFIG_CROSS_MEMORY_ATTACH in your "
 			    "kernel configuration.");
 		}
-		return -save_errno;
+		goto out;
 	}
 	if (strcmp(dest, "ping")) {
 		if (report) {
@@ -639,15 +656,22 @@ int test_cross_memory_attach(bool report)
 			say("warning: Please enable CONFIG_CROSS_MEMORY_ATTACH in your "
 			    "kernel configuration.");
 		}
-		return -ENOSYS;
+		r = -ENOSYS;
+		goto out;
 	}
 
+out:
 	kill(pid, SIGKILL);
+
+	/* wait for child to send SIGCHLD */
+	for (;!syd_get_state(&test_child_notify););
+	syd_set_state(&test_child_notify, false);
+
 	wait(NULL);
 
 	if (report)
 		say("[*] cross memory attach is functional.");
-	return 0;
+	return r;
 }
 
 int test_proc_mem(bool report)
@@ -713,6 +737,11 @@ int test_proc_mem(bool report)
 	}
 
 	kill(pid, SIGKILL);
+
+	/* wait for child to send SIGCHLD */
+	for (;!syd_get_state(&test_child_notify););
+	syd_set_state(&test_child_notify, false);
+
 	wait(NULL);
 
 	if (report)
@@ -787,6 +816,10 @@ int test_pidfd(bool report)
 
 	close(pidfd);
 
+	/* wait for child to send SIGCHLD */
+	for (;!syd_get_state(&test_child_notify););
+	syd_set_state(&test_child_notify, false);
+
 	int wstatus;
 	if (waitpid(pid, &wstatus, __WALL) < 0) {
 		r = -errno;
@@ -814,20 +847,6 @@ out:
 	else if (report)
 		say("[*] pidfd interface is functional.");
 	return r;
-}
-
-static volatile sig_atomic_t child_notified;
-static void test_seccomp_sig_chld(int sig, siginfo_t *info, void *ucontext)
-{
-	switch (info->si_code) {
-	case CLD_EXITED:
-	case CLD_KILLED:
-	case CLD_DUMPED:
-		child_notified = true;
-		break;
-	default:
-		break;
-	}
 }
 
 /*
@@ -884,6 +903,9 @@ int syd_seccomp_arch_is_valid(uint32_t arch, bool *result)
 		}
 		_exit(0);
 	}
+	/* wait for child to send SIGCHLD */
+	for (;!syd_get_state(&test_child_notify););
+	syd_set_state(&test_child_notify, false);
 
 	int status;
 restart_waitpid:
@@ -910,6 +932,16 @@ restart_waitpid:
 	}
 	*result = valid;
 	return r;
+}
+
+void test_setup(void)
+{
+	struct sigaction sa;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_sigaction = test_seccomp_sig_chld;
+	sa.sa_flags = SA_RESTART | SA_SIGINFO;
+	if (sigaction(SIGCHLD, &sa, NULL) < 0)
+		die_errno("sigaction(SIGCHLD)");
 }
 
 uint8_t test_seccomp_arch(void)
@@ -1109,22 +1141,17 @@ out:
 	}
 	kill(pid, SIGCONT);
 
-	struct sigaction sa;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_sigaction = test_seccomp_sig_chld;
-	sa.sa_flags = SA_RESTART | SA_SIGINFO;
-	sigaction(SIGCHLD, &sa, NULL);
-
 	struct pollfd pollfd;
 	pollfd.fd = fd;
 	pollfd.events = POLLIN;
 	errno = 0;
 restart_poll:
-	if ((r = poll(&pollfd, 1, 1000)) < 0) {
-		if (child_notified)
+	if ((r = poll(&pollfd, 1, 100)) < 0) {
+		if (syd_get_state(&test_child_notify)) { /* SIGCHLD? */
 			goto wait;
-		else if (!errno || errno == EINTR)
+		} else if (!errno || errno == EINTR) {
 			goto restart_poll;
+		}
 		r = -errno;
 		goto out;
 	}
@@ -1146,7 +1173,7 @@ notify_receive:
 		if ((r = seccomp_notify_receive(fd, request)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
 				goto notify_receive;
-			} else if (r == -ENOENT) {
+			} else if (r == -ENOENT || errno == ENOTTY) {
 				/* If we didn't find a notification,
 				 * it could be that the task was
 				 * interrupted by a fatal signal between
@@ -1174,7 +1201,7 @@ notify_respond:
 		    (r = seccomp_notify_respond(fd, response)) < 0) {
 			if (r == -ECANCELED || r == -EINTR) {
 				goto notify_respond;
-			} else if (r == -ENOENT) {
+			} else if (r == -ENOENT || errno == ENOTTY) {
 				/* If we didn't find a notification,
 				 * it could be that the task was
 				 * interrupted by a fatal signal between
@@ -1197,6 +1224,10 @@ notify_respond:
 		r = -EINVAL;
 		goto out;
 	}
+
+	/* wait for child to send SIGCHLD */
+	for (;!syd_get_state(&test_child_notify););
+	syd_set_state(&test_child_notify, false);
 
 	int wstatus;
 wait:

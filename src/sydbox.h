@@ -814,6 +814,7 @@ ssize_t syd_write_vm_data(syd_process_t *current, long addr, char *src,
 			  size_t len);
 
 int syd_seccomp_arch_is_valid(uint32_t arch, bool *result);
+void test_setup(void);
 uint8_t test_seccomp_arch(void);
 int test_cross_memory_attach(bool report);
 int test_proc_mem(bool report);

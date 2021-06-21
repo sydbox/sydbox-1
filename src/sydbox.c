@@ -1989,6 +1989,7 @@ int main(int argc, char **argv)
 			sydbox->config.mem_access = opt;
 			break;
 		case 't':
+			test_setup();
 			say("[>] Checking for libseccomp architectures...");
 			/* test_seccomp_arch() returns the number of valid
 			 * architectures. */
