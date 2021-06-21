@@ -171,7 +171,7 @@ sydbox_LDADD= \
 	      $(top_builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la \
 	      -L$(top_builddir)/syd/.libs \
 	      -lsyd_@LIBSYD_PC_SLOT@ \
-	      @SYDBOX_LDFLAGS@ \
+	      @SYDBOX_LIBTOOL_FLAGS@ \
 	      $(libseccomp_LIBS) \
 	      $(CODE_COVERAGE_LIBS)
 if WANT_DEBUG

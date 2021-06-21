@@ -448,13 +448,13 @@ void sysinit(void)
 	}
 }
 
-static int apply_simple_filter(const sysentry_t *entry)
+static int apply_simple_filter(const sysentry_t *entry, uint32_t arch)
 {
 	int r;
 
 	assert(entry->filter);
 
-	if ((r = entry->filter()) < 0)
+	if ((r = entry->filter(arch)) < 0)
 		return r;
 	return 0;
 }
@@ -492,7 +492,7 @@ int sysinit_seccomp_load(void)
 	int r;
 	uint32_t action;
 	long sysnum;
-	//SYD_GCC_ATTR((unused)) bool user_notified = false;
+	SYD_GCC_ATTR((unused))char *in_sydbox_test = getenv("IN_SYDBOX_TEST");
 #ifdef SAY
 #undef SAY
 #endif
@@ -500,7 +500,7 @@ int sysinit_seccomp_load(void)
 #undef SAY_ERNNO
 #endif
 #define SAY(...) do { \
-	if (sydbox->dump_fd > 0) { say(__VA_ARGS__); } \
+	if (in_sydbox_test) { say(__VA_ARGS__); } \
 	} while (0)
 #define SAY_ERRNO(...) do { \
 	if (sydbox->dump_fd > 0) { say_errno(__VA_ARGS__); } \
@@ -508,12 +508,6 @@ int sysinit_seccomp_load(void)
 
 	if ((r = filter_general()) < 0)
 		return r;
-	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		if (!syscall_entries[i].filter)
-			continue;
-		if ((r = apply_simple_filter(&syscall_entries[i])) < 0)
-			return r;
-	}
 
 	size_t arch_max;
 	for (arch_max = 0; sydbox->arch[arch_max] != UINT32_MAX; arch_max++)
@@ -528,6 +522,17 @@ int sysinit_seccomp_load(void)
 	for (size_t j = 0; sydbox->arch[j] != UINT32_MAX; j++) {
 		sc_map_clear_32(&name_map);
 		for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
+			if (!syscall_entries[i].filter)
+				continue;
+			SAY("applying bpf filter for system call `%s' "
+			    "on architecture %s.",
+			    syscall_entries[i].name,
+			    arch_to_string(sydbox->arch[j]));
+			if ((r = apply_simple_filter(&syscall_entries[i],
+						     sydbox->arch[j])) < 0)
+				return r;
+		}
+		for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 			if (syscall_entries[i].name) {
 				sysnum = seccomp_syscall_resolve_name_rewrite(
 					sydbox->arch[j],
@@ -537,24 +542,35 @@ int sysinit_seccomp_load(void)
 				sysnum = syscall_entries[i].no;
 			}
 			if (sysnum == __NR_SCMP_ERROR)
-				die_errno("can't lookup system call name:%s",
-					  syscall_entries[i].name);
+				die_errno("can't lookup system call name `%s' "
+					  "on architecture %s!",
+					  syscall_entries[i].name,
+					  arch_to_string(sydbox->arch[j]));
 			else if (sysnum < 0) {
-				/* SAY("unknown system call name:%s, continuing...",
-				    syscall_entries[i].name); */
+#if 0
+				SAY("unknown system call name `%s' "
+				    "on architecture %s, "
+				    "continuing...",
+				    syscall_entries[i].name,
+				    arch_to_string(sydbox->arch[j]));
+#endif
 				continue;
 			}
 			sc_map_put_32(&name_map, sysnum, sydbox->arch[j]);
 			if (sc_map_found(&name_map)) {
-				SAY("not adding duplicate system call: %s",
-				    syscall_entries[i].name);
+				SAY("not adding duplicate system call `%s' "
+				    "on architecture %s.",
+				    syscall_entries[i].name,
+				    arch_to_string(sydbox->arch[j]));
 				continue;
 			}
 			sc_map_put_64s(&scno_map, sysnum,
 				       syscall_entries[i].name);
 			if (sc_map_found(&scno_map)) {
-				SAY("not adding duplicate system call: %s",
-				    syscall_entries[i].name);
+				SAY("not adding duplicate system call `%s' "
+				    "on architecture %s.",
+				    syscall_entries[i].name,
+				    arch_to_string(sydbox->arch[j]));
 				continue;
 			}
 
@@ -567,6 +583,14 @@ int sysinit_seccomp_load(void)
 				is_open = true;
 				flag = syscall_entries[i].open_flag;
 			}
+
+			SAY("applying bpf filter for system call `%s' "
+			    "on architecture %s, "
+			    "acc:%s:%u open:%s:%u",
+			    syscall_entries[i].name,
+			    arch_to_string(sydbox->arch[j]),
+			    is_access ? "t" : "f", flag,
+			    is_open ? "t" : "f", flag);
 			if (is_access) {
 				enum sandbox_mode mode_r = box->mode.sandbox_read;
 				enum sandbox_mode mode_w = box->mode.sandbox_write;
@@ -845,9 +869,9 @@ int sysinit_seccomp_load(void)
 				//	  calls[i]);
 				continue;
 			} else if (sysnum < 0) {
-				SAY_ERRNO("unknown system call name:%s "
-					  "continuing...",
-					  calls[i]);
+				//SAY_ERRNO("unknown system call name:%s "
+				//	  "continuing...",
+				//	  calls[i]);
 				continue;
 			}
 			sc_map_put_32(&name_map, sysnum, sydbox->arch[j]);

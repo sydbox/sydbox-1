@@ -16,6 +16,7 @@
 #include "dump.h"
 
 #include <time.h>
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,9 +57,11 @@ sydbox_t *sydbox;
 static unsigned os_release;
 static volatile sig_atomic_t interrupted;
 static volatile sig_atomic_t alarmed;
-static volatile sig_atomic_t child_notified;
 static sigset_t empty_set, blocked_set;
 static struct sigaction child_sa;
+
+static volatile sig_atomic_t child_pid;
+static volatile atomic_bool child_notify = ATOMIC_VAR_INIT(false);
 
 /* Libseccomp Architecture Handling
  *
@@ -772,7 +775,8 @@ restart_waitpid:
 		}
 	}
 
-	child_notified = pid;
+	child_pid = pid;
+	syd_set_state(&child_notify, true);
 }
 
 static unsigned get_os_release(void)
@@ -1359,9 +1363,9 @@ wait_for_notify_fd:
 			}
 		} /* else { ; } notify fd is ready to read. */
 
-		if (child_notified) {
-			pid = child_notified;
-			child_notified = 0;
+		if (syd_get_state(&child_notify)) {
+			pid = child_pid;
+			syd_set_state(&child_notify, false);
 
 			reap_zombies(lookup_process(pid), pid);
 			if (!process_count_alive())
@@ -2069,6 +2073,14 @@ int main(int argc, char **argv)
 		sydbox->seccomp_action = SCMP_ACT_ALLOW;
 	if (!(sydbox->ctx = seccomp_init(sydbox->seccomp_action)))
 		die_errno("seccomp_init");
+	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_API_TSKIP, 1)) < 0)
+		say("can't set tskip attribute for seccomp filter (%d %s), "
+		    "continuing...",
+		    -r, strerror(-r));
+	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_API_SYSRAWRC, 1)) < 0)
+		say("can't set sysrawrc attribute for seccomp filter (%d %s), "
+		    "continuing...",
+		    -r, strerror(-r));
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
 		say("can't optimize seccomp filter (%d %s), continuing...",
 		    -r, strerror(-r));
@@ -2116,7 +2128,7 @@ int main(int argc, char **argv)
 			continue;
 		arch = arch_from_string(arch_argv[i]);
 		if (arch == UINT32_MAX)
-			assert_not_reached();
+			continue;
 		if ((uint32_t)arch == SCMP_ARCH_NATIVE ||
 		    (uint32_t)arch == arch_native)
 			using_arch_native = true;
@@ -2163,7 +2175,8 @@ int main(int argc, char **argv)
 		init_process_data(current, NULL);
 		dump(DUMP_STARTUP, pid);
 		(void)notify_loop(current);
-		for (;!child_notified;); /* wait for child to send SIGCHLD */
+		/* wait for child to send SIGCHLD */
+		for (;!syd_get_state(&child_notify););
 	} else {
 		int status;
 		startup_child(&argv[optind]);

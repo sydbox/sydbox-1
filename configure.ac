@@ -90,10 +90,6 @@ dnl toolchain checks
 : ${CFLAGS=""}
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_LD
-AC_PROG_CC_C99
-if test x"$ac_cv_prog_cc_c99" = x"no"; then
-	AC_MSG_ERROR([sydbox requires a C compiler that supports ISO C99!])
-fi
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -106,6 +102,35 @@ AC_PATH_PROG([SORT], [sort])
 LT_INIT
 AC_PROG_YACC
 AM_PROG_LEX
+
+dnl compiler checks
+SYDBOX_CC=
+AX_CHECK_COMPILER_FLAGS([-std=gnu11],
+			[AX_APPEND_FLAG([-std=gnu11])
+			 SYDBOX_CC=gnu11],
+			[AX_CHECK_COMPILER_FLAGS([-std=c11],
+	 [AX_APPEND_FLAG([std=c11])
+	  SYDBOX_CC=c11],
+	 [AC_MSG_ERROR(["Sydbox requires a C compiler that supports ISO C11!"])])])
+dnl extra CFLAGS
+SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow"
+for flag in $SYDBOX_WANTED_CFLAGS ; do
+	AX_CHECK_COMPILER_FLAGS([$flag], [SYDBOX_CFLAGS="$SYDBOX_CFLAGS $flag"],)
+done
+AC_SUBST([SYDBOX_CFLAGS])
+
+dnl extra LDFLAGS
+dnl Build sydbox binary static by default.
+dnl Disable with --disable-static
+SYDBOX_LIBTOOL_FLAGS=""
+SYDBOX_STATIC_CFLAGS=
+if test x"$enable_static" = x"yes"; then
+	SYDBOX_LIBTOOL_FLAGS="-all-static"
+	SYDBOX_STATIC_CFLAGS="-static"
+fi
+AC_SUBST([SYDBOX_LIBTOOL_FLAGS])
+AC_SUBST([SYDBOX_STATIC_CFLAGS])
+AM_CONDITIONAL([ENABLE_STATIC], test x"$enable_static" = x"yes")
 
 AM_CONDITIONAL([HAVE_GNU_CC], [test x"$GCC" = x"yes"])
 AM_CONDITIONAL([HAVE_GNU_LD], [test x"$with_gnu_ld" = x"yes"])
@@ -697,23 +722,6 @@ AM_PATH_PYTHON([2.3.0])
 if test x"$PYTHON" = x ; then
 	AC_MSG_ERROR([Python-2.3 or later is required to build SydBox, use PYTHON environment variable])
 fi
-
-dnl extra CFLAGS
-SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wno-unused-parameter -Wno-missing-field-initializers"
-for flag in $SYDBOX_WANTED_CFLAGS ; do
-	AX_CHECK_COMPILER_FLAGS([$flag], [SYDBOX_CFLAGS="$SYDBOX_CFLAGS $flag"],)
-done
-AC_SUBST([SYDBOX_CFLAGS])
-
-dnl extra LDFLAGS
-dnl Build sydbox binary static by default.
-dnl Disable with --disable-static
-SYDBOX_LDFLAGS=
-if test x"$enable_static" = x"yes"; then
-	SYDBOX_LDFLAGS="-all-static"
-fi
-AC_SUBST([SYDBOX_LDFLAGS])
-AM_CONDITIONAL([ENABLE_STATIC], test x"$enable_static" = x"yes")
 
 dnl check for xsltproc
 AC_PATH_PROG([XSLTPROC], [xsltproc])

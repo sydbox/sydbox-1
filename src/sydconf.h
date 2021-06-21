@@ -186,7 +186,7 @@
 	sydbox->filter_count++; }
 # define syd_rule_add(ctx, ...) { \
 	r = seccomp_rule_add(ctx, __VA_ARGS__); \
-	if (_r == -EBUSY || _r == -EFAULT || _r == -EINVAL) { abort(); } \
+	if (r == -EBUSY || r == -EFAULT || r == -EINVAL) { abort(); } \
 	sydbox->filter_count++;}
 # define syd_rule_add_return(ctx, ...) { \
 	int _r = seccomp_rule_add(ctx, __VA_ARGS__); \
@@ -200,7 +200,7 @@
 #else
 # define syd_rule_add_exact(ctx, ...) { \
 	r = seccomp_rule_add_exact(ctx, __VA_ARGS__); \
-	if (_r == -EBUSY || _r == -EFAULT || _r == -EINVAL) { abort(); } \
+	if (r == -EBUSY || r == -EFAULT || r == -EINVAL) { abort(); } \
 	sydbox->filter_count++;}
 # define syd_rule_add_exact_return(ctx, ...) { \
 	int _r = seccomp_rule_add_exact(ctx, __VA_ARGS__); \

@@ -647,7 +647,7 @@ bool filter_includes(uint32_t arch, int sysnum)
 	return false;
 }
 
-static int filter_open_readonly()
+static int filter_open_readonly(void)
 {
 	int r;
 	uint32_t action;
@@ -1216,12 +1216,12 @@ int filter_general(void)
 
 static int filter_mmap_restrict_shared(int sys_mmap)
 {
-	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
-			    sys_mmap, 2,
-			    SCMP_A2( SCMP_CMP_MASKED_EQ,
-				     PROT_WRITE, PROT_WRITE ),
-			    SCMP_A3( SCMP_CMP_MASKED_EQ,
-				     MAP_SHARED, MAP_SHARED ));
+	syd_rule_add_exact_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+				  sys_mmap, 2,
+				  SCMP_A2( SCMP_CMP_MASKED_EQ,
+					   PROT_WRITE, PROT_WRITE ),
+				  SCMP_A3( SCMP_CMP_MASKED_EQ,
+					   MAP_SHARED, MAP_SHARED ));
 	return 0;
 }
 
@@ -1232,92 +1232,123 @@ static int filter_mmap_restrict(int sys_mmap)
 	if (action == sydbox->seccomp_action)
 		return 0;
 
-	syd_rule_add_return(sydbox->ctx, action,
-			    sys_mmap, 2,
-			    SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ),
-			    SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE));
-	syd_rule_add_return(sydbox->ctx, action,
+	syd_rule_add_exact_return(sydbox->ctx, action,
+				  sys_mmap, 2,
+				  SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ),
+				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE));
+	syd_rule_add_exact_return(sydbox->ctx, action,
 				  sys_mmap, 2,
 				  SCMP_CMP(2, SCMP_CMP_EQ, PROT_NONE),
 				  SCMP_CMP(3, SCMP_CMP_EQ,
 					   MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE))
-	syd_rule_add_return(sydbox->ctx, action,
+	syd_rule_add_exact_return(sydbox->ctx, action,
 				  sys_mmap, 2,
 				  SCMP_CMP(2, SCMP_CMP_EQ,
 					   PROT_READ|PROT_WRITE),
 				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE|MAP_ANONYMOUS));
-	syd_rule_add_return(sydbox->ctx, action,
+	syd_rule_add_exact_return(sydbox->ctx, action,
 				  sys_mmap, 2,
 				  SCMP_CMP(2, SCMP_CMP_EQ,
 					   PROT_READ|PROT_WRITE),
 				  SCMP_CMP(3, SCMP_CMP_EQ,MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK));
-	syd_rule_add_return(sydbox->ctx, action,
+	syd_rule_add_exact_return(sydbox->ctx, action,
 				  sys_mmap, 2,
 				  SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ|PROT_WRITE),
 				  SCMP_CMP(3, SCMP_CMP_EQ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE));
-	syd_rule_add_return(sydbox->ctx, action,
+	syd_rule_add_exact_return(sydbox->ctx, action,
 				  sys_mmap, 2,
 				  SCMP_CMP(2, SCMP_CMP_EQ,
 					   PROT_READ|PROT_WRITE),
 				  SCMP_CMP(3, SCMP_CMP_EQ,
 					   MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS));
-	syd_rule_add_return(sydbox->ctx, action,
+	syd_rule_add_exact_return(sydbox->ctx, action,
 				  sys_mmap, 2,
 				  SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ|PROT_EXEC),
 				  SCMP_CMP(3, SCMP_CMP_EQ,
 					   MAP_PRIVATE|MAP_DENYWRITE));
 	if (sydbox->seccomp_action != SCMP_ACT_ERRNO(EPERM))
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
-				    sys_mmap, 0);
+		syd_rule_add_exact_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+					  sys_mmap, 0);
 	return 0;
 }
 
-int filter_mmap(void)
+int filter_mmap(uint32_t arch)
 {
+	int sysnum;
+
+	sysnum = seccomp_syscall_resolve_name_rewrite(arch, "mmap");
+	if (sysnum == __NR_SCMP_ERROR) {
+		return 0;
+	} else if (sysnum < 0) {
+		say("unknown system call `mmap' for architecture %s.",
+		    arch_to_string(arch));
+		return 0;
+	}
+
 	if (sydbox->config.restrict_shm_wr)
-		return filter_mmap_restrict_shared(SCMP_SYS(mmap));
+		return filter_mmap_restrict_shared(sysnum);
 	else if (sydbox->config.restrict_mmap)
-		return filter_mmap_restrict(SCMP_SYS(mmap));
+		return filter_mmap_restrict(sysnum);
 	else
 		return 0;
 }
 
-int filter_mmap2(void)
+int filter_mmap2(uint32_t arch)
 {
+	int sysnum;
+
+	sysnum = seccomp_syscall_resolve_name_rewrite(arch, "mmap2");
+	if (sysnum == __NR_SCMP_ERROR) {
+		return 0;
+	} else if (sysnum < 0) {
+		char *in_sydbox_test = getenv("IN_SYDBOX_TEST");
+		if (in_sydbox_test)
+			say("unknown system call `mmap2' for architecture %s.",
+			    arch_to_string(arch));
+		return 0;
+	}
+
 	if (sydbox->config.restrict_shm_wr)
-		return filter_mmap_restrict_shared(SCMP_SYS(mmap2));
+		return filter_mmap_restrict_shared(sysnum);
 	else if (sydbox->config.restrict_mmap)
-		return filter_mmap_restrict(SCMP_SYS(mmap2));
+		return filter_mmap_restrict(sysnum);
 	else
 		return 0;
 }
 
-int filter_mprotect(void)
+int filter_mprotect(uint32_t arch)
 {
-	int r;
+	int r, sysnum;
 	uint32_t action;
 
 	action = SCMP_ACT_ALLOW;
 	if (action == sydbox->seccomp_action)
 		return 0;
 
+	sysnum = seccomp_syscall_resolve_name_rewrite(arch, "mprotect");
+	if (sysnum == __NR_SCMP_ERROR) {
+		return 0;
+	} else if (sysnum < 0) {
+		say("unknown system call `mprotect' for architecture %s.",
+		    arch_to_string(arch));
+		return 0;
+	}
+
 	if (sydbox->config.restrict_mmap) {
-		syd_rule_add(sydbox->ctx, action,
-			     SCMP_SYS(mprotect), 1,
-			     SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ));
+		syd_rule_add_exact(sydbox->ctx, action, sysnum, 1,
+				   SCMP_CMP(2, SCMP_CMP_EQ, PROT_READ));
 		if (!r) {
-			syd_rule_add(sydbox->ctx, action,
-				     SCMP_SYS(mprotect), 1,
-				     SCMP_CMP(2, SCMP_CMP_EQ,
-					      PROT_READ|PROT_WRITE));
+			syd_rule_add_exact(sydbox->ctx, action, sysnum, 1,
+					   SCMP_CMP(2, SCMP_CMP_EQ,
+						    PROT_READ|PROT_WRITE));
 		}
 	} else {
-		syd_rule_add(sydbox->ctx, action, SCMP_SYS(mprotect), 0);
+		syd_rule_add_exact(sydbox->ctx, action, sysnum, 0);
 	}
 	return r == -EEXIST ? 0 : r;
 }
 
-int filter_ioctl(void)
+int filter_ioctl(uint32_t arch)
 {
 	static const unsigned long request[] = {
 		TCGETS,
@@ -1393,16 +1424,25 @@ int filter_ioctl(void)
 		VT_RESIZEX,
 	};
 
+	int sysnum = seccomp_syscall_resolve_name_rewrite(arch, "ioctl");
+	if (sysnum == __NR_SCMP_ERROR) {
+		return 0;
+	} else if (sysnum < 0) {
+		say("unknown system call `ioctl' for architecture %s.",
+		    arch_to_string(arch));
+		return 0;
+	}
+
 	if (sydbox->seccomp_action != SCMP_ACT_ALLOW)
 		for (unsigned short i = 0; i < ELEMENTSOF(request); i++)
-			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW,
-						  SCMP_SYS(ioctl), 1,
+			syd_rule_add_exact_return(sydbox->ctx, SCMP_ACT_ALLOW,
+						  sysnum, 1,
 						  SCMP_CMP(1, SCMP_CMP_EQ,
 							   request[i]));
 	if (sydbox->config.restrict_ioctl &&
 	    sydbox->seccomp_action != SCMP_ACT_ERRNO(EPERM))
-		syd_rule_add_return(sydbox->ctx,
+		syd_rule_add_exact_return(sydbox->ctx,
 				    SCMP_ACT_ERRNO(EPERM),
-				    SCMP_SYS(ioctl), 0);
+				    sysnum, 0);
 	return 0;
 }

@@ -620,7 +620,7 @@ struct sydbox {
 typedef struct sydbox sydbox_t;
 
 typedef int (*sysfunc_t) (syd_process_t *current);
-typedef int (*sysfilter_t) (void);
+typedef int (*sysfilter_t) (uint32_t arch);
 
 struct sysentry {
 	const char *name;
@@ -1090,18 +1090,16 @@ static inline void init_sysinfo(syscall_info_t *info)
 
 bool filter_includes(uint32_t arch, int sysnum);
 int filter_general(void);
-int filter_open(void);
-int filter_openat(void);
-int filter_mmap(void);
-int filter_mmap2(void);
-int filter_mprotect(void);
-int filter_ioctl(void);
+int filter_mmap(uint32_t arch);
+int filter_mmap2(uint32_t arch);
+int filter_mprotect(uint32_t arch);
+int filter_ioctl(uint32_t arch);
 int sys_fallback_mmap(syd_process_t *current);
-int filter_bind(void);
-int filter_connect(void);
-int filter_sendto(void);
-int filter_recvmsg(void);
-int filter_sendmsg(void);
+int filter_bind(uint32_t arch);
+int filter_connect(uint32_t arch);
+int filter_sendto(uint32_t arch);
+int filter_recvmsg(uint32_t arch);
+int filter_sendmsg(uint32_t arch);
 
 int sys_access(syd_process_t *current);
 int sys_faccessat(syd_process_t *current);

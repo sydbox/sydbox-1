@@ -7,7 +7,7 @@
 
 #define arch_ok(ret) ((ret) == 0 || (ret) == -EEXIST)
 
-#define SAY_ERRNO(msg) if (!in_sydbox_test) { say_errno((msg)); }
+#define SAY_ERRNO(msg) if (in_sydbox_test) { say_errno((msg)); }
 
 #if defined(X86_64) && defined(SYD_ARCH_X86_64)
 		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_X86_64);

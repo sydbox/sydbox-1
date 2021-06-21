@@ -39,40 +39,33 @@ static uint32_t action_simple(int deny_errno, enum sandbox_mode mode)
 		assert_not_reached();
 	}
 }
-static int filter_simple(long sys_num, int deny_errno,
-			 enum sandbox_mode mode)
+static int filter_sock_simple(long sys_num, int deny_errno,
+			      enum sandbox_mode mode)
 {
 	uint32_t action = action_simple(deny_errno, mode);
 
 	if (action == sydbox->seccomp_action)
 		return 0;
 
-	syd_rule_add_return(sydbox->ctx, action, sys_num, 0);
+	syd_rule_add_exact_return(sydbox->ctx, action, sys_num, 0);
 	return 0;
 }
 
-static int filter_socketcall(enum pink_socket_subcall call, int deny_errno,
-			     enum sandbox_mode mode)
+int filter_bind(uint32_t arch)
 {
-	uint32_t action = action_simple(deny_errno, mode);
-
-	if (action == sydbox->seccomp_action)
-		return 0;
-
-	syd_rule_add_return(sydbox->ctx, action,
-			    SCMP_SYS(socketcall), 1,
-			    SCMP_CMP(1, SCMP_CMP_EQ, call));
-	return 0;
-}
-
-int filter_bind(void)
-{
-	int r;
+	int r, sysnum;
 	enum sandbox_mode mode = sydbox->config.box_static.mode.sandbox_network;
 
-	if ((r = filter_simple(SCMP_SYS(bind), EADDRNOTAVAIL, mode)) < 0 ||
-	     (r = filter_socketcall(PINK_SOCKET_SUBCALL_BIND,
-				    EADDRNOTAVAIL, mode)) < 0)
+	sysnum = seccomp_syscall_resolve_name_rewrite(arch, "bind");
+	if (sysnum == __NR_SCMP_ERROR) {
+		return 0;
+	} else if (sysnum < 0) {
+		say("unknown system call `bind' for architecture %s",
+		    arch_to_string(arch));
+		return 0;
+	}
+
+	if ((r = filter_sock_simple(sysnum, EADDRNOTAVAIL, mode)) < 0)
 		return r;
 
 	return 0;
@@ -143,16 +136,22 @@ out:
 	return r;
 }
 
-static int filter_connect_call(long sys_num, enum pink_socket_subcall call,
-			       int deny_errno)
+static int filter_connect_call(uint32_t arch, const char *sysname, int deny_errno)
 {
-	int r;
+	int r, sysnum;
 	enum sandbox_mode mode = sydbox->config.box_static.mode.sandbox_network;
 
-	if ((r = filter_simple(sys_num, deny_errno, mode)) < 0 ||
-	     (r = filter_socketcall(call, deny_errno, mode)) < 0)
-		return r;
+	sysnum = seccomp_syscall_resolve_name_rewrite(arch, sysname);
+	if (sysnum == __NR_SCMP_ERROR) {
+		return 0;
+	} else if (sysnum < 0) {
+		say("unknown system call `%s' for architecture %s.",
+		    sysname, arch_to_string(arch));
+		return 0;
+	}
 
+	if ((r = filter_sock_simple(sysnum, deny_errno, mode)) < 0)
+		return r;
 	return 0;
 }
 
@@ -253,11 +252,9 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 	return 0;
 }
 
-int filter_connect(void)
+int filter_connect(uint32_t arch)
 {
-	return filter_connect_call(SCMP_SYS(connect),
-				   PINK_SOCKET_SUBCALL_CONNECT,
-				   ECONNREFUSED);
+	return filter_connect_call(arch, "connect", ECONNREFUSED);
 }
 
 int sys_connect(syd_process_t *current)
@@ -265,11 +262,9 @@ int sys_connect(syd_process_t *current)
 	return sys_connect_call(current, false, 1, ECONNREFUSED);
 }
 
-int filter_sendto(void)
+int filter_sendto(uint32_t arch)
 {
-	return filter_connect_call(SCMP_SYS(sendto),
-				   PINK_SOCKET_SUBCALL_SENDTO,
-				   ENOTCONN);
+	return filter_connect_call(arch, "sendto", ENOTCONN);
 }
 
 int sys_sendto(syd_process_t *current)
@@ -277,11 +272,9 @@ int sys_sendto(syd_process_t *current)
 	return sys_connect_call(current, false, 4, ENOTCONN);
 }
 
-int filter_recvmsg(void)
+int filter_recvmsg(uint32_t arch)
 {
-	return filter_connect_call(SCMP_SYS(recvmsg),
-				   PINK_SOCKET_SUBCALL_RECVMSG,
-				   ECONNREFUSED);
+	return filter_connect_call(arch, "recvmsg", ECONNREFUSED);
 }
 
 int sys_recvmsg(syd_process_t *current)
@@ -289,11 +282,9 @@ int sys_recvmsg(syd_process_t *current)
 	return sys_connect_call(current, true, 1, ECONNREFUSED);
 }
 
-int filter_sendmsg(void)
+int filter_sendmsg(uint32_t arch)
 {
-	return filter_connect_call(SCMP_SYS(sendmsg),
-				   PINK_SOCKET_SUBCALL_SENDMSG,
-				   ENOTCONN);
+	return filter_connect_call(arch, "sendmsg", ENOTCONN);
 }
 
 int sys_sendmsg(syd_process_t *current)

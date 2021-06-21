@@ -6,9 +6,6 @@ dnl
 dnl Copyright (c) 2021 Ali Polatel <alip@exherbo.org>
 dnl SPDX-License-Identifier: GPL-2.0-only
 
-save_LDFLAGS="$LDFLAGS"
-LDFLAGS="-lseccomp"
-
 m4_define([include_seccomp_headers], [
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -24,6 +21,11 @@ m4_define([include_seccomp_headers], [
 #include <unistd.h>
 #include <seccomp.h>
 ])
+
+save_LDFLAGS="$LDFLAGS"
+LDFLAGS="$SYDBOX_STATIC_CFLAGS"
+save_LIBS="$LIBS"
+LIBS="-lseccomp"
 
 AC_MSG_CHECKING([for x86 architecture support])
 AC_RUN_IFELSE([AC_LANG_PROGRAM([
@@ -278,3 +280,4 @@ SYD_SECCOMP_RISCV64_OK=no
 ],[SYD_ARCH_CROSS_COMPILE_WARN=yes])
 
 LDFLAGS="$save_LDFLAGS"
+LIBS="$save_LIBS"
