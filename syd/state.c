@@ -25,3 +25,14 @@ inline bool syd_set_state(volatile atomic_bool *state, bool value)
 	bool expected = !value;
 	return atomic_compare_exchange_strong(state, &expected, value);
 }
+
+inline int syd_get_int(const volatile atomic_int *state)
+{
+	return atomic_load(state);
+}
+
+inline bool syd_set_int(volatile atomic_int *state, int value)
+{
+	int expected = value;
+	return atomic_compare_exchange_strong(state, &expected, value);
+}

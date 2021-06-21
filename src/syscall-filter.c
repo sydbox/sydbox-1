@@ -768,12 +768,6 @@ static int filter_general_level_0(void)
 			    __NR_pidfd_getfd, 0);
 #endif
 	if (use_notify()) {
-		const pid_t protect_pids[] = {
-			sydbox->execve_pid,
-			sydbox->sydbox_pid,
-			INT_MAX,
-		};
-
 		/*
 		 * Deny pidfd_send_signal() to send any signal which
 		 * has the default action of term, core and stop
@@ -811,19 +805,22 @@ static int filter_general_level_0(void)
 #endif
 			LONG_MAX,
 		};
+
 		for (size_t i = 0; kill_signals[i] != LONG_MAX; i++) {
 			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
 					    SCMP_SYS(pidfd_send_signal), 1,
 					    SCMP_A1( SCMP_CMP_EQ, kill_signals[i] ));
 		}
-#endif
+#endif /* __NR_pidfd_send_signal */
+
+		const pid_t protect_pids[] = {
+			sydbox->execve_pid,
+			sydbox->sydbox_pid,
+			INT_MAX,
+		};
 		for (size_t i = 0; protect_pids[i] != INT_MAX; i++) {
 			pid_t pid = protect_pids[i];
 #ifdef __NR_process_vm_readv
-			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
-					    SCMP_SYS(process_vm_readv), 1,
-					    SCMP_A0_64( SCMP_CMP_EQ,
-							pid ));
 			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
 					    SCMP_SYS(process_vm_readv), 1,
 					    SCMP_A0_64( SCMP_CMP_EQ,
@@ -835,28 +832,112 @@ static int filter_general_level_0(void)
 					    SCMP_A0_64( SCMP_CMP_EQ,
 							pid ));
 #endif
+		}
 
-			/*
-			 * ++ Restricting signal handling between Sydbox and the
-			 * sandboxed process: SydBox permits only SIGCHLD from the
-			 * initial child. Other signals sent to SydBox's process id
-			 * are denied with ESRCH which denotes the process or
-			 * process group does not exist. This approach renders the
-			 * sandboxing SydBox process safe against any unexpected
-			 * signals.
-			 */
-			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-					    SCMP_SYS(kill), 2,
-					    SCMP_A0_64( SCMP_CMP_EQ, pid ),
-					    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
-			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-					    SCMP_SYS(tkill), 2,
-					    SCMP_A0_64( SCMP_CMP_EQ, pid ),
-					    SCMP_A1( SCMP_CMP_NE, SIGCHLD ));
-			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-					    SCMP_SYS(tgkill), 2,
-					    SCMP_A1_64( SCMP_CMP_EQ, pid ),
-					    SCMP_A2( SCMP_CMP_NE, SIGCHLD ));
+		static const int kill_calls[] = {
+			SCMP_SYS(kill),
+			SCMP_SYS(tkill),
+		};
+
+		/*
+		 * ++ Restricting signal handling between Sydbox and the
+		 * sandboxed process: SydBox permits only SIGCHLD from the
+		 * initial child. Other signals sent to SydBox's process id
+		 * are denied with ESRCH which denotes the process or
+		 * process group does not exist. This approach renders the
+		 * sandboxing SydBox process safe against any unexpected
+		 * signals.
+		 */
+		for (size_t i = 0; i < ELEMENTSOF(kill_calls); i++) {
+			syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+				     kill_calls[i], 2,
+				     SCMP_A0_64( SCMP_CMP_EQ,
+						 sydbox->sydbox_pid ),
+				     SCMP_A1_32( SCMP_CMP_NE,
+						 SIGCHLD ));
+			if (!syd_rule_ok(r)) {
+				errno = -r;
+				die_errno("kill.%zu: failed to add "
+					  "kill protect filter "
+					  "for process ID %d "
+					  "for system call:%d "
+					  "to match !=SIGCHLD for "
+					  "ERRNO(EPERM).",
+					  i, sydbox->sydbox_pid,
+					  kill_calls[i]);
+			}
+			syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+				     kill_calls[i], 2,
+				     SCMP_A0_64( SCMP_CMP_EQ,
+						 sydbox->execve_pid ),
+				     SCMP_A1_32( SCMP_CMP_LT,
+						 SIGCHLD ));
+			if (!syd_rule_ok(r)) {
+				errno = -r;
+				die_errno("kill.%zu: failed to add "
+					  "kill protect filter "
+					  "for process ID %d "
+					  "for system call:%d "
+					  "to match <SIGCHLD for ERRNO(EPERM).",
+					  i, sydbox->execve_pid,
+					  kill_calls[i]);
+			}
+			syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+				     kill_calls[i], 2,
+				     SCMP_A0_64( SCMP_CMP_EQ,
+						 sydbox->execve_pid ),
+				     SCMP_A1_32( SCMP_CMP_GT,
+						 SIGSTOP ));
+			if (!syd_rule_ok(r)) {
+				errno = -r;
+				die_errno("kill.%zu: failed to add "
+					  "kill protect filter "
+					  "for process ID %d (sydbox.child)"
+					  "for system call:%d "
+					  "to match >SIGSTOP for ERRNO(EPERM).",
+					  i, sydbox->execve_pid, kill_calls[i]);
+			}
+		}
+		syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+			     SCMP_SYS(tgkill), 2,
+			     SCMP_A1_64( SCMP_CMP_EQ, sydbox->sydbox_pid ),
+			     SCMP_A2_32( SCMP_CMP_NE, SIGCHLD ));
+		if (!syd_rule_ok(r)) {
+			errno = -r;
+			die_errno("tgkill: failed to add "
+				  "tgkill protect filter "
+				  "for process ID %d (sydbox) "
+				  "for system call:%d "
+				  "to match !=SIGSTOP for ERRNO(EPERM).",
+				  sydbox->sydbox_pid, SCMP_SYS(tgkill));
+		}
+		syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+			     SCMP_SYS(tgkill), 2,
+			     SCMP_A1_64( SCMP_CMP_EQ,
+					 sydbox->execve_pid ),
+			     SCMP_A2_32( SCMP_CMP_LT, SIGCHLD ));
+		if (!syd_rule_ok(r)) {
+			errno = -r;
+			die_errno("tgkill: failed to add "
+				  "tgkill protect filter "
+				  "for process ID %d (sydbox.child) "
+				  "for system call:%d "
+				  "to match <SIGCHLD for ERRNO(EPERM).",
+				  sydbox->execve_pid, SCMP_SYS(tgkill));
+		}
+		syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
+			     SCMP_SYS(tgkill), 2,
+			     SCMP_A1_64( SCMP_CMP_EQ,
+					 sydbox->execve_pid ),
+			     SCMP_A2_32( SCMP_CMP_GT, SIGSTOP ));
+		if (!syd_rule_ok(r)) {
+			errno = -r;
+			die_errno("tgkill: failed to add "
+				  "tgkill protect filter "
+				  "for process ID %d (sydbox.child) "
+				  "for system call:%d "
+				  "to match >SIGSTOP for ERRNO(EPERM).",
+				  sydbox->execve_pid, SCMP_SYS(tgkill));
 		}
 	}
 
@@ -1197,7 +1278,7 @@ int filter_general(void)
 
 	switch (sydbox->config.restrict_general) {
 	case 0:
-		return 0;
+		break;
 	case 1:
 		return filter_general_level_1();
 	case 2:
@@ -1295,23 +1376,10 @@ int filter_mmap(uint32_t arch)
 
 int filter_mmap2(uint32_t arch)
 {
-	int sysnum;
-
-	sysnum = seccomp_syscall_resolve_name_rewrite(arch, "mmap2");
-	if (sysnum == __NR_SCMP_ERROR) {
-		return 0;
-	} else if (sysnum < 0) {
-		char *in_sydbox_test = getenv("IN_SYDBOX_TEST");
-		if (in_sydbox_test)
-			say("unknown system call `mmap2' for architecture %s.",
-			    arch_to_string(arch));
-		return 0;
-	}
-
 	if (sydbox->config.restrict_shm_wr)
-		return filter_mmap_restrict_shared(sysnum);
+		return filter_mmap_restrict_shared(SCMP_SYS(mmap2));
 	else if (sydbox->config.restrict_mmap)
-		return filter_mmap_restrict(sysnum);
+		return filter_mmap_restrict(SCMP_SYS(mmap2));
 	else
 		return 0;
 }

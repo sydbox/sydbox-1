@@ -29,9 +29,13 @@
 #ifdef HAVE_LINUX_FS_H
 # include <linux/fs.h>
 #endif
-#define SYDBOX_EXPORT_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT|O_EXCL)
-#define SYDBOX_EXPORT_MODE 0600
-#define SYDBOX_DUMP_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT|O_EXCL)
+#define SYDBOX_BPF_EXPORT_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT|O_EXCL)
+#define SYDBOX_BPF_EXPORT_MODE 0600
+#define SYDBOX_BPF_DUMP_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT|O_EXCL)
+#define SYDBOX_BPF_DUMP_MODE 0600
+#define SYDBOX_PFC_EXPORT_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT)
+#define SYDBOX_PFC_EXPORT_MODE 0600
+#define SYDBOX_DUMP_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT)
 #define SYDBOX_DUMP_MODE 0600
 
 #ifndef NR_FILE
@@ -169,21 +173,37 @@
 # define SYDBOX_NOEXEC_ENV "SYDBOX_NOEXEC"
 #endif
 
+#ifndef SYD_EXEC_TIMEOUT
+# define SYD_EXEC_TIMEOUT 7
+#endif
+#ifndef SYD_EXEC_SLEEP_STEP_SEC
+# define SYD_EXEC_SLEEP_STEP_SEC 0
+#endif
+#ifndef SYD_EXEC_SLEEP_STEP_NSEC
+# define SYD_EXEC_SLEEP_STEP_NSEC 100
+#endif
+
 #define SYD_SECCOMP_ARCH_ARGV_SIZ 20
 #include <errno.h>
+# define syd_rule_ok(r) ((r) == 0 ||\
+			 (r) == -EACCES ||\
+			 (r) == -EEXIST)
 #if defined(SYDBOX_DUMP) && SYDBOX_DUMP
 # define syd_rule_add(ctx, ...) { \
 	r = seccomp_rule_add(ctx, __VA_ARGS__); \
 	if (r == -EBUSY || r == -EFAULT || r == -EINVAL) { abort(); } \
 	sydbox->filter_count++;}
 # define syd_rule_add_return(ctx, ...) { \
-	int _r = seccomp_rule_add(ctx, __VA_ARGS__); \
-	if ((_r < 0) &&\
-	    (_r != -EACCES) &&\
-	    (_r != -EEXIST) &&\
-	    (_r != -EEXIST) &&\
-	    (_r != -EOPNOTSUPP)) { return _r; \
-	} else if (_r == -EBUSY || _r == -EFAULT || _r == -EINVAL) { abort(); } \
+	r = seccomp_rule_add(ctx, __VA_ARGS__); \
+	if (r < 0) { \
+		errno = -r; \
+		say_errno("oops"); \
+	} \
+	if ((r < 0) &&\
+	    (r == -EACCES) &&\
+	    (r == -EEXIST) &&\
+	    (r == -EOPNOTSUPP)) { return 0; \
+	} else if (r == -EBUSY || r == -EFAULT || r == -EINVAL) { abort(); } \
 	sydbox->filter_count++; }
 #else
 # define syd_rule_add(ctx, ...) do { \

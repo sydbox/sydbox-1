@@ -156,7 +156,7 @@ int change_background(void)
 	}
 
 #ifdef TIOCNOTTY
-	if (tty_fd >= 0) {
+	if (background && tty_fd >= 0) {
 		if (ioctl(tty_fd, TIOCNOTTY, 0) < 0)
 			say_errno("ioctl");
 		if (close(tty_fd) < 0)

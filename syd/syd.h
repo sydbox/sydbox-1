@@ -12,10 +12,15 @@
 # define _XOPEN_SOURCE 700
 #endif
 
+#ifdef __STDC_NO_ATOMICS__
+# error this implementation needs atomics
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdatomic.h>
 #include <stdbool.h>
+#include <signal.h>
 #include <dirent.h>
 #include <time.h>
 
@@ -57,8 +62,19 @@ int syd_proc_task_find(pid_t pid, pid_t task_pid);
 int syd_proc_task_open(pid_t pid, DIR **task_dir);
 int syd_proc_task_next(DIR *task_dir, pid_t *task_pid);
 
+/* Wrappers for pidfd utilities */
+int syd_pidfd_open(pid_t pid, unsigned int flags);
+int syd_pidfd_getfd(int pidfd, int targetfd, unsigned int flags);
+/* Returns true if signal is succesfuly delivered or
+ * is the process is already dead, returns false
+ * otherwise. */
+bool syd_pidfd_send_signal(int pidfd, int sig, siginfo_t *info,
+			   unsigned int flags);
+
 bool syd_get_state(const volatile atomic_bool *state);
 bool syd_set_state(volatile atomic_bool *state, bool value);
+int syd_get_int(const volatile atomic_int *state);
+bool syd_set_int(volatile atomic_int *state, int value);
 
 typedef void (*syd_time_prof_func_t) (void);
 struct timespec syd_time_diff(const struct timespec *t1, const struct timespec *t2);

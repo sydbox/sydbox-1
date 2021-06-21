@@ -812,73 +812,55 @@ int sysinit_seccomp_load(void)
 	sc_map_term_32(&name_map);
 	sc_map_term_64s(&scno_map);
 
-	static const char *const calls[] = {
-		"execve", "execveat",
-		"chdir", "fchdir",
-		"clone",
-#if defined(__NR_clone) && (__NR_clone != __NR_clone2)
-		"clone2",
+	static const int calls[] = {
+		SCMP_SYS(execve),
+#if defined(__NR_execveat)
+		SCMP_SYS(execveat),
+# define calls_execve_max 2
+#else
+# define calls_execve_max 1
 #endif
+		SCMP_SYS(chdir),
+		SCMP_SYS(fchdir),
+		SCMP_SYS(clone),
 #if defined(__NR_clone3) && (__NR_clone3 != __NR_clone)
-		"clone3",
+		SCMP_SYS(clone3),
 #endif
-		"fork", "vfork",
+		SCMP_SYS(fork), SCMP_SYS(vfork),
 	};
 	if (!sc_map_init_32(&name_map, ELEMENTSOF(calls), 0))
 		return -ENOMEM;
-	if (!sc_map_init_64s(&scno_map, ELEMENTSOF(calls), 0))
-		return -ENOMEM;
 	for (size_t j = 0; sydbox->arch[j] != UINT32_MAX; j++) {
-		sc_map_clear_32(&name_map);
 		for (size_t i = 0; i < ELEMENTSOF(calls); i++) {
-			if (startswith(calls[i], "execve") &&
+			if (i < calls_execve_max &&
 			    box->mode.sandbox_exec != SANDBOX_OFF)
 				continue; /* execve* already added */
-			SAY("adding special system call:%s "
-			    "to the bpf filter...", calls[i]);
-			sysnum = seccomp_syscall_resolve_name_rewrite(sydbox->arch[j],
-								      calls[i]);
-			if (sysnum == __NR_SCMP_ERROR) {
-				//SAY_ERRNO("can't lookup system call name:%s "
-				//	  "continuing...",
-				//	  calls[i]);
-				continue;
-			} else if (sysnum < 0) {
-				//SAY_ERRNO("unknown system call name:%s "
-				//	  "continuing...",
-				//	  calls[i]);
-				continue;
-			}
+			sysnum = calls[i];
 			sc_map_put_32(&name_map, sysnum, 1);
-			if (sc_map_found(&name_map)) {
-				//SAY("not adding duplicate system call: %s",
-				//    calls[i]);
-				continue;
-			}
-			sc_map_put_64s(&scno_map, sysnum,
-				       syscall_entries[i].name);
-			if (sc_map_found(&scno_map)) {
-				//SAY("not adding duplicate system call: %s",
-				//    calls[i]);
+			if (sc_map_found(&name_map) &&
+			    (sysnum != SCMP_SYS(fork) &&
+			     sysnum != SCMP_SYS(vfork))) {
+				SAY("not adding duplicate system call:%ld",
+				    sysnum);
 				continue;
 			}
 
 			if ((r = rule_add_action(SCMP_ACT_NOTIFY, sysnum)) < 0) {
 				errno = -r;
 				if (r != -EFAULT &&
-				    !endswith(syscall_entries[i].name, "fork"))
-					SAY_ERRNO("can't add notify for %s, "
+				    (sysnum != SCMP_SYS(fork) &&
+				     sysnum != SCMP_SYS(vfork))) {
+					SAY_ERRNO("can't add notify for system call:%ld, "
 						  "continuing...",
-						  calls[i]);
+						  sysnum);
+				}
 				continue;
 			}
 		}
 	}
 	sc_map_term_32(&name_map);
-	sc_map_term_64s(&scno_map);
 
-	SAY("Loading %u bpf filters into the kernel...",
-	    sydbox->filter_count);
+	SAY("Loading %u bpf filters into the kernel...", sydbox->filter_count);
 	return 0;
 
 #undef SAY
@@ -897,13 +879,26 @@ int sysinit_seccomp(void)
 
 	bool close_fd = false;
 	int export_fd = -1;
+	mode_t export_mode = 0;
+	int export_flags = -1;
 	if (sydbox->export_mode != SYDBOX_EXPORT_NUL) {
+		switch (sydbox->export_mode) {
+		case SYDBOX_EXPORT_BPF:
+			export_mode = SYDBOX_BPF_EXPORT_MODE;
+			export_flags = SYDBOX_BPF_EXPORT_FLAGS;
+			break;
+		case SYDBOX_EXPORT_PFC:
+			export_mode = SYDBOX_PFC_EXPORT_MODE;
+			export_flags = SYDBOX_PFC_EXPORT_FLAGS;
+			break;
+		default:
+			assert_not_reached();
+		}
 		if (!sydbox->export_path) {
 			export_fd = STDERR_FILENO;
 		} else {
 			export_fd = open(sydbox->export_path,
-					 SYDBOX_EXPORT_FLAGS,
-					 SYDBOX_EXPORT_MODE);
+					 export_flags, export_mode);
 			if (export_fd < 0) {
 				say_errno("sysinit_seccomp_export(`%s')",
 					  sydbox->export_path);
@@ -937,7 +932,7 @@ int sysinit_seccomp(void)
 		 if (has_duplicate_listener(prepared)) {
 			ret = -EBUSY;
 			goto out;
-	 	 }
+		}
 		 */
 		r = (errno == EBUSY) ? -EBUSY : r;
 		if (r < 0) {
@@ -951,6 +946,8 @@ int sysinit_seccomp(void)
 			fd = -errno;
 		if (parent_write_int(fd))
 			return -errno;
+		else /* wait for the parent to read the notify fd. */
+			kill(getpid(), SIGSTOP);
 	}
 	if (r)
 		return -r;

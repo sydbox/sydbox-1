@@ -2,7 +2,14 @@ AM_MAKEFLAGS= --no-print-directory
 
 lib_LTLIBRARIES = libsyd_@LIBSYD_PC_SLOT@.la
 
-libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = strlcat.c strlcpy.c file.c proc.c state.c time.c
+libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
+	strlcat.c \
+	strlcpy.c \
+	file.c \
+	pidfd.c \
+	proc.c \
+	state.c \
+	time.c
 
 libsyd_includedir = $(includedir)/syd-$(LIBSYD_PC_SLOT)/syd
 libsyd_include_HEADERS= syd.h

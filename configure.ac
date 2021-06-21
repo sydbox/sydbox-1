@@ -822,7 +822,7 @@ if test x"$PIDFD_GETFD_WARN" = x"1"; then
 	PIDFD_WARN=1
 fi
 if test x"$PIDFD_SEND_SIGNAL" = x"1"; then
-	AC_MSG_WARN([__NR_pidfd_send_signal not declared! Setting pidfd_getfd to 424.])
+	AC_MSG_WARN([__NR_pidfd_send_signal not declared! Setting pidfd_send_signal to 424.])
 	PIDFD_WARN=1
 fi
 if test x"$PROCESS_VM_WARN" = x"1"; then

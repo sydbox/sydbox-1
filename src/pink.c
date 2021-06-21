@@ -49,6 +49,18 @@ typedef struct msghdr struct_msghdr;
 		return 0; \
 	}} while (0)
 
+#ifndef __NR_process_vm_readv
+# warning "Your system does not define process_vm_readv, setting to 310."
+# warning "Please update your Linux kernel and headers."
+# define __NR_process_vm_readv 310
+#endif
+
+#ifndef __NR_process_vm_writev
+# warning "Your system does not define process_vm_writev, setting to 311."
+# warning "Please update your Linux kernel and headers."
+# define __NR_process_vm_writev 311
+#endif
+
 static ssize_t pink_process_vm_readv(pid_t pid,
 				     const struct iovec *local_iov,
 				     unsigned long liovcnt,
