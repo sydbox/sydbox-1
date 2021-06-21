@@ -172,18 +172,6 @@
 #define SYD_SECCOMP_ARCH_ARGV_SIZ 20
 #include <errno.h>
 #if defined(SYDBOX_DUMP) && SYDBOX_DUMP
-# define syd_rule_add_exact(ctx, ...) { \
-	r = seccomp_rule_add_exact(ctx, __VA_ARGS__); \
-	if (_r == -EBUSY || _r == -EFAULT || _r == -EINVAL) { abort(); } \
-	sydbox->filter_count++;}
-# define syd_rule_add_exact_return(ctx, ...) { \
-	int _r = seccomp_rule_add_exact(ctx, __VA_ARGS__); \
-	if ((_r < 0) &&\
-	    (_r != -EACCES) &&\
-	    (_r != -EEXIST) &&\
-	    (_r != -EOPNOTSUPP)) { return _r; \
-	} else if (_r == -EBUSY || _r == -EFAULT || _r == -EINVAL) { abort(); } \
-	sydbox->filter_count++; }
 # define syd_rule_add(ctx, ...) { \
 	r = seccomp_rule_add(ctx, __VA_ARGS__); \
 	if (r == -EBUSY || r == -EFAULT || r == -EINVAL) { abort(); } \
@@ -198,29 +186,17 @@
 	} else if (_r == -EBUSY || _r == -EFAULT || _r == -EINVAL) { abort(); } \
 	sydbox->filter_count++; }
 #else
-# define syd_rule_add_exact(ctx, ...) { \
-	r = seccomp_rule_add_exact(ctx, __VA_ARGS__); \
-	if (r == -EBUSY || r == -EFAULT || r == -EINVAL) { abort(); } \
-	sydbox->filter_count++;}
-# define syd_rule_add_exact_return(ctx, ...) { \
-	int _r = seccomp_rule_add_exact(ctx, __VA_ARGS__); \
-	if ((_r < 0) &&\
-	    (_r != -EACCES) &&\
-	    (_r != -EEXIST) &&\
-	    (_r != -EOPNOTSUPP)) { return _r; \
-	} else if (_r == -EBUSY || _r == -EFAULT || _r == -EINVAL) { abort(); } \
-	sydbox->filter_count++; }
-# define syd_rule_add(ctx, ...) { \
+# define syd_rule_add(ctx, ...) do { \
 	r = seccomp_rule_add(ctx, __VA_ARGS__); \
-	if (r == 0) { sydbox->filter_count++; }}
-# define syd_rule_add_return(ctx, ...) { \
-	int _r = seccomp_rule_add(ctx, __VA_ARGS__); \
-	if ((_r < 0) &&\
-	    (_r != -EACCES) &&\
-	    (_r != -EEXIST) && \
-	    (_r != -EOPNOTSUPP)) \
-		{ return _r; } \
-	sydbox->filter_count++; }
+	if (r == 0) { sydbox->filter_count++; }} while (0)
+# define syd_rule_add_return(ctx, ...) do { \
+	r = seccomp_rule_add(ctx, __VA_ARGS__); \
+	if ((r < 0) &&\
+	    (r != -EACCES) &&\
+	    (r != -EEXIST) && \
+	    (r != -EOPNOTSUPP)) \
+		{ return r; } \
+	sydbox->filter_count++; } while (0)
 #endif
 
 #endif

@@ -1670,7 +1670,7 @@ static pid_t startup_child(char **argv)
 			die_errno("seccomp load failed");
 		}
 		seccomp_release(sydbox->ctx);
-		cleanup();
+		cleanup_for_sydbox();
 		free(sydbox);
 		if (noexec)
 			_exit(getenv(SYDBOX_NOEXEC_ENV) ?
@@ -1727,14 +1727,9 @@ static pid_t startup_child(char **argv)
 	return pid;
 }
 
-void cleanup(void)
+void cleanup_for_child(void)
 {
 	assert(sydbox);
-
-	if (sydbox->seccomp_fd >= 0)
-		close(sydbox->seccomp_fd);
-	if (sydbox->notify_fd >= 0)
-		close(sydbox->notify_fd);
 
 	if (sydbox->program_invocation_name)
 		free(sydbox->program_invocation_name);
@@ -1768,6 +1763,22 @@ void cleanup(void)
 	ACLQ_FREE(acl_node, &sydbox->config.filter_network, free_sockmatch);
 
 	systable_free();
+}
+
+void cleanup_for_sydbox(void)
+{
+	assert(sydbox);
+
+	if (sydbox->seccomp_fd >= 0) {
+		close(sydbox->seccomp_fd);
+		sydbox->seccomp_fd = -1;
+	}
+	if (sydbox->notify_fd >= 0) {
+		close(sydbox->notify_fd);
+		sydbox->notify_fd = -1;
+	}
+
+	cleanup_for_child();
 }
 
 int main(int argc, char **argv)
@@ -2205,7 +2216,7 @@ int main(int argc, char **argv)
 		}
 	}
 out:
-	cleanup();
+	cleanup_for_sydbox();
 	exit_code = sydbox->exit_code;
 	if (sydbox->violation) {
 		if (sydbox->config.violation_exit_code > 0)

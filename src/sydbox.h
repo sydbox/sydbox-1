@@ -832,7 +832,8 @@ static inline syd_process_t *lookup_process(pid_t pid)
 	return NULL;
 }
 
-void cleanup(void);
+void cleanup_for_child(void);
+void cleanup_for_sydbox(void);
 
 int parent_read_int(int *message);
 int parent_write_int(int message);
@@ -1088,7 +1089,7 @@ static inline void init_sysinfo(syscall_info_t *info)
 	memset(info, 0, sizeof(syscall_info_t));
 }
 
-bool filter_includes(uint32_t arch, int sysnum);
+bool filter_includes(int sysnum);
 int filter_general(void);
 int filter_mmap(uint32_t arch);
 int filter_mmap2(uint32_t arch);
@@ -1168,7 +1169,6 @@ int sys_recvmsg(syd_process_t *current);
 int sysx_chdir(syd_process_t *current);
 
 int rule_add_action(uint32_t action, int sysnum);
-int rule_add_action_exact(uint32_t action, int sysnum);
 int rule_add_open_rd(uint32_t action, int sysnum, int open_flag);
 
 #endif
