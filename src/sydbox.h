@@ -779,19 +779,6 @@ static inline void process_remove(syd_process_t *p)
 	sc_map_del_64v(&sydbox->tree, p->pid);
 }
 
-static inline size_t process_count_alive(void)
-{
-	size_t r = 0;
-	syd_process_t *node;
-
-	sc_map_foreach_value(&sydbox->tree, node) {
-		if (node->flags & SYD_KILLED)
-			continue;
-		r += 1;
-	}
-	return r;
-}
-
 /* Global functions */
 int syd_kill(pid_t pid, pid_t tgid, int sig);
 int syd_read_syscall(syd_process_t *current, long *sysnum);

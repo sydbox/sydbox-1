@@ -866,38 +866,6 @@ static int filter_general_level_0(void)
 					  i, sydbox->sydbox_pid,
 					  kill_calls[i]);
 			}
-			syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-				     kill_calls[i], 2,
-				     SCMP_A0_64( SCMP_CMP_EQ,
-						 sydbox->execve_pid ),
-				     SCMP_A1_32( SCMP_CMP_LT,
-						 SIGUSR2 ));
-			if (!syd_rule_ok(r)) {
-				errno = -r;
-				die_errno("kill.%zu: failed to add "
-					  "kill protect filter "
-					  "for process ID %d "
-					  "for system call:%d "
-					  "to match <SIGUSR2 "
-					  "for ERRNO(ESRCH).",
-					  i, sydbox->execve_pid,
-					  kill_calls[i]);
-			}
-			syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-				     kill_calls[i], 2,
-				     SCMP_A0_64( SCMP_CMP_EQ,
-						 sydbox->execve_pid ),
-				     SCMP_A1_32( SCMP_CMP_GT,
-						 SIGSTOP ));
-			if (!syd_rule_ok(r)) {
-				errno = -r;
-				die_errno("kill.%zu: failed to add "
-					  "kill protect filter "
-					  "for process ID %d (sydbox.child)"
-					  "for system call:%d "
-					  "to match >SIGSTOP for ERRNO(ESRCH).",
-					  i, sydbox->execve_pid, kill_calls[i]);
-			}
 		}
 		syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
 			     SCMP_SYS(tgkill), 2,
@@ -911,35 +879,6 @@ static int filter_general_level_0(void)
 				  "for system call:%d "
 				  "to match !=SIGSTOP for ERRNO(EPERM).",
 				  sydbox->sydbox_pid, SCMP_SYS(tgkill));
-		}
-		syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-			     SCMP_SYS(tgkill), 2,
-			     SCMP_A1_64( SCMP_CMP_EQ,
-					 sydbox->execve_pid ),
-			     SCMP_A2_32( SCMP_CMP_LT, SIGUSR2 ));
-		if (!syd_rule_ok(r)) {
-			errno = -r;
-			die_errno("tgkill: failed to add "
-				  "tgkill protect filter "
-				  "for process ID %d (sydbox.child) "
-				  "for system call:%d "
-				  "to match <SIGUSR2 for ERRNO(ESRCH).",
-				  sydbox->execve_pid, SCMP_SYS(tgkill));
-		}
-		syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ESRCH),
-			     SCMP_SYS(tgkill), 2,
-			     SCMP_A1_64( SCMP_CMP_EQ,
-					 sydbox->execve_pid ),
-			     SCMP_A2_32( SCMP_CMP_GT, SIGSTOP ));
-		if (!syd_rule_ok(r)) {
-			errno = -r;
-			die_errno("tgkill: failed to add "
-				  "tgkill protect filter "
-				  "for process ID %d (sydbox.child) "
-				  "for system call:%d "
-				  "to match >SIGSTOP "
-				  "for ERRNO(ESRCH).",
-				  sydbox->execve_pid, SCMP_SYS(tgkill));
 		}
 	}
 

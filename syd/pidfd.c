@@ -56,15 +56,16 @@ inline int syd_pidfd_getfd(int pidfd, int targetfd, unsigned int flags)
 #endif
 }
 
-inline bool syd_pidfd_send_signal(int pidfd, int sig, siginfo_t *info,
+inline int syd_pidfd_send_signal(int pidfd, int sig, siginfo_t *info,
 				  unsigned int flags)
 {
 #ifndef __NR_pidfd_send_signal
+#error __NR_pidfd_send_signal is not defined
 	return -ENOSYS;
 #else
 	int r = syscall(__NR_pidfd_send_signal, pidfd, sig, info, flags);
-	if (r == 0 || (r < 0 && errno == ESRCH))
-		return true;
-	return false;
+	if (r < 0)
+		return -errno;
+	return 0;
 #endif
 }

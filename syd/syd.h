@@ -68,8 +68,8 @@ int syd_pidfd_getfd(int pidfd, int targetfd, unsigned int flags);
 /* Returns true if signal is succesfuly delivered or
  * is the process is already dead, returns false
  * otherwise. */
-bool syd_pidfd_send_signal(int pidfd, int sig, siginfo_t *info,
-			   unsigned int flags);
+int syd_pidfd_send_signal(int pidfd, int sig, siginfo_t *info,
+			  unsigned int flags);
 
 bool syd_get_state(const volatile atomic_bool *state);
 bool syd_set_state(volatile atomic_bool *state, bool value);
