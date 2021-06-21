@@ -849,7 +849,7 @@ int sysinit_seccomp_load(void)
 				//	  calls[i]);
 				continue;
 			}
-			sc_map_put_32(&name_map, sysnum, sydbox->arch[j]);
+			sc_map_put_32(&name_map, sysnum, 1);
 			if (sc_map_found(&name_map)) {
 				//SAY("not adding duplicate system call: %s",
 				//    calls[i]);
@@ -865,7 +865,8 @@ int sysinit_seccomp_load(void)
 
 			if ((r = rule_add_action(SCMP_ACT_NOTIFY, sysnum)) < 0) {
 				errno = -r;
-				if (r != -EFAULT)
+				if (r != -EFAULT &&
+				    !endswith(syscall_entries[i].name, "fork"))
 					SAY_ERRNO("can't add notify for %s, "
 						  "continuing...",
 						  calls[i]);
