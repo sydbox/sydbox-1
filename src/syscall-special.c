@@ -247,7 +247,7 @@ int sys_execveat(syd_process_t *current)
 
 #define FAKE_SYSNAME "☮"
 #define FAKE_NODENAME "sydb☮x"
-#define FAKE_RELEASE "v"VERSION
+#define FAKE_RELEASE VERSION
 #define FAKE_VERSION "#"STRINGIFY(SYDBOX_API_VERSION)
 #define FAKE_MACHINE "Ⓐ"
 #define FAKE_DOMAINNAME "exherb☮.☮rg"
