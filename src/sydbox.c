@@ -1204,8 +1204,9 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent)
 		parent->clone_flags &= ~SYD_IN_CLONE;
 	} else {
 		parent = lookup_process(sydbox->execve_pid);
-		YELL_ON(parent, "failed to find a parent process for pid:%d, ",
-				"do not know which sandboxing rules to apply!");
+		YELL_ON(parent, "failed to find a parent process for pid:%d, "
+				"do not know which sandboxing rules to apply!",
+				pid);
 		unsigned int save_new_clone_flags = parent->new_clone_flags;
 		parent->new_clone_flags = 0;
 		current = clone_process(parent, pid);
