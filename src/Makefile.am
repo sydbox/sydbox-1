@@ -171,6 +171,12 @@ sydbox_SOURCES+= \
 noinst_HEADERS+= \
 		 sys-queue.h
 
+if ENABLE_PSYSCALL
+# imported from psyscall
+noinst_HEADERS+= psyscall_syd.h
+sydbox_SOURCES+= psyscall.c psyscall_syd.c
+endif
+
 sydbox_LDFLAGS= -lsyd_@LIBSYD_PC_SLOT@ $(CODE_COVERAGE_LDFLAGS)
 sydbox_LDADD= \
 	      $(top_builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la \

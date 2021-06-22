@@ -626,6 +626,20 @@ dnl check for pthreads
 AX_PTHREAD([],
 	   [AC_MSG_WARN([POSIX threads library is missing, some tests may not build!])])
 
+dnl enable psyscall with --enable-psyscall
+AC_ARG_ENABLE([psyscall],
+	      [AS_HELP_STRING([--enable-psyscall],
+			      [EXPERIMENTAL: use psyscall to allocate a readonly memory in tracee to mitigate TOCTOU attacks (default: disable).])],
+	      [], [enable_psyscall=no])
+case "$enable_psyscall" in
+	yes) enable_psyscall=1 ;;
+	no) enable_psyscall=0 ;;
+	*) AC_MSG_ERROR([bad value $enable_psyscall for arm-oabi option]) ;;
+esac
+AC_DEFINE_UNQUOTED([ENABLE_PSYSCALL], [$enable_psyscall],
+		   [Define to 1 for psyscall support to mitigate TOCTOU attacks.])
+AM_CONDITIONAL([ENABLE_PSYSCALL], test x"$enable_psyscall" = x"yes")
+
 dnl check for pkg-config
 PKG_PROG_PKG_CONFIG([0.20.0])
 
@@ -797,6 +811,7 @@ AC_OUTPUT
 echo "Build options:"
 echo "- debug:$WANT_DEBUG"
 echo "- dump:$WANT_DUMP_BUILTIN"
+echo "- psyscall:$enable_psyscall"
 echo "- static:$enable_static"
 echo "Secure Computing Architecture Support:"
 echo "- x86: ${SYD_SECCOMP_X86_OK:-?}"
