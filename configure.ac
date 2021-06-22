@@ -14,6 +14,10 @@ dnl SPDX-License-Identifier: GPL-2.0-only
 dnl Program, version
 AC_PREREQ(2.59)
 
+dnl Homepage
+m4_define([SYDBOX_BUGREPORT], [https://gitlab.exherbo.org/exherbo-misc/sydbox-1/-/issues])
+m4_define([SYDBOX_HOMEPAGE], [http://sydbox.exherbo.org/])
+
 dnl Versioning
 dnl major: User interface changes (magic commands, configuration format)
 dnl minor: Major changes without UI breakage
@@ -31,7 +35,10 @@ m4_define([libsyd_pc_slot],        [sydbox_version_major.sydbox_version_minor[]s
 m4_define([sydbox_api_version],    [sydbox_version_major])
 m4_define([sydbox_fname_ext],      [syd-])
 
-AC_INIT([sydbox], [sydbox_version], [alip@exherbo.org], [sydbox])
+AC_INIT([sydbox], [sydbox_version],
+	[SYDBOX_BUGREPORT],
+	[sydbox],
+	[SYDBOX_HOMEPAGE])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([src/sydbox.c])
