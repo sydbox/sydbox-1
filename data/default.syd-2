@@ -67,8 +67,33 @@ denylist/read+/proc/*/*map*
 denylist/read+/proc/*/map_files/***
 denylist/read+/proc/*/syscall
 
-# Disable access to dmesg.
+# More critical paths under proc:
+denylist/read+/proc/*/root/***
+
+# Disable tools to get information on the running
+# kernel and its configuration.
 denylist/read+/dev/kmsg
+denylist/read+/proc/cmdline
+denylist/read+/proc/config*
+denylist/read+/proc/version
+denylist/read+/proc/sys/***
+denylist/read+/etc/sysctl.conf
+denylist/read+/etc/sysctl.d/***
+
+# Deny access to system information.
+denylist/read+/proc/cpuinfo
+denylist/read+/proc/meminfo
+denylist/read+/proc/swaps
+denylist/read+/proc/iomem
+denylist/read+/proc/slabinfo
+denylist/read+/proc/vmallocinfo
+denylist/read+/proc/vmstat
+denylist/read+/proc/self/mtab
+denylist/read+/etc/mtab
+denylist/read+/etc/fstab
+
+# More restrictions:
+denylist/read+/sys/fs/***
 
 # Fuse could lead to local dos for instance creating file a la /dev/null with
 # random content. Moreover they are past problem in the fuse kernel code that
@@ -78,10 +103,9 @@ denylist/read+/dev/kmsg
 # filesystem in order to fool updatedb.
 denylist/read+/dev/fuse
 
+# Deny access to Device Mapper data nodes.
+denylist/read+/dev/dm*/***
 denylist/read+/dev/mapper/***
-denylist/read+/proc/config*
-denylist/read+/proc/cmdline
-denylist/read+/proc/sys/***
 
 #
 # Allow access to standard paths
