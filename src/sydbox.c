@@ -1651,8 +1651,11 @@ out:
 			if (!process_count_alive())
 				break;
 			syd_set_state(&child_exited, false);
-		} else if (sig && sig != SIGCHLD)
+		} else if (sig && sig != SIGCHLD) {
 			break;
+		} else {
+			reap_zombies(NULL, -1);
+		}
 	}
 
 	seccomp_notify_free(sydbox->request, sydbox->response);
