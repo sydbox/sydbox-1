@@ -159,7 +159,7 @@ allowlist/write+/dev/fd/***
 allowlist/write+/dev/tty*
 allowlist/write+/dev/pty*
 allowlist/write+/dev/tts
-allowlist/write+/dev/pts
+allowlist/write+/dev/pts/***
 allowlist/write+/dev/shm/***
 allowlist/write+/selinux/context/***
 allowlist/write+/proc/self/attr/***
