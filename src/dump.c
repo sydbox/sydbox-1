@@ -398,6 +398,9 @@ void dump(enum dump what, ...)
 		char cmdline[256];
 		bool cmd = syd_proc_cmdline(pid, cmdline, sizeof(cmdline)) == 0;
 
+		char *b_cmdline = NULL;
+		char *j_cmdline = cmd ? json_escape_str(&b_cmdline, cmdline) : "";
+
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
@@ -405,8 +408,9 @@ void dump(enum dump what, ...)
 			J(event)"{\"id\":%u,\"name\":\"%s\"},"
 			J(cmd)"\"%s\"}",
 			id++, (unsigned long long)now, pid,
-			what, "startup",
-			cmd ? cmdline : "");
+			what, "startup", j_cmdline);
+
+		if (b_cmdline) free(b_cmdline);
 	} else if (what == DUMP_EXIT) {
 		int code = va_arg(ap, int);
 
@@ -420,6 +424,14 @@ void dump(enum dump what, ...)
 			sydbox->execve_pid, what, code);
 	} else if (what == DUMP_SYSENT) {
 		struct syd_process *current = va_arg(ap, struct syd_process *);
+
+		char *b_repr[6] = { NULL };
+		char *j_repr[6];
+		for (uint8_t i = 0; i < 6; i++)
+			j_repr[i] = json_escape_str(&b_repr[i],
+						    current->repr[i] ?
+						    current->repr[i] :
+						    "");
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
@@ -438,16 +450,25 @@ void dump(enum dump what, ...)
 			current->args[3],
 			current->args[4],
 			current->args[5],
-			current->repr[0] ? current->repr[0] : "",
-			current->repr[1] ? current->repr[1] : "",
-			current->repr[2] ? current->repr[2] : "",
-			current->repr[3] ? current->repr[3] : "",
-			current->repr[4] ? current->repr[4] : "",
-			current->repr[5] ? current->repr[5] : "");
+			j_repr[0],
+			j_repr[1],
+			j_repr[2],
+			j_repr[3],
+			j_repr[4],
+			j_repr[5]);
+
+		for (uint8_t i = 0; i < 6; i++)
+			if (b_repr[i])
+				free(b_repr[i]);
 	} else if (what == DUMP_CHDIR) {
 		pid_t pid = va_arg(ap, pid_t);
 		const char *newcwd = va_arg(ap, const char *);
 		const char *oldcwd = va_arg(ap, const char *);
+
+		char *b_newcwd = NULL;
+		char *b_oldcwd = NULL;
+		char *j_newcwd = newcwd ? json_escape_str(&b_newcwd, newcwd) : NULL;
+		char *j_oldcwd = oldcwd ? json_escape_str(&b_oldcwd, oldcwd) : NULL;
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
@@ -457,22 +478,27 @@ void dump(enum dump what, ...)
 			id++, (unsigned long long)now, pid,
 			what);
 
-
 		fprintf(fp, ","J(cwd)"{");
 		fprintf(fp, J(new));
 		if (newcwd)
-			fprintf(fp, "\"%s\"", newcwd);
+			fprintf(fp, "\"%s\"", j_newcwd);
 		else
 			dump_null();
 		fprintf(fp, ","J(old));
 		if (oldcwd)
-			fprintf(fp, "\"%s\"", oldcwd);
+			fprintf(fp, "\"%s\"", j_oldcwd);
 		else
 			dump_null();
 		fprintf(fp, "}}");
+
+		if (b_newcwd) free(b_newcwd);
+		if (b_oldcwd) free(b_oldcwd);
 	} else if (what == DUMP_EXEC) {
 		pid_t execve_pid = va_arg(ap, pid_t);
 		const char *prog = va_arg(ap, const char *);
+
+		char *b_prog = NULL;
+		char *j_prog = json_escape_str(&b_prog, prog);
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
@@ -481,13 +507,18 @@ void dump(enum dump what, ...)
 			J(event)"{\"id\":%u,\"name\":\"exec\"},"
 			J(cmd)"\"%s\"}",
 			id++, (unsigned long long)now, execve_pid,
-			what, prog);
+			what, j_prog);
+
+		if (b_prog) free(b_prog);
 	} else if (what == DUMP_EXEC_MT) {
 		pid_t execve_thread, leader;
 
 		execve_thread = va_arg(ap, pid_t);
 		leader = va_arg(ap, pid_t);
 		const char *prog = va_arg(ap, const char *);
+
+		char *b_prog = NULL;
+		char *j_prog = json_escape_str(&b_prog, prog);
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
@@ -496,7 +527,9 @@ void dump(enum dump what, ...)
 			J(leader_pid)"%u,"J(execve_pid)"%u,"
 			J(cmd)"\"%s\"}",
 			id++, (unsigned long long)now, what,
-			leader, execve_thread, prog); /* TODO quote: cmd */
+			leader, execve_thread, j_prog); /* TODO quote: cmd */
+
+		if (b_prog) free(b_prog);
 	} else if (what == DUMP_ALLOC) {
 		size_t size = va_arg(ap, size_t);
 		const char *func = va_arg(ap, const char *);
