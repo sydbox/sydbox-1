@@ -754,7 +754,7 @@ extern sydbox_t *sydbox;
 #define sandbox_deny_file(p) (sandbox_deny_exec((p)) && sandbox_deny_read((p)) && sandbox_deny_write((p)))
 
 #define proc_esrch(err_no)  ((err_no) == ENOENT || (err_no) == ESRCH)
-#define process_alive(p) ((p) && !((p)->pidfd >= 0))
+#define process_alive(p) ((p) && ((p)->pidfd >= 0))
 
 #define action_bpf_default(action) ((action) != SCMP_ACT_NOTIFY &&\
 				    (action) == sydbox->seccomp_action)

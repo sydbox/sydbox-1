@@ -1180,9 +1180,6 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent)
 		YELL_ON(parent, "failed to find a parent process for pid:%d, "
 				"do not know which sandboxing rules to apply!",
 				pid);
-		TELL_ON(!parent, "failed to find a process for pid:%d, "
-				 "inheriting sandboxing rules from pid:%d.",
-				 pid, parent->pid);
 		unsigned int save_new_clone_flags = parent->new_clone_flags;
 		parent->new_clone_flags = 0;
 		current = clone_process(parent, pid);
