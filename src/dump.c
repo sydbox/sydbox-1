@@ -541,6 +541,57 @@ void dump(enum dump what, ...)
 		fprintf(fp, ","J(process));
 		dump_process(pid);
 		fprintf(fp, "}");
+	} else if (what == DUMP_OOPS) {
+		pid_t pid = va_arg(ap, pid_t);
+		pid_t tgid = va_arg(ap, pid_t);
+		pid_t ppid = va_arg(ap, pid_t);
+		pid_t proc_tgid = va_arg(ap, pid_t);
+		pid_t proc_ppid = va_arg(ap, pid_t);
+		const char *sys = va_arg(ap, const char *);
+		const char *expr = va_arg(ap, const char *);
+		const char *cwd = va_arg(ap, const char *);
+		const char *proc_cwd = va_arg(ap, const char *);
+		const char *comm = va_arg(ap, const char *);
+		const char *cmdline = va_arg(ap, const char *);
+
+		char *b_sys = NULL;
+		char *b_expr = NULL, *b_cwd = NULL, *b_proc_cwd = NULL;
+		char *b_comm = NULL, *b_cmdline = NULL;
+
+		char *j_sys = json_escape_str(&b_sys, sys);
+		char *j_expr = json_escape_str(&b_expr, expr);
+		char *j_cwd = json_escape_str(&b_cwd, cwd);
+		char *j_proc_cwd = json_escape_str(&b_proc_cwd, proc_cwd);
+		char *j_comm = json_escape_str(&b_comm, comm);
+		char *j_cmdline = json_escape_str(&b_cmdline, cmdline);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(ts)"%llu,"
+			J(pid)"%d,"
+			J(event)"{\"id\":%u,\"name\":\"☮☮ps\"},"
+			J(sys)"\"%s\","
+			J(syd)"\"%s\","
+			J(comm)"\"%s\","
+			J(cmd)"\"%s\","
+			J(cwd)"\"%s\","
+			J(ppid)"%d,"
+			J(tgid)"%d,"
+			J(proc)"{"
+			J(ppid)"%d,"
+			J(tgid)"%d,"
+			J(cwd)"\"%s\"}}",
+			id++, (unsigned long long)now, pid, what,
+			j_sys, j_expr, j_comm, j_cmdline, j_cwd,
+			ppid, tgid,
+			proc_ppid, proc_tgid, j_proc_cwd);
+
+		if (b_sys) free(b_sys);
+		if (b_expr) free(b_expr);
+		if (b_cwd) free(b_cwd);
+		if (b_proc_cwd) free(b_proc_cwd);
+		if (b_comm) free(b_comm);
+		if (b_cmdline) free(b_cmdline);
 	} else {
 		abort();
 	}

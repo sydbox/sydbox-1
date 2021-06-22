@@ -105,31 +105,43 @@ void kill_all(int fatal_sig)
 SYD_GCC_ATTR((format (printf, 2, 0)))
 static void report(syd_process_t *current, const char *fmt, va_list ap)
 {
-	int r;
 	char cmdline[80], comm[32];
 	pid_t ppid, tgid;
+	char *cwd = NULL;
+	char *context = NULL;
 
-	r = syd_proc_comm(current->pid, comm, sizeof(comm));
+	comm[0] = '\0';
+	cmdline[0] = '\0';
+	vasprintf(&context, fmt, ap);
+	syd_proc_comm(current->pid, comm, sizeof(comm));
 	proc_parents(current->pid, &tgid, &ppid);
-
-	say("8< -- Access Violation! --");
-	vsay(stderr, fmt, ap);
-	fputc('\n', stderr);
-	say("proc: %s[%u] (parent:%u tgid:%u ppid:%u)",
-	    r == 0 ? comm : "?",
-	    current->pid, current->ppid,
-	    tgid, ppid);
-
-	char *cwd;
 	proc_cwd(current->pid, false, &cwd);
-	say("cwd/syd: `%s'", P_CWD(current));
-	say("cwd/pid: `%s'", cwd ? cwd : "?");
-	if (cwd) free(cwd);
+	syd_proc_cmdline(current->pid, cmdline, sizeof(cmdline));
+	if (isatty(STDERR_FILENO)) {
+		say("8< -- Access Violation! --");
+		vsay(stderr, fmt, ap);
+		fputc('\n', stderr);
+		say("proc: %s[%u] (parent:%u tgid:%u ppid:%u)",
+		    comm[0] == '\0' ? "?" : comm,
+		    current->pid, current->ppid, tgid, ppid);
+		say("cwd/syd: `%s'", P_CWD(current));
+		say("cwd/pid: `%s'", cwd ? cwd : "?");
+		say("cmdline: `%s'", cmdline[0] == '\0' ? "?" : cmdline);
+		say(">8 --");
+	}
+	dump(DUMP_OOPS,
+	     current->pid, current->tgid, current->ppid,
+	     tgid, ppid,
+	     current->sysname,
+	     context,
+	     P_CWD(current), cwd,
+	     comm[0] == '\0' ? NULL : comm,
+	     cmdline[0] == '\0' ? NULL : cmdline);
 
-	if (syd_proc_cmdline(current->pid, cmdline, sizeof(cmdline)) == 0)
-		say("cmdline: `%s'", cmdline);
-
-	say(">8 --");
+	if (context)
+		free(context);
+	if (cwd)
+		free(cwd);
 }
 
 int deny(syd_process_t *current, int err_no)

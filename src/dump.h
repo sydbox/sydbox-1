@@ -45,7 +45,7 @@ enum dump {
 #define INSPECT_DUMP_THREAD_FREE (1ULL << DUMP_THREAD_FREE)
 	DUMP_STARTUP, /* attached to initial process */
 #define INSPECT_DUMP_STARTUP (1ULL << DUMP_STARTUP)
-	DUMP_SYSENT, /* violation() */
+	DUMP_SYSENT, /* filtered system call */
 #define INSPECT_DUMP_SYSENT (1ULL << DUMP_SYSENT)
 	DUMP_EXIT, /* sydbox->exit_code was set */
 #define INSPECT_DUMP_EXIT (1ULL << DUMP_EXIT)
@@ -59,14 +59,16 @@ enum dump {
 #define INSPECT_DUMP_ALLOC (1ULL << DUMP_ALLOC)
 	DUMP_MEMORY_ACCESS, /* dump memory accesses */
 #define INSPECT_DUMP_MEMORY_ACCESS (1ULL << DUMP_MEMORY_ACCESS)
+	DUMP_OOPS, /* violation() */
+#define INSPECT_DUMP_OOPS (1ULL << DUMP_OOPS)
 };
 
 #if SYDBOX_DUMP
 # define INSPECT_DEFAULT INSPECT_DUMP_ALL
 #elif SYDBOX_HAVE_DUMP_BUILTIN
 # define INSPECT_DEFAULT (INSPECT_DUMP_STARTUP |\
+			  INSPECT_DUMP_OOPS |\
 			  INSPECT_DUMP_SYSENT |\
-			  INSPECT_DUMP_CHDIR |\
 			  INSPECT_DUMP_EXEC |\
 			  INSPECT_DUMP_EXEC_MT)
 #else
