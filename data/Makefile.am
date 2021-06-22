@@ -1,10 +1,16 @@
 AM_MAKEFLAGS= --no-print-directory
 EXTRA_DIST=
 
+sydboxsysconfdir= $(sysconfdir)$(PACKAGE)
+sydboxsysconf_DATA= \
+		  default.syd-2 \
+		  sydbox.bashrc
+
 sydboxsharedir= $(datadir)/$(PACKAGE)
 sydboxshare_DATA= \
 		  paludis.syd-1 \
 		  paludis.syd-2 \
+		  firefox.syd-2 \
 		  sydbox.supp
 EXTRA_DIST+= $(sydboxshare_DATA)
 

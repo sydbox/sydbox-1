@@ -65,6 +65,15 @@ static volatile atomic_bool child_exited = ATOMIC_VAR_INIT(false);
 static bool check_child_atomic(const volatile atomic_bool *state,
 			       int *interrupt);
 
+static const char *const sydsh_argv[] = {
+	"/usr/bin/env",
+	"bash",
+	"--rcfile",
+	SYSCONFDIR"/"PACKAGE"/sydbox.bashrc",
+	"-i",
+	NULL
+};
+
 static inline bool check_child_exited(int *interrupt)
 {
 	return check_child_atomic(&child_exited, interrupt);
@@ -1854,7 +1863,6 @@ int main(int argc, char **argv)
 	int opt, r, opt_t[5];
 	size_t i;
 	char *c;
-	const char *env;
 	struct utsname buf_uts;
 
 	arch_native = seccomp_arch_native();
@@ -2120,14 +2128,29 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (optind == argc) {
-		say("No command given.");
-		usage(stderr, 1);
-	}
-
+#if 0
+	const char *env;
 	if ((env = getenv(SYDBOX_CONFIG_ENV)))
 		config_parse_spec(env);
+#endif
 
+	const char *const *my_argv;
+	if (optind == argc) {
+		config_parse_spec(SYSCONFDIR "/" PACKAGE
+				  "/default.syd-" STRINGIFY(SYDBOX_API_VERSION));
+		set_uid(getuid());
+		set_gid(getgid());
+		set_startas("sydsh");
+		my_argv = sydsh_argv;
+		sydbox->program_invocation_name = xstrdup("sydsh");
+	} else {
+		my_argv = (const char *const *)(argv + optind);
+		/*
+		 * Initial program_invocation_name to be used for P_COMM(current).
+		 * Saves one proc_comm() call.
+		 */
+		sydbox->program_invocation_name = xstrdup(argv[optind]);
+	}
 	config_done();
 
 	/* Late validations for options */
@@ -2139,14 +2162,8 @@ int main(int argc, char **argv)
 	    */
 	    SANDBOX_OFF_ALL()) {
 		say("All restrict and sandbox options are off.");
-		die("Refusing to run the program `%s'.", argv[optind]);
+		die("Refusing to run the program `%s'.", my_argv[0]);
 	}
-
-	/*
-	 * Initial program_invocation_name to be used for P_COMM(current).
-	 * Saves one proc_comm() call.
-	 */
-	sydbox->program_invocation_name = xstrdup(argv[optind]);
 
 	/* Set useful environment variables for children */
 	setenv("SYDBOX", SEE_EMILY_PLAY, 1);
@@ -2160,14 +2177,14 @@ int main(int argc, char **argv)
 	pid_t pid;
 	if (use_notify()) {
 		init_signals();
-		pid = startup_child(&argv[optind]);
+		pid = startup_child((char **)my_argv);
 		syd_process_t *current = new_process_or_kill(pid);
 		init_process_data(current, NULL);
 		dump(DUMP_STARTUP, pid);
 		(void)notify_loop(current);
 	} else {
 		int status;
-		startup_child(&argv[optind]);
+		startup_child((char **)my_argv);
 		for (;;) {
 			errno = 0;
 			pid = waitpid(-1, &status, __WALL);

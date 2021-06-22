@@ -1,0 +1,129 @@
+# SydBox default configuration file.
+# Largely based on the defaults in the Paludis profile.
+# Copyright (c) 2021 Ali Polatel <alip@exherbo.org>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+core/sandbox/exec:allow
+core/sandbox/read:allow
+core/sandbox/write:deny
+core/sandbox/network:deny
+
+# This is important or our configuration
+# below won't work as expected for paths
+# under /proc/self.
+core/allowlist/per_process_directories:false
+
+core/allowlist/successful_bind:true
+core/allowlist/unsupported_socket_families:true
+
+core/violation/decision:deny
+core/violation/exit_code:-1
+core/violation/raise_fail:false
+core/violation/raise_safe:false
+
+core/trace/memory_access:0
+core/trace/program_checksum:2
+core/trace/use_toolong_hack:true
+
+core/restrict/io_control:false
+core/restrict/memory_map:false
+core/restrict/shared_memory_writable:true
+core/restrict/general:0
+
+core/match/case_sensitive:true
+core/match/no_wildcard:literal
+
+# Kill programs executed from /home.
+# exec/kill_if_match+/home/***
+
+# Use binaries under well-known locations.
+# Leave out HOME for now till we have support
+# to substitute environment variables in
+# configuration.
+denylist/exec+/etc/***
+denylist/exec+/dev/***
+denylist/exec+/proc/***
+denylist/exec+/run/***
+denylist/exec+/sys/***
+denylist/exec+/var/***
+denylist/exec+/tmp/***
+#denylist/exec+/home/***
+
+# Deny access to potentially dangerous paths.
+denylist/read+/boot/***
+denylist/read+/root/***
+
+denylist/read+/etc/security/***
+denylist/read+/etc/shadow*
+
+# Disable /dev/mem /dev/kmem, /dev/port and /proc/kcore.
+denylist/read+/dev/k?mem
+denylist/read+/dev/port
+denylist/read+/proc/kcore
+
+# Disable process memory attach.
+denylist/read+/proc/*/mem
+denylist/read+/proc/*/*map*
+denylist/read+/proc/*/map_files/***
+denylist/read+/proc/*/syscall
+
+# Disable access to dmesg.
+denylist/read+/dev/kmsg
+
+# Fuse could lead to local dos for instance creating file a la /dev/null with
+# random content. Moreover they are past problem in the fuse kernel code that
+# lead to dos.
+# Filesystem created by fuse are not visible by other user including root in
+# order to avoid dos. For instance an user that create an infinite depth
+# filesystem in order to fool updatedb.
+denylist/read+/dev/fuse
+
+denylist/read+/dev/mapper/***
+denylist/read+/proc/config*
+denylist/read+/proc/cmdline
+denylist/read+/proc/sys/***
+
+#
+# Allow access to standard paths
+#
+
+allowlist/write+/dev/stdout
+allowlist/write+/dev/stderr
+allowlist/write+/dev/zero
+allowlist/write+/dev/null
+allowlist/write+/dev/full
+allowlist/write+/dev/console
+allowlist/write+/dev/random
+allowlist/write+/dev/urandom
+allowlist/write+/dev/ptmx
+allowlist/write+/dev/fd/***
+allowlist/write+/dev/tty*
+allowlist/write+/dev/pty*
+allowlist/write+/dev/tts
+allowlist/write+/dev/pts
+allowlist/write+/dev/shm/***
+allowlist/write+/selinux/context/***
+allowlist/write+/proc/self/attr/***
+allowlist/write+/proc/self/fd/***
+allowlist/write+/proc/self/task/***
+allowlist/write+/tmp/***
+allowlist/write+/var/tmp/***
+allowlist/write+/var/cache/***
+
+# Allow access to Tor via IPv{4,6}
+allowlist/network/connect+LOOPBACK@9050
+allowlist/network/connect+LOOPBACK6@9050
+
+# Partly allow access to the localhost.
+allowlist/network/bind+LOOPBACK@0
+allowlist/network/bind+LOOPBACK@1024-65535
+allowlist/network/bind+LOOPBACK6@0
+allowlist/network/bind+LOOPBACK6@1024-65535
+
+allowlist/network/connect+unix:/var/run/nscd/socket
+allowlist/network/connect+unix:/run/nscd/socket
+allowlist/network/connect+unix:/var/lib/sss/pipes/nss
+
+# Allow getaddrinfo() with AI_ADDRCONFIG on musl systems.
+allowlist/network/connect+LOOPBACK@65535
+allowlist/network/connect+LOOPBACK6@65535

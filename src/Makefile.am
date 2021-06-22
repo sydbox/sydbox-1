@@ -41,7 +41,8 @@ syscall_open_ro.lst: Makefile
 DEFS+= \
        -DIN_SYDBOX=1 \
        -DDATADIR=\"$(datadir)\" \
-       -DGITVERSION=\"$(GITVERSION)\"
+       -DGITVERSION=\"$(GITVERSION)\" \
+       -DSYSCONFDIR=\"$(sysconfdir)\"
 AM_CFLAGS= \
 	   -I$(top_builddir)/syd \
 	   -I$(top_srcdir)/syd \
