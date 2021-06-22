@@ -293,11 +293,11 @@ static int seccomp_setup(void)
 		say("can't set no-new-privs flag for seccomp filter (%d %s), "
 		    "continuing...",
 		    -r, strerror(-r));
+#if 0
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_API_TSKIP, 1)) < 0)
 		say("can't set tskip attribute for seccomp filter (%d %s), "
 		    "continuing...",
 		    -r, strerror(-r));
-#if 0
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_API_SYSRAWRC, 1)) < 0)
 		say("can't set sysrawrc attribute for seccomp filter (%d %s), "
 		    "continuing...",
@@ -497,7 +497,10 @@ void reset_process(syd_process_t *p)
 
 static inline void set_child_exit_code(void)
 {
+	if (sydbox->exit_code >= 0)
+		return;
 	sydbox->exit_code = syd_get_int(&child_exit_code);
+	dump(DUMP_EXIT, sydbox->exit_code);
 }
 
 static inline void save_exit_code(int exit_code)
@@ -1123,14 +1126,10 @@ static inline size_t process_count_alive(void)
 {
 	int r;
 	size_t count = 0;
-	pid_t execve_pid;
 	syd_process_t *node;
 
 	sc_map_foreach_value(&sydbox->tree, node) {
 		if (node->flags & SYD_KILLED)
-			continue;
-		if ((execve_pid = syd_get_int(&child_pid)) > 0 &&
-		    node->pid == execve_pid)
 			continue;
 		if (node->pidfd <= 0)
 			continue;
@@ -1351,23 +1350,6 @@ static bool check_child_atomic(const volatile atomic_bool *state,
 	return value;
 }
 
-
-#if 0
-static int check_interrupt(void)
-{
-	int r = 0, sig;
-
-	sigprocmask(SIG_SETMASK, &empty_set, NULL);
-	if ((sig = syd_get_int(&interrupted))) {
-		r = handle_interrupt(sig);
-		syd_set_int(&interrupted, 0);
-	}
-	sigprocmask(SIG_BLOCK, &blocked_set, NULL);
-
-	return r;
-}
-#endif
-
 static int event_clone(syd_process_t *current, const char clone_type,
 		       long clone_flags)
 {
@@ -1456,13 +1438,14 @@ static int notify_loop(syd_process_t *current)
 	}
 
 	for (;;) {  /* Let the user-space tracing begin. */
+		bool jump;
 		char *name = NULL;
-		bool jump = false;
 		bool update_mem = false, update_mem_now = false;
 		syd_process_t *parent;
 
 		pid = sydbox->execve_pid;
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
+
 notify_receive:
 		sigprocmask(SIG_SETMASK, &empty_set, NULL);
 		r = seccomp_notify_receive(sydbox->notify_fd,
@@ -1471,31 +1454,20 @@ notify_receive:
 		if (r < 0) {
 			if (errno == ENOTTY)
 				r = -ENOENT;
-			if (r == -ECANCELED || r == -EINTR) {
-				goto notify_receive;
-			} else if (r == -ENOENT) {
+			if (r == -ECANCELED || r == -EINTR || r == -ENOENT) {
 				/* If we didn't find a notification,
 				 * it could be that the task was
 				 * interrupted by a fatal signal between
 				 * the time we were woken and
 				 * when we were able to acquire the rw lock.
 				 */
-				sig = 0;
-				if (check_child_exited(&sig))
-					set_child_exit_code();
-				pid_t my_pid = syd_get_int(&child_pid);
-				if (my_pid)
-					reap_zombies(lookup_process(my_pid),
-						     my_pid);
-				if (pid != my_pid)
-					reap_zombies(lookup_process(pid),
-						     pid);
-				if ((sig && sig != SIGCHLD) ||
-				    !process_count_alive()) {
-					jump = true;
+				if (check_child_exited(&sig)) {
 					goto out;
+				} else if (sig && sig != SIGCHLD) {
+					jump = true; goto out;
+				} else {
+					goto notify_receive;
 				}
-				goto notify_receive;
 			} else {
 				errno = -r;
 				say_errno("seccomp_notify_receive");
@@ -1504,7 +1476,7 @@ notify_receive:
 				say("Please submit a bug to "
 				    "<"PACKAGE_BUGREPORT">");
 				handle_interrupt(SIGTERM);
-				break;
+				jump = true; goto out;
 			}
 		}
 
@@ -1597,8 +1569,6 @@ notify_receive:
 		if (update_mem_now && current->update_mem) {
 			update_mem_now = false;
 			process_reopen_proc_mem(-1, current, true);
-			if (!process_alive(current))
-				goto notify_respond;
 		}
 
 		if (!name) {
@@ -1630,25 +1600,31 @@ notify_respond:
 			}
 			goto out;
 		}
-		if ((r = seccomp_notify_respond(sydbox->notify_fd,
-						sydbox->response)) < 0) {
+		sigprocmask(SIG_SETMASK, &empty_set, NULL);
+		r = seccomp_notify_respond(sydbox->notify_fd,
+					   sydbox->response);
+		sigprocmask(SIG_BLOCK, &blocked_set, NULL);
+		if (r < 0) {
 			if (errno == ENOTTY)
 				r = -ENOENT;
 			else {
 				say_errno("seccomp_notify_receive");
 				r = -errno;
 			}
-			if (r == -ECANCELED || r == -EINTR) {
-				goto notify_respond;
-			} else if (r == -ENOENT) {
+			if (r == -ECANCELED || r == -EINTR || r == -ENOENT) {
 				/* If we didn't find a notification,
 				 * it could be that the task was
 				 * interrupted by a fatal signal between
 				 * the time we were woken and
 				 * when we were able to acquire the rw lock.
 				 */
-				reap_zombies(current, -1);
-				continue;
+				if (check_child_exited(&sig)) {
+					goto out;
+				} else if (sig && sig != SIGCHLD) {
+					jump = true; goto out;
+				} else {
+					goto notify_respond;
+				}
 			} else {
 				errno = -r;
 				say_errno("seccomp_notify_receive");
@@ -1669,12 +1645,13 @@ out:
 		sig = 0;
 		if (check_child_exited(&sig)) {
 			set_child_exit_code();
-			reap_zombies(NULL, -1);
-			if (!process_count_alive())
-				break;
 			syd_set_state(&child_exited, false);
-		}
-		if (sig && sig != SIGCHLD)
+			if (syd_get_int(&child_pid)) {
+				reap_zombies(NULL, child_pid);
+				if (!process_count_alive())
+					break;
+			}
+		} else if (sig && sig != SIGCHLD)
 			break;
 	}
 
