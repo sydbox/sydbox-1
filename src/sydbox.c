@@ -1567,7 +1567,7 @@ notify_receive:
 notify_respond:
 		/* 0 if valid, ENOENT if not */
 		if (request_is_valid(sydbox->request->id) == -ENOENT) {
-			if (current)
+			if ((current = lookup_process(pid)))
 				bury_process(current, false);
 			goto out;
 		}
