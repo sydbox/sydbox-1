@@ -1067,7 +1067,7 @@ static int filter_general_level_0(void)
 #define SYD_GID_MIN 14 /* uucp */
 	gid_t user_gid = get_gid();
 	if (user_gid == 0) {
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL),
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
 				    SCMP_SYS(setgid), 1,
 				    SCMP_A0_32( SCMP_CMP_LE, SYD_GID_MIN, SYD_GID_MIN ));
 	} else {
