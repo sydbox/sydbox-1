@@ -750,13 +750,8 @@ out:
 
 void remove_process_node(syd_process_t *p)
 {
-	/* Keep the default sandbox alive. */
-	if (p->pid == sydbox->execve_pid) {
-		p->flags |= SYD_KILLED;
-		return;
-	}
-
-	if (p->flags & SYD_KILLED) {
+	/* keep the default sandbox alive. */
+	if (p->pid == sydbox->execve_pid || p->flags & SYD_KILLED) {
 		if (sydbox->config.allowlist_per_process_directories)
 			procdrop(&sydbox->config.proc_pid_auto, p->pid);
 		if (p->pidfd >= 0) {
@@ -1105,8 +1100,7 @@ static void reap_zombies(syd_process_t *current, pid_t pid)
 	syd_process_t *node;
 	sc_map_foreach_value(&sydbox->tree, node) {
 		if (node->flags & SYD_KILLED) {
-			if (!(node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE)))
-				remove_process_node(node);
+			remove_process_node(node);
 		} else if (!process_is_alive(node->pid, node->tgid)) {
 			remove_process_node(node);
 		}
@@ -1496,10 +1490,8 @@ notify_receive:
 							sydbox->request->data.nr);
 		current = lookup_process(pid);
 		if (request_is_valid(sydbox->request->id) == -ENOENT) {
-			if (current) {
-				current->flags |= SYD_KILLED;
+			if (current)
 				remove_process_node(current);
-			}
 			goto out;
 		} else if (current &&
 			   process_reopen_proc_mem(-1,
@@ -1597,10 +1589,8 @@ notify_receive:
 notify_respond:
 		/* 0 if valid, ENOENT if not */
 		if (request_is_valid(sydbox->request->id) == -ENOENT) {
-			if (current) {
-				current->flags |= SYD_KILLED;
+			if (current)
 				remove_process_node(current);
-			}
 			goto out;
 		}
 		sigprocmask(SIG_SETMASK, &empty_set, NULL);
