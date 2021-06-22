@@ -501,7 +501,7 @@ static const sysentry_t syscall_entries[] = {
 		.no = SCMP_SYS(uname),
 		.filter = filter_uname,
 		.notify = sys_uname,
-		.sandbox_read = true,
+		.sandbox_opt = magic_query_restrict_sysinfo,
 	},
 };
 
@@ -591,6 +591,9 @@ int sysinit_seccomp_load(void)
 	sandbox_t *box = box_current(NULL);
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		if (syscall_entries[i].no < 0)
+			continue;
+		if (syscall_entries[i].sandbox_opt &&
+		    syscall_entries[i].sandbox_opt(NULL) == MAGIC_RET_FALSE)
 			continue;
 		if (syscall_entries[i].filter) {
 			SAY("applying bpf filter for system call `%s'...",

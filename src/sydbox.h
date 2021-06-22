@@ -670,6 +670,9 @@ struct sysentry {
 	bool sandbox_network:1;
 	bool magic_lock_off:1; /* used for magic stat() */
 	bool rule_rewrite:1; /* used for socketcall(), bind(), connect() et al. */
+
+	/* Sandboxing depends on the return value of the given function. */
+	int (*sandbox_opt)(syd_process_t *current);
 };
 typedef struct sysentry sysentry_t;
 

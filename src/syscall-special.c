@@ -371,13 +371,12 @@ static int write_uname(syd_process_t *current, unsigned int buf_index)
 	long addr = current->args[buf_index];
 	char *bufaddr = (char *)&buf;
 	size_t bufsize = sizeof(struct utsname);
-	if ((r = syd_write_data(current, addr, bufaddr, bufsize)) < 0) {
-		errno = -r;
-		say_errno("syd_write_uname");
-	}
-	(void)syd_write_vm_data(current, addr, bufaddr, bufsize);
+	if ((r = syd_write_data(current, addr, bufaddr, bufsize)) < 0)
+		return r;
+	if (syd_write_vm_data(current, addr, bufaddr, bufsize) < 0)
+		return -errno;
 
-	return true;
+	return 0;
 }
 
 static int do_stat(syd_process_t *current, const char *path,
@@ -521,13 +520,9 @@ int sys_statx(syd_process_t *current)
 int filter_uname(uint32_t arch)
 {
 	int r;
-	enum sandbox_mode mode = sydbox->config.box_static.mode.sandbox_network;
 
 	if (!magic_query_restrict_sysinfo(NULL))
 		return 0;
-	if (mode != SANDBOX_DENY)
-		return 0;
-
 	syd_rule_add_return(sydbox->ctx, SCMP_ACT_NOTIFY, SCMP_SYS(uname), 0);
 	return 0;
 }
@@ -536,9 +531,11 @@ int sys_uname(syd_process_t *current)
 {
 	int r;
 
-	if ((r = write_uname(current, 0)) < 0)
-		return r;
-	if ((r = deny(current, 0)) < 0)
+	if (!magic_query_restrict_sysinfo(NULL))
+		return 0;
+	r = write_uname(current, 0);
+	r = r < 0 ? EPERM : 0;
+	if ((r = deny(current, r)) < 0)
 		return r;
 
 	return 0;
