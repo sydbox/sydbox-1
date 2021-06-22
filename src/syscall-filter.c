@@ -631,9 +631,9 @@ bool filter_includes(int sysnum)
 		if (nr == __NR_SCMP_ERROR)
 			continue;
 		else if (nr < 0) {
-			say("unknown system call:%s for architecture %s, "
-			    "continuing...",
-			    level0_names[i], "native");
+			//say("unknown system call:%s for architecture %s, "
+			//    "continuing...",
+			//    level0_names[i], "native");
 			continue;
 		} else if (nr == sysnum) {
 			return true;
