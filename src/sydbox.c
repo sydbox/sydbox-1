@@ -1217,6 +1217,7 @@ static void init_early(void)
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	sydbox->dump_fd = 0;
 #endif
+	sydbox->execve_pidfd = 0;
 	sydbox->bpf_only = false;
 	sydbox->permissive = false;
 	sydbox->export_mode = SYDBOX_EXPORT_NUL;
@@ -1802,6 +1803,8 @@ void cleanup_for_child(void)
 
 	if (sydbox->program_invocation_name)
 		free(sydbox->program_invocation_name);
+	if (sydbox->execve_pidfd > 0)
+		close(sydbox->execve_pidfd);
 
 	const char *path;
 	syd_process_t *proc_node;
