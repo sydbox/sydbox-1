@@ -65,7 +65,7 @@ static volatile atomic_bool child_exited = ATOMIC_VAR_INIT(false);
 static bool check_child_atomic(const volatile atomic_bool *state,
 			       int *interrupt);
 
-static const char *const sydsh_argv[] = {
+static const char *sydsh_argv[] = {
 	"/usr/bin/env",
 	"bash",
 	"--rcfile",
