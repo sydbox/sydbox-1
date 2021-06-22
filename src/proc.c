@@ -383,7 +383,9 @@ int proc_socket_inode(pid_t pid, int socket_fd, unsigned long long *inode)
 	char *p;
 
 	assert(pid >= 1);
-	assert(socket_fd >= 0);
+
+	if (socket_fd < 0)
+		return -EINVAL;
 
 	if (syd_asprintf(&p, "/proc/%d/fd/%d", pid, socket_fd) < 0)
 		return -ENOMEM;
