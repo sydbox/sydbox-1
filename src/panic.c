@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "proc.h"
+
 static inline int errno2retval(int err_no)
 {
 #if 0
@@ -105,14 +107,24 @@ static void report(syd_process_t *current, const char *fmt, va_list ap)
 {
 	int r;
 	char cmdline[80], comm[32];
+	pid_t ppid, tgid;
 
 	r = syd_proc_comm(current->pid, comm, sizeof(comm));
+	proc_parents(current->pid, &tgid, &ppid);
 
 	say("8< -- Access Violation! --");
 	vsay(stderr, fmt, ap);
 	fputc('\n', stderr);
-	say("proc: %s[%u] (parent:%u)", r == 0 ? comm : "?", current->pid, current->ppid);
-	say("cwd: `%s'", P_CWD(current));
+	say("proc: %s[%u] (parent:%u tgid:%u ppid:%u)",
+	    r == 0 ? comm : "?",
+	    current->pid, current->ppid,
+	    tgid, ppid);
+
+	char *cwd;
+	proc_cwd(current->pid, false, &cwd);
+	say("cwd/syd: `%s'", P_CWD(current));
+	say("cwd/pid: `%s'", cwd ? cwd : "?");
+	if (cwd) free(cwd);
 
 	if (syd_proc_cmdline(current->pid, cmdline, sizeof(cmdline)) == 0)
 		say("cmdline: `%s'", cmdline);

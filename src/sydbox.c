@@ -97,7 +97,8 @@ static inline bool process_is_alive(pid_t pid, pid_t tgid);
 static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current,
 					  bool kill_on_error);
 static inline pid_t process_find_exec(pid_t pid);
-static inline syd_process_t *process_init(pid_t pid, syd_process_t *parent);
+static inline syd_process_t *process_init(pid_t pid, syd_process_t *parent,
+					  bool genuine);
 
 static void about(void)
 {
@@ -528,32 +529,10 @@ static inline void save_exit_status(int status)
 		save_exit_signal(SIGKILL); /* Assume SIGKILL */
 }
 
-static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
+static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
+				bool genuine)
 {
 	bool share_thread, share_fs, share_files;
-
-	if (!parent) {
-		int r;
-		char *cwd;
-		if ((r = proc_cwd(current->pid, sydbox->config.use_toolong_hack,
-				  &cwd)) < 0) {
-			errno = -r;
-			say_errno("proc_cwd");
-			P_CWD(current) = strdup("/");
-		} else {
-			P_CWD(current) = cwd;
-		}
-		copy_sandbox(P_BOX(current), box_current(NULL));
-		return;
-	}
-
-	share_thread = share_fs = share_files = false;
-	if (parent->new_clone_flags & SYD_CLONE_THREAD)
-		share_thread = true;
-	if (parent->new_clone_flags & SYD_CLONE_FS)
-		share_fs = true;
-	if (parent->new_clone_flags & SYD_CLONE_FILES)
-		share_files = true;
 
 	/*
 	 * Link together for memory sharing, as necessary
@@ -567,7 +546,36 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 	 * TODO: We need to simplify the sandbox data structure to take more
 	 * advantage of such cases and decrease memory usage.
 	 */
-	current->clone_flags = parent->new_clone_flags;
+
+	share_thread = share_fs = share_files = false;
+	if (genuine) { /* Sharing data needs a genuine parent, check
+			  parent_process. */
+		if (parent->new_clone_flags & SYD_CLONE_THREAD)
+			share_thread = true;
+		if (parent->new_clone_flags & SYD_CLONE_FS)
+			share_fs = true;
+		if (parent->new_clone_flags & SYD_CLONE_FILES)
+			share_files = true;
+		current->clone_flags = parent->new_clone_flags;
+	} else {
+		current->clone_flags = SIGCHLD;
+	}
+
+	int r;
+	char *cwd;
+	if (!parent) {
+proc_getcwd:
+		if ((r = proc_cwd(current->pid, sydbox->config.use_toolong_hack,
+				  &cwd)) < 0) {
+			errno = -r;
+			say_errno("proc_cwd");
+			P_CWD(current) = strdup("/");
+		} else {
+			P_CWD(current) = cwd;
+		}
+		copy_sandbox(P_BOX(current), box_current(NULL));
+		return;
+	}
 
 	if (share_thread || P_BOX(parent)->magic_lock == LOCK_SET) {
 		current->shm.clone_thread = parent->shm.clone_thread;
@@ -579,25 +587,31 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 	if (share_thread)
 		P_EXECVE_PID(current) = P_EXECVE_PID(parent);
 
-	if (share_fs) {
-		current->shm.clone_fs = parent->shm.clone_fs;
-		P_CLONE_FS_RETAIN(current);
-	} else {
-		new_shared_memory_clone_fs(current);
-		P_CWD(current) = xstrdup(P_CWD(parent));
-	}
-
 	if (share_files) {
 		current->shm.clone_files = parent->shm.clone_files;
 		P_CLONE_FILES_RETAIN(current);
 	} else {
 		new_shared_memory_clone_files(current);
 	}
+
+	if (share_fs) {
+		current->shm.clone_fs = parent->shm.clone_fs;
+		P_CLONE_FS_RETAIN(current);
+	} else {
+		new_shared_memory_clone_fs(current);
+		if (!genuine) /* Child with a non-genuine parent has a
+				 completely separate set of shared memory
+				 pointers, as the last step we want to
+				 read cwd from /proc */
+			goto proc_getcwd;
+		P_CWD(current) = xstrdup(P_CWD(parent));
+	}
 }
 
-static void init_process_data(syd_process_t *current, syd_process_t *parent)
+static void init_process_data(syd_process_t *current, syd_process_t *parent,
+			      bool genuine)
 {
-	init_shareable_data(current, parent);
+	init_shareable_data(current, parent, genuine);
 
 	if (sydbox->config.allowlist_per_process_directories &&
 	    (!parent || current->pid != parent->pid)) {
@@ -605,7 +619,7 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent)
 	}
 }
 
-static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
+static syd_process_t *clone_process(syd_process_t *p, pid_t cpid, bool genuine)
 {
 	bool new_child;
 	syd_process_t *child;
@@ -620,7 +634,7 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
 	 * Careful here, the process may still be a thread although new
 	 * clone flags is missing CLONE_THREAD
 	 */
-	if (p->new_clone_flags & SYD_CLONE_THREAD) {
+	if (genuine && (p->new_clone_flags & SYD_CLONE_THREAD)) {
 		child->ppid = p->ppid;
 		child->tgid = p->tgid;
 	} else if (proc_parents(child->pid, &child->tgid, &child->ppid) < 0) {
@@ -630,11 +644,13 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
 	}
 
 	if (new_child)
-		init_process_data(child, p);
+		init_process_data(child, p, genuine);
 
-	/* clone OK: p->pid <-> cpid */
-	p->new_clone_flags = 0;
-	p->flags &= ~SYD_IN_CLONE;
+	if (genuine) {
+		/* clone OK: p->pid <-> cpid */
+		p->new_clone_flags = 0;
+		p->flags &= ~SYD_IN_CLONE;
+	}
 
 	return child;
 }
@@ -754,60 +770,54 @@ out:
 		sysx_chdir(execve_thread);
 }
 
-static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
+static syd_process_t *parent_process(pid_t pid_task,
+				     syd_process_t *p_task,
+				     bool *genuine)
 {
-	pid_t ppid, tgid;
-	unsigned short parent_count;
-	syd_process_t *parent_node, *node;
-
 	/* Try (really) hard to find the parent process. */
-
-	/* Step 1: Check for ppid entry. */
-	if (p_task && p_task->ppid != 0) {
-		node = lookup_process(p_task->ppid);
-		if (node)
-			return node;
-		pid_task = p_task->pid;
-	}
-
-	/* Step 2: Check for tgid entry. */
-	if (p_task && p_task->tgid != 0) {
-		node = lookup_process(p_task->tgid);
-		if (node)
-			return node;
-		pid_task = p_task->pid;
-	}
+	*genuine = true;
 
 	/*
-	 * Step 3: Check for IN_CLONE|IN_EXECVE flags and /proc/$pid/task
+	 * Step 1: Check process Tgid and Ppid.
+	 * 1. Is it correct to always prefer Tgid over Ppid?
+	 * 2. Is it more reliable to switch steps 1 & 2?
+	 */
+	pid_t tgid, ppid;
+	proc_parents(pid_task, &tgid, &ppid);
+	syd_process_t *node_tgid = lookup_process(tgid);
+	if (node_tgid && node_tgid->flags & (SYD_IN_CLONE|SYD_IN_EXECVE))
+		return node_tgid;
+	syd_process_t *node_ppid = lookup_process(ppid);
+	if (node_ppid && node_ppid->flags & (SYD_IN_CLONE|SYD_IN_EXECVE))
+		return node_ppid;
+
+	/*
+	 * Step 2: Check for IN_CLONE|IN_EXECVE flags and /proc/$pid/task
 	 * We need IN_EXECVE for threaded exec -> leader lost case.
 	 */
-	parent_count = 0;
+	syd_process_t *node;
 	sc_map_foreach_value(&sydbox->tree, node) {
-		if (node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE)) {
-			if (!syd_proc_task_find(node->pid, pid_task))
-				return node;
-			if (parent_count < 2) {
-				parent_count++;
-				parent_node = node;
-			}
-		}
+		if (!(node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE)))
+			continue;
+		if (!syd_proc_task_find(node->pid, pid_task))
+			return node;
 	}
-	if (parent_count == 1)
-		/* We have the suspect! */
-		return parent_node;
 
 	/*
-	 * Step 4: Check /proc/$pid/status
-	 * 1. Is it correct to always prefer Tgid over Ppid?
-	 * 2. Is it more reliable to switch steps 3 & 4?
+	 * Step 3: We tried really hard to find a parent process
+	 * with a IN_CLONE or IN_EXECVE flag but failed.
+	 * If available, use the tgid or ppid process entry
+	 * even if it is lacking the correct process flag.
+	 * If both are absent, use SydBox's execve pid which
+	 * is guaranteed to be available at all times.
 	 */
-	if (!proc_parents(pid_task, &tgid, &ppid) &&
-			((parent_node = lookup_process(tgid)) ||
-			 (tgid != ppid && (parent_node = lookup_process(ppid)))))
-		return parent_node;
-
-	return NULL;
+	*genuine = false;
+	if (node_tgid)
+		return node_tgid;
+	else if (node_ppid)
+		return node_ppid;
+	else
+		return lookup_process(sydbox->execve_pid);
 }
 
 static void interrupt(int sig)
@@ -1167,21 +1177,21 @@ static inline pid_t process_find_exec(pid_t exec_pid)
 	return 0;
 }
 
-static syd_process_t *process_init(pid_t pid, syd_process_t *parent)
+static syd_process_t *process_init(pid_t pid, syd_process_t *parent,
+				   bool genuine)
 {
 	syd_process_t *current;
 
 	if (parent) {
-		current = clone_process(parent, pid);
-		parent->clone_flags &= ~SYD_IN_CLONE;
+		current = clone_process(parent, pid, genuine);
+		if (genuine)
+			parent->clone_flags &= ~SYD_IN_CLONE;
 	} else {
 		parent = lookup_process(sydbox->execve_pid);
-		YELL_ON(parent, "failed to find a parent process for pid:%d, "
-				"do not know which sandboxing rules to apply!",
-				pid);
+		BUG_ON(parent);
 		unsigned int save_new_clone_flags = parent->new_clone_flags;
 		parent->new_clone_flags = 0;
-		current = clone_process(parent, pid);
+		current = clone_process(parent, pid, genuine);
 		parent->new_clone_flags = save_new_clone_flags;
 		sysx_chdir(current);
 	}
@@ -1495,7 +1505,7 @@ notify_receive:
 			pid_t leader_pid = process_find_exec(pid);
 			if (!current) {
 				parent = lookup_process(leader_pid);
-				current = process_init(pid, parent);
+				current = process_init(pid, parent, true);
 				assert(current);
 			}
 			execve_pid = P_EXECVE_PID(current);
@@ -1522,8 +1532,11 @@ notify_receive:
 		}
 
 		if (!current) {
-			parent = parent_process(pid, lookup_process(sydbox->execve_pid));
-			current = process_init(pid, parent);
+			bool genuine;
+			parent = parent_process(pid,
+						lookup_process(sydbox->execve_pid),
+						&genuine);
+			current = process_init(pid, parent, genuine);
 			assert(current);
 		}
 		current->sysnum = sydbox->request->data.nr;
@@ -2154,7 +2167,7 @@ int main(int argc, char **argv)
 		init_signals();
 		pid = startup_child((char **)my_argv);
 		syd_process_t *current = new_process_or_kill(pid);
-		init_process_data(current, NULL);
+		init_process_data(current, NULL, false);
 		dump(DUMP_STARTUP, pid);
 		(void)notify_loop(current);
 	} else {
