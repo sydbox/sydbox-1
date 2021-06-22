@@ -29,7 +29,6 @@ core/restrict/general:0
 core/match/case_sensitive:true
 core/match/no_wildcard:prefix
 
-#exec/resume_if_match+
 #exec/kill_if_match+
 
 #filter/exec+

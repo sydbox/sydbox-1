@@ -51,7 +51,7 @@
 # define NR_OPEN 1024
 #endif
 
-#define switch_execve_flags(f) ((f) & ~(SYD_IN_CLONE|SYD_IN_EXECVE|SYD_KILLED))
+#define switch_execve_flags(f) ((f) & ~(SYD_IN_CLONE|SYD_IN_EXECVE))
 
 sydbox_t *sydbox;
 static unsigned os_release;
@@ -253,7 +253,10 @@ static int process_proc(struct syd_process *p)
 		if (errno == EINVAL) {
 			; /* process id not a thread-group leader. */
 		} else if (proc_esrch(errno)) {
-			p->flags |= SYD_KILLED;
+			if (p->memfd >= 0) {
+				close(p->memfd);
+				p->memfd = -1;
+			}
 			return -ESRCH;
 		} else {
 			say_errno("pidfd_open(%d)", p->pid);
@@ -268,7 +271,10 @@ static int process_proc(struct syd_process *p)
 			r = memfd;
 			p->memfd = -1;
 			if (proc_esrch(-r)) {
-				p->flags |= SYD_KILLED;
+				if (p->pidfd >= 1) {
+					close(p->pidfd);
+					p->pidfd = -1;
+				}
 				return -ESRCH;
 			} else if (-r != ENOENT) {
 				say_errno("proc_mem_open(%d)", p->pid);
@@ -432,12 +438,11 @@ static syd_process_t *new_thread(pid_t pid)
 
 	thread->pidfd = -1;
 	thread->memfd = -1;
-	/*
-	 * process_proc return -ESRCH indicating dead process. In this case
-	 * SYD_KILLED flag is already set on the process, so nothing to do here.
-	 */
-	process_proc(thread);
 
+	if (process_proc(thread) < 0) {
+		free(thread);
+		return NULL;
+	}
 	process_add(thread);
 
 	dump(DUMP_THREAD_NEW, pid);
@@ -630,16 +635,11 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
 	/* clone OK: p->pid <-> cpid */
 	p->new_clone_flags = 0;
 	p->flags &= ~SYD_IN_CLONE;
-	if (p->flags & SYD_KILLED) {
-		/* Parent had died already and we do not need the process entry
-		 * anymore. Farewell. */
-		bury_process(p);
-	}
 
 	return child;
 }
 
-void bury_process(syd_process_t *p)
+void bury_process(syd_process_t *p, bool force)
 {
 	pid_t pid;
 
@@ -667,15 +667,20 @@ void bury_process(syd_process_t *p)
 		}
 	}
 
+	if (sydbox->config.allowlist_per_process_directories)
+		procdrop(&sydbox->config.proc_pid_auto, pid);
+
+	if (!force && p->pid == sydbox->execve_pid) {
+		/* keep the default sandbox available. */
+		return;
+	}
+
 	process_remove(p);
 
 	/* Release shared memory */
 	P_CLONE_THREAD_RELEASE(p);
 	P_CLONE_FS_RELEASE(p);
 	P_CLONE_FILES_RELEASE(p);
-
-	if (sydbox->config.allowlist_per_process_directories)
-		procdrop(&sydbox->config.proc_pid_auto, pid);
 
 	sc_map_del_64v(&sydbox->tree, pid);
 	free(p); /* good bye, good bye, good bye. */
@@ -746,45 +751,6 @@ out:
 		new_shared_memory_clone_fs(execve_thread);
 	if (!P_CWD(execve_thread))
 		sysx_chdir(execve_thread);
-}
-
-void remove_process_node(syd_process_t *p)
-{
-	/* keep the default sandbox alive. */
-	if (p->pid == sydbox->execve_pid || p->flags & SYD_KILLED) {
-		if (sydbox->config.allowlist_per_process_directories)
-			procdrop(&sydbox->config.proc_pid_auto, p->pid);
-		if (p->pidfd >= 0) {
-			close(p->pidfd);
-			p->pidfd = -1;
-		}
-		if (p->memfd >= 0) {
-			close(p->memfd);
-			p->memfd = -1;
-		}
-	} else if (p->flags & SYD_IN_CLONE || p->flags & SYD_IN_EXECVE) {
-		p->flags |= SYD_KILLED;
-		remove_process_node(p);
-	} else if (!(p->flags & SYD_KILLED)) {
-		bury_process(p);
-	}
-}
-
-static void remove_process(pid_t pid, int status)
-{
-	syd_process_t *p;
-
-	if (pid == sydbox->execve_pid)
-		save_exit_status(status);
-
-	p = lookup_process(pid);
-	if (!p)
-		return;
-	/* This is a proper exit notification,
-	 * no more children expected, clear flags. */
-	p->flags &= ~(SYD_IN_CLONE|SYD_IN_EXECVE|SYD_KILLED);
-
-	remove_process_node(p);
 }
 
 static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
@@ -1092,17 +1058,15 @@ static int proc_info(pid_t pid) {
 
 static void reap_zombies(syd_process_t *current, pid_t pid)
 {
+	if (pid)
+		current = lookup_process(pid);
 	if (current)
-		remove_process_node(current);
-	else if (pid >= 0)
-		remove_process(pid, 0);
+		bury_process(current, false);
 
 	syd_process_t *node;
 	sc_map_foreach_value(&sydbox->tree, node) {
-		if (node->flags & SYD_KILLED) {
-			remove_process_node(node);
-		} else if (!process_is_alive(node->pid, node->tgid)) {
-			remove_process_node(node);
+		if (!process_is_alive(node->pid, node->tgid)) {
+			bury_process(node, false);
 		}
 	}
 }
@@ -1128,8 +1092,6 @@ static inline size_t process_count_alive(void)
 	syd_process_t *node;
 
 	sc_map_foreach_value(&sydbox->tree, node) {
-		if (node->flags & SYD_KILLED)
-			continue;
 		if (node->pidfd <= 0)
 			continue;
 		if ((r = syd_pidfd_send_signal(node->pidfd, 0, NULL, 0)) < 0)
@@ -1174,7 +1136,9 @@ static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current,
 		errno = -current->memfd;
 		current->memfd = -1;
 		if (proc_esrch(errno)) {
-			current->flags |= SYD_KILLED;
+			if (current->pidfd >= 0)
+				close(current->pidfd);
+			current->pidfd = -1;
 			return -ESRCH;
 		} else {
 			say_errno("proc_mem_open(%d)", current->pid);
@@ -1190,7 +1154,6 @@ static inline pid_t process_find_exec(pid_t exec_pid)
 
 	sc_map_foreach_value(&sydbox->tree, node) {
 		if (node->pid == node->tgid &&
-		    !(node->flags & SYD_KILLED) &&
 		    proc_has_task(node->pid, exec_pid))
 			return node->pid;
 	}
@@ -1210,6 +1173,9 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent)
 		YELL_ON(parent, "failed to find a parent process for pid:%d, "
 				"do not know which sandboxing rules to apply!",
 				pid);
+		TELL_ON(!parent, "failed to find a process for pid:%d, "
+				 "inheriting sandboxing rules from pid:%d.",
+				 pid, parent->pid);
 		unsigned int save_new_clone_flags = parent->new_clone_flags;
 		parent->new_clone_flags = 0;
 		current = clone_process(parent, pid);
@@ -1390,7 +1356,7 @@ static int event_exec(syd_process_t *current)
 	if (!current->abspath) /* nothing left to do */
 		return 0;
 
-	/* kill_if_match and resume_if_match */
+	/* kill_if_match */
 	r = 0;
 	if (acl_match_path(ACL_ACTION_NONE, &sydbox->config.exec_kill_if_match,
 			   current->abspath, &match)) {
@@ -1398,13 +1364,6 @@ static int event_exec(syd_process_t *current)
 		    match, current->abspath);
 		say("killing process");
 		process_kill(current->pid, current->tgid, SIGKILL);
-		return -ESRCH;
-	} else if (acl_match_path(ACL_ACTION_NONE, &sydbox->config.exec_resume_if_match,
-				  current->abspath, &match)) {
-		say("resume_if_match pattern=`%s' matches execve path=`%s'",
-		    match, current->abspath);
-		say("detaching from process");
-		current->flags |= SYD_DETACHED;
 		return -ESRCH;
 	}
 	/* execve path does not match if_match patterns */
@@ -1491,7 +1450,7 @@ notify_receive:
 		current = lookup_process(pid);
 		if (request_is_valid(sydbox->request->id) == -ENOENT) {
 			if (current)
-				remove_process_node(current);
+				bury_process(current, false);
 			goto out;
 		} else if (current &&
 			   process_reopen_proc_mem(-1,
@@ -1590,7 +1549,7 @@ notify_respond:
 		/* 0 if valid, ENOENT if not */
 		if (request_is_valid(sydbox->request->id) == -ENOENT) {
 			if (current)
-				remove_process_node(current);
+				bury_process(current, false);
 			goto out;
 		}
 		sigprocmask(SIG_SETMASK, &empty_set, NULL);
@@ -1638,8 +1597,13 @@ out:
 		sig = 0;
 		if (check_child_exited(&sig)) {
 			reap_zombies(NULL, syd_get_int(&child_pid));
-			if (!process_count_alive())
+			if (!process_count_alive()) {
+				syd_process_t *p =
+					lookup_process(sydbox->execve_pid);
+				BUG_ON(p);
+				bury_process(p, true);
 				break;
+			}
 			syd_set_state(&child_exited, false);
 		} else if (sig && sig != SIGCHLD) {
 			break;
@@ -1815,9 +1779,7 @@ void cleanup_for_child(void)
 	}
 	if (!sc_map_freed(&sydbox->tree)) {
 		sc_map_foreach_value(&sydbox->tree, proc_node) {
-			if (proc_node->flags & SYD_KILLED)
-				proc_node->flags &= ~SYD_KILLED;
-			remove_process_node(proc_node);
+			bury_process(proc_node, true);
 		}
 		sc_map_term_64v(&sydbox->tree);
 	}

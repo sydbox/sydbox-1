@@ -74,8 +74,6 @@
 #define SYD_STARTUP		00001 /* process attached, needs to be set up */
 #define SYD_IN_CLONE		00002 /* process called clone(2) */
 #define SYD_IN_EXECVE		00004 /* process called execve(2) */
-#define SYD_KILLED		00010 /* process is dead, keeping entry for child. */
-#define SYD_DETACHED		00020 /* process is detached, not sandboxed. */
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
 #define SYD_TGID_NONE		0      /* no thread group ID (yet) */
@@ -756,7 +754,7 @@ extern sydbox_t *sydbox;
 #define sandbox_deny_file(p) (sandbox_deny_exec((p)) && sandbox_deny_read((p)) && sandbox_deny_write((p)))
 
 #define proc_esrch(err_no)  ((err_no) == ENOENT || (err_no) == ESRCH)
-#define process_alive(p) ((p) && !((p)->flags & SYD_KILLED))
+#define process_alive(p) ((p) && !((p)->pidfd >= 0))
 
 #define action_bpf_default(action) ((action) != SCMP_ACT_NOTIFY &&\
 				    (action) == sydbox->seccomp_action)
@@ -806,8 +804,7 @@ int test_pidfd(bool report);
 int test_seccomp(bool report);
 
 void reset_process(syd_process_t *p);
-void bury_process(syd_process_t *p);
-void remove_process_node(syd_process_t *p);
+void bury_process(syd_process_t *p, bool force);
 
 static inline syd_process_t *lookup_process(pid_t pid)
 {

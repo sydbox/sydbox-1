@@ -219,8 +219,6 @@ static void dump_process(pid_t pid)
 			J(flag_STARTUP)"%s,"
 			J(flag_IN_CLONE)"%s,"
 			J(flag_IN_EXECVE)"%s,"
-			J(flag_KILLED)"%s,"
-			J(flag_DETACHED)"%s,"
 			J(ref_CLONE_THREAD)"%u,"
 			J(ref_CLONE_FS)"%u,"
 			J(ref_CLONE_FILES)"%u,"
@@ -231,8 +229,6 @@ static void dump_process(pid_t pid)
 			J_BOOL(p->flags & SYD_STARTUP),
 			J_BOOL(p->flags & SYD_IN_CLONE),
 			J_BOOL(p->flags & SYD_IN_EXECVE),
-			J_BOOL(p->flags & SYD_KILLED),
-			J_BOOL(p->flags & SYD_DETACHED),
 			p->shm.clone_thread ? p->shm.clone_thread->refcnt : 0,
 			p->shm.clone_fs ? p->shm.clone_fs->refcnt : 0,
 			p->shm.clone_files ? p->shm.clone_files->refcnt : 0,

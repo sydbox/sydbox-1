@@ -94,7 +94,7 @@ void kill_all(int fatal_sig)
 
 	sc_map_foreach_value(&sydbox->tree, node) {
 		if (kill_one(node, fatal_sig) == -ESRCH)
-			remove_process_node(node);
+			bury_process(node, true);
 	}
 	cleanup_for_sydbox();
 	exit(fatal_sig);
@@ -161,7 +161,7 @@ int panic(syd_process_t *current)
 	int r;
 
 	r = kill_one(current, SIGTERM);
-	remove_process_node(current);
+	bury_process(current, true);
 	return r;
 }
 

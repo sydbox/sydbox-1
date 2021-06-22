@@ -44,9 +44,9 @@ struct mmsghdr {
 #endif
 typedef struct msghdr struct_msghdr;
 
-#define SYD_RETURN_IF_DETACHED(current) do { \
-	if (current->flags & SYD_DETACHED) { \
-		return 0; \
+#define SYD_RETURN_IF_DEAD(current) do { \
+	if (current->pidfd == -1) { \
+		return -ESRCH; \
 	}} while (0)
 
 #ifndef __NR_process_vm_readv
@@ -188,7 +188,12 @@ retry_vm_readv:
 			cross_memory_attach_works = false;
 			goto retry_vm_readv;
 		} else if (errno == ESRCH) {
-			current->flags |= SYD_KILLED;
+			if (current->memfd >= 0)
+				close(current->memfd);
+			if (current->pidfd >= 0)
+				close(current->pidfd);
+			current->memfd = -1;
+			current->pidfd = -1;
 		} else if (nread < 0 && r == 0) {
 			int save_errno = errno;
 			say_errno("process_vm_read(%d)", current->pid);
@@ -216,9 +221,12 @@ mem_read:
 	if (errno == EINTR || (nread > 0 && (size_t)r < count)) {
 		goto mem_read;
 	} else if (proc_esrch(errno)) {
-		close(current->memfd);
+		if (current->memfd >= 0)
+			close(current->memfd);
+		if (current->pidfd >= 0)
+			close(current->pidfd);
 		current->memfd = -1;
-		current->flags |= SYD_KILLED;
+		current->pidfd = -1;
 		errno = ESRCH;
 		return r;
 	} else if (!mem_open && (!nread || errno == EBADF || errno == ESPIPE)) {
@@ -273,7 +281,12 @@ retry_vm_writev:
 			cross_memory_attach_works = false;
 			goto retry_vm_writev;
 		} else if (errno == ESRCH) {
-			current->flags |= SYD_KILLED;
+			if (current->memfd >= 0)
+				close(current->memfd);
+			if (current->pidfd >= 0)
+				close(current->pidfd);
+			current->memfd = -1;
+			current->pidfd = -1;
 		} else if (nwritten < 0 && r == 0) {
 			int save_errno = errno;
 			say_errno("process_vm_write(%d)", current->pid);
@@ -303,9 +316,12 @@ mem_write:
 	if (errno == EINTR || (nwritten > 0 && (size_t)r < count)) {
 		goto mem_write;
 	} else if (proc_esrch(errno)) {
-		close(current->memfd);
+		if (current->memfd)
+			close(current->memfd);
+		if (current->pidfd)
+			close(current->pidfd);
 		current->memfd = -1;
-		current->flags |= SYD_KILLED;
+		current->pidfd = -1;
 		errno = ESRCH;
 		return r;
 	} else if (!mem_open && (!nwritten || errno == EBADF || errno == ESPIPE)) {
@@ -368,7 +384,7 @@ int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argv
 
 inline int syd_read_syscall(syd_process_t *current, long *sysnum)
 {
-	SYD_RETURN_IF_DETACHED(current);
+	SYD_RETURN_IF_DEAD(current);
 	BUG_ON(sysnum);
 
 	*sysnum = current->sysnum;
@@ -378,7 +394,7 @@ inline int syd_read_syscall(syd_process_t *current, long *sysnum)
 
 inline int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval)
 {
-	SYD_RETURN_IF_DETACHED(current);
+	SYD_RETURN_IF_DEAD(current);
 	BUG_ON(argval);
 	BUG_ON(arg_index < 6);
 
@@ -389,7 +405,7 @@ inline int syd_read_argument(syd_process_t *current, unsigned arg_index, long *a
 
 int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argval)
 {
-	SYD_RETURN_IF_DETACHED(current);
+	SYD_RETURN_IF_DEAD(current);
 	BUG_ON(argval);
 	BUG_ON(arg_index < 6);
 
@@ -400,7 +416,7 @@ int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argva
 
 ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t len)
 {
-	SYD_RETURN_IF_DETACHED(current);
+	SYD_RETURN_IF_DEAD(current);
 
 	return process_vm_read(current, addr, dest, len);
 }
@@ -410,7 +426,7 @@ int syd_read_socket_argument(syd_process_t *current, unsigned arg_index,
 {
 	int r;
 
-	SYD_RETURN_IF_DETACHED(current);
+	SYD_RETURN_IF_DEAD(current);
 	BUG_ON(argval);
 
 	bool decode_socketcall = !strcmp(current->sysname, "socketcall");
@@ -449,7 +465,7 @@ int syd_read_socket_argument(syd_process_t *current, unsigned arg_index,
 SYD_GCC_ATTR((nonnull(1,2)))
 int syd_read_socket_subcall(syd_process_t *current, long *subcall)
 {
-	SYD_RETURN_IF_DETACHED(current);
+	SYD_RETURN_IF_DEAD(current);
 
 	bool decode_socketcall = !strcmp(current->sysname, "socketcall");
 	if (decode_socketcall) {
@@ -470,7 +486,7 @@ int syd_read_socket_address(syd_process_t *current,
 	unsigned long myfd;
 	unsigned long addr, addrlen;
 
-	SYD_RETURN_IF_DETACHED(current);
+	SYD_RETURN_IF_DEAD(current);
 
 	if (fd) {
 		if ((r = syd_read_socket_argument(current, 0, &myfd)) < 0)
@@ -586,7 +602,7 @@ int syd_read_socket_address(syd_process_t *current,
 SYD_GCC_ATTR((nonnull(1)))
 int syd_write_retval(syd_process_t *current, long retval, int error)
 {
-	SYD_RETURN_IF_DETACHED(current);
+	SYD_RETURN_IF_DEAD(current);
 
 	sydbox->response->val = retval;
 	sydbox->response->error = error;
@@ -597,7 +613,7 @@ int syd_write_retval(syd_process_t *current, long retval, int error)
 ssize_t syd_write_data(syd_process_t *current, long addr, void *buf,
 		       size_t count)
 {
-	SYD_RETURN_IF_DETACHED(current);
+	SYD_RETURN_IF_DEAD(current);
 
 	return process_vm_write(current, addr, buf, count);
 }

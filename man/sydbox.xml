@@ -676,9 +676,6 @@
             <link linkend="core-allowlist-usf">core/allowlist/unsupported_socket_families</link>
           </para></listitem>
           <listitem><para>
-            <link linkend="exec-resume_if_match">exec/resume_if_match</link>
-          </para></listitem>
-          <listitem><para>
             <link linkend="exec-kill_if_match">exec/kill_if_match</link>
           </para></listitem>
         </itemizedlist>
@@ -1540,40 +1537,6 @@
               compatibility with sydbox-0 patterns.
             </para>
             <para>See <xref linkend="pattern-matching"/> for more information.</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="exec-resume_if_match">exec/resume_if_match</option></term>
-          <listitem>
-            <para>type: <type>string-array</type></para>
-            <para>default: <literal>[empty array]</literal></para>
-            <para>
-              This setting specifies a list of path patterns. If one of these patterns matches the resolved path of an
-              <function>execve</function><manvolnum>2</manvolnum> system call, the process in question is resumed. See
-              <xref linkend="pattern-matching"/> for more information on wildmatch patterns.
-            </para>
-            <note>
-              <para>
-                The initial <function>execve</function><manvolnum>2</manvolnum> is <emphasis>not</emphasis> checked.
-                Thus, if sydbox is called like:
-                <programlisting>
-                  $> sydbox -m exec/resume_if_match+/bin/sh -- /bin/sh
-                </programlisting>
-                she will <emphasis>not</emphasis> execute the <command>/bin/sh</command> command.
-              </para>
-            </note>
-            <note>
-              <para>
-                This functionality does <emphasis>not</emphasis> work with seccomp because once enabled, seccomp mode
-                can not be disabled. If sydbox detaches from the process all filtered system calls of the process will
-                fail with <constant>ENOSYS</constant>. Due to this fact upon receiving this command when seccomp is
-                enabled sydbox goes on to trace the process but stops sandboxing and frees all sandboxing related data
-                structures of the process. The process is <emphasis>ignored</emphasis>. However, this workaround may not
-                be enough for some cases, for example, when the process in question is a daemon and must resume its
-                execution after sydbox exits. For such cases use <command>cmd/exec</command>.
-              </para>
-            </note>
           </listitem>
         </varlistentry>
 
