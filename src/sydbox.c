@@ -91,6 +91,7 @@ static inline bool check_child_stopped(int *interrupt)
  * additional space for the terminating NULL pointer (used to loop
  * over the array to free the strings).
  */
+static uint32_t arch_native;
 static char *arch_argv[SYD_SECCOMP_ARCH_ARGV_SIZ] = { NULL };
 static size_t arch_argv_idx;
 
@@ -286,6 +287,100 @@ static int process_proc(struct syd_process *p)
 
 out:
 	return r;
+}
+
+static int seccomp_setup(void)
+{
+	int r;
+
+	/* initialize Secure Computing */
+	bool using_arch_native = true; /* Loaded by libseccomp by default. */
+	if (sydbox->config.restrict_general > 0)
+		sydbox->seccomp_action = SCMP_ACT_ERRNO(EPERM);
+	else
+		sydbox->seccomp_action = SCMP_ACT_ALLOW;
+	if (!(sydbox->ctx = seccomp_init(sydbox->seccomp_action)))
+		die_errno("seccomp_init");
+	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_NNP, 1)) < 0)
+		say("can't set no-new-privs flag for seccomp filter (%d %s), "
+		    "continuing...",
+		    -r, strerror(-r));
+	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_API_TSKIP, 1)) < 0)
+		say("can't set tskip attribute for seccomp filter (%d %s), "
+		    "continuing...",
+		    -r, strerror(-r));
+	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_API_SYSRAWRC, 1)) < 0)
+		say("can't set sysrawrc attribute for seccomp filter (%d %s), "
+		    "continuing...",
+		    -r, strerror(-r));
+#if 0
+	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_TSYNC, 1)) < 0)
+		say("can't set tsync attribute for seccomp filter (%d %s), "
+		    "continuing...",
+		    -r, strerror(-r));
+	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
+		say("can't optimize seccomp filter (%d %s), continuing...",
+		    -r, strerror(-r));
+#endif
+#if SYDBOX_HAVE_DUMP_BUILTIN
+	if (sydbox->dump_fd > 0) {
+		if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_LOG, 1)) < 0)
+			say("can't log attribute for seccomp filter (%d %s), "
+			    "continuing...", -r, strerror(-r));
+	}
+#endif
+	/* Set system call priorities */
+	sysinit(sydbox->ctx);
+
+	/* This is added by default by libseccomp,
+	 * so no need to do it manually.
+	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_NATIVE);
+	 */
+	if (arch_argv_idx == 0) {
+		/* User has specified no architectures.
+		 * use/try all the valid architectures defined at compile-time.
+		 */
+		SYD_GCC_ATTR((unused))char *in_sydbox_test = getenv("IN_SYDBOX_TEST");
+#include "syd_seccomp_arch_default.c"
+	}
+	if (arch_argv_idx > 0) {
+		/* Else, we plan to remove the native architecture of libseccomp.
+		 * If the user passes --arch native, we are not going to
+		 * remove it.
+		 */
+		using_arch_native = false;
+	}
+
+	size_t i;
+	for (i = arch_argv_idx - 1; i; i--) {
+		if (arch_argv[i] == NULL)
+			continue;
+		uint32_t arch = arch_from_string(arch_argv[i]);
+		if (arch == UINT32_MAX)
+			continue;
+		if (arch == SCMP_ARCH_NATIVE ||
+		    (uint32_t)arch == arch_native)
+			using_arch_native = true;
+		if ((r = seccomp_arch_add(sydbox->ctx, (uint32_t)arch)) != 0 &&
+		    r != -EEXIST) {
+			say("architecture %s: not ok (%d %s), continuing..",
+			    arch_argv[i], -r, strerror(-r));
+			say("system calls in arch %s may result in process kill, "
+			    "hang, or misfunction!", arch_argv[i]);
+		}
+	}
+
+	if (!using_arch_native &&
+	    ((r = seccomp_arch_remove(sydbox->ctx, SCMP_ARCH_NATIVE)) != 0)) {
+		errno = -r;
+		say_errno("error removing native architecture");
+	}
+
+	for (i = 0; arch_argv[i] != NULL; i++)
+		sydbox->arch[i] = arch_from_string(arch_argv[i]);
+	sydbox->arch[i] = UINT32_MAX;
+
+	return 0;
 }
 
 static void new_shared_memory_clone_thread(struct syd_process *p)
@@ -1161,18 +1256,16 @@ static int wait_for_notify_fd(void)
 			return -ETIMEDOUT;
 		else
 			return -errno;
-	} else {
-		short revents = pollfd.revents;
-		if (!r && !revents)
-			return -ETIMEDOUT;
-		else if (revents & POLLIN)
-			return 0;
-		else if (revents & POLLHUP || revents & POLLERR)
-			return -ESRCH;
-		else if (revents & POLLNVAL)
-			return -EINVAL;
 	}
-	assert_not_reached();
+
+	short revents = pollfd.revents;
+	if (!r && !revents)
+		return -ETIMEDOUT;
+	else if (revents & POLLHUP || revents & POLLERR)
+		return -ESRCH;
+	else if (revents & POLLNVAL)
+		return -EINVAL;
+	return 0;
 }
 
 static void init_early(void)
@@ -1515,7 +1608,7 @@ notify_receive:
 		}
 
 		/* Search early for execve before getting a process entry. */
-		if (name && (!strcmp(name, "execve") || !strcmp(name, "execveat"))) {
+		if (name && (streq(name, "execve") || streq(name, "execveat"))) {
 			/* memfd is no longer valid, reopen next turn,
 			 * reading /proc/pid/mem on a process stopped
 			 * for execve returns EPERM! */
@@ -1679,6 +1772,9 @@ static pid_t startup_child(char **argv)
 	} else {
 		strlcpy(sydbox->hash, "<noexec>", sizeof("<noexec>"));
 	}
+
+	/* Initialize Secure Computing */
+	seccomp_setup();
 
 	/* All ready, initialise dump */
 	dump(DUMP_INIT, argv[0], pathname, get_startas(), arch_argv);
@@ -1962,9 +2058,7 @@ int main(int argc, char **argv)
 	const char *env;
 	struct utsname buf_uts;
 
-	uint32_t arch;
-	uint32_t arch_native = seccomp_arch_native();
-	// memset(arch_argv, 0, sizeof(char) * ARCH_ARGV_SIZ);
+	arch_native = seccomp_arch_native();
 
 	/* Early initialisations */
 	init_early();
@@ -2248,109 +2342,6 @@ int main(int argc, char **argv)
 		say("All restrict and sandbox options are off.");
 		die("Refusing to run the program `%s'.", argv[optind]);
 	}
-
-	/* initialize Secure Computing */
-	bool using_arch_native = true; /* Loaded by libseccomp by default. */
-	if (sydbox->config.restrict_general > 0)
-		sydbox->seccomp_action = SCMP_ACT_ERRNO(EPERM);
-	else
-		sydbox->seccomp_action = SCMP_ACT_ALLOW;
-	if (!(sydbox->ctx = seccomp_init(sydbox->seccomp_action)))
-		die_errno("seccomp_init");
-	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_API_TSKIP, 1)) < 0)
-		say("can't set tskip attribute for seccomp filter (%d %s), "
-		    "continuing...",
-		    -r, strerror(-r));
-	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_API_SYSRAWRC, 1)) < 0)
-		say("can't set sysrawrc attribute for seccomp filter (%d %s), "
-		    "continuing...",
-		    -r, strerror(-r));
-#if 0
-	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_TSYNC, 1)) < 0)
-		say("can't set tsync attribute for seccomp filter (%d %s), "
-		    "continuing...",
-		    -r, strerror(-r));
-	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
-		say("can't optimize seccomp filter (%d %s), continuing...",
-		    -r, strerror(-r));
-#endif
-#if SYDBOX_HAVE_DUMP_BUILTIN
-	if (sydbox->dump_fd > 0) {
-		if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_LOG, 1)) < 0)
-			say("can't log attribute for seccomp filter (%d %s), "
-			    "continuing...", -r, strerror(-r));
-	}
-#endif
-	/* Set system call priorities */
-	sysinit(sydbox->ctx);
-
-	/* This is added by default by libseccomp,
-	 * so no need to do it manually.
-	seccomp_arch_add(sydbox->ctx, SCMP_ARCH_NATIVE);
-	 */
-	if (arch_argv_idx == 0) {
-		/* User has specified no architectures.
-		 * use/try all the valid architectures defined at compile-time.
-		 */
-		SYD_GCC_ATTR((unused))char *in_sydbox_test = getenv("IN_SYDBOX_TEST");
-#include "syd_seccomp_arch_default.c"
-	} else {
-		/* Else, we plan to remove the native architecture of libseccomp.
-		 * If the user passes --arch native, we are not going to
-		 * remove it.
-		 */
-		using_arch_native = false;
-	}
-#if 0
-#error skip validation check, autotools handles this.
-	for (i = arch_argv_idx - 1; i; i--) {
-		if (arch_argv[i] == NULL)
-			continue;
-		arch = arch_from_string(arch_argv[i]);
-		if (arch == UINT32_MAX)
-			die("invalid architecture `%s'", arch_argv[i]);
-		if ((uint32_t)arch == SCMP_ARCH_NATIVE ||
-		    (uint32_t)arch == arch_native)
-			continue; /* native is valid. */
-		bool valid = false;
-		if ((r = syd_seccomp_arch_is_valid(arch, &valid)) != 0) {
-			errno = -r;
-			say("architecture support check failed for %s "
-			    "continuing...", arch_argv[i]);
-		} else if (!valid) {
-			die("unsupported architecture `%s'", arch_argv[i]);
-		}
-	}
-#endif
-
-	for (i = arch_argv_idx - 1; i; i--) {
-		if (arch_argv[i] == NULL)
-			continue;
-		arch = arch_from_string(arch_argv[i]);
-		if (arch == UINT32_MAX)
-			continue;
-		if ((uint32_t)arch == SCMP_ARCH_NATIVE ||
-		    (uint32_t)arch == arch_native)
-			using_arch_native = true;
-		if ((r = seccomp_arch_add(sydbox->ctx, (uint32_t)arch)) != 0 &&
-		    r != -EEXIST) {
-			say("architecture %s: not ok (%d %s), continuing..",
-			    arch_argv[i], -r, strerror(-r));
-			say("system calls in arch %s may result in process kill, "
-			    "hang, or misfunction!", arch_argv[i]);
-		}
-	}
-
-	if (!using_arch_native &&
-	    ((r = seccomp_arch_remove(sydbox->ctx, SCMP_ARCH_NATIVE)) != 0 ||
-	     (r = seccomp_arch_remove(sydbox->ctx, arch_native)) != 0)) {
-		errno = -r;
-		say_errno("error removing native architecture");
-	}
-
-	for (i = 0; arch_argv[i] != NULL; i++)
-		sydbox->arch[i] = arch_from_string(arch_argv[i]);
-	sydbox->arch[i] = UINT32_MAX;
 
 	/*
 	 * Initial program_invocation_name to be used for P_COMM(current).
