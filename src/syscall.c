@@ -856,6 +856,8 @@ int sysinit_seccomp_load(void)
 #else
 # define calls_execve_max 1
 #endif
+		SCMP_SYS(exit),
+		SCMP_SYS(exit_group),
 		SCMP_SYS(chdir),
 		SCMP_SYS(fchdir),
 		SCMP_SYS(clone),

@@ -1466,6 +1466,13 @@ notify_receive:
 			goto notify_respond;
 		}
 
+		/* Search early for exit before getting a process entry. */
+		if (name && (startswith(name, "exit"))) {
+			current = lookup_process(pid);
+			bury_process(current, false);
+			goto notify_respond;
+		}
+
 		/* Search early for execve before getting a process entry. */
 		if (name && (streq(name, "execve") || streq(name, "execveat"))) {
 			/* memfd is no longer valid, reopen next turn,
