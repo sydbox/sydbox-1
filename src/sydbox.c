@@ -61,9 +61,7 @@ static struct sigaction child_sa;
 
 /* Signal handling with C11 atomics */
 static volatile atomic_int child_pid = ATOMIC_VAR_INIT(0);
-static volatile atomic_int child_exit_code = ATOMIC_VAR_INIT(0);
 static volatile atomic_bool child_exited = ATOMIC_VAR_INIT(false);
-static volatile atomic_bool child_continued = ATOMIC_VAR_INIT(false);
 static bool check_child_atomic(const volatile atomic_bool *state,
 			       int *interrupt);
 
@@ -495,14 +493,6 @@ void reset_process(syd_process_t *p)
 	}
 }
 
-static inline void set_child_exit_code(void)
-{
-	if (sydbox->exit_code >= 0)
-		return;
-	sydbox->exit_code = syd_get_int(&child_exit_code);
-	dump(DUMP_EXIT, sydbox->exit_code);
-}
-
 static inline void save_exit_code(int exit_code)
 {
 	dump(DUMP_EXIT, exit_code);
@@ -848,13 +838,13 @@ static void sig_chld(int sig, siginfo_t *info, void *ucontext)
 	switch (info->si_code) {
 	case CLD_EXITED:
 		if (pid == sydbox->execve_pid)
-			syd_set_int(&child_exit_code,
+			syd_set_int(&sydbox->exit_code,
 				    WEXITSTATUS(info->si_status));
 		break;
 	case CLD_KILLED:
 	case CLD_DUMPED:
 		if (pid == sydbox->execve_pid)
-			syd_set_int(&child_exit_code,
+			syd_set_int(&sydbox->exit_code,
 				    WTERMSIG(info->si_status) + 128);
 		break;
 	default:
@@ -873,13 +863,13 @@ restart_waitpid:
 			break;
 		} else if (pid == sydbox->execve_pid) {
 			if (WIFEXITED(status))
-				syd_set_int(&child_exit_code,
+				syd_set_int(&sydbox->exit_code,
 					    WEXITSTATUS(status));
 			else if (WTERMSIG(status))
-				syd_set_int(&child_exit_code,
+				syd_set_int(&sydbox->exit_code,
 					    WTERMSIG(status) + 128);
 			else
-				syd_set_int(&child_exit_code, 128);
+				syd_set_int(&sydbox->exit_code, 128);
 		}
 	}
 
@@ -1226,7 +1216,7 @@ static void init_early(void)
 
 	os_release = get_os_release();
 	sydbox = xmalloc(sizeof(sydbox_t));
-	sydbox->exit_code = -1;
+	sydbox->exit_code = ATOMIC_VAR_INIT(-1);
 	sydbox->violation = false;
 	sydbox->execve_wait = false;
 	sydbox->exit_code = EXIT_SUCCESS;
@@ -1644,13 +1634,10 @@ out:
 		/* We handled quick cases, we are permitted to interrupt now. */
 		sig = 0;
 		if (check_child_exited(&sig)) {
-			set_child_exit_code();
+			reap_zombies(NULL, syd_get_int(&child_pid));
+			if (!process_count_alive())
+				break;
 			syd_set_state(&child_exited, false);
-			if (syd_get_int(&child_pid)) {
-				reap_zombies(NULL, child_pid);
-				if (!process_count_alive())
-					break;
-			}
 		} else if (sig && sig != SIGCHLD)
 			break;
 	}
@@ -1658,7 +1645,10 @@ out:
 	seccomp_notify_free(sydbox->request, sydbox->response);
 	close(sydbox->notify_fd);
 	sydbox->notify_fd = -1;
-	r = sydbox->exit_code;
+
+	/* wait for the child to exit. */
+	while ((r = syd_get_int(&sydbox->exit_code)) == -1);
+	dump(DUMP_EXIT, r);
 
 	return r;
 }

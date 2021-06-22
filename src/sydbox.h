@@ -19,6 +19,7 @@
 #endif /* !_GNU_SOURCE */
 
 #include <stdarg.h>
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -577,7 +578,7 @@ struct sydbox {
 	bool bpf_only:1;
 	bool in_child:1;
 
-	int exit_code;
+	volatile atomic_int exit_code;
 	int execve_pidfd;
 
 #if SYDBOX_HAVE_DUMP_BUILTIN
