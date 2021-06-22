@@ -1,7 +1,7 @@
 AM_MAKEFLAGS= --no-print-directory
 EXTRA_DIST=
 
-sydboxsysconfdir= $(sysconfdir)$(PACKAGE)
+sydboxsysconfdir= $(sysconfdir)/$(PACKAGE)
 sydboxsysconf_DATA= \
 		  default.syd-2 \
 		  sydbox.bashrc
