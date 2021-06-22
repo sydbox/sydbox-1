@@ -1433,10 +1433,8 @@ static int notify_loop(syd_process_t *current)
 		bool update_mem = false, update_mem_now = false;
 		syd_process_t *parent;
 
-		pid = sydbox->execve_pid;
-		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
-
 notify_receive:
+		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
 		sigprocmask(SIG_SETMASK, &empty_set, NULL);
 		r = seccomp_notify_receive(sydbox->notify_fd,
 					   sydbox->request);
