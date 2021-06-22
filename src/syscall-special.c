@@ -205,9 +205,9 @@ static int do_execve(syd_process_t *current, bool at_func)
 			return 0;
 		break;
 	case SANDBOX_ALLOW:
-		if (acl_match_path(ACL_ACTION_DENYLIST,
-				   &P_BOX(current)->acl_exec,
-				   abspath, NULL))
+		if (!acl_match_path(ACL_ACTION_DENYLIST,
+				    &P_BOX(current)->acl_exec,
+				    abspath, NULL))
 			return 0;
 		break;
 	default:
