@@ -1575,7 +1575,7 @@ notify_respond:
 					   sydbox->response);
 		sigprocmask(SIG_BLOCK, &blocked_set, NULL);
 		if (r < 0) {
-			if (errno == ENOTTY)
+			if (errno == ENOTTY || errno == ENOENT)
 				r = -ENOENT;
 			else {
 				say_errno("seccomp_notify_receive");
