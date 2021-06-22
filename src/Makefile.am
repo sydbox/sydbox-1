@@ -50,6 +50,11 @@ AM_CFLAGS= \
 	   -I$(top_srcdir) \
 	   $(libseccomp_CFLAGS) \
 	   @SYDBOX_CFLAGS@
+
+if MAINTAINER_MODE
+AM_CFLAGS+= $(SYDBOX_SAFE_CFLAGS) $(SYDBOX_DEV_CFLAGS)
+endif
+
 if WANT_DEBUG
 AM_CFLAGS+= $(libunwind_CFLAGS)
 endif

@@ -121,10 +121,26 @@ AX_CHECK_COMPILER_FLAGS([-std=gnu11],
 	 [AC_MSG_ERROR(["Sydbox requires a C compiler that supports ISO C11!"])])])
 dnl extra CFLAGS
 SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow"
+SYDBOX_DEV_WANTED_CFLAGS="-Werror=format-security -Werror=implicit-function-declaration"
+SYDBOX_SAFE_WANTED_CFLAGS="-D_FORTIFY_SOURCE=2
+-D_GLIBCXX_ASSERTIONS
+-fasynchronous-unwind-tables
+-fexceptions
+-fstack-clash-protection
+-fstack-protector-all
+-fstack-protector-strong"
 for flag in $SYDBOX_WANTED_CFLAGS ; do
 	AX_CHECK_COMPILER_FLAGS([$flag], [SYDBOX_CFLAGS="$SYDBOX_CFLAGS $flag"],)
 done
+for flag in $SYDBOX_DEV_WANTED_CFLAGS ; do
+	AX_CHECK_COMPILER_FLAGS([$flag], [SYDBOX_DEV_CFLAGS="$SYDBOX_DEV_CFLAGS $flag"],)
+done
+for flag in $SYDBOX_SAFE_WANTED_CFLAGS ; do
+	AX_CHECK_COMPILER_FLAGS([$flag], [SYDBOX_SAFE_CFLAGS="$SYDBOX_SAFE_CFLAGS $flag"],)
+done
 AC_SUBST([SYDBOX_CFLAGS])
+AC_SUBST([SYDBOX_DEV_CFLAGS])
+AC_SUBST([SYDBOX_SAFE_CFLAGS])
 
 dnl extra LDFLAGS
 dnl Build sydbox binary static by default.
