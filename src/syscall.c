@@ -163,7 +163,7 @@ static const sysentry_t syscall_entries[] = {
 #ifdef __SNR_faccessat2
 		.no = SCMP_SYS(faccessat2),
 #else
-		.no = -1;
+		.no = -1,
 #endif
 		.notify = sys_faccessat2,
 		.sandbox_read = true,
