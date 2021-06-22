@@ -160,7 +160,11 @@ static const sysentry_t syscall_entries[] = {
 	},
 	{
 		.name = "faccessat2",
+#ifdef __SNR_faccessat2
 		.no = SCMP_SYS(faccessat2),
+#else
+		.no = -1;
+#endif
 		.notify = sys_faccessat2,
 		.sandbox_read = true,
 		.sandbox_write = true,
@@ -501,6 +505,8 @@ int sysinit(scmp_filter_ctx ctx)
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		int r;
 		uint8_t prio = (uint8_t)(UINT8_MAX - i);
+		if (syscall_entries[i].no < 0)
+			continue;
 		if ((r = seccomp_syscall_priority(ctx,
 						  syscall_entries[i].no,
 						  prio)) == 0)
@@ -577,6 +583,8 @@ int sysinit_seccomp_load(void)
 
 	sandbox_t *box = box_current(NULL);
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
+		if (syscall_entries[i].no < 0)
+			continue;
 		if (syscall_entries[i].filter) {
 			SAY("applying bpf filter for system call `%s'...",
 			    syscall_entries[i].name);
@@ -584,20 +592,6 @@ int sysinit_seccomp_load(void)
 						     SCMP_ARCH_NATIVE)) < 0)
 				return r;
 			continue;
-		}
-		if (syscall_entries[i].name) {
-			sysnum = seccomp_syscall_resolve_name(syscall_entries[i].name);
-			if (sysnum == __NR_SCMP_ERROR) {
-				die_errno("can't lookup system call name `%s'",
-					  syscall_entries[i].name);
-			} else if (sysnum < 0) {
-				SAY("unknown system call name `%s', "
-				    "continuing...",
-				    syscall_entries[i].name);
-				continue;
-			}
-		} else {
-			sysnum = syscall_entries[i].no;
 		}
 
 		int flag;
@@ -621,6 +615,7 @@ int sysinit_seccomp_load(void)
 			    syscall_entries[i].name);
 		}
 
+		sysnum = syscall_entries[i].no;
 		if (is_access) {
 			enum sandbox_mode mode_r = box->mode.sandbox_read;
 			enum sandbox_mode mode_w = box->mode.sandbox_write;
