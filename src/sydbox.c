@@ -667,7 +667,8 @@ void bury_process(syd_process_t *p, bool force)
 		}
 	}
 
-	if (sydbox->config.allowlist_per_process_directories)
+	if (sydbox->config.allowlist_per_process_directories &&
+	    !sc_map_freed(&sydbox->config.proc_pid_auto))
 		procdrop(&sydbox->config.proc_pid_auto, pid);
 
 	if (!force && p->pid == sydbox->execve_pid) {
