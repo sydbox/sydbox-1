@@ -1052,6 +1052,9 @@ static int filter_general_level_0(void)
 	 * 999      man:x:999
 	 * 1000     alip:x:1000
 	 */
+	if (magic_query_restrict_id(NULL)) /* on by default */
+		goto skip_restrict_id;
+
 #define SYD_UID_MIN 11 /* operator */
 	uid_t user_uid = get_uid();
 	if (user_uid == 0) {
@@ -1067,7 +1070,7 @@ static int filter_general_level_0(void)
 #define SYD_GID_MIN 14 /* uucp */
 	gid_t user_gid = get_gid();
 	if (user_gid == 0) {
-		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL),
 				    SCMP_SYS(setgid), 1,
 				    SCMP_A0_32( SCMP_CMP_LE, SYD_GID_MIN, SYD_GID_MIN ));
 	} else {
@@ -1075,6 +1078,8 @@ static int filter_general_level_0(void)
 				    SCMP_SYS(setuid), 1,
 				    SCMP_A0_32( SCMP_CMP_NE, user_gid, user_gid ));
 	}
+skip_restrict_id:
+
 	return 0;
 }
 

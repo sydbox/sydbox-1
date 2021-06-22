@@ -183,6 +183,14 @@ static const struct key key_table[] = {
 		.set    = magic_set_restrict_general,
 		.query  = magic_query_restrict_general,
 	},
+	[MAGIC_KEY_CORE_RESTRICT_IDENTITY_CHANGE] = {
+		.name   = "identity_change",
+		.lname  = "core.restrict.identity_change",
+		.parent = MAGIC_KEY_CORE_RESTRICT,
+		.type   = MAGIC_TYPE_BOOLEAN,
+		.set    = magic_set_restrict_id,
+		.query  = magic_query_restrict_id,
+	},
 	[MAGIC_KEY_CORE_RESTRICT_IO_CONTROL] = {
 		.name   = "io_control",
 		.lname  = "core.restrict.io_control",

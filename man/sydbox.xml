@@ -661,6 +661,9 @@
             <link linkend="core-restrict-general">core/restrict/general</link>
           </para></listitem>
           <listitem><para>
+            <link linkend="core-restrict-id">core/restrict/identity_change</link>
+          </para></listitem>
+          <listitem><para>
             <link linkend="core-restrict-ioctl">core/restrict/io_control</link>
           </para></listitem>
           <listitem><para>
@@ -1142,6 +1145,39 @@
               <function>lremovexattr</function><manvolnum>2</manvolnum>, and
               <function>openat2</function><manvolnum>2</manvolnum>
               as well.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-restrict-id">core/restrict/identity_change</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>default: <varname>true</varname></para>
+            <para>
+              A boolean specifying whether user and group identity
+              changes should be restricted. In this mode, user identity
+              changes to user ids equal or less than 11 are not permitted.
+              This is usually the inclusive range between <emphasis>root</emphasis>
+              and <emphasis>operator</emphasis> users. Check the file
+              <filename>/etc/passwd</filename> to see which range of users
+              are covered on your system. The limit is 14 for group identity changes,
+              meaning group identity changes with a group id less than or
+              equal to 14 are not permitted. This is usually the inclusive
+              range between the <emphasis>root</emphasis> and
+              <emphasis>uucp</emphasis> groups. Check the file
+              <filename>/etc/group</filename> to see which range of groups
+              is covered on your system.
+            </para>
+            <para>
+              There is a second mode of action with this option: if one the
+              options <option>--uid</option>, or <option>--gid</option> is given,
+              SydBox configures the sandbox in such a way that only user or group
+              changes to the given user identity and/or group identity is possible.
+              E.g: run SydBox with <option>--uid $(id -u nginx)</option> so that
+              SydBox will be able to change their user identity to the
+              <emphasis>nginx</emphasis> user. Any other user identity change
+              is prohibited.
             </para>
           </listitem>
         </varlistentry>

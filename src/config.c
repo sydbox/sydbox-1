@@ -38,6 +38,7 @@ void config_init(void)
 	sydbox->config.mem_access = 0;
 	sydbox->config.use_toolong_hack = false;
 	sydbox->config.restrict_general = 0;
+	sydbox->config.restrict_id = true;
 	sydbox->config.restrict_ioctl = false;
 	sydbox->config.restrict_mmap = false;
 	sydbox->config.violation_raise_fail = false;

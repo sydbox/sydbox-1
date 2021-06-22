@@ -228,6 +228,7 @@ enum magic_key {
 
 	MAGIC_KEY_CORE_RESTRICT,
 	MAGIC_KEY_CORE_RESTRICT_GENERAL,
+	MAGIC_KEY_CORE_RESTRICT_IDENTITY_CHANGE,
 	MAGIC_KEY_CORE_RESTRICT_IO_CONTROL,
 	MAGIC_KEY_CORE_RESTRICT_MEMORY_MAP,
 	MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE,
@@ -530,6 +531,7 @@ struct config {
 	bool allowlist_unsupported_socket_families;
 
 	/* restrict knobs are not inherited, they're global config */
+	bool restrict_id;
 	bool restrict_ioctl;
 	bool restrict_mmap;
 	bool restrict_shm_wr;
@@ -998,6 +1000,8 @@ int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current);
 int magic_query_trace_use_toolong_hack(syd_process_t *current);
 int magic_set_restrict_general(const void *val, syd_process_t *current);
 int magic_query_restrict_general(syd_process_t *current);
+int magic_set_restrict_id(const void *val, syd_process_t *current);
+int magic_query_restrict_id(syd_process_t *current);
 int magic_set_restrict_mmap(const void *val, syd_process_t *current);
 int magic_query_restrict_mmap(syd_process_t *current);
 int magic_set_restrict_ioctl(const void *val, syd_process_t *current);
