@@ -53,13 +53,30 @@ denylist/exec+/tmp/***
 denylist/read+/boot/***
 denylist/read+/root/***
 
+# Restrict /etc
 denylist/read+/etc/security/***
 denylist/read+/etc/shadow*
+denylist/read+/etc/passwd*
+denylist/read+/etc/group+
+denylist/read+/etc/ftpusers
+denylist/read+/etc/aliases
+denylist/read+/etc/ssl*/***
+denylist/read+/etc/mtab
+denylist/read+/etc/fstab
+denylist/read+/etc/crypttab
+denylist/read+/etc/securetty
+denylist/read+/etc/pam*/***
 
 # Disable /dev/mem /dev/kmem, /dev/port and /proc/kcore.
 denylist/read+/dev/k?mem
 denylist/read+/dev/port
 denylist/read+/proc/kcore
+
+# /proc/kallsyms exposes the kernel memory space address of many kernel symbols
+# (functions, variables, etc...). This information is useful to attackers in
+# identifying kernel versions/configurations and in preparing payloads for the
+# exploits of kernel space.
+denylist/read+/proc/kallsyms
 
 # Disable process memory attach.
 denylist/read+/proc/*/mem
@@ -89,8 +106,6 @@ denylist/read+/proc/slabinfo
 denylist/read+/proc/vmallocinfo
 denylist/read+/proc/vmstat
 denylist/read+/proc/self/mtab
-denylist/read+/etc/mtab
-denylist/read+/etc/fstab
 
 # More restrictions:
 denylist/read+/sys/fs/***
@@ -107,10 +122,15 @@ denylist/read+/dev/fuse
 denylist/read+/dev/dm*/***
 denylist/read+/dev/mapper/***
 
+# Some critical paths under /home
+denylist/read+/home/*/.netrc*
+denylist/read+/home/*/.ssh*
+denylist/read+/home/*/.gnupg*
+denylist/read+/home/*/.password-store/***
+
 #
 # Allow access to standard paths
 #
-
 allowlist/write+/dev/stdout
 allowlist/write+/dev/stderr
 allowlist/write+/dev/zero
