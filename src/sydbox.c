@@ -1104,11 +1104,11 @@ static void reap_zombies(syd_process_t *current, pid_t pid)
 
 	syd_process_t *node;
 	sc_map_foreach_value(&sydbox->tree, node) {
-		if (!process_is_alive(node->pid, node->tgid)) {
-			remove_process_node(node);
-		} else if (node->flags & SYD_KILLED) {
+		if (node->flags & SYD_KILLED) {
 			if (!(node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE)))
 				remove_process_node(node);
+		} else if (!process_is_alive(node->pid, node->tgid)) {
+			remove_process_node(node);
 		}
 	}
 }
