@@ -439,10 +439,7 @@ static syd_process_t *new_thread(pid_t pid)
 	thread->pidfd = -1;
 	thread->memfd = -1;
 
-	if (process_proc(thread) < 0) {
-		free(thread);
-		return NULL;
-	}
+	process_proc(thread); /* Ignoring ESRCH which is fine. */
 	process_add(thread);
 
 	dump(DUMP_THREAD_NEW, pid);
@@ -1450,9 +1447,18 @@ notify_receive:
 		sydbox->response->val = 0;
 
 		pid = sydbox->request->pid;
+		current = lookup_process(pid);
+		if (current) {
+			if (current->pidfd == -1 && current->memfd == -1) {
+				errno = 0;
+				process_proc(current);
+				if (errno == ESRCH)
+					goto notify_respond;
+			}
+		}
+
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
-		current = lookup_process(pid);
 		if (request_is_valid(sydbox->request->id) == -ENOENT) {
 			if (current)
 				bury_process(current, false);
