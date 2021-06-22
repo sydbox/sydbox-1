@@ -741,6 +741,12 @@ out:
 
 void remove_process_node(syd_process_t *p)
 {
+	/* Keep the default sandbox alive. */
+	if (p->pid == sydbox->execve_pid) {
+		p->flags |= SYD_KILLED;
+		return;
+	}
+
 	if (p->flags & SYD_KILLED) {
 		if (sydbox->config.allowlist_per_process_directories)
 			procdrop(&sydbox->config.proc_pid_auto, p->pid);
@@ -1196,16 +1202,15 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent)
 	if (parent) {
 		current = clone_process(parent, pid);
 		parent->clone_flags &= ~SYD_IN_CLONE;
-		//if (magic_query_violation_raise_safe(current))
-		//	say("new process: %d of parent %d", pid, parent->pid);
 	} else {
-		current = new_process(pid);
-		new_shared_memory_clone_fs(current);
-		sysx_chdir(current);
-		//if (magic_query_violation_raise_safe(current))
-		//	say("new process: %d with no parent", pid);
+		parent = lookup_process(sydbox->execve_pid);
+		YELL_ON(parent, "failed to find a parent process for pid:%d, ",
+				"do not know which sandboxing rules to apply!");
+		unsigned int save_new_clone_flags = parent->new_clone_flags;
+		parent->new_clone_flags = 0;
+		current = clone_process(parent, pid);
+		parent->new_clone_flags = save_new_clone_flags;
 	}
-	reap_zombies(NULL, -1);
 
 	return current;
 }
