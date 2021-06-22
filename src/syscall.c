@@ -516,7 +516,7 @@ int sysinit(scmp_filter_ctx ctx)
 
 static int apply_simple_filter(const sysentry_t *entry, uint32_t arch)
 {
-	int r;
+	int r = 0;
 
 	assert(entry->filter);
 
