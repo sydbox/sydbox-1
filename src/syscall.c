@@ -1115,23 +1115,13 @@ rule_add_open_rd(uint32_t action, int sysnum, int open_flag)
 	if (action_bpf_default(action))
 		return true;
 
-	struct sc_map_64v map;
-	if (!sc_map_init_64v(&map, OPEN_READONLY_FLAG_MAX, 0))
-		return -ENOMEM;
-
 	int r;
 	for (size_t i = 0; i < OPEN_READONLY_FLAG_MAX; i++) {
 		int flag = open_readonly_flags[i];
-		sc_map_get_64v(&map, flag);
-		if (sc_map_found(&map))
-			continue;
-		sc_map_put_64v(&map, flag, NULL);
 		syd_rule_add_return(sydbox->ctx, action,
 				    sysnum, 1,
-				    SCMP_CMP( open_flag, SCMP_CMP_EQ, flag ));
+				    SCMP_CMP64( open_flag, SCMP_CMP_EQ, flag ));
 	}
-
-	sc_map_term_64v(&map);
 
 	return 0;
 }

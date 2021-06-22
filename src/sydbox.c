@@ -318,6 +318,8 @@ static int seccomp_setup(void)
 		say("can't set tsync attribute for seccomp filter (%d %s), "
 		    "continuing...",
 		    -r, strerror(-r));
+	/* Set system call priorities */
+	sysinit(sydbox->ctx);
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
 		say("can't optimize seccomp filter (%d %s), continuing...",
 		    -r, strerror(-r));
@@ -329,8 +331,6 @@ static int seccomp_setup(void)
 			    "continuing...", -r, strerror(-r));
 	}
 #endif
-	/* Set system call priorities */
-	sysinit(sydbox->ctx);
 
 	/* This is added by default by libseccomp,
 	 * so no need to do it manually.
@@ -342,8 +342,7 @@ static int seccomp_setup(void)
 		 */
 		SYD_GCC_ATTR((unused))char *in_sydbox_test = getenv("IN_SYDBOX_TEST");
 #include "syd_seccomp_arch_default.c"
-	}
-	if (arch_argv_idx > 0) {
+	} else {
 		/* Else, we plan to remove the native architecture of libseccomp.
 		 * If the user passes --arch native, we are not going to
 		 * remove it.

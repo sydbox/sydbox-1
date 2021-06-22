@@ -10,7 +10,9 @@
 #define SAY_ERRNO(msg) if (in_sydbox_test) { say_errno((msg)); }
 
 #if defined(X86_64) && defined(SYD_ARCH_X86_64)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_X86_64);
+		r=0;
+		if (SCMP_ARCH_X86_64 != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_X86_64);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: X86_64, continuing...");
@@ -23,7 +25,9 @@
 #endif
 
 #if (defined(X86_64) || defined(X86)) && defined(SYD_ARCH_X86)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_X86);
+		r=0;
+		if (SCMP_ARCH_X86 != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_X86);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: X86, continuing...");
@@ -36,7 +40,9 @@
 #endif
 
 #if (defined(X86_64) || defined(X86)) && defined(SYD_ARCH_X32)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_X32);
+		r=0;
+		if (SCMP_ARCH_X32 != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_X32);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: X32, continuing...");
@@ -49,7 +55,9 @@
 #endif
 
 #if defined(AARCH64) && defined(SYD_ARCH_AARCH64)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_AARCH64);
+		r=0;
+		if (SCMP_ARCH_AARCH64 != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_AARCH64);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: AARCH64, continuing...");
@@ -62,7 +70,9 @@
 #endif
 
 #if (defined(AARCH64) || defined(ARM)) && defined(SYD_ARCH_ARM)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_ARM);
+		r=0;
+		if (SCMP_ARCH_ARM != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_ARM);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: ARM, continuing...");
@@ -75,7 +85,9 @@
 #endif
 
 #if defined(MIPS) && defined(SYD_ARCH_MIPS64)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPS64);
+		r=0;
+		if (SCMP_ARCH_MIPS64 != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPS64);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: MIPS64, continuing...");
@@ -88,7 +100,9 @@
 #endif
 
 #if defined(MIPS) && defined(SYD_ARCH_MIPS64N32)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPS64N32);
+		r=0;
+		if (SCMP_ARCH_MIPS64N32 != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPS64N32);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: MIPS64N32, continuing...");
@@ -101,7 +115,9 @@
 #endif
 
 #if defined(MIPS) && defined(SYD_ARCH_MIPS)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPS);
+		r=0;
+		if (SCMP_ARCH_MIPS != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPS);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: MIPS, continuing...");
@@ -114,7 +130,9 @@
 #endif
 
 #if defined(MIPS) && defined(SYD_ARCH_MIPSEL64)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPSEL64);
+		r=0;
+		if (SCMP_ARCH_MIPSEL64 != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPSEL64);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: MIPSEL64, continuing...");
@@ -127,7 +145,9 @@
 #endif
 
 #if defined(MIPS) && defined(SYD_ARCH_MIPSEL64N32)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPSEL64N32);
+		r=0;
+		if (SCMP_ARCH_MIPSEL64N32 != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPSEL64N32);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: MIPSEL64N32, continuing...");
@@ -138,7 +158,9 @@
 #endif
 
 #if defined(MIPS) && defined(SYD_ARCH_MIPSEL)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPSEL);
+		r=0;
+		if (SCMP_ARCH_MIPSEL != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_MIPSEL);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: MIPSEL, continuing...");
@@ -151,7 +173,9 @@
 #endif
 
 #if defined(POWERPC64) && defined(SYD_ARCH_PPC64)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PPC64);
+		r=0;
+		if (SCMP_ARCH_PPC64 != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PPC64);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: PPC64, continuing...");
@@ -164,7 +188,9 @@
 #endif
 
 #if defined(POWERPC64LE) && defined(SYD_ARCH_PPC64LE)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PPC64LE);
+		r=0;
+		if (SCMP_ARCH_PPC64LE != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PPC64LE);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: PPC64LE, continuing...");
@@ -177,7 +203,9 @@
 #endif
 
 #if defined(POWERPC) && defined(SYD_ARCH_PPC)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PPC);
+		r=0;
+		if (SCMP_ARCH_PPC != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PPC);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: PPC, continuing...");
@@ -190,7 +218,9 @@
 #endif
 
 #if defined(S390) && defined(SYD_ARCH_S390)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_S390);
+		r=0;
+		if (SCMP_ARCH_S390 != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_S390);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: S390, continuing...");
@@ -203,7 +233,9 @@
 #endif
 
 #if defined(S390X) && defined(SYD_ARCH_S390X)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_S390X);
+		r=0;
+		if (SCMP_ARCH_S390X != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_S390X);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: S390X, continuing...");
@@ -216,7 +248,9 @@
 #endif
 
 #if defined(PARISC64) && defined(SYD_ARCH_PARISC64)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PARISC64);
+		r=0;
+		if (SCMP_ARCH_PARISC64 != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PARISC64);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: PARISC64, continuing...");
@@ -229,7 +263,9 @@
 #endif
 
 #if (defined(PARISC64) || defined(PARISC)) && defined(SYD_ARCH_PARISC)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PARISC);
+		r=0;
+		if (SCMP_ARCH_PARISC != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_PARISC);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: PARISC, continuing...");
@@ -242,7 +278,9 @@
 #endif
 
 #if defined(RISCV64) && defined(SYD_ARCH_RISCV64)
-		r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_RISCV64);
+		r=0;
+		if (SCMP_ARCH_RISCV64 != seccomp_arch_native())
+			r = seccomp_arch_add(sydbox->ctx, SCMP_ARCH_RISCV64);
 		if (!arch_ok(r)) {
 			errno = -r;
 			SAY_ERRNO("arch add error: RISCV64, continuing...");
