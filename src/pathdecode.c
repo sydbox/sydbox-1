@@ -29,8 +29,14 @@ int path_decode(syd_process_t *current, unsigned arg_index, char **buf)
 	if ((r = syd_read_argument(current, arg_index, &addr)) < 0)
 		return r;
 
-	/* syd_read_string() handles panic() and partial reads */
-	count_read = syd_read_string(current, addr, path, SYDBOX_PATH_MAX);
+	if (!addr) { /* NULL pointer */
+		errno = EFAULT;
+		count_read = -1;
+	} else {
+		/* syd_read_string() handles panic() and partial reads */
+		count_read = syd_read_string(current, addr, path,
+					     SYDBOX_PATH_MAX);
+	}
 	if (count_read < 0) {
 		if (errno == EFAULT) {
 			*buf = NULL;
