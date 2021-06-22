@@ -1340,6 +1340,7 @@ int filter_mprotect(uint32_t arch)
 	if (action == sydbox->seccomp_action)
 		return 0;
 
+	r = 0;
 	if (sydbox->config.restrict_mmap) {
 		syd_rule_add(sydbox->ctx, action,
 			     SCMP_SYS(mprotect), 2,
