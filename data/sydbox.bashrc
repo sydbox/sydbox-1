@@ -76,3 +76,6 @@ unset _f _match_lhs _safe_term _use_color _used_default_dircolors
 # http://tiswww.case.edu/php/chet/bash/FAQ E11
 # Make bash check if the window has been resized
 shopt -s checkwinsize
+
+# Greet the user.
+test -n "$SYDBOX" && echo "$SYDBOX"
