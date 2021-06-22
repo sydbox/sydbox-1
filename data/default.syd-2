@@ -25,6 +25,8 @@ core/trace/memory_access:0
 core/trace/program_checksum:2
 core/trace/use_toolong_hack:true
 
+core/restrict/id_change:true
+core/restrict/system_info:true
 core/restrict/io_control:false
 core/restrict/memory_map:false
 core/restrict/shared_memory_writable:true

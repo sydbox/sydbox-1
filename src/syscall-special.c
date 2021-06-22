@@ -15,6 +15,7 @@
 #include "sydbox.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/utsname.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -244,8 +245,16 @@ int sys_execveat(syd_process_t *current)
 #define FAKE_MTIME -842745600
 #define FAKE_CTIME -2036448000
 
+#define FAKE_SYSNAME "☮"
+#define FAKE_NODENAME "sydb☮x"
+#define FAKE_RELEASE "v"VERSION
+#define FAKE_VERSION "#"STRINGIFY(SYDBOX_API_VERSION)
+#define FAKE_MACHINE "Ⓐ"
+#define FAKE_DOMAINNAME "exherb☮.☮rg"
+
 /* Write stat buffer */
-static int write_stat(syd_process_t *current, unsigned int buf_index, bool extended)
+static int write_stat(syd_process_t *current, unsigned int buf_index,
+		      bool extended)
 {
 	int r;
 	char *bufaddr = NULL;
@@ -340,6 +349,31 @@ static int write_stat(syd_process_t *current, unsigned int buf_index, bool exten
 	if ((r = syd_write_data(current, addr, bufaddr, bufsize)) < 0) {
 		errno = -r;
 		say_errno("syd_write_stat");
+	}
+	(void)syd_write_vm_data(current, addr, bufaddr, bufsize);
+
+	return true;
+}
+
+/* Write struct uname */
+static int write_uname(syd_process_t *current, unsigned int buf_index)
+{
+	int r;
+	struct utsname buf;
+
+	strlcpy(buf.sysname, FAKE_SYSNAME, sizeof(FAKE_SYSNAME));
+	strlcpy(buf.release, FAKE_RELEASE, sizeof(FAKE_RELEASE));
+	strlcpy(buf.version, FAKE_VERSION, sizeof(FAKE_VERSION));
+	strlcpy(buf.nodename, FAKE_NODENAME, sizeof(FAKE_NODENAME));
+	strlcpy(buf.machine, FAKE_MACHINE, sizeof(FAKE_MACHINE));
+	strlcpy(buf.domainname, FAKE_DOMAINNAME, sizeof(FAKE_DOMAINNAME));
+
+	long addr = current->args[buf_index];
+	char *bufaddr = (char *)&buf;
+	size_t bufsize = sizeof(struct utsname);
+	if ((r = syd_write_data(current, addr, bufaddr, bufsize)) < 0) {
+		errno = -r;
+		say_errno("syd_write_uname");
 	}
 	(void)syd_write_vm_data(current, addr, bufaddr, bufsize);
 
@@ -482,4 +516,30 @@ int sys_statx(syd_process_t *current)
 		path[count] = '\0';
 
 	return do_stat(current, path, 4, true);
+}
+
+int filter_uname(uint32_t arch)
+{
+	int r;
+	enum sandbox_mode mode = sydbox->config.box_static.mode.sandbox_network;
+
+	if (!magic_query_restrict_sysinfo(NULL))
+		return 0;
+	if (mode != SANDBOX_DENY)
+		return 0;
+
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_NOTIFY, SCMP_SYS(uname), 0);
+	return 0;
+}
+
+int sys_uname(syd_process_t *current)
+{
+	int r;
+
+	if ((r = write_uname(current, 0)) < 0)
+		return r;
+	if ((r = deny(current, 0)) < 0)
+		return r;
+
+	return 0;
 }

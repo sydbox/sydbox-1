@@ -229,6 +229,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_RESTRICT,
 	MAGIC_KEY_CORE_RESTRICT_GENERAL,
 	MAGIC_KEY_CORE_RESTRICT_IDENTITY_CHANGE,
+	MAGIC_KEY_CORE_RESTRICT_SYS_INFO,
 	MAGIC_KEY_CORE_RESTRICT_IO_CONTROL,
 	MAGIC_KEY_CORE_RESTRICT_MEMORY_MAP,
 	MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE,
@@ -546,6 +547,7 @@ struct config {
 
 	/* restrict knobs are not inherited, they're global config */
 	bool restrict_id;
+	bool restrict_sysinfo;
 	bool restrict_ioctl;
 	bool restrict_mmap;
 	bool restrict_shm_wr;
@@ -1017,6 +1019,8 @@ int magic_set_restrict_general(const void *val, syd_process_t *current);
 int magic_query_restrict_general(syd_process_t *current);
 int magic_set_restrict_id(const void *val, syd_process_t *current);
 int magic_query_restrict_id(syd_process_t *current);
+int magic_set_restrict_sysinfo(const void *val, syd_process_t *current);
+int magic_query_restrict_sysinfo(syd_process_t *current);
 int magic_set_restrict_mmap(const void *val, syd_process_t *current);
 int magic_query_restrict_mmap(syd_process_t *current);
 int magic_set_restrict_ioctl(const void *val, syd_process_t *current);
@@ -1095,6 +1099,7 @@ int filter_connect(uint32_t arch);
 int filter_sendto(uint32_t arch);
 int filter_recvmsg(uint32_t arch);
 int filter_sendmsg(uint32_t arch);
+int filter_uname(uint32_t arch);
 
 int sys_access(syd_process_t *current);
 int sys_faccessat(syd_process_t *current);
@@ -1149,6 +1154,7 @@ int sys_execveat(syd_process_t *current);
 int sys_stat(syd_process_t *current);
 int sys_fstatat(syd_process_t *current);
 int sys_statx(syd_process_t *current);
+int sys_uname(syd_process_t *current);
 
 int sys_socketcall(syd_process_t *current);
 int sys_bind(syd_process_t *current);

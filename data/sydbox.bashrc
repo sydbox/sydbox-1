@@ -52,16 +52,16 @@ fi
 
 if ${_use_color} ; then
         if [[ ${EUID} == 0 ]] ; then
-                PS1='\[\033[01;32m\]SydB☮x|\[\033[01;31m\]\h\[\033[01;34m\] \w \$\[\033[00m\] '
+                PS1='\[\033[01;31m\]\h\[\033[01;34m\] \w \$\[\033[00m\] '
         else
-                PS1='\[\033[01;31m\]SydB☮x|\[\033[01;32m\]\u@\h\[\033[01;34m\] \w \$\[\033[00m\] '
+                PS1='\[\033[01;32m\]\u@\h\[\033[01;34m\] \w \$\[\033[00m\] '
         fi
 
         alias ls='ls --color=auto'
         [[ $(basename "$(readlink -f /usr/bin/grep)") == ggrep ]] && alias grep='grep --color=auto'
 else
         # show root@ when we don't have colors
-        PS1='SydB☮x|\u@\h \w \$ '
+        PS1='\u@\h \w \$ '
 fi
 
 # Things in /etc/sydbox/bashrc.d/ will be sourced for all interactive shells.

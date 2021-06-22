@@ -21,10 +21,11 @@ core/trace/memory_access:0
 core/trace/program_checksum:2
 core/trace/use_toolong_hack:true
 
-core/restrict/identity_change:false
+core/restrict/id_change:false
 core/restrict/io_control:false
 core/restrict/memory_map:false
 core/restrict/shared_memory_writable:false
+core/restrict/system_info:false
 core/restrict/general:0
 
 core/match/case_sensitive:true

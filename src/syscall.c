@@ -496,6 +496,13 @@ static const sysentry_t syscall_entries[] = {
 		.notify = sys_umount2,
 		.sandbox_write = true,
 	},
+	{
+		.name = "uname",
+		.no = SCMP_SYS(uname),
+		.filter = filter_uname,
+		.notify = sys_uname,
+		.sandbox_read = true,
+	},
 };
 
 int sysinit(scmp_filter_ctx ctx)

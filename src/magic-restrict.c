@@ -32,6 +32,17 @@ int magic_query_restrict_id(syd_process_t *current)
 	return MAGIC_BOOL(sydbox->config.restrict_id);
 }
 
+int magic_set_restrict_sysinfo(const void *val, syd_process_t *current)
+{
+	sydbox->config.restrict_sysinfo = PTR_TO_BOOL(val);
+	return MAGIC_RET_OK;
+}
+
+int magic_query_restrict_sysinfo(syd_process_t *current)
+{
+	return MAGIC_BOOL(sydbox->config.restrict_sysinfo);
+}
+
 int magic_set_restrict_mmap(const void *val, syd_process_t *current)
 {
 	sydbox->config.restrict_mmap = PTR_TO_BOOL(val);
