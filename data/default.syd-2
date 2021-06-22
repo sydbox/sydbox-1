@@ -55,14 +55,22 @@ denylist/read+/root/***
 
 # Restrict /etc
 denylist/read+/etc/security/***
-denylist/read+/etc/shadow*
+denylist/read+/etc/g?shadow*
 denylist/read+/etc/passwd*
 denylist/read+/etc/group+
 denylist/read+/etc/ftpusers
 denylist/read+/etc/aliases
+denylist/read+/etc/services
+denylist/read+/etc/conf.*/***
+denylist/read+/etc/init.*/***
+denylist/read+/etc/rc.*/***
+denylist/read+/etc/system.*/***
+denylist/read+/etc/xinet.*/***
 denylist/read+/etc/ssl*/***
 denylist/read+/etc/mtab
 denylist/read+/etc/fstab
+denylist/read+/etc/crontab
+denylist/read+/etc/cron*/***
 denylist/read+/etc/crypttab
 denylist/read+/etc/securetty
 denylist/read+/etc/pam*/***
@@ -86,6 +94,9 @@ denylist/read+/proc/*/syscall
 
 # More critical paths under proc:
 denylist/read+/proc/*/root/***
+
+# No access to system logs
+denylist/read+/var/log/***
 
 # Disable tools to get information on the running
 # kernel and its configuration.
@@ -123,6 +134,8 @@ denylist/read+/dev/dm*/***
 denylist/read+/dev/mapper/***
 
 # Some critical paths under /home
+# We leave shell rc files alone except login.
+denylist/read+/home/*/.*login*
 denylist/read+/home/*/.netrc*
 denylist/read+/home/*/.ssh*
 denylist/read+/home/*/.gnupg*
@@ -171,3 +184,6 @@ allowlist/network/connect+unix:/var/lib/sss/pipes/nss
 # Allow getaddrinfo() with AI_ADDRCONFIG on musl systems.
 allowlist/network/connect+LOOPBACK@65535
 allowlist/network/connect+LOOPBACK6@65535
+
+# Lock configuration
+core/trace/magic_lock:on
