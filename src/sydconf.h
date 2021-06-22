@@ -173,14 +173,17 @@
 # define SYDBOX_NOEXEC_ENV "SYDBOX_NOEXEC"
 #endif
 
+#ifndef SYD_POLL_TIMEOUT /* poll timeout in milliseconds */
+# define SYD_POLL_TIMEOUT 42
+#endif
 #ifndef SYD_EXEC_TIMEOUT
-# define SYD_EXEC_TIMEOUT 3
+# define SYD_EXEC_TIMEOUT 3600
 #endif
 #ifndef SYD_EXEC_SLEEP_STEP_SEC
-# define SYD_EXEC_SLEEP_STEP_SEC 0
+# define SYD_EXEC_SLEEP_STEP_SEC 1
 #endif
 #ifndef SYD_EXEC_SLEEP_STEP_NSEC
-# define SYD_EXEC_SLEEP_STEP_NSEC 100
+# define SYD_EXEC_SLEEP_STEP_NSEC 0
 #endif
 
 #define SYD_SECCOMP_ARCH_ARGV_SIZ 20

@@ -1120,7 +1120,7 @@ rule_add_open_rd(uint32_t action, int sysnum, int open_flag)
 		int flag = open_readonly_flags[i];
 		syd_rule_add_return(sydbox->ctx, action,
 				    sysnum, 1,
-				    SCMP_CMP64( open_flag, SCMP_CMP_EQ, flag ));
+				    SCMP_CMP32( open_flag, SCMP_CMP_EQ, flag ));
 	}
 
 	return 0;
