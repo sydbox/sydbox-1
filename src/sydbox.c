@@ -318,12 +318,12 @@ static int seccomp_setup(void)
 		say("can't set tsync attribute for seccomp filter (%d %s), "
 		    "continuing...",
 		    -r, strerror(-r));
-	/* Set system call priorities */
-	sysinit(sydbox->ctx);
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
 		say("can't optimize seccomp filter (%d %s), continuing...",
 		    -r, strerror(-r));
 #endif
+	/* Set system call priorities */
+	sysinit(sydbox->ctx);
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	if (sydbox->dump_fd > 0) {
 		if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_LOG, 1)) < 0)

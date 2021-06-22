@@ -500,7 +500,7 @@ int sysinit(scmp_filter_ctx ctx)
 		return -EINVAL;
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		int r;
-		uint8_t prio = (uint8_t)(ELEMENTSOF(syscall_entries) - i);
+		uint8_t prio = (uint8_t)(UINT8_MAX - i);
 		if ((r = seccomp_syscall_priority(ctx,
 						  syscall_entries[i].no,
 						  prio)) == 0)
