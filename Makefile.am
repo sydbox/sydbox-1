@@ -29,6 +29,7 @@ dist_doc_DATA= \
 	       BUGS \
 	       COPYING \
 	       LICENSE \
+	       LICENSE.psyscall \
 	       README \
 	       KERNEL.md \
 	       man/ptrace-ntpl.txt
