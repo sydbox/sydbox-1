@@ -1443,7 +1443,7 @@ static int notify_loop(syd_process_t *current)
 	}
 
 	for (;;) {  /* Let the user-space tracing begin. */
-		bool jump;
+		bool jump = false;
 		char *name = NULL;
 		bool update_mem = false, update_mem_now = false;
 		syd_process_t *parent;
