@@ -575,18 +575,8 @@ int sysinit_seccomp_load(void)
 	if ((r = filter_general()) < 0)
 		return r;
 
-	size_t arch_max;
-	for (arch_max = 0; sydbox->arch[arch_max] != UINT32_MAX; arch_max++)
-		/* nothing*/;
-	struct sc_map_32 name_map;
-	if (!sc_map_init_32(&name_map, ELEMENTSOF(syscall_entries), 0))
-		return -ENOMEM;
-	struct sc_map_64s scno_map;
-	if (!sc_map_init_64s(&scno_map, ELEMENTSOF(syscall_entries), 0))
-		return -ENOMEM;
 	sandbox_t *box = box_current(NULL);
 	for (size_t i = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		sc_map_clear_32(&name_map);
 		if (syscall_entries[i].filter) {
 			SAY("applying bpf filter for system call `%s'...",
 			    syscall_entries[i].name);
@@ -608,13 +598,6 @@ int sysinit_seccomp_load(void)
 			}
 		} else {
 			sysnum = syscall_entries[i].no;
-		}
-		sc_map_put_64s(&scno_map, sysnum,
-			       syscall_entries[i].name);
-		if (sc_map_found(&scno_map)) {
-			SAY("not adding duplicate system call `%s'.",
-			    syscall_entries[i].name);
-			continue;
 		}
 
 		int flag;
@@ -866,10 +849,9 @@ int sysinit_seccomp_load(void)
 			}
 		}
 	}
-	sc_map_clear_32(&name_map);
-	sc_map_clear_64s(&scno_map);
-	sc_map_term_32(&name_map);
-	sc_map_term_64s(&scno_map);
+
+	if (!use_notify())
+		goto out;
 
 	static const int calls[] = {
 		SCMP_SYS(execve),
@@ -887,38 +869,25 @@ int sysinit_seccomp_load(void)
 #endif
 		SCMP_SYS(fork), SCMP_SYS(vfork),
 	};
-	if (!sc_map_init_32(&name_map, ELEMENTSOF(calls), 0))
-		return -ENOMEM;
-	for (size_t j = 0; sydbox->arch[j] != UINT32_MAX; j++) {
-		for (size_t i = 0; i < ELEMENTSOF(calls); i++) {
-			if (i < calls_execve_max &&
-			    box->mode.sandbox_exec != SANDBOX_OFF)
-				continue; /* execve* already added */
-			sysnum = calls[i];
-			sc_map_put_32(&name_map, sysnum, 1);
-			if (sc_map_found(&name_map) &&
+	for (size_t i = 0; i < ELEMENTSOF(calls); i++) {
+		if (i < calls_execve_max &&
+		    box->mode.sandbox_exec != SANDBOX_OFF)
+			continue; /* execve* already added */
+		sysnum = calls[i];
+		if ((r = rule_add_action(SCMP_ACT_NOTIFY, sysnum)) < 0) {
+			errno = -r;
+			if (r != -EFAULT &&
 			    (sysnum != SCMP_SYS(fork) &&
 			     sysnum != SCMP_SYS(vfork))) {
-				SAY("not adding duplicate system call:%ld",
-				    sysnum);
-				continue;
+				SAY_ERRNO("can't add notify for system call:%ld, "
+					  "continuing...",
+					  sysnum);
 			}
-
-			if ((r = rule_add_action(SCMP_ACT_NOTIFY, sysnum)) < 0) {
-				errno = -r;
-				if (r != -EFAULT &&
-				    (sysnum != SCMP_SYS(fork) &&
-				     sysnum != SCMP_SYS(vfork))) {
-					SAY_ERRNO("can't add notify for system call:%ld, "
-						  "continuing...",
-						  sysnum);
-				}
-				continue;
-			}
+			continue;
 		}
 	}
-	sc_map_term_32(&name_map);
 
+out:
 	SAY("Loading %u bpf filters into the kernel...", sydbox->filter_count);
 	return 0;
 
@@ -1005,8 +974,6 @@ int sysinit_seccomp(void)
 			fd = -errno;
 		if (parent_write_int(fd))
 			return -errno;
-		else /* wait for the parent to read the notify fd. */
-			kill(getpid(), SIGSTOP);
 	}
 	if (r)
 		return -r;
@@ -1133,12 +1100,12 @@ rule_add_open_wr(uint32_t action, int sysnum, int open_flag)
 		return true;
 
 	int r;
-	static const int flag[] = { O_WRONLY, O_RDWR, O_CREAT };
+	static const int flag[] = { O_WRONLY, O_RDWR, O_CREAT, O_TRUNC };
 
 	for (unsigned int i = 0; i < ELEMENTSOF(flag); i++) {
 		syd_rule_add_return(sydbox->ctx, action,
 				    sysnum, 1,
-				    SCMP_CMP64( open_flag, SCMP_CMP_MASKED_EQ,
+				    SCMP_CMP32( open_flag, SCMP_CMP_MASKED_EQ,
 						flag[i], flag[i]));
 	}
 

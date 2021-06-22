@@ -63,7 +63,6 @@ static struct sigaction child_sa;
 static volatile atomic_int child_pid = ATOMIC_VAR_INIT(0);
 static volatile atomic_int child_exit_code = ATOMIC_VAR_INIT(0);
 static volatile atomic_bool child_exited = ATOMIC_VAR_INIT(false);
-static volatile atomic_bool child_stopped = ATOMIC_VAR_INIT(false);
 static volatile atomic_bool child_continued = ATOMIC_VAR_INIT(false);
 static bool check_child_atomic(const volatile atomic_bool *state,
 			       int *interrupt);
@@ -71,16 +70,6 @@ static bool check_child_atomic(const volatile atomic_bool *state,
 static inline bool check_child_exited(int *interrupt)
 {
 	return check_child_atomic(&child_exited, interrupt);
-}
-
-static inline bool check_child_continued(int *interrupt)
-{
-	return check_child_atomic(&child_continued, interrupt);
-}
-
-static inline bool check_child_stopped(int *interrupt)
-{
-	return check_child_atomic(&child_stopped, interrupt);
 }
 
 /* Libseccomp Architecture Handling
@@ -308,11 +297,14 @@ static int seccomp_setup(void)
 		say("can't set tskip attribute for seccomp filter (%d %s), "
 		    "continuing...",
 		    -r, strerror(-r));
+#if 0
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_API_SYSRAWRC, 1)) < 0)
 		say("can't set sysrawrc attribute for seccomp filter (%d %s), "
 		    "continuing...",
 		    -r, strerror(-r));
-#if 0
+	/* Set system call priorities */
+	sysinit(sydbox->ctx);
+#endif
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_TSYNC, 1)) < 0)
 		say("can't set tsync attribute for seccomp filter (%d %s), "
 		    "continuing...",
@@ -320,9 +312,6 @@ static int seccomp_setup(void)
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
 		say("can't optimize seccomp filter (%d %s), continuing...",
 		    -r, strerror(-r));
-#endif
-	/* Set system call priorities */
-	sysinit(sydbox->ctx);
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	if (sydbox->dump_fd > 0) {
 		if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_LOG, 1)) < 0)
@@ -865,9 +854,6 @@ static void sig_chld(int sig, siginfo_t *info, void *ucontext)
 			syd_set_int(&child_exit_code,
 				    WTERMSIG(info->si_status) + 128);
 		break;
-	case CLD_STOPPED:
-		syd_set_state(&child_stopped, true);
-		return;
 	default:
 		return;
 	}
@@ -1289,6 +1275,8 @@ static void init_signal_sets(void)
 static void init_signals(void)
 {
 	struct sigaction sa;
+
+	init_signal_sets();
 
 	sa.sa_handler = SIG_IGN;
 	sigemptyset(&sa.sa_mask);
@@ -1800,64 +1788,13 @@ static pid_t startup_child(char **argv)
 		sydbox->exit_code = 0;
 		return pid;
 	}
-	int fd, sig = 0;
-	time_t child_stop_wait;
+	int fd;
 
 	if ((sydbox->execve_pidfd = syd_pidfd_open(pid, 0)) < 0)
 		die_errno("failed to open pidfd for pid:%d", pid);
 
-	/* wait for child to write the file descriptor to the pipe
-	 * and stop itself until a compile-time configurable timeout. */
-	r = 0;
-	child_stop_wait = time(NULL);
-	init_signals();
-	for (bool init = true;;) {
-		struct timespec ts, rem;
-		time_t diff = time(NULL) - child_stop_wait;
-
-		if (diff > SYD_EXEC_TIMEOUT) {
-			r = -ETIMEDOUT;
-			break;
-		}
-		if (init) {
-			ts.tv_sec = SYD_EXEC_SLEEP_STEP_SEC;
-			ts.tv_nsec = SYD_EXEC_SLEEP_STEP_NSEC;
-		} else {
-			ts.tv_sec = rem.tv_sec;
-			ts.tv_nsec = rem.tv_nsec;
-		}
-		nanosleep(&ts, &rem);
-		if (check_child_stopped(&sig))
-			goto wait_done;
-		if (ts.tv_sec == SYD_EXEC_SLEEP_STEP_SEC)
-			continue;
-		say("process hung? "
-		    "waiting for process %d "
-		    "to stop execution for another %ld "
-		    "seconds and %ld nanoseconds... "
-		    "(limit: %d seconds + %d nanoseconds)",
-		    sydbox->execve_pid,
-		    rem.tv_sec, rem.tv_nsec,
-		    SYD_EXEC_SLEEP_STEP_SEC,
-		    SYD_EXEC_SLEEP_STEP_NSEC);
-	}
-wait_done:
-	if (sig && sig != SIGCHLD) {
-		errno = EINTR;
-		goto seccomp_error;
-	} else if (syd_get_state(&child_stopped)) {
-		syd_set_state(&child_stopped, false);
-	} else {
-		if (!syd_pidfd_send_signal(sydbox->execve_pidfd,
-					   SIGKILL, NULL, 0))
-			kill(pid, SIGKILL);
-		close(sydbox->execve_pidfd);
-		goto seccomp_error;
-	}
-
 	if ((r = parent_read_int(&fd)) < 0) {
 		errno = -r;
-seccomp_error:
 		say_errno("failed to load seccomp filters");
 		say("Invalid sandbox options given.");
 		exit(-r);
@@ -2251,7 +2188,7 @@ int main(int argc, char **argv)
 	int exit_code;
 	pid_t pid;
 	if (use_notify()) {
-		init_signal_sets();
+		init_signals();
 		pid = startup_child(&argv[optind]);
 		syd_process_t *current = new_process_or_kill(pid);
 		init_process_data(current, NULL);

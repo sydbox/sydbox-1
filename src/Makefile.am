@@ -33,7 +33,7 @@ syscall_open_ro.lst: Makefile
 		test -e "$$include" || continue ; \
 		$(EGREP) -h '#[[:space:]]*define[[:space:]]+O_' "$$include" |\
 			$(AWK) '{print $$2}' |\
-			$(EGREP) -v 'O_ACCMODE|O_RDONLY|O_WRONLY|O_RDWR|O_DIRECTORY|O_PATH|O_TMPFILE|O_TMPFILE_MASK' ;\
+			$(EGREP) -v 'O_ACCMODE|O_RDONLY|O_WRONLY|O_RDWR|O_CREAT|O_TRUNC|O_DIRECTORY|O_EXEC|O_NDELAY|O_PATH|O_RSYNC|O_SEARCH|O_TMPFILE|O_TMPFILE_MASK|O_TTY_INIT' ;\
 	done | $(SORT) -u > "$@" || rm -f "$@"
 	$(AM_V_at)sh -c 'test -s "$@" || echo "Failed to generate read-only open flags"'
 	$(AM_V_at)sh -c 'test -s "$@" || exit 1'
