@@ -239,6 +239,9 @@ static void kill_save_errno(pid_t pid, int sig)
 
 static int process_proc(struct syd_process *p)
 {
+	if (process_esrch(p))
+		return 0; /* Process exited, nothing to do. */
+
 	int r = 0;
 
 	/*
@@ -283,7 +286,7 @@ static int process_proc(struct syd_process *p)
 		}
 		p->memfd = memfd;
 	} else {
-		p->memfd = -1;
+		p->memfd = 0;
 	}
 
 out:
@@ -645,13 +648,13 @@ void bury_process(syd_process_t *p, bool force)
 	pid = p->pid;
 	dump(DUMP_THREAD_FREE, pid);
 
-	if (p->pidfd >= 0) {
+	if (p->pidfd > 0) {
 		close(p->pidfd);
-		p->pidfd = -1;
+		p->pidfd = 0;
 	}
-	if (p->memfd >= 0) {
+	if (p->memfd > 0) {
 		close(p->memfd);
-		p->memfd = -1;
+		p->memfd = 0;
 	}
 	if (p->abspath) {
 		free(p->abspath);
@@ -689,13 +692,13 @@ static void tweak_execve_thread(syd_process_t *leader,
 {
 	if (sydbox->config.allowlist_per_process_directories)
 		procdrop(&sydbox->config.proc_pid_auto, execve_thread->pid);
-	if (execve_thread->pidfd >= 0) {
+	if (execve_thread->pidfd > 0) {
 		close(execve_thread->pidfd);
-		execve_thread->pidfd = -1;
+		execve_thread->pidfd = 0;
 	}
-	if (execve_thread->memfd >= 0) {
+	if (execve_thread->memfd > 0) {
 		close(execve_thread->memfd);
-		execve_thread->memfd = -1;
+		execve_thread->memfd = 0;
 	}
 	process_remove(execve_thread);
 
@@ -1080,10 +1083,8 @@ static int process_send_signal(pid_t pid, pid_t tgid, int sig)
 	syd_process_t *current;
 
 	current = lookup_process(pid);
-	if (!current)
+	if (!current || !current->pidfd)
 		return false;
-	if (current->pidfd < 0)
-		return syd_kill(pid, tgid, sig);
 	if (syd_pidfd_send_signal(current->pidfd, sig, NULL, 0) == -1)
 		return -errno;
 	return 0;
@@ -1126,23 +1127,23 @@ static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current,
 {
 	if (!current && pid >= 0)
 		current = lookup_process(pid);
-	if (!current)
+	if (!current || !current->pidfd)
 		return -ESRCH;
 	if (!current->update_mem)
 		return 0;
 	if (current->memfd >= 0) {
 		close(current->memfd);
-		current->memfd = -1;
+		current->memfd = 0;
 	}
 	current->memfd = syd_proc_mem_open(current->pid);
 	current->update_mem = false;
 	if (current->memfd < 0) {
 		errno = -current->memfd;
-		current->memfd = -1;
+		current->memfd = 0;
 		if (proc_esrch(errno)) {
 			if (current->pidfd >= 0)
 				close(current->pidfd);
-			current->pidfd = -1;
+			current->pidfd = 0;
 			return -ESRCH;
 		} else {
 			say_errno("proc_mem_open(%d)", current->pid);

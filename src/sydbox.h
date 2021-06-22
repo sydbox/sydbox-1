@@ -420,6 +420,20 @@ struct syd_process {
 	/* Thread group ID */
 	pid_t tgid;
 
+	/*
+	 * memfd & pidfd have three states:
+	 * -1: Init. Waiting to be initialised.
+	 * >0: Valid file descriptor.
+	 *  0: File closed, indicates process is dead.
+	 *
+	 *  at sydbox.c:process_proc we try to open these files and on failure
+	 *  we set them back to -1 so that the main loop may retry to open the
+	 *  files once's the /proc directory of the process becomes available.
+	 *
+	 *  There is a macro which checks process aliveness with pidfd > 0
+	 *  and pidfd == 0 may be used to check if the process has exited.
+	 */
+
 	/* Pid file descriptor */
 	int pidfd;
 
@@ -756,7 +770,8 @@ extern sydbox_t *sydbox;
 #define sandbox_deny_file(p) (sandbox_deny_exec((p)) && sandbox_deny_read((p)) && sandbox_deny_write((p)))
 
 #define proc_esrch(err_no)  ((err_no) == ENOENT || (err_no) == ESRCH)
-#define process_alive(p) ((p) && ((p)->pidfd >= 0))
+#define process_alive(p)    ((p) && ((p)->pidfd > 0))
+#define process_esrch(p)    ((p) && ((p)->pidfd == 0))
 
 #define action_bpf_default(action) ((action) != SCMP_ACT_NOTIFY &&\
 				    (action) == sydbox->seccomp_action)
