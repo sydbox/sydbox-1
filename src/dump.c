@@ -370,7 +370,7 @@ void dump(enum dump what, ...)
 			J(id)"%llu,"
 			J(ts)"%llu,"
 			J(event)"{\"id\":%u,\"name\":\"%s\"},"
-			J(signal)"%d",
+			J(sig)"%d",
 			id++, (unsigned long long)now,
 			DUMP_INTERRUPT, "interrupt", sig);
 
@@ -387,14 +387,11 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"{\"id\":%u,\"name\":\"%s\"},"
-			J(pid)"%d",
-			id++, (unsigned long long)now,
-			what, event_name, pid);
+			J(pid)"%u,"
+			J(event)"{\"id\":%u,\"name\":\"%s\"}}",
+			id++, (unsigned long long)now, pid,
+			what, event_name);
 
-		fprintf(fp, ","J(process));
-		dump_process(pid);
-		fprintf(fp, "}");
 	} else if (what == DUMP_STARTUP) {
 		pid_t pid = va_arg(ap, pid_t);
 
@@ -404,40 +401,35 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
+			J(pid)"%u,"
 			J(event)"{\"id\":%u,\"name\":\"%s\"},"
-			J(pid)"%d,"
-			J(cmd)"\"%s\"",
-			id++, (unsigned long long)now,
-			what, "startup", pid,
+			J(cmd)"\"%s\"}",
+			id++, (unsigned long long)now, pid,
+			what, "startup",
 			cmd ? cmdline : "");
-		fprintf(fp, ","J(process));
-		dump_process(pid);
-		fprintf(fp, "}");
 	} else if (what == DUMP_EXIT) {
 		int code = va_arg(ap, int);
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"{\"id\":%u,\"name\":\"exit\"},"
 			J(pid)"%d,"
-			J(exit_code)"%d",
+			J(event)"{\"id\":%u,\"name\":\"exit\"},"
+			J(exit_code)"%d}",
 			id++, (unsigned long long)now,
-			what, sydbox->execve_pid, code);
-		fprintf(fp, ","J(process));
-		dump_process(sydbox->execve_pid);
-		fprintf(fp, "}");
+			sydbox->execve_pid, what, code);
 	} else if (what == DUMP_SYSENT) {
 		struct syd_process *current = va_arg(ap, struct syd_process *);
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
+			J(pid)"%u,"
 			J(event)"{\"id\":%u,\"name\":\"sys\"},"
 			J(name)"\"%s\","
 			J(args)"[%ld,%ld,%ld,%ld,%ld,%ld],"
 			J(repr)"[\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"]}",
-			id++, (unsigned long long)now,
+			id++, (unsigned long long)now, current->pid,
 			what,
 			current->sysname,
 			current->args[0],
@@ -460,15 +452,13 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
+			J(pid)"%u,"
 			J(event)"{\"id\":%u,\"name\":\"chdir\"}",
-			id++, (unsigned long long)now,
+			id++, (unsigned long long)now, pid,
 			what);
 
-		fprintf(fp, ","J(process));
-		dump_process(pid);
 
 		fprintf(fp, ","J(cwd)"{");
-
 		fprintf(fp, J(new));
 		if (newcwd)
 			fprintf(fp, "\"%s\"", newcwd);
@@ -479,7 +469,6 @@ void dump(enum dump what, ...)
 			fprintf(fp, "\"%s\"", oldcwd);
 		else
 			dump_null();
-
 		fprintf(fp, "}}");
 	} else if (what == DUMP_EXEC) {
 		pid_t execve_pid = va_arg(ap, pid_t);
@@ -488,20 +477,11 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"{\"id\":%u,\"name\":\"exec\"}",
-			id++, (unsigned long long)now,
-			what);
-
-		fprintf(fp, ","J(process));
-		dump_process(execve_pid);
-
-		fprintf(fp, ","J(prog));
-		if (prog)
-			fprintf(fp, "\"%s\"", prog);
-		else
-			dump_null();
-
-		fprintf(fp, "}");
+			J(pid)"%u,"
+			J(event)"{\"id\":%u,\"name\":\"exec\"},"
+			J(cmd)"\"%s\"}",
+			id++, (unsigned long long)now, execve_pid,
+			what, prog);
 	} else if (what == DUMP_EXEC_MT) {
 		pid_t execve_thread, leader;
 
@@ -512,21 +492,11 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"{\"id\":%u,\"name\":\"exec_mt\"}",
-			id++, (unsigned long long)now,
-			what);
-
-		fprintf(fp, ","J(prog));
-		if (prog)
-			fprintf(fp, "\"%s\"", prog);
-		else
-			dump_null();
-
-		fprintf(fp, ","J(leader_thread));
-		dump_process(leader);
-		fprintf(fp, ","J(execve_thread));
-		dump_process(execve_thread);
-		fprintf(fp, "}");
+			J(event)"{\"id\":%u,\"name\":\"exec_mt\"},"
+			J(leader_pid)"%u,"J(execve_pid)"%u,"
+			J(cmd)"\"%s\"}",
+			id++, (unsigned long long)now, what,
+			leader, execve_thread, prog); /* TODO quote: cmd */
 	} else if (what == DUMP_ALLOC) {
 		size_t size = va_arg(ap, size_t);
 		const char *func = va_arg(ap, const char *);
