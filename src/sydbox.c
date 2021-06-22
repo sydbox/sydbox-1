@@ -1184,6 +1184,7 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent)
 		parent->new_clone_flags = 0;
 		current = clone_process(parent, pid);
 		parent->new_clone_flags = save_new_clone_flags;
+		sysx_chdir(current);
 	}
 
 	return current;

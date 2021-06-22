@@ -881,7 +881,8 @@ int sys_renameat(syd_process_t *current)
 		info.rmode &= ~RPATH_MASK;
 		info.rmode |= RPATH_NOLAST;
 		if (S_ISDIR(statbuf.st_mode)) {
-			/* oldpath specifies a directory.
+			/*
+			 * oldpath specifies a directory.
 			 * In this case, newpath must either not exist,
 			 * or it must specify an empty directory.
 			 */
