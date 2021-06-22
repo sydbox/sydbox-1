@@ -69,7 +69,7 @@ static const char *sydsh_argv[] = {
 	"/usr/bin/env",
 	"bash",
 	"--rcfile",
-	SYSCONFDIR"/"PACKAGE"/sydbox.bashrc",
+	DATADIR"/"PACKAGE"/sydbox.bashrc",
 	"-i",
 	NULL
 };
@@ -2111,7 +2111,7 @@ int main(int argc, char **argv)
 
 	const char *const *my_argv;
 	if (optind == argc) {
-		config_parse_spec(SYSCONFDIR "/" PACKAGE
+		config_parse_spec(DATADIR "/" PACKAGE
 				  "/default.syd-" STRINGIFY(SYDBOX_API_VERSION));
 		set_uid(getuid());
 		set_gid(getgid());
