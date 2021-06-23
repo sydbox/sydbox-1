@@ -1478,10 +1478,6 @@ notify_receive:
 			}
 			current->flags &= ~SYD_IN_CLONE;
 			event_exec(current);
-		} else if (current && current->flags & SYD_IN_EXECVE) {
-			/* TODO: Does this affect multithreaded execve
-			 * leader switching? Test! */
-			current->flags &= ~SYD_IN_EXECVE;
 		}
 
 		if (!current) {
@@ -1514,10 +1510,12 @@ notify_receive:
 		} else if (streq(name, "vfork")) {
 			event_clone(current, 'v', 0);
 		} else if (streq(name, "chdir") || !strcmp(name, "fchdir")) {
-			current->flags &= ~SYD_IN_CLONE;
+			current->flags &= ~(SYD_IN_CLONE|SYD_IN_EXECVE);
 			current->update_cwd = true;
 		} else { /* all system calls including exec end up here. */
 			current->flags &= ~SYD_IN_CLONE;
+			if (!startswith(name, "execve"))
+				current->flags &= ~SYD_IN_EXECVE;
 			event_syscall(current);
 		}
 
