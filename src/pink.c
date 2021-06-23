@@ -208,10 +208,17 @@ retry_vm_readv:
 #endif
 	bool mem_open = false, mem_open_ok = false;
 mem_open:
-	if (mem_open || !proc_mem_open_once()) {
+	if (mem_open) {
 		int memfd;
 		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
 			return memfd;
+		if (!syd_seccomp_request_is_valid()) {
+			/* process is gone. */
+			if (memfd >= 0)
+				close(memfd);
+			errno = -ESRCH;
+			return -1;
+		}
 		current->memfd = memfd;
 		if (mem_open)
 			mem_open_ok = true;
@@ -243,7 +250,7 @@ mem_read:
 		say_errno("proc_mem_read(%d)", current->pid);
 		errno = save_errno;
 	}
-	if (!mem_open_ok && !proc_mem_open_once() && current->memfd >= 0) {
+	if (!mem_open_ok && current->memfd >= 0) {
 		close(current->memfd);
 		current->memfd = -1;
 	}
@@ -258,10 +265,17 @@ static ssize_t proc_mem_write(syd_process_t *current, long addr, void *buf, size
 	bool mem_open = false, mem_open_ok = false;
 
 mem_open:
-	if (mem_open || !proc_mem_open_once()) {
+	if (mem_open) {
 		int memfd;
 		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
 			return memfd;
+		if (!syd_seccomp_request_is_valid()) {
+			/* process is gone. */
+			if (memfd >= 0)
+				close(memfd);
+			errno = -ESRCH;
+			return -1;
+		}
 		current->memfd = memfd;
 		if (mem_open)
 			mem_open_ok = true;
@@ -296,7 +310,7 @@ mem_write:
 		say_errno("proc_mem_write(%d)", current->pid);
 		errno = save_errno;
 	}
-	if (!mem_open_ok && !proc_mem_open_once() && current->memfd >= 0) {
+	if (!mem_open_ok && current->memfd >= 0) {
 		close(current->memfd);
 		current->memfd = -1;
 	}
@@ -646,30 +660,22 @@ int syd_rmem_alloc(syd_process_t *current)
 		/* psyscall could not inject to this process (is it static?).*/
 		return -ENOTSUP;
 	} else if (current->addr != 0) {
-		say("Already allocated a read-only reagion of %d bytes "
-		    "at address:%p in the memory of the process:%d, "
-		    "skipping...", SYD_REMOTE_MEM_MAX, (void*)current->addr,
-		    current->pid);
 		return 0; /* Already allocated. */
 	}
 
-	say("Allocating a read-only region of %d bytes "
-	    "within the private memory of process:%d...",
-	    SYD_REMOTE_MEM_MAX, current->pid);
-	current->addr = (long)palloc(current->pid, SYD_REMOTE_MEM_MAX);
-	if (current->addr < 0) {
-		int save_errno = errno;
+	errno = 0;
+	long addr = (long)palloc(current->pid, SYD_REMOTE_MEM_MAX);
+	int r;
+	if (addr <= 0) {
+		r = -errno;
 		current->addr = -1;
-		say_errno("Error allocating a read-only region of %d bytes "
-			  "within the private memory of process:%d!",
-			  SYD_REMOTE_MEM_MAX, current->pid);
-		return -save_errno;
+	} else {
+		r = 0;
+		current->addr = addr;
 	}
-
-	say("Successfully allocated %d bytes at address:%p "
-	    "in the memory of process:%d.", SYD_REMOTE_MEM_MAX,
-	    (void *)current->addr, current->pid);
-	return 0;
+	dump(DUMP_CROSS_MEMORY, "mmap", current->pid, addr,
+	     SYD_REMOTE_MEM_MAX, -r);
+	return r;
 #endif
 }
 
@@ -735,6 +741,11 @@ int syd_rmem_write(syd_process_t *current)
 	}
 #endif
 #endif
+}
+
+bool syd_seccomp_request_is_valid(void)
+{
+	return !seccomp_notify_id_valid(sydbox->notify_fd, sydbox->request->id);
 }
 
 static volatile atomic_bool test_child_notify = ATOMIC_VAR_INIT(false);

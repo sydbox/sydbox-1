@@ -397,9 +397,6 @@ struct syd_process {
 	/* Update current working directory, next step */
 	bool update_cwd:1;
 
-	/* Update the /proc/pid/mem file descriptor as necessary */
-	bool update_mem:1;
-
 	/* SYD_* flags */
 	unsigned int flags:7;
 
@@ -559,10 +556,9 @@ struct config {
 	/* same for these, not inherited: global */
 	bool use_seize;
 	bool use_toolong_hack;
+#define SYDBOX_CONFIG_MEMACCESS_MAX 2
+	uint8_t mem_access:1;
 	uint8_t prog_hash:2; /* 0: disabled, 1: initial execve, 2: all execves */
-#define SYDBOX_CONFIG_MEMACCESS_REOPEN_MIN 2
-#define SYDBOX_CONFIG_MEMACCESS_MAX 3
-	uint8_t mem_access:3;
 
 	/* Per-process sandboxing data */
 	sandbox_t box_static;
@@ -737,10 +733,6 @@ extern sydbox_t *sydbox;
 #define use_cross_memory_attach() \
 		(((sydbox)->config.mem_access == 0) || \
 		 ((sydbox)->config.mem_access == 2))
-#define proc_mem_open_once() \
-	((sydbox)->config.mem_access >= SYDBOX_CONFIG_MEMACCESS_REOPEN_MIN)
-#define request_is_valid(id) (seccomp_notify_id_valid((sydbox)->notify_fd, \
-						      (id)))
 
 #define sysdeny(p) ((p)->retval)
 #define hasparent(p) ((p)->ppid >= 0)
@@ -777,9 +769,9 @@ extern sydbox_t *sydbox;
 #define sandbox_deny_network(p) (sandbox_deny((p), network))
 #define sandbox_deny_file(p) (sandbox_deny_exec((p)) && sandbox_deny_read((p)) && sandbox_deny_write((p)))
 
-#define proc_esrch(err_no)  ((err_no) == ENOENT || (err_no) == ESRCH)
-#define process_alive(p)    ((p) && ((p)->pidfd > 0))
-#define process_esrch(p)    ((p) && ((p)->pidfd == 0))
+#define proc_esrch(err_no)   ((err_no) == ENOENT || (err_no) == ESRCH)
+#define process_alive(p)     ((p) && ((p)->pidfd != 0))
+#define process_esrch(p)     ((p) && ((p)->pidfd == 0))
 
 #define action_bpf_default(action) ((action) != SCMP_ACT_NOTIFY &&\
 				    (action) == sydbox->seccomp_action)
@@ -821,6 +813,7 @@ ssize_t syd_write_vm_data(syd_process_t *current, long addr, char *src,
 			  size_t len);
 int syd_rmem_alloc(syd_process_t *current);
 int syd_rmem_write(syd_process_t *current);
+bool syd_seccomp_request_is_valid(void);
 
 int syd_seccomp_arch_is_valid(uint32_t arch, bool *result);
 void test_setup(void);

@@ -1499,24 +1499,6 @@
                     </simpara>
                   </listitem>
                 </varlistentry>
-                <varlistentry>
-                  <term>2</term>
-                  <listitem>
-                    <simpara>
-                      Use cross memory attach if available, use /proc otherwise,
-                      open file once, do not reopen the file each call.
-                    </simpara>
-                  </listitem>
-                </varlistentry>
-                <varlistentry>
-                  <term>3</term>
-                  <listitem>
-                    <simpara>
-                      Use /proc/pid/mem unconditionally, open file once,
-                      do not reopen the file each call.
-                    </simpara>
-                  </listitem>
-                </varlistentry>
               </variablelist>
             </para>
             <note>
@@ -1524,13 +1506,6 @@
                 This option is functionally identical to the <option>-M</option> command line switch.
               </para>
             </note>
-            <warning>
-              <para>
-                Modes 2 and 3 may run into too many processes errors.
-                Use another mode or adapt the sysctl <varname>fs.nr_open</varname>
-                as necessary if this is the case.
-              </para>
-            </warning>
           </listitem>
         </varlistentry>
 
