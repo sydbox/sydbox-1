@@ -1,5 +1,6 @@
 # Sydbox
 
+- Buildhost: Test builds with --disable-dump
 - Use a hash table without memory allocation for the process table.
   This is an idea:
     https://github.com/vi/macro_robinhood_hash
