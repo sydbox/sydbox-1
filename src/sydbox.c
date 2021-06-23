@@ -1211,7 +1211,6 @@ static void init_early(void)
 	os_release = get_os_release();
 	sydbox = xcalloc(1, sizeof(sydbox_t));
 	sydbox->exit_code = ATOMIC_VAR_INIT(-1);
-	sydbox->exit_code = EXIT_SUCCESS;
 	sydbox->arch[0] = UINT32_MAX;
 	sydbox->seccomp_fd = -1;
 	sydbox->notify_fd = -1;
