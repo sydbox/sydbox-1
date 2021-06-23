@@ -43,20 +43,29 @@ int syd_path_stat(const char *path, int mode, bool last_node, struct stat *buf);
 #define SYD_REALPATH_MASK	(SYD_REALPATH_EXIST|SYD_REALPATH_NOLAST)
 int syd_realpath_at(int fd, const char *pathname, char **buf, int mode);
 
+/* SECURITY:
+ * Validate these calls AFTER EACH AND EVERY
+ * seccomp user notification.
+ */
 int syd_proc_open(pid_t pid);
-int syd_proc_ppid(pid_t pid, pid_t *ppid);
-int syd_proc_parents(pid_t pid, pid_t *ppid, pid_t *tgid);
-int syd_proc_comm(pid_t pid, char *dst, size_t siz);
-int syd_proc_cmdline(pid_t pid, char *dst, size_t siz);
-int syd_proc_state(pid_t pid, char *state);
-int syd_proc_mem_open(pid_t pid);
+int syd_proc_fd_open(pid_t pid);
+
+/***************************************/
+/* Start of Process ID SAFE interface: *
+****************************************/
+
+int syd_proc_ppid(int pfd, pid_t *ppid);
+int syd_proc_parents(int pfd, pid_t *ppid, pid_t *tgid);
+int syd_proc_comm(int pfd, char *dst, size_t siz);
+int syd_proc_cmdline(int pfd, char *dst, size_t siz);
+int syd_proc_state(int pfd, char *state);
+int syd_proc_mem_open(int pfd);
 ssize_t syd_proc_mem_read(int mem_fd, off_t addr, void *buf, size_t count);
 ssize_t syd_proc_mem_write(int mem_fd, off_t addr, const void *buf, size_t len);
 
-int syd_proc_environ(pid_t pid);
+int syd_proc_environ(int pfd);
 
-int syd_proc_fd_open(pid_t pid);
-int syd_proc_fd_path(pid_t pid, int fd, char **dst);
+int syd_proc_fd_path(int pfd_fd, int fd, char **dst);
 
 int syd_proc_task_find(pid_t pid, pid_t task_pid);
 int syd_proc_task_open(pid_t pid, DIR **task_dir);

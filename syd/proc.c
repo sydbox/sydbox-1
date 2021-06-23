@@ -89,18 +89,17 @@ int syd_proc_fd_open(pid_t pid)
 	return (fd < 0) ? -errno : fd;
 }
 
-int syd_proc_ppid(pid_t pid, pid_t *ppid)
+int syd_proc_ppid(int pfd, pid_t *ppid)
 {
-	int pfd, fd, save_errno;
+	int fd, save_errno;
 	pid_t ppid_r;
 	FILE *f;
 
-	if (pid <= 0 || ppid == NULL)
+	if (pfd <= 0)
+		return -EBADF;
+	if (ppid == NULL)
 		return -EINVAL;
 
-	pfd = syd_proc_open(pid);
-	if (pfd < 0)
-		return -errno;
 	fd = openat(pfd, "stat", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
 	close(pfd);
@@ -153,20 +152,17 @@ int syd_proc_ppid(pid_t pid, pid_t *ppid)
 	return 0;
 }
 
-int syd_proc_parents(pid_t pid, pid_t *ppid, pid_t *tgid)
+int syd_proc_parents(int pfd, pid_t *ppid, pid_t *tgid)
 {
-	int pfd, fd, save_errno;
+	int fd, save_errno;
 	pid_t ppid_r, tgid_r;
 	FILE *f;
 
-	if (pid <= 0)
-		return -EINVAL;
+	if (pfd <= 0)
+		return -EBADF;
 	if (!ppid && !tgid)
 		return -EINVAL;
 
-	pfd = syd_proc_open(pid);
-	if (pfd < 0)
-		return -errno;
 	fd = openat(pfd, "status", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
 	close(pfd);
@@ -229,16 +225,13 @@ int syd_proc_parents(pid_t pid, pid_t *ppid, pid_t *tgid)
 	return 0;
 }
 
-int syd_proc_comm(pid_t pid, char *dst, size_t siz)
+int syd_proc_comm(int pfd, char *dst, size_t siz)
 {
-	int pfd, fd, save_errno;
+	int fd, save_errno;
 
-	if (pid <= 0)
-		return -EINVAL;
+	if (pfd <= 0)
+		return -EBADF;
 
-	pfd = syd_proc_open(pid);
-	if (pfd < 0)
-		return -errno;
 	fd = openat(pfd, "comm", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
 	close(pfd);
@@ -272,16 +265,13 @@ int syd_proc_comm(pid_t pid, char *dst, size_t siz)
 	return 0;
 }
 
-int syd_proc_cmdline(pid_t pid, char *dst, size_t siz)
+int syd_proc_cmdline(int pfd, char *dst, size_t siz)
 {
-	int pfd, fd, save_errno;
+	int fd, save_errno;
 
-	if (pid <= 0)
-		return -EINVAL;
+	if (pfd <= 0)
+		return -EBADF;
 
-	pfd = syd_proc_open(pid);
-	if (pfd < 0)
-		return -errno;
 	fd = openat(pfd, "cmdline", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
 	close(pfd);
@@ -313,17 +303,14 @@ int syd_proc_cmdline(pid_t pid, char *dst, size_t siz)
 	return 0;
 }
 
-int syd_proc_state(pid_t pid, char *state)
+int syd_proc_state(int pfd, char *state)
 {
-	int pfd, fd, save_errno;
+	int fd, save_errno;
 	char state_r;
 	FILE *f;
 
-	if (pid <= 0)
-		return -EINVAL;
-	pfd = syd_proc_open(pid);
-	if (pfd < 0)
-		return -errno;
+	if (pfd <= 0)
+		return -EBADF;
 	fd = openat(pfd, "stat", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
 	close(pfd);
@@ -347,19 +334,14 @@ int syd_proc_state(pid_t pid, char *state)
 	return 0;
 }
 
-int syd_proc_mem_open(pid_t pid)
+int syd_proc_mem_open(int pfd)
 {
-	int r, fd;
-	char p[SYD_PROC_MAX];
+	int fd;
 
-	if (pid <= 0)
-		return -EINVAL;
+	if (pfd <= 0)
+		return -EBADF;
 
-	r = snprintf(p, sizeof(p), "/proc/%u/mem", pid);
-	if (r < 0 || (size_t)r >= sizeof(p))
-		return -EINVAL;
-
-	fd = open(p, O_RDWR|O_NOFOLLOW|O_CLOEXEC);
+	fd = openat(pfd, "mem", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	return (fd < 0) ? -errno : fd;
 }
 
@@ -377,20 +359,16 @@ ssize_t syd_proc_mem_write(int mem_fd, off_t addr, const void *buf, size_t count
 	return write(mem_fd, buf, count);
 }
 
-int syd_proc_fd_path(pid_t pid, int fd, char **dst)
+int syd_proc_fd_path(int pfd_fd, int fd, char **dst)
 {
-	int pfd, r;
+	int r;
 	char sfd[SYD_INT_MAX];
 
-	if (pid <= 0 || fd < 0)
-		return -EINVAL;
+	if (pfd_fd <= 0 || fd < 0)
+		return -EBADF;
 
-	pfd = syd_proc_fd_open(pid);
-	if (pfd < 0)
-		return -errno;
 	r = snprintf(sfd, sizeof(sfd), "%u", fd);
 	if (r < 0 || (size_t)r >= sizeof(sfd)) {
-		close(pfd);
 		return -EINVAL;
 	}
 
@@ -405,21 +383,18 @@ int syd_proc_fd_path(pid_t pid, int fd, char **dst)
 		if (!p) {
 			if (path)
 				free(path);
-			close(pfd);
 			return -errno;
 		}
 		path = p;
 
 		/* Careful here, readlinkat(2) does not append '\0' */
 		s = (len - 1) * sizeof(char);
-		n = readlinkat(pfd, sfd, path, s);
+		n = readlinkat(pfd_fd, sfd, path, s);
 		if (n < 0) {
-			close(pfd);
 			return -errno;
 		} else if (n < s) {
 			path[n] = '\0';
 			*dst = path;
-			close(pfd);
 			return n;
 		}
 
@@ -427,28 +402,24 @@ int syd_proc_fd_path(pid_t pid, int fd, char **dst)
 		if (len > (SIZE_MAX - len)) {
 			/* There is a limit for everything */
 			free(p);
-			close(pfd);
 			return -ENAMETOOLONG;
 		}
 		len *= 2;
 	}
-	/* never reached */
+	abort();
 }
 
-int syd_proc_environ(pid_t pid)
+int syd_proc_environ(int pfd)
 {
-	int c, pfd, fd, save_errno;
+	int c, fd, save_errno;
 	FILE *f;
 	/* <linux/binfmts.h> states ARG_MAX_STRLEN is essentially random and
 	 * here (x86_64) defines it as (PAGE_SIZE * 32), I am more modest. */
 	char s[1024];
 
-	if (pid <= 0)
-		return -EINVAL;
+	if (pfd <= 0)
+		return -EBADF;
 
-	pfd = syd_proc_open(pid);
-	if (pfd < 0)
-		return -errno;
 	fd = openat(pfd, "environ", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
 	close(pfd);
@@ -494,37 +465,36 @@ int syd_proc_environ(pid_t pid)
 	return r;
 }
 
-int syd_proc_task_find(pid_t pid, pid_t pid_task)
+int syd_proc_task_find(int pfd, pid_t pid_task)
 {
 	int r;
-	char p[SYD_PROC_TASK_MAX + 1 /* '/' */ + SYD_PID_MAX];
+	char p[SYD_PID_MAX];
 
-	if (pid <= 0 || pid_task <= 0)
+	if (pfd <= 0)
+		return -EBADF;
+	if (pid_task <= 0)
 		return -EINVAL;
 
-	r = snprintf(p, sizeof(p), "/proc/%u/task/%u", pid, pid_task);
+	r = snprintf(p, sizeof(p), "%u", pid_task);
 	if (r < 0 || (size_t)r >= sizeof(p))
 		return -EINVAL;
 
 	errno = 0;
-	access(p, F_OK);
+	faccessat(pfd, p, F_OK, AT_SYMLINK_NOFOLLOW|AT_EACCESS);
 	return -errno;
 }
 
-int syd_proc_task_open(pid_t pid, DIR **task_dir)
+int syd_proc_task_open(int pfd, DIR **task_dir)
 {
-	int r, fd;
-	char p[SYD_PROC_TASK_MAX];
+	int fd;
 	DIR *d;
 
-	if (pid <= 0 || !task_dir)
+	if (pfd <= 0)
+		return -EBADF;
+	if (!task_dir)
 		return -EINVAL;
 
-	r = snprintf(p, sizeof(p), "/proc/%u/task", pid);
-	if (r < 0 || (size_t)r >= sizeof(p))
-		return -EINVAL;
-
-	fd = open(p, O_PATH|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
+	fd = openat(pfd, "task", O_PATH|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
 	if (fd < 0)
 		return -errno;
 
