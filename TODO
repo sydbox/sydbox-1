@@ -148,3 +148,74 @@ Some sample filter rules with this new format:
 - box should learn to read sydbox magic configuration via TOML format
 - generate docs from pandora --help output for docs.rs if it's possible
 - add benchmarks with criterion to benchmark certain box invocations.
+
+# CaitSith
+# Thanks eternaleye!
+
+[21:51:06] <eternaleye> alip: BTW, have you ever heard of CaitSith?
+[21:51:23] <eternaleye> It's a Linux security module that has a somewhat similar style to sydbox, might be fun to take inspiration from
+[21:51:38] <eternaleye> In particular, its notion of "domain transitions" is pretty cool
+[21:51:47] <eternaleye> http://caitsith.osdn.jp
+[21:52:19] <eternaleye> alip: Anyway, I'd highly recommend reading the slides that are linked in there
+[21:52:28] <eternaleye> They do a good job of explaining CaitSith's history and philosophy
+[21:53:04] <eternaleye> But to explain the main cool thing they have that I think sydbox could steal, it basically assigns a "domain" to each process, and access control rules can key off of that
+[21:53:51] <eternaleye> Rules can change the "domain" on exec, and they actually just added a functionality (at my suggestion) to allow domains transitions to occur in response to socket operations as well
+[21:54:12] <eternaleye> Which allows for having different rules before/after a service starts listening for requests, etc
+[21:54:25] <justinkb> eternaleye: any big performance hit from those flags btw?
+[21:54:56] <alip> eternaleye: do you mind if I quote you in sydbox.it/TODO?
+[21:55:04] <eternaleye> justinkb: -ggdb3 and -gdwarf-4 only impact debuginfo generation; with splitdebug, there's absolutely no change in perf
+[21:55:06] <eternaleye> alip: No problem!
+[21:56:02] <eternaleye> But yeah, a cool thing you can do with domains is assign domains based on (prior domain, process invoking exec, program being exec'd)
+[21:56:32] <eternaleye> So "bash started by paludis" and "bash started by login" can have completely different policies
+[21:57:15] <eternaleye> alip: CaitSith even supports an interactive mode
+[21:57:26] <eternaleye> justinkb: Uh, splitdebug does tell gdb where the symbols are
+[21:57:39] <eternaleye> It inserts a .gnu.debuglink section or whatever
+[21:57:45] <alip> eternaleye: i don't like interactivity but ok
+[21:58:15] <eternaleye> alip: No, not interactive as in "human controlled", interactive as in "rule raises a notification that you then approve/deny"
+[21:58:25] <eternaleye> More like seccomp notify
+[21:58:37] <justinkb> eternaleye: hm, didn't work for me back then, might've been a bug or sth, i'll look into it, cheers
+[21:58:40] <eternaleye> Though not quite as clean as it's not an FD per context
+[21:59:32] <eternaleye> alip: The same mechanism used for interactivity is also used for its learning mode (similar to pandora profile)
+[22:00:43] <eternaleye> alip: Honestly, I kind of think it'd be neat if sydbox could understand CaitSith profiles - they're a pretty clever format
+[22:01:53] <eternaleye> They're basically entries of the form `<priority> <operation> <conditions>\n(\t<priority> <conditions> <verdict>)+`
+[22:03:38] <eternaleye> alip: Here's an example (simplistic) policy file: http://caitsith.osdn.jp/#3.1.3
+[22:04:24] <eternaleye> This makes it so the "execute" operation can only be invoked with the listed programs, at all
+[22:04:51] <eternaleye> And transitions to the specified domain for each, so that more specific policies can key off of that
+[22:05:13] <eternaleye> Actually, wait, no
+[22:05:16] <alip> i had this idea which i started to implement to limit the list of executable files by a list of sha1 checksums.
+[22:05:19] <eternaleye> It doesn't have a final "deny"
+[22:05:21] <alip> that's similar
+[22:03:38] <eternaleye> alip: Here's an example (simplistic) policy file: http://caitsith.osdn.jp/#3.1.3
+[22:04:24] <eternaleye> This makes it so the "execute" operation can only be invoked with the listed programs, at all
+[22:04:51] <eternaleye> And transitions to the specified domain for each, so that more specific policies can key off of that
+[22:05:13] <eternaleye> Actually, wait, no
+[22:05:16] <alip> i had this idea which i started to implement to limit the list of executable files by a list of sha1 checksums.
+[22:05:19] <eternaleye> It doesn't have a final "deny"
+[22:05:21] <alip> that's similar
+[22:06:13] <eternaleye> alip: Each operation has its own list of properties that conditions can inspect - here are the ones for `execute`: http://caitsith.osdn.jp/#5.1
+[22:06:30] <eternaleye> You could easily extend it with a `path.hash.sha1` attribute
+[22:06:40] <alip> sweet.
+[22:07:27] <eternaleye> Also, even as is, you can filter by the task's environment and stuff :D
+[22:07:36] <eternaleye> Or even its argv
+[22:08:00] <eternaleye> "only allow running X on :90 through :99" is entirely expressible :D
+[22:08:12] <alip> yeah many stuff are possible i know :)
+[22:08:20] <alip> but my top priority is to make sandbox secure first
+[22:08:35] <eternaleye> Yup
+[22:08:50] <alip> and for that i need to pull quite some tricker being a non-root no fancy kernel features tool
+[22:08:59] <eternaleye> More pointing out how nicely extensible the format is, and how many things it already can express
+[22:09:17] <alip> yes, all this is very exciting, i'm copying you todo as we speak
+[22:09:37] <eternaleye> Plus, if you're using the same format, then there's also the option of leveraging CaitSith if a system has it available :P
+[22:09:53] <alip> hehe sandbox brothers
+[22:10:40] <eternaleye> Especially if there's a system-wide CaitSith policy that gives `cave perform` a domain you can key off of, based on the package it's building
+[22:11:12] <eternaleye> Something like `paludis-build/$CATEGORY/$PN@$PV` or some such
+[22:11:46] <eternaleye> After all, CaitSith rules can key off of argv :D
+[22:12:05] <alip> sweet +1
+[22:13:04] <eternaleye> alip: Also, I think you might find the slides show the author to be a kindred spirit - I think he likes Card Captor Sakura the way you like Pink Floyd, given he's named a bunch of projects after different characters :P
+[22:13:37] <eternaleye> Same guy who made the (upstreamed) Tomoyo security module
+[22:14:46] <alip> sounds very nice. much obliged. yay more pf for me and more ccs for them.
+[22:15:27] <alip> there's the idea that challenges end with the banner that the shell prints so you understand you won :D
+[22:15:54] <alip> or a random tao te ching quote if you won a bigger challenge
+[22:16:42] <alip> so people can look for different poems under different parts of the system
+[22:16:51] <justinkb> should I expect a fix for that too many file descriptors thing before you leave for the week? if not, can you recommend a commit to build from that shouldn't have that issue?
+[22:17:12] <alip> i hope to fix that tonight but i dont know the cause yet
+[22:17:24] <alip> i'll delay the renaming for now and do that.
