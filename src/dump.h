@@ -71,7 +71,9 @@ enum dump {
 			  INSPECT_DUMP_SYSENT |\
 			  INSPECT_DUMP_CROSS_MEMORY |\
 			  INSPECT_DUMP_EXEC |\
-			  INSPECT_DUMP_EXEC_MT)
+			  INSPECT_DUMP_EXEC_MT |\
+			  INSPECT_DUMP_EXIT |\
+			  INSPECT_DUMP_INTERRUPT)
 #else
 # error do not know how to define INSPECT_DEFAULT
 #endif
