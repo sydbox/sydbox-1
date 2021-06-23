@@ -30,7 +30,7 @@ unsigned long long dump_inspect = INSPECT_DEFAULT;
 static FILE *fp;
 static char pathdump[PATH_MAX];
 static int nodump = -1;
-static unsigned long flags = DUMPF_PROCFS;
+/* static unsigned long flags = DUMPF_PROCFS; */
 static unsigned long long id;
 static size_t alloc_bytes;
 
@@ -64,13 +64,12 @@ static void dump_null(void)
 
 static void dump_errno(int err_no)
 {
-	fprintf(fp, "{"
-		J(errno)"%d,"
-		J(errno_name)"\"%s\""
-		"}",
-		err_no, errno2name(err_no));
+	fprintf(fp, "{"J(no)"%d", err_no);
+	if (err_no)
+		fprintf(fp, J(name)"\"%s\"}", errno2name(err_no));
+	else
+		fputc('}', fp);
 }
-
 
 static void dump_format(const char *argv0, const char *pathname,
 			const char *runas,
@@ -156,6 +155,7 @@ static void dump_format(const char *argv0, const char *pathname,
 		free(b_path);
 }
 
+#if 0
 static void dump_proc_statinfo(const struct proc_statinfo *info)
 {
 	fprintf(fp, "{"
@@ -260,6 +260,7 @@ static void dump_process(pid_t pid)
 
 	fprintf(fp, "}");
 }
+#endif
 
 static int dump_init(void)
 {
@@ -518,16 +519,24 @@ void dump(enum dump what, ...)
 		const char *prog = va_arg(ap, const char *);
 
 		char *b_prog = NULL;
-		char *j_prog = json_escape_str(&b_prog, prog);
+		char *j_prog;
+
+		if (prog)
+			j_prog = json_escape_str(&b_prog, prog);
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
 			J(event)"{\"id\":%u,\"name\":\"exec_mt\"},"
-			J(leader_pid)"%u,"J(execve_pid)"%u,"
-			J(cmd)"\"%s\"}",
+			J(leader_pid)"%u,"J(execve_pid)"%u,",
 			id++, (unsigned long long)now, what,
-			leader, execve_thread, j_prog); /* TODO quote: cmd */
+			leader, execve_thread);
+		fputs(J(cmd), fp);
+		if (prog)
+			fprintf(fp, "\"%s\"", j_prog);
+		else
+			dump_null();
+		fputc('}', fp);
 
 		if (b_prog) free(b_prog);
 	} else if (what == DUMP_ALLOC) {
@@ -553,27 +562,27 @@ void dump(enum dump what, ...)
 			J(func)"\"%s\"}",
 			id++, (unsigned long long)now,
 			what, size, func);
-	} else if (what == DUMP_MEMORY_ACCESS) {
+	} else if (what == DUMP_CROSS_MEMORY) {
 		const char *type = va_arg(ap, const char *);
 		pid_t pid = va_arg(ap, pid_t);
 		long addr = va_arg(ap, long);
+		ssize_t size = va_arg(ap, ssize_t);
 		int err_no = va_arg(ap, int);
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"{\"id\":%u,\"name\":\"memory\"},"
 			J(pid)"%d,"
+			J(event)"{\"id\":%u,\"name\":\"cross_memory\"},"
 			J(memory)"{"
 			J(addr)"%ld,"
-			J(errno)"%d,"
-			J(type)"\"%s\"},",
-			id++, (unsigned long long)now,
-			what, pid, addr, err_no, type);
-
-		fprintf(fp, ","J(process));
-		dump_process(pid);
-		fprintf(fp, "}");
+			J(size)"%ld,"
+			J(type)"\"%s\",",
+			id++, (unsigned long long)now, pid, what,
+			addr, size, type);
+		fputs(J(error), fp);
+		dump_errno(err_no);
+		fputs("}}", fp);
 	} else if (what == DUMP_OOPS) {
 		pid_t pid = va_arg(ap, pid_t);
 		pid_t tgid = va_arg(ap, pid_t);

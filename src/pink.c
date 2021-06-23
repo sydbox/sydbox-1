@@ -247,7 +247,7 @@ mem_read:
 		close(current->memfd);
 		current->memfd = -1;
 	}
-	dump(DUMP_MEMORY_ACCESS, "read", current->pid, addr, -r);
+	dump(DUMP_CROSS_MEMORY, "read", current->pid, addr, nread, -r);
 	return r;
 }
 
@@ -300,7 +300,7 @@ mem_write:
 		close(current->memfd);
 		current->memfd = -1;
 	}
-	dump(DUMP_MEMORY_ACCESS, "write", current->pid, addr, -r);
+	dump(DUMP_CROSS_MEMORY, "write", current->pid, addr, nwritten, -r);
 	return r;
 }
 

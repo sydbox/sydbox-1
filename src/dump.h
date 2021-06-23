@@ -57,8 +57,8 @@ enum dump {
 #define INSPECT_DUMP_EXEC_MT (1ULL << DUMP_EXEC_MT)
 	DUMP_ALLOC, /* dump allocations, *alloc(), str*dup() & asprintf() */
 #define INSPECT_DUMP_ALLOC (1ULL << DUMP_ALLOC)
-	DUMP_MEMORY_ACCESS, /* dump memory accesses */
-#define INSPECT_DUMP_MEMORY_ACCESS (1ULL << DUMP_MEMORY_ACCESS)
+	DUMP_CROSS_MEMORY, /* dump memory accesses */
+#define INSPECT_DUMP_CROSS_MEMORY (1ULL << DUMP_CROSS_MEMORY)
 	DUMP_OOPS, /* violation() */
 #define INSPECT_DUMP_OOPS (1ULL << DUMP_OOPS)
 };
@@ -69,6 +69,7 @@ enum dump {
 # define INSPECT_DEFAULT (INSPECT_DUMP_STARTUP |\
 			  INSPECT_DUMP_OOPS |\
 			  INSPECT_DUMP_SYSENT |\
+			  INSPECT_DUMP_CROSS_MEMORY |\
 			  INSPECT_DUMP_EXEC |\
 			  INSPECT_DUMP_EXEC_MT)
 #else
