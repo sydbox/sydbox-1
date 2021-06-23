@@ -591,9 +591,6 @@ struct sydbox {
 	bool bpf_only:1;
 	bool in_child:1;
 
-	volatile atomic_int exit_code;
-	int execve_pidfd;
-
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	int dump_fd;
 #endif

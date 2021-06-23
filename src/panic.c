@@ -221,5 +221,5 @@ int violation(syd_process_t *current, const char *fmt, ...)
 		exit(sydbox->config.violation_exit_code);
 	else if (sydbox->config.violation_exit_code == 0)
 		exit(128 + sydbox->config.violation_exit_code);
-	exit(sydbox->exit_code);
+	exit(128);
 }

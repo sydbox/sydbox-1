@@ -55,15 +55,7 @@
 
 sydbox_t *sydbox;
 static unsigned os_release;
-static volatile atomic_int interrupted = ATOMIC_VAR_INIT(0);
-static sigset_t empty_set, blocked_set;
 static struct sigaction child_sa;
-
-/* Signal handling with C11 atomics */
-static volatile atomic_int child_pid = ATOMIC_VAR_INIT(0);
-static volatile atomic_bool child_exited = ATOMIC_VAR_INIT(false);
-static bool check_child_atomic(const volatile atomic_bool *state,
-			       int *interrupt);
 
 static const char *sydsh_argv[] = {
 	"/usr/bin/env",
@@ -74,9 +66,11 @@ static const char *sydsh_argv[] = {
 	NULL
 };
 
-static inline bool check_child_exited(int *interrupt)
+static void
+set_sighandler(int signo, void (*sighandler)(int), struct sigaction *oldact)
 {
-	return check_child_atomic(&child_exited, interrupt);
+	const struct sigaction sa = { .sa_handler = sighandler };
+	sigaction(signo, &sa, oldact);
 }
 
 /* Libseccomp Architecture Handling
@@ -89,11 +83,22 @@ static inline bool check_child_exited(int *interrupt)
 static uint32_t arch_native;
 static char *arch_argv[SYD_SECCOMP_ARCH_ARGV_SIZ] = { NULL };
 static size_t arch_argv_idx;
+#ifdef HAVE_SIG_ATOMIC_T
+static volatile sig_atomic_t interrupted, alarmed;
+#else
+static volatile int interrupted, alarmed;
+#endif
+static sigset_t empty_set, blocked_set;
 
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
 
+static void sig_alarm(int sig);
+static void interrupt(int sig);
+static void reap_zombies(void);
 static inline bool process_is_alive(pid_t pid);
+static inline bool process_is_zombie(pid_t pid);
+static inline size_t process_count_alive(void);
 static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current);
 static inline pid_t process_find_exec(pid_t pid);
 static inline syd_process_t *process_init(pid_t pid, syd_process_t *parent,
@@ -655,14 +660,11 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 		close(p->memfd);
 		p->memfd = -1;
 	}
-	if (p->pid == sydbox->execve_pid && sydbox->execve_pidfd >= 0) {
-		close(sydbox->execve_pidfd);
-		sydbox->execve_pidfd = -1;
-	}
 	if (p->abspath) {
 		free(p->abspath);
 		p->abspath = NULL;
 	}
+
 	for (unsigned short i = 0; i < 6; i++) {
 		if (p->repr[i]) {
 			free(p->repr[i]);
@@ -676,9 +678,11 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 		p->regset = NULL;
 	}
 #endif
+
 	if (sydbox->config.allowlist_per_process_directories &&
 	    !sc_map_freed(&sydbox->config.proc_pid_auto))
 		procdrop(&sydbox->config.proc_pid_auto, pid);
+
 
 	if (p->pid == sydbox->execve_pid ||
 	    (p->flags & (SYD_IN_EXECVE|SYD_IN_CLONE))) {
@@ -822,68 +826,6 @@ static syd_process_t *parent_process(pid_t pid_task, bool *genuine)
 		return node_ppid;
 	else
 		return lookup_process(sydbox->execve_pid);
-}
-
-static void interrupt(int sig)
-{
-	syd_set_int(&interrupted, sig);
-}
-
-static void sig_chld(
-	int sig SYD_GCC_ATTR((unused)),
-	siginfo_t *info,
-	void *ucontext SYD_GCC_ATTR((unused)))
-{
-	pid_t pid = info->si_pid;
-
-	switch (info->si_code) {
-	case CLD_EXITED:
-		if (pid == sydbox->execve_pid)
-			syd_set_int(&sydbox->exit_code,
-				    WEXITSTATUS(info->si_status));
-		break;
-	case CLD_KILLED:
-	case CLD_DUMPED:
-		if (pid == sydbox->execve_pid)
-			syd_set_int(&sydbox->exit_code,
-				    WTERMSIG(info->si_status) + 128);
-		break;
-	default:
-		return;
-	}
-
-	for (;;) {
-		int status;
-restart_waitpid:
-		pid = waitpid(-1, &status, __WALL|WNOHANG);
-		if (pid < 0) {
-			if (errno == EINTR)
-				goto restart_waitpid;
-			/* else if (errno != ECHILD)
-				; say_errno("waitpid"); */
-			break;
-		} else if (pid == sydbox->execve_pid) {
-			if (WIFEXITED(status))
-				syd_set_int(&sydbox->exit_code,
-					    WEXITSTATUS(status));
-			else if (WTERMSIG(status))
-				syd_set_int(&sydbox->exit_code,
-					    WTERMSIG(status) + 128);
-			else
-				syd_set_int(&sydbox->exit_code, 128);
-		}
-	}
-
-	switch (info->si_code) {
-	case CLD_EXITED:
-	case CLD_KILLED:
-	case CLD_DUMPED:
-		syd_set_int(&child_pid, pid);
-		syd_set_state(&child_exited, true);
-		SYD_GCC_ATTR((fallthrough));
-	default:
-		return;
-	}
 }
 
 static unsigned get_os_release(void)
@@ -1036,6 +978,133 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	}
 }
 
+static void init_signal_sets(void)
+{
+	sigemptyset(&empty_set);
+	sigemptyset(&blocked_set);
+
+	sigaddset(&blocked_set, SIGCHLD);
+	sigaddset(&blocked_set, SIGHUP);
+	sigaddset(&blocked_set, SIGINT);
+	sigaddset(&blocked_set, SIGQUIT);
+	sigaddset(&blocked_set, SIGPIPE);
+	sigaddset(&blocked_set, SIGTERM);
+	sigaddset(&blocked_set, SIGUSR1);
+	sigaddset(&blocked_set, SIGUSR2);
+}
+
+static inline void allow_signals(void)
+{
+	sigprocmask(SIG_SETMASK, &empty_set, NULL);
+}
+static inline void block_signals(void)
+{
+	sigprocmask(SIG_BLOCK, &blocked_set, NULL);
+}
+
+/* Signals are blocked by default. */
+static void init_signals(void)
+{
+	init_signal_sets(); block_signals();
+
+	set_sighandler(SIGALRM, sig_alarm, NULL);
+	set_sighandler(SIGCHLD, interrupt, &child_sa);
+
+	/* Stop */
+	set_sighandler(SIGTTOU, SIG_IGN,   NULL);
+	set_sighandler(SIGTTIN, SIG_IGN,   NULL);
+	set_sighandler(SIGTSTP, SIG_IGN,   NULL);
+
+	/* Term */
+	set_sighandler(SIGHUP,  interrupt, NULL);
+	set_sighandler(SIGINT,  interrupt, NULL);
+	set_sighandler(SIGQUIT, interrupt, NULL);
+	set_sighandler(SIGPIPE, interrupt, NULL);
+	set_sighandler(SIGTERM, interrupt, NULL);
+	set_sighandler(SIGUSR1, interrupt, NULL);
+	set_sighandler(SIGUSR2, interrupt, NULL);
+}
+
+static void reset_signals(void)
+{
+	set_sighandler(SIGCHLD, SIG_DFL, NULL);
+
+	/* Stop */
+	set_sighandler(SIGTTOU, SIG_DFL, NULL);
+	set_sighandler(SIGTTIN, SIG_DFL, NULL);
+	set_sighandler(SIGTSTP, SIG_DFL, NULL);
+
+	/* Term */
+	set_sighandler(SIGALRM, SIG_DFL, NULL);
+	set_sighandler(SIGHUP,  SIG_DFL, NULL);
+	set_sighandler(SIGINT,  SIG_DFL, NULL);
+	set_sighandler(SIGQUIT, SIG_DFL, NULL);
+	set_sighandler(SIGPIPE, SIG_DFL, NULL);
+	set_sighandler(SIGTERM, SIG_DFL, NULL);
+	set_sighandler(SIGUSR1, SIG_DFL, NULL);
+	set_sighandler(SIGUSR2, SIG_DFL, NULL);
+}
+
+static void sig_alarm(int sig)
+{
+	alarmed = sig;
+}
+
+static void interrupt(int sig)
+{
+	interrupted = sig;
+}
+
+static int sig_child(void)
+{
+	int status;
+	pid_t pid;
+
+	if (process_is_zombie(sydbox->execve_pid)) {
+		bury_process(lookup_process(sydbox->execve_pid), true);
+		return ECHILD;
+	}
+	reap_zombies();
+	if (process_count_alive() > 0)
+		return 0;
+
+	for (;;) {
+		pid = waitpid(-1, &status, __WALL|WNOHANG);
+		if (pid >= 0)
+			return 0;
+		switch (errno) {
+		case EINTR:
+			continue;
+		case ECHILD:
+			return 128;
+		default:
+			assert_not_reached();
+		}
+	}
+}
+
+static int handle_interrupt(int sig)
+{
+	/*
+	 * Returning non-zero here terminates
+	 * the main notify loop.
+	 */
+	switch (sig) {
+	case SIGALRM:
+	case SIGCHLD:
+		return sig_child();
+	case SIGUSR1:
+	case SIGUSR2:
+		sig_usr(sig);
+		return 0;
+	default:
+		dump(DUMP_INTERRUPT, sig);
+		kill_all(sig);
+		dump(DUMP_CLOSE);
+		return 128 + sig;
+	}
+}
+
 static void sig_usr(int sig)
 {
 	bool complete_dump;
@@ -1063,38 +1132,26 @@ static void sig_usr(int sig)
 	fprintf(stderr, "Tracing %u process%s\n", count, count > 1 ? "es" : "");
 }
 
-#if 0
-SYD_GCC_ATTR((unused))
-static int proc_info(pid_t pid) {
-	char *cmd;
-
-	xasprintf(&cmd, "cat /proc/%d/stat", sydbox->execve_pid);
-	system(cmd); free(cmd);
-	xasprintf(&cmd, "cat /proc/%d/status", sydbox->execve_pid);
-	system(cmd); free(cmd);
-	xasprintf(&cmd, "cat /proc/%d/seccomp", sydbox->execve_pid);
-	system(cmd); free(cmd);
-	xasprintf(&cmd, "cat /proc/%d/syscall", sydbox->execve_pid);
-	system(cmd); free(cmd);
-	xasprintf(&cmd, "ls -l /proc/%d/fd", sydbox->execve_pid);
-	system(cmd); free(cmd);
-
-	return 0;
-}
-#endif
-
-static void reap_zombies(syd_process_t *current, pid_t pid)
+static void oops(int sig)
 {
-	if (pid)
-		current = lookup_process(pid);
-	if (current)
-		bury_process(current, true);
+	kill_all(sig);
+	dump(DUMP_CLOSE);
+}
 
+static void reap_zombies(void)
+{
 	syd_process_t *node;
 	sc_map_foreach_value(&sydbox->tree, node) {
-		if (process_is_alive(node->pid))
+		//if (node->pid == sydbox->execve_pid)
+		//	continue;
+		/* Zombies includes dead processes too,
+		 * so no need to do another round of
+		 * pidfd_send_signal here, which
+		 * does not detect zombies. */
+		if (!node)
 			continue;
-		bury_process(node, true);
+		if (process_is_zombie(node->pid))
+			bury_process(node, true);
 	}
 }
 
@@ -1112,14 +1169,12 @@ static int process_send_signal(pid_t pid, int sig)
 
 static inline size_t process_count_alive(void)
 {
-	int r;
 	size_t count = 0;
 	syd_process_t *node;
 
 	sc_map_foreach_value(&sydbox->tree, node) {
-		if (node->pidfd <= 0)
-			continue;
-		if ((r = syd_pidfd_send_signal(node->pidfd, 0, NULL, 0)) < 0)
+		/* See the explanation in reap_zombies */
+		if (!process_is_zombie(node->pid))
 			continue;
 		count += 1;
 	}
@@ -1140,6 +1195,20 @@ static bool process_kill(pid_t pid, int sig)
 static inline bool process_is_alive(pid_t pid)
 {
 	return process_send_signal(pid, 0) != -1;
+}
+
+static inline bool process_is_zombie(pid_t pid)
+{
+	int r;
+	char state;
+
+	r = syd_proc_state(pid, &state);
+	switch (r) {
+	case 0:
+		return state == 'Z';
+	default:
+		return true;
+	}
 }
 
 static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current)
@@ -1210,7 +1279,6 @@ static void init_early(void)
 
 	os_release = get_os_release();
 	sydbox = xcalloc(1, sizeof(sydbox_t));
-	sydbox->exit_code = ATOMIC_VAR_INIT(-1);
 	sydbox->arch[0] = UINT32_MAX;
 	sydbox->seccomp_fd = -1;
 	sydbox->notify_fd = -1;
@@ -1226,101 +1294,6 @@ static void init_early(void)
 	filter_init();
 	sc_map_init_64v(&sydbox->tree, 0, 0);
 	syd_abort_func(kill_all);
-}
-
-static void init_signal_sets(void)
-{
-	sigemptyset(&empty_set);
-	sigemptyset(&blocked_set);
-
-	sigaddset(&blocked_set, SIGCHLD);
-	sigaddset(&blocked_set, SIGHUP);
-	sigaddset(&blocked_set, SIGINT);
-	sigaddset(&blocked_set, SIGQUIT);
-	sigaddset(&blocked_set, SIGPIPE);
-	sigaddset(&blocked_set, SIGTERM);
-	sigaddset(&blocked_set, SIGABRT);
-	sigaddset(&blocked_set, SIGUSR1);
-	sigaddset(&blocked_set, SIGUSR2);
-}
-
-static void init_signals(void)
-{
-	struct sigaction sa;
-
-	init_signal_sets();
-
-	sa.sa_handler = SIG_IGN;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = 0;
-
-	int r;
-#define x_sigaction(sig, act, oldact) \
-	do { \
-		r = sigaction((sig), (act), (oldact)); \
-		if (r < 0) \
-			die_errno("sigaction"); \
-	} while (0)
-
-	x_sigaction(SIGTTOU, &sa, NULL); /* SIG_IGN */
-	x_sigaction(SIGTTIN, &sa, NULL); /* SIG_IGN */
-	x_sigaction(SIGTSTP, &sa, NULL); /* SIG_IGN */
-
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = 0;
-	sa.sa_handler = interrupt;
-	x_sigaction(SIGHUP, &sa, NULL);
-	x_sigaction(SIGINT, &sa, NULL);
-	x_sigaction(SIGQUIT, &sa, NULL);
-	x_sigaction(SIGPIPE, &sa, NULL);
-	x_sigaction(SIGTERM, &sa, NULL);
-	x_sigaction(SIGABRT, &sa, NULL);
-	x_sigaction(SIGUSR1, &sa, NULL);
-	x_sigaction(SIGUSR2, &sa, NULL);
-
-	sigemptyset(&sa.sa_mask);
-	sa.sa_sigaction = sig_chld;
-	sa.sa_flags = SA_RESTART | SA_SIGINFO;
-	x_sigaction(SIGCHLD, &sa, NULL);
-
-#undef x_sigaction
-}
-
-static int handle_interrupt(int sig)
-{
-	switch (sig) {
-	case SIGCHLD:
-		return 0;
-	case SIGUSR1:
-	case SIGUSR2:
-		sig_usr(sig);
-		return 0;
-	default:
-		dump(DUMP_INTERRUPT, sig);
-		kill_all(sig);
-		dump(DUMP_CLOSE);
-		return 128 + sig;
-	}
-}
-
-static bool check_child_atomic(const volatile atomic_bool *state,
-			       int *interrupt)
-{
-	int sig;
-	bool value = false;
-
-	sigprocmask(SIG_SETMASK, &empty_set, NULL);
-	if ((sig = syd_get_int(&interrupted))) {
-		handle_interrupt(sig);
-		if (interrupt)
-			*interrupt = sig;
-		syd_set_int(&interrupted, 0);
-	}
-	if (syd_get_state(state))
-		value = true;
-	sigprocmask(SIG_BLOCK, &blocked_set, NULL);
-
-	return value;
 }
 
 static int event_clone(syd_process_t *current, const char clone_type,
@@ -1392,10 +1365,11 @@ static int event_syscall(syd_process_t *current)
 	return sysnotify(current);
 }
 
-static int notify_loop(syd_process_t *current)
+static int notify_loop()
 {
-	int r, sig;
+	int r;
 	pid_t pid;
+	syd_process_t *current;
 
 	if ((r = seccomp_notify_alloc(&sydbox->request,
 				      &sydbox->response)) < 0) {
@@ -1403,34 +1377,34 @@ static int notify_loop(syd_process_t *current)
 		die_errno("seccomp_notify_alloc");
 	}
 
-	for (;;) {  /* Let the user-space tracing begin. */
+	for (;;) {
+		/* Let the user-space tracing begin. */
 		bool jump = false;
 		char *name = NULL;
 		syd_process_t *parent;
 
 notify_receive:
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
-		sigprocmask(SIG_SETMASK, &empty_set, NULL);
+		alarm(SYD_SECCOMP_NOTIFY_RECV_TIMEOUT);
 		r = seccomp_notify_receive(sydbox->notify_fd,
 					   sydbox->request);
-		sigprocmask(SIG_BLOCK, &blocked_set, NULL);
+		alarm(0);
+		if (alarmed && (r = handle_interrupt(alarmed)))
+			break;
+		alarmed = 0;
 		if (r < 0) {
-			if (errno == ENOTTY)
-				r = -ENOENT;
-			if (r == -ECANCELED || r == -EINTR || r == -ENOENT) {
+			if (r == -EINTR)
+				goto notify_receive;
+			else if (r == -ECANCELED)
+				break;
+			else if (r == -ENOENT || errno == ENOTTY) {
 				/* If we didn't find a notification,
 				 * it could be that the task was
 				 * interrupted by a fatal signal between
 				 * the time we were woken and
 				 * when we were able to acquire the rw lock.
 				 */
-				if (check_child_exited(&sig)) {
-					goto out;
-				} else if (sig && sig != SIGCHLD) {
-					jump = true; goto out;
-				} else {
-					goto notify_receive;
-				}
+				goto out;
 			} else {
 				errno = -r;
 				say_errno("seccomp_notify_receive");
@@ -1438,13 +1412,14 @@ notify_receive:
 				    "aborting!");
 				say("Please submit a bug to "
 				    "<"PACKAGE_BUGREPORT">");
-				handle_interrupt(SIGTERM);
-				jump = true; goto out;
+				oops(SIGTERM);
+				jump = true;
+				goto out;
 			}
 		}
 
 		if (sydbox->request->id == 0 && sydbox->request->pid == 0)
-			continue;
+			goto out;
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
 		sydbox->response->flags |= SECCOMP_USER_NOTIF_FLAG_CONTINUE;
@@ -1464,7 +1439,7 @@ notify_receive:
 				 * mark the process dead and continue.
 				 */
 				bury_process(current, true);
-				continue;
+				goto out;
 			}
 			/* Another (transient?) error opening file
 			 * descriptors, move on,
@@ -1472,18 +1447,10 @@ notify_receive:
 			 * *must* handle. */
 			errno = -r;
 			say_errno("open_process_file_descriptors");
-			r = 0;
 		}
 
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
-
-		/* Search early for exit before getting a process entry. */
-		if (name && (startswith(name, "exit"))) {
-			current = lookup_process(pid);
-			bury_process(current, true);
-			goto notify_respond;
-		}
 
 		/* Search early for execve before getting a process entry. */
 		if (name && (streq(name, "execve") || streq(name, "execveat"))) {
@@ -1521,6 +1488,10 @@ notify_receive:
 			}
 			current->flags &= ~SYD_IN_CLONE;
 			event_exec(current);
+		} else if (current && current->flags & SYD_IN_EXECVE) {
+			/* TODO: Does this affect multithreaded execve
+			 * leader switching? Test! */
+			current->flags &= ~SYD_IN_EXECVE;
 		}
 
 		if (!current) {
@@ -1561,31 +1532,21 @@ notify_receive:
 		}
 
 notify_respond:
-		sigprocmask(SIG_SETMASK, &empty_set, NULL);
 		r = seccomp_notify_respond(sydbox->notify_fd,
 					   sydbox->response);
-		sigprocmask(SIG_BLOCK, &blocked_set, NULL);
 		if (r < 0) {
-			if (errno == ENOTTY || errno == ENOENT)
-				r = -ENOENT;
-			else {
-				say_errno("seccomp_notify_receive");
-				r = -errno;
-			}
-			if (r == -ECANCELED || r == -EINTR || r == -ENOENT) {
+			if (r == -EINTR || errno == EINTR)
+				goto notify_respond;
+			else if (r == -ECANCELED)
+				break;
+			else if (r == -ENOENT || errno == ENOTTY) {
 				/* If we didn't find a notification,
 				 * it could be that the task was
 				 * interrupted by a fatal signal between
 				 * the time we were woken and
 				 * when we were able to acquire the rw lock.
 				 */
-				if (check_child_exited(&sig)) {
-					goto out;
-				} else if (sig && sig != SIGCHLD) {
-					jump = true; goto out;
-				} else {
-					goto notify_respond;
-				}
+				goto out;
 			} else {
 				errno = -r;
 				say_errno("seccomp_notify_receive");
@@ -1593,7 +1554,8 @@ notify_respond:
 				    "aborting!");
 				say("Please submit a bug to "
 				    "<"PACKAGE_BUGREPORT">");
-				handle_interrupt(SIGTERM);
+				oops(SIGTERM);
+				jump = true; goto out;
 			}
 		}
 out:
@@ -1601,50 +1563,30 @@ out:
 			free(name);
 		if (jump)
 			break;
-
 		/* We handled quick cases, we are permitted to interrupt now. */
-		sig = 0;
-		if (check_child_exited(&sig)) {
-			reap_zombies(NULL, syd_get_int(&child_pid));
-			if (!process_count_alive()) {
-				syd_process_t *p =
-					lookup_process(sydbox->execve_pid);
-				BUG_ON(p); /* This pointer has been valid since
-					      the beginning of the main loop and
-					      is being released here. */
-				bury_process(p, true);
-				break;
-			}
-			syd_set_state(&child_exited, false);
-		} else if (sig && sig != SIGCHLD) {
+		r =  0;
+		allow_signals();
+		if (interrupted)
+			r = handle_interrupt(interrupted);
+		block_signals();
+		if (r)
 			break;
-		} else {
-			reap_zombies(NULL, -1);
-		}
-
-#if 0
-#if ENABLE_PSYSCALL
-		/* TODO: Is this the best place to remotely allocate memory?
-		 * Needs more testing, disabled for now, wip.
-		 */
-		if (!current->addr)
-			syd_rmem_alloc(current);
-#endif
-#endif
 	}
 
 	seccomp_notify_free(sydbox->request, sydbox->response);
 	close(sydbox->notify_fd);
 	sydbox->notify_fd = -1;
 
-	/* wait for the child to exit. */
-	while ((r = syd_get_int(&sydbox->exit_code)) == -1);
-	dump(DUMP_EXIT, r);
+	/*
+	 * Sandboxing is over, reset signals to
+	 * their original states.
+	 */
+	reset_signals();
 
 	return r;
 }
 
-static pid_t startup_child(char **argv)
+static pid_t startup_child(char **argv, int *pidfd)
 {
 	int r, pfd[2];
 	char *pathname = NULL;
@@ -1743,13 +1685,8 @@ static pid_t startup_child(char **argv)
 	sydbox->execve_wait = true;
 
 	sydbox->seccomp_fd = pfd[0];
-	if (!use_notify()) {
-		sydbox->exit_code = 0;
+	if (!use_notify())
 		return pid;
-	}
-
-	if ((sydbox->execve_pidfd = syd_pidfd_open(pid, 0)) < 0)
-		die_errno("failed to open pidfd for pid:%d", pid);
 
 	int fd;
 	if ((r = parent_read_int(&fd)) < 0) {
@@ -1759,14 +1696,16 @@ static pid_t startup_child(char **argv)
 		exit(-r);
 	}
 
+	BUG_ON(pidfd);
+	if ((*pidfd = syd_pidfd_open(pid, 0)) < 0)
+		die_errno("failed to open pidfd for pid:%d", pid);
+	if ((fd = syd_pidfd_getfd(*pidfd, fd, 0)) < 0)
+		 die_errno("failed to obtain seccomp user fd");
 	sydbox->notify_fd = fd;
 
 	close(pfd[0]);
 	sydbox->seccomp_fd = -1;
 
-	if ((fd = syd_pidfd_getfd(sydbox->execve_pidfd,
-				  fd, 0)) < 0)
-		die_errno("failed to obtain seccomp user fd");
 	sydbox->notify_fd = fd;
 
 	return pid;
@@ -1784,25 +1723,21 @@ void cleanup_for_child(void)
 
 	if (sydbox->program_invocation_name)
 		free(sydbox->program_invocation_name);
-	if (sydbox->execve_pidfd > 0)
-		close(sydbox->execve_pidfd);
 
-	const char *path;
-	syd_process_t *proc_node;
-	if (!sc_map_freed(&sydbox->config.proc_pid_auto)) {
-		sc_map_foreach_value(&sydbox->config.proc_pid_auto, path)
-			free((char *)path);
+	/* FIXME: Why can't we free these? */
+#if 0
+	if (sc_map_size_64s(&sydbox->config.proc_pid_auto)) {
+		sc_map_clear_64s(&sydbox->config.proc_pid_auto);
 		sc_map_term_64s(&sydbox->config.proc_pid_auto);
 	}
-	if (!sc_map_freed(&sydbox->tree)) {
-		sc_map_foreach_value(&sydbox->tree, proc_node) {
-			bury_process(proc_node, true);
-		}
+	if (sc_map_size_64v(&sydbox->tree)) {
+		sc_map_clear_64v(&sydbox->tree);
 		sc_map_term_64v(&sydbox->tree);
 	}
 
 	filter_free();
 	// reset_sandbox(&sydbox->config.box_static);
+#endif
 
 	struct acl_node *acl_node;
 	ACLQ_FREE(acl_node, &sydbox->config.exec_kill_if_match, xfree);
@@ -2145,51 +2080,59 @@ int main(int argc, char **argv)
 	/* STARTUP_CHILD must not be called before the signal handlers get
 	   installed below as they are inherited into the spawned process. */
 	int exit_code;
+	int pidfd, status;
 	pid_t pid;
+	syd_process_t *child;
 	if (use_notify()) {
-		init_signals();
-		pid = startup_child((char **)my_argv);
-		syd_process_t *current = new_process_or_kill(pid);
-		init_process_data(current, NULL, false);
+		pid = startup_child((char **)my_argv, &pidfd);
+		child = new_process_or_kill(pid);
+		child->pidfd = pidfd;
+		init_process_data(child, NULL, false);
 		dump(DUMP_STARTUP, pid);
-		(void)notify_loop(current);
+		init_signals();
+		exit_code = notify_loop();
+		if (exit_code >= 128) {
+			/*
+			 * Notify loop got a termination signal, and
+			 * delivered it to all processes.
+			 * Nothing left to do.
+			 */
+			exit(exit_code);
+		}
 	} else {
-		int status;
-		startup_child((char **)my_argv);
-		for (;;) {
-			errno = 0;
-			pid = waitpid(-1, &status, __WALL);
-			switch (errno) {
-			case 0:
-				if (pid == sydbox->execve_pid) {
-					if (WIFEXITED(status))
-						sydbox->exit_code =
-							WEXITSTATUS(status);
-					else if (WIFSIGNALED(status))
-						sydbox->exit_code = 128 +
-							WTERMSIG(status);
-				}
-				break;
-			case EINTR:
-				continue;
-			case ECHILD:
-				goto out;
-			default:
-				say_errno("waitpid");
-				goto out;
+		pid = startup_child((char **)my_argv, NULL);
+	}
+	for (;;) {
+		errno = 0;
+		pid = waitpid(-1, &status, __WALL);
+		switch (errno) {
+		case 0:
+			if (pid == sydbox->execve_pid) {
+				if (WIFEXITED(status))
+					exit_code = WEXITSTATUS(status);
+				else if (WIFSIGNALED(status))
+					exit_code = 128 + WTERMSIG(status);
 			}
+			break;
+		case EINTR:
+			continue;
+		case ECHILD:
+			goto out;
+		default:
+			say_errno("waitpid");
+			goto out;
 		}
 	}
 out:
 	cleanup_for_sydbox();
-	exit_code = sydbox->exit_code;
 	if (sydbox->violation) {
 		if (sydbox->config.violation_exit_code > 0)
 			exit_code = sydbox->config.violation_exit_code;
-		else if (sydbox->config.violation_exit_code == 0 &&
-			 sydbox->exit_code < 128)
+		else if (exit_code < 128 &&
+			 sydbox->config.violation_exit_code == 0)
 			exit_code = 128 /* + sydbox->exit_code */;
 	}
+	dump(DUMP_EXIT, exit_code);
 	dump(DUMP_ALLOC, 0, NULL);
 	dump(DUMP_CLOSE);
 	free(sydbox);

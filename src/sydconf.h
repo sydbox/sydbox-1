@@ -180,6 +180,12 @@
 #define SYD_REMOTE_MEM_MAX (SYD_REMOTE_MEM_ONE * 6)
 #define syd_remote_addr(addr, idx) ((addr) + (SYD_REMOTE_MEM_ONE * idx))
 
+#ifndef SYD_SECCOMP_NOTIFY_RECV_TIMEOUT
+# define SYD_SECCOMP_NOTIFY_RECV_TIMEOUT 3
+#endif
+#ifndef SYD_SECCOMP_NOTIFY_RESP_TIMEOUT
+# define SYD_SECCOMP_NOTIFY_RESP_TIMEOUT 3
+#endif
 #ifndef SYD_POLL_TIMEOUT /* poll timeout in milliseconds */
 # define SYD_POLL_TIMEOUT 42
 #endif
