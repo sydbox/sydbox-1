@@ -84,16 +84,15 @@ static uint32_t arch_native;
 static char *arch_argv[SYD_SECCOMP_ARCH_ARGV_SIZ] = { NULL };
 static size_t arch_argv_idx;
 #ifdef HAVE_SIG_ATOMIC_T
-static volatile sig_atomic_t interrupted, alarmed;
+static volatile sig_atomic_t interrupted;
 #else
-static volatile int interrupted, alarmed;
+static volatile int interrupted;
 #endif
 static sigset_t empty_set, blocked_set;
 
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
 
-static void sig_alarm(int sig);
 static void interrupt(int sig);
 static void reap_zombies(void);
 static inline bool process_is_alive(pid_t pid);
@@ -1007,7 +1006,6 @@ static void init_signals(void)
 {
 	init_signal_sets(); block_signals();
 
-	set_sighandler(SIGALRM, sig_alarm, NULL);
 	set_sighandler(SIGCHLD, interrupt, &child_sa);
 
 	/* Stop */
@@ -1035,7 +1033,6 @@ static void reset_signals(void)
 	set_sighandler(SIGTSTP, SIG_DFL, NULL);
 
 	/* Term */
-	set_sighandler(SIGALRM, SIG_DFL, NULL);
 	set_sighandler(SIGHUP,  SIG_DFL, NULL);
 	set_sighandler(SIGINT,  SIG_DFL, NULL);
 	set_sighandler(SIGQUIT, SIG_DFL, NULL);
@@ -1043,11 +1040,6 @@ static void reset_signals(void)
 	set_sighandler(SIGTERM, SIG_DFL, NULL);
 	set_sighandler(SIGUSR1, SIG_DFL, NULL);
 	set_sighandler(SIGUSR2, SIG_DFL, NULL);
-}
-
-static void sig_alarm(int sig)
-{
-	alarmed = sig;
 }
 
 static void interrupt(int sig)
@@ -1090,7 +1082,6 @@ static int handle_interrupt(int sig)
 	 * the main notify loop.
 	 */
 	switch (sig) {
-	case SIGALRM:
 	case SIGCHLD:
 		return sig_child();
 	case SIGUSR1:
@@ -1367,7 +1358,7 @@ static int event_syscall(syd_process_t *current)
 
 static int notify_loop()
 {
-	int r;
+	int r, intr;
 	pid_t pid;
 	syd_process_t *current;
 
@@ -1385,13 +1376,12 @@ static int notify_loop()
 
 notify_receive:
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
-		alarm(SYD_SECCOMP_NOTIFY_RECV_TIMEOUT);
+		allow_signals();
 		r = seccomp_notify_receive(sydbox->notify_fd,
 					   sydbox->request);
-		alarm(0);
-		if (alarmed && (r = handle_interrupt(alarmed)))
+		if (interrupted && (intr = handle_interrupt(interrupted)))
 			break;
-		alarmed = 0;
+		block_signals();
 		if (r < 0) {
 			if (r == -EINTR)
 				goto notify_receive;
@@ -1566,10 +1556,7 @@ out:
 		/* We handled quick cases, we are permitted to interrupt now. */
 		r =  0;
 		allow_signals();
-		if (interrupted)
-			r = handle_interrupt(interrupted);
-		block_signals();
-		if (r)
+		if (interrupted && (r = handle_interrupt(interrupted)))
 			break;
 	}
 
