@@ -1474,10 +1474,6 @@ notify_receive:
 			r = 0;
 		}
 
-#if ENABLE_PSYSCALL
-		if (!current->addr)
-			syd_rmem_alloc(current);
-#endif
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
 
@@ -1624,6 +1620,16 @@ out:
 		} else {
 			reap_zombies(NULL, -1);
 		}
+
+#if 0
+#if ENABLE_PSYSCALL
+		/* TODO: Is this the best place to remotely allocate memory?
+		 * Needs more testing, disabled for now, wip.
+		 */
+		if (!current->addr)
+			syd_rmem_alloc(current);
+#endif
+#endif
 	}
 
 	seccomp_notify_free(sydbox->request, sydbox->response);
