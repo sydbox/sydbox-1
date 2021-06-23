@@ -431,12 +431,6 @@ struct syd_process {
 	 *  and pidfd == 0 may be used to check if the process has exited.
 	 */
 
-	/* Pid file descriptor */
-	int pidfd;
-
-	/* File descriptor to /proc/pid/mem, maybe -1 if reopening each call. */
-	int memfd;
-
 	/* System call ABI */
 	uint32_t arch;
 
@@ -591,11 +585,31 @@ struct sydbox {
 	bool bpf_only:1;
 	bool in_child:1;
 
+	/*
+	 * File descriptors used by SydBox:
+	 * 1. pidfd: Process ID fd acquired from:
+	 *	pidfd_open(pid)
+	 * 2. pfd: /proc fd acquired from
+	 *	open("/proc/$pid", O_PATH)
+	 * 3. pfd_fd: /proc fd acquired from
+	 *	open("/proc/$pid/fd", O_PATH)
+	 * 3..4 File descriptors for seccomp user notifications.
+	 * 5. dump_fd is used by dump to output informational JSON lines.
+	 *
+	 * NOTE ABOUT SECURITY: proc_* fds require seccomp identity validation
+	 * after receiving each seccomp notification!
+	 * The lifetime of the file descriptors 1..3 is a single seccomp
+	 * notification. See: kernel/samples/seccomp/user-trap.c
+	 */
+	int pidfd;
+	int pfd;
+	int pfd_fd;
+	int proc_pid_fd;
+	int notify_fd;
+	int seccomp_fd;
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	int dump_fd;
 #endif
-	int seccomp_fd;
-	int notify_fd;
 
 	/* Export mode, BPF/PFC */
 	enum sydbox_export_mode export_mode;
