@@ -30,20 +30,11 @@ void config_init(void)
 {
 	assert(sydbox);
 
-	memset(&sydbox->config, 0, sizeof(config_t));
 	sydbox->config.magic_core_allow = true;
 
 	/* set sane defaults for configuration */
 	sydbox->config.prog_hash = 1;
-	sydbox->config.mem_access = 0;
-	sydbox->config.use_toolong_hack = false;
-	sydbox->config.restrict_general = 0;
 	sydbox->config.restrict_id = true;
-	sydbox->config.restrict_ioctl = false;
-	sydbox->config.restrict_mmap = false;
-	sydbox->config.restrict_sysinfo = false;
-	sydbox->config.violation_raise_fail = false;
-	sydbox->config.violation_raise_safe = false;
 	sydbox->config.allowlist_per_process_directories = true;
 	sydbox->config.allowlist_successful_bind = true;
 	sydbox->config.allowlist_unsupported_socket_families = true;
@@ -52,8 +43,6 @@ void config_init(void)
 	sydbox->config.box_static.magic_lock = LOCK_UNSET;
 
 	/* initialize default sandbox modes */
-	sydbox->config.box_static.mode.sandbox_exec = SANDBOX_OFF;
-	sydbox->config.box_static.mode.sandbox_read = SANDBOX_OFF;
 	sydbox->config.box_static.mode.sandbox_write = SANDBOX_BPF;
 	sydbox->config.box_static.mode.sandbox_network = SANDBOX_BPF;
 

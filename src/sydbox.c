@@ -1207,24 +1207,13 @@ static void init_early(void)
 	assert(!sydbox);
 
 	os_release = get_os_release();
-	sydbox = xmalloc(sizeof(sydbox_t));
+	sydbox = xcalloc(1, sizeof(sydbox_t));
 	sydbox->exit_code = ATOMIC_VAR_INIT(-1);
-	sydbox->violation = false;
-	sydbox->execve_wait = false;
 	sydbox->exit_code = EXIT_SUCCESS;
-	sydbox->program_invocation_name = NULL;
 	sydbox->arch[0] = UINT32_MAX;
-	sydbox->filter_count = 0;
 	sydbox->seccomp_fd = -1;
 	sydbox->notify_fd = -1;
-#if SYDBOX_HAVE_DUMP_BUILTIN
-	sydbox->dump_fd = 0;
-#endif
-	sydbox->execve_pidfd = 0;
-	sydbox->bpf_only = false;
-	sydbox->permissive = false;
 	sydbox->export_mode = SYDBOX_EXPORT_NUL;
-	sydbox->export_path = NULL;
 	sydbox->hash[0] = '\0';
 	if (!sc_map_init_64v(&sydbox->tree,
 			     SYDBOX_PROCMAP_CAP,
