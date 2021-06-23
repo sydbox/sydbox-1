@@ -242,7 +242,7 @@ static inline int syd_vasprintf(const char *name, char **strp, const char *fmt,
 	return r;
 }
 
-inline int syd_asprintf(char **strp, const char *fmt, ...)
+int syd_asprintf(char **strp, const char *fmt, ...)
 {
 	int r;
 	char *dest;

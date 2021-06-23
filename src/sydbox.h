@@ -1159,7 +1159,6 @@ int sys_fstatat(syd_process_t *current);
 int sys_statx(syd_process_t *current);
 int sys_uname(syd_process_t *current);
 
-int sys_socketcall(syd_process_t *current);
 int sys_bind(syd_process_t *current);
 int sys_connect(syd_process_t *current);
 int sys_sendto(syd_process_t *current);

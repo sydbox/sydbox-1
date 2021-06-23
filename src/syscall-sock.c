@@ -139,18 +139,18 @@ static int filter_connect_call(int sysnum, int deny_errno)
 }
 
 static int sys_connect_call(syd_process_t *current, bool sockaddr_in_msghdr,
-			    unsigned arg_index, int deny_errno)
+			    long sysnum, unsigned arg_index, int deny_errno)
 {
 	syscall_info_t info;
 
 #define sub_connect(p, i)	((i) == 1 && \
-				 (p)->subcall == PINK_SOCKET_SUBCALL_CONNECT)
+				 (sysnum) == SCMP_SYS(connect))
 #define sub_recvmsg(p, i)	((i) == 1 && \
-				 (p)->subcall == PINK_SOCKET_SUBCALL_RECVMSG)
+				 (sysnum) == SCMP_SYS(recvmsg))
 #define sub_sendmsg(p, i)	((i) == 1 && \
-				 (p)->subcall == PINK_SOCKET_SUBCALL_SENDMSG)
+				 (sysnum) == SCMP_SYS(sendmsg))
 #define sub_sendto(p, i)	((i) == 4 && \
-				 (p)->subcall == PINK_SOCKET_SUBCALL_SENDTO)
+				 (sysnum) == SCMP_SYS(sendto))
 
 	if (sandbox_off_network(current))
 		return 0;
@@ -242,7 +242,8 @@ int filter_connect(uint32_t arch)
 
 int sys_connect(syd_process_t *current)
 {
-	return sys_connect_call(current, false, 1, ECONNREFUSED);
+	return sys_connect_call(current, false, SCMP_SYS(connect),
+				1, ECONNREFUSED);
 }
 
 int filter_sendto(uint32_t arch)
@@ -252,7 +253,7 @@ int filter_sendto(uint32_t arch)
 
 int sys_sendto(syd_process_t *current)
 {
-	return sys_connect_call(current, false, 4, ENOTCONN);
+	return sys_connect_call(current, false, SCMP_SYS(sendto), 4, ENOTCONN);
 }
 
 int filter_recvmsg(uint32_t arch)
@@ -262,7 +263,8 @@ int filter_recvmsg(uint32_t arch)
 
 int sys_recvmsg(syd_process_t *current)
 {
-	return sys_connect_call(current, true, 1, ECONNREFUSED);
+	return sys_connect_call(current, true, SCMP_SYS(recvmsg),
+				1, ECONNREFUSED);
 }
 
 int filter_sendmsg(uint32_t arch)
@@ -272,7 +274,7 @@ int filter_sendmsg(uint32_t arch)
 
 int sys_sendmsg(syd_process_t *current)
 {
-	return sys_connect_call(current, true, 1, ENOTCONN);
+	return sys_connect_call(current, true, SCMP_SYS(sendmsg), 1, ENOTCONN);
 }
 
 int sys_listen(syd_process_t *current)
@@ -288,41 +290,4 @@ int sys_accept(syd_process_t *current)
 int sys_getsockname(syd_process_t *current)
 {
 	return sys_socket_inode_lookup(current, true);
-}
-
-int sys_socketcall(syd_process_t *current)
-{
-	int r;
-	long subcall;
-
-	if (sandbox_off_network(current))
-		return 0;
-
-	if ((r = syd_read_socket_subcall(current, &subcall)) < 0)
-		return r;
-
-	current->subcall = subcall;
-	current->sysname = name_socket_subcall(subcall);
-
-	switch (subcall) {
-	case PINK_SOCKET_SUBCALL_BIND:
-		return sys_bind(current);
-	case PINK_SOCKET_SUBCALL_CONNECT:
-		return sys_connect(current);
-	case PINK_SOCKET_SUBCALL_SENDTO:
-		return sys_sendto(current);
-	case PINK_SOCKET_SUBCALL_LISTEN:
-		return sys_listen(current);
-	case PINK_SOCKET_SUBCALL_ACCEPT:
-	case PINK_SOCKET_SUBCALL_ACCEPT4:
-		return sys_accept(current);
-	case PINK_SOCKET_SUBCALL_GETSOCKNAME:
-		return sys_getsockname(current);
-	case PINK_SOCKET_SUBCALL_RECVMSG:
-		return sys_recvmsg(current);
-	case PINK_SOCKET_SUBCALL_SENDMSG:
-		return sys_sendmsg(current);
-	default:
-		return 0;
-	}
 }

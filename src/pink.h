@@ -79,46 +79,6 @@ struct pink_sockaddr {
 	} u;
 };
 
-/** Decoded socket subcalls */
-enum pink_socket_subcall {
-	/** socket() subcall **/
-	PINK_SOCKET_SUBCALL_SOCKET = 1,
-	/** bind() subcall **/
-	PINK_SOCKET_SUBCALL_BIND,
-	/** connect() subcall **/
-	PINK_SOCKET_SUBCALL_CONNECT,
-	/** listen() subcall **/
-	PINK_SOCKET_SUBCALL_LISTEN,
-	/** accept() subcall **/
-	PINK_SOCKET_SUBCALL_ACCEPT,
-	/** getsockname() subcall **/
-	PINK_SOCKET_SUBCALL_GETSOCKNAME,
-	/** getpeername() subcall **/
-	PINK_SOCKET_SUBCALL_GETPEERNAME,
-	/** socketpair() subcall **/
-	PINK_SOCKET_SUBCALL_SOCKETPAIR,
-	/** send() subcall **/
-	PINK_SOCKET_SUBCALL_SEND,
-	/** recv() subcall **/
-	PINK_SOCKET_SUBCALL_RECV,
-	/** sendto() subcall **/
-	PINK_SOCKET_SUBCALL_SENDTO,
-	/** recvfrom() subcall **/
-	PINK_SOCKET_SUBCALL_RECVFROM,
-	/** shutdown() subcall **/
-	PINK_SOCKET_SUBCALL_SHUTDOWN,
-	/** setsockopt() subcall **/
-	PINK_SOCKET_SUBCALL_SETSOCKOPT,
-	/** getsockopt() subcall **/
-	PINK_SOCKET_SUBCALL_GETSOCKOPT,
-	/** sendmsg() subcall **/
-	PINK_SOCKET_SUBCALL_SENDMSG,
-	/** recvmsg() subcall **/
-	PINK_SOCKET_SUBCALL_RECVMSG,
-	/** accept4() subcall **/
-	PINK_SOCKET_SUBCALL_ACCEPT4,
-};
-
 struct xlat {
 	const char *str;
 	int val;
@@ -144,27 +104,5 @@ static inline int xlookup(const struct xlat *xlat, const char *str)
 			return xlat->val;
 	return -1;
 }
-
-static const struct xlat socket_subcalls[] = {
-	{"bind",		PINK_SOCKET_SUBCALL_BIND},
-	{"connect",		PINK_SOCKET_SUBCALL_CONNECT},
-	{"listen",		PINK_SOCKET_SUBCALL_LISTEN},
-	{"accept",		PINK_SOCKET_SUBCALL_ACCEPT},
-	{"getsockname",		PINK_SOCKET_SUBCALL_GETSOCKNAME},
-	{"getpeername",		PINK_SOCKET_SUBCALL_GETPEERNAME},
-	{"socketpair",		PINK_SOCKET_SUBCALL_SOCKETPAIR},
-	{"send",		PINK_SOCKET_SUBCALL_SEND},
-	{"recv",		PINK_SOCKET_SUBCALL_RECV},
-	{"sendto",		PINK_SOCKET_SUBCALL_SENDTO},
-	{"recvfrom",		PINK_SOCKET_SUBCALL_RECVFROM},
-	{"shutdown",		PINK_SOCKET_SUBCALL_SHUTDOWN},
-	{"setsockopt",		PINK_SOCKET_SUBCALL_SETSOCKOPT},
-	{"getsockopt",		PINK_SOCKET_SUBCALL_GETSOCKOPT},
-	{"sendmsg",		PINK_SOCKET_SUBCALL_SENDMSG},
-	{"recvmsg",		PINK_SOCKET_SUBCALL_RECVMSG},
-	{"accept4",		PINK_SOCKET_SUBCALL_ACCEPT4},
-	{NULL,			0},
-};
-#define name_socket_subcall(subcall) (xname((socket_subcalls), (subcall)))
 
 #endif

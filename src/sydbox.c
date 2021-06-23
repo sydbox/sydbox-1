@@ -93,9 +93,8 @@ static size_t arch_argv_idx;
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
 
-static inline bool process_is_alive(pid_t pid, pid_t tgid);
-static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current,
-					  bool kill_on_error);
+static inline bool process_is_alive(pid_t pid);
+static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current);
 static inline pid_t process_find_exec(pid_t pid);
 static inline syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 					  bool genuine);
@@ -496,7 +495,6 @@ void reset_process(syd_process_t *p)
 
 	p->sysnum = 0;
 	p->sysname = NULL;
-	p->subcall = 0;
 	p->retval = 0;
 
 	memset(p->args, 0, sizeof(p->args));
@@ -506,27 +504,6 @@ void reset_process(syd_process_t *p)
 			p->repr[i] = NULL;
 		}
 	}
-}
-
-static inline void save_exit_code(int exit_code)
-{
-	dump(DUMP_EXIT, exit_code);
-	sydbox->exit_code = exit_code;
-}
-
-static inline void save_exit_signal(int signum)
-{
-	save_exit_code(128 + signum);
-}
-
-static inline void save_exit_status(int status)
-{
-	if (WIFEXITED(status))
-		save_exit_code(WEXITSTATUS(status));
-	else if (WIFSIGNALED(status))
-		save_exit_signal(WTERMSIG(status));
-	else
-		save_exit_signal(SIGKILL); /* Assume SIGKILL */
 }
 
 static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
@@ -731,6 +708,8 @@ static void tweak_execve_thread(syd_process_t *leader,
 
 static void switch_execve_leader(pid_t leader_pid, syd_process_t *execve_thread)
 {
+	bool clone_thread = false;
+	bool clone_fs = false;
 
 	dump(DUMP_EXEC_MT, execve_thread->pid, leader_pid,
 	     execve_thread->abspath);
@@ -740,7 +719,6 @@ static void switch_execve_leader(pid_t leader_pid, syd_process_t *execve_thread)
 		goto out;
 	process_remove(leader);
 
-	bool clone_thread = false, clone_fs = false;
 	if (P_CLONE_THREAD_REFCNT(leader) > 1) {
 		P_CLONE_THREAD_RELEASE(leader);
 		clone_thread = true;
@@ -770,9 +748,7 @@ out:
 		sysx_chdir(execve_thread);
 }
 
-static syd_process_t *parent_process(pid_t pid_task,
-				     syd_process_t *p_task,
-				     bool *genuine)
+static syd_process_t *parent_process(pid_t pid_task, bool *genuine)
 {
 	/* Try (really) hard to find the parent process. */
 	*genuine = true;
@@ -825,7 +801,10 @@ static void interrupt(int sig)
 	syd_set_int(&interrupted, sig);
 }
 
-static void sig_chld(int sig, siginfo_t *info, void *ucontext)
+static void sig_chld(
+	SYD_GCC_ATTR((unused)) int sig,
+	siginfo_t *info,
+	SYD_GCC_ATTR((unused)) void *ucontext)
 {
 	pid_t pid = info->si_pid;
 
@@ -1056,6 +1035,7 @@ static void sig_usr(int sig)
 	fprintf(stderr, "Tracing %u process%s\n", count, count > 1 ? "es" : "");
 }
 
+#if 0
 SYD_GCC_ATTR((unused))
 static int proc_info(pid_t pid) {
 	char *cmd;
@@ -1073,6 +1053,7 @@ static int proc_info(pid_t pid) {
 
 	return 0;
 }
+#endif
 
 static void reap_zombies(syd_process_t *current, pid_t pid)
 {
@@ -1083,13 +1064,13 @@ static void reap_zombies(syd_process_t *current, pid_t pid)
 
 	syd_process_t *node;
 	sc_map_foreach_value(&sydbox->tree, node) {
-		if (!process_is_alive(node->pid, node->tgid)) {
+		if (!process_is_alive(node->pid)) {
 			bury_process(node, false);
 		}
 	}
 }
 
-static int process_send_signal(pid_t pid, pid_t tgid, int sig)
+static int process_send_signal(pid_t pid, int sig)
 {
 	syd_process_t *current;
 
@@ -1118,23 +1099,22 @@ static inline size_t process_count_alive(void)
 	return count;
 }
 
-static bool process_kill(pid_t pid, pid_t tgid, int sig)
+static bool process_kill(pid_t pid, int sig)
 {
 	int r;
 
-	if ((r = process_send_signal(pid, tgid, sig)) < 0)
+	if ((r = process_send_signal(pid, sig)) < 0)
 		return r == -ESRCH;
 	say_errno("pidfd_send_signal");
 	return false;
 }
 
-static inline bool process_is_alive(pid_t pid, pid_t tgid)
+static inline bool process_is_alive(pid_t pid)
 {
-	return process_send_signal(pid, tgid, 0) != -1;
+	return process_send_signal(pid, 0) != -1;
 }
 
-static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current,
-					  bool kill_on_error)
+static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current)
 {
 	if (!current && pid >= 0)
 		current = lookup_process(pid);
@@ -1378,7 +1358,7 @@ static int event_exec(syd_process_t *current)
 		say("kill_if_match pattern=`%s' matches execve path=`%s'",
 		    match, current->abspath);
 		say("killing process");
-		process_kill(current->pid, current->tgid, SIGKILL);
+		process_kill(current->pid, SIGKILL);
 		return -ESRCH;
 	}
 	/* execve path does not match if_match patterns */
@@ -1477,9 +1457,7 @@ notify_receive:
 				bury_process(current, false);
 			goto out;
 		} else if (current &&
-			   process_reopen_proc_mem(-1,
-						   current,
-						   true) == -ESRCH) {
+			   process_reopen_proc_mem(-1, current) == -ESRCH) {
 			goto notify_respond;
 		}
 
@@ -1534,9 +1512,7 @@ notify_receive:
 
 		if (!current) {
 			bool genuine;
-			parent = parent_process(pid,
-						lookup_process(sydbox->execve_pid),
-						&genuine);
+			parent = parent_process(pid, &genuine);
 			current = process_init(pid, parent, genuine);
 			assert(current);
 		}
@@ -1556,7 +1532,7 @@ notify_receive:
 		}
 		if (update_mem_now && current->update_mem) {
 			update_mem_now = false;
-			process_reopen_proc_mem(-1, current, true);
+			process_reopen_proc_mem(-1, current);
 		}
 
 		if (!name) {
