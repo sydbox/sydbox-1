@@ -53,6 +53,46 @@ static char *proc_deleted(const char *path)
 	return r;
 }
 
+
+void sydbox_proc_validate(void)
+{
+	if (!syd_seccomp_request_is_valid()) {
+		sydbox_proc_invalidate();
+		return;
+	}
+
+	pid_t pid = current->pid;
+	if (pid <= 0)
+		return;
+
+	int fd;
+	if ((fd = sydbopidfd = syd_pidfd_open(pid, 0)) < 0)
+		goto err;
+	sydbox->pidfd = pidfd_open
+	sydbox->pfd =
+	sydbox->pfd_fd =
+	sydbox->pfd_mem =
+	
+	return;
+err:
+	sydbox_proc_invalidate();
+}
+
+void sydbox_proc_invalidate(void)
+{
+	close(sydbox->pidfd);
+	close(sydbox->pfd);
+	close(sydbox->pfd_fd);
+	close(sydbox->pfd_mem);
+
+	sydbox->pidfd = -1;
+	sydbox->pfd = -1;
+	sydbox->pfd_fd = -1;
+	sydbox->pfd_mem = -1;
+}
+
+
+
 /*
  * resolve /proc/$pid/cwd
  */

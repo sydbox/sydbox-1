@@ -604,7 +604,12 @@ struct sydbox {
 	int pidfd;
 	int pfd;
 	int pfd_fd;
-	int proc_pid_fd;
+
+/***************************************/
+/* Start of Process ID SAFE interface: *
+****************************************/
+	int pfd_mem;
+
 	int notify_fd;
 	int seccomp_fd;
 #if SYDBOX_HAVE_DUMP_BUILTIN
@@ -779,8 +784,6 @@ extern sydbox_t *sydbox;
 #define sandbox_deny_file(p) (sandbox_deny_exec((p)) && sandbox_deny_read((p)) && sandbox_deny_write((p)))
 
 #define proc_esrch(err_no)   ((err_no) == ENOENT || (err_no) == ESRCH)
-#define process_alive(p)     ((p) && ((p)->pidfd != 0))
-#define process_esrch(p)     ((p) && ((p)->pidfd == 0))
 
 #define action_bpf_default(action) ((action) != SCMP_ACT_NOTIFY &&\
 				    (action) == sydbox->seccomp_action)

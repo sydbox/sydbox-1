@@ -48,11 +48,6 @@ struct mmsghdr {
 #endif
 typedef struct msghdr struct_msghdr;
 
-#define SYD_RETURN_IF_DEAD(current) do { \
-	if (current->pidfd == -1) { \
-		return -ESRCH; \
-	}} while (0)
-
 #ifndef __NR_process_vm_readv
 # warning "Your system does not define process_vm_readv, setting to 310."
 # warning "Please update your Linux kernel and headers."
@@ -162,9 +157,6 @@ static inline int abi_wordsize(uint32_t arch)
 static ssize_t process_vm_read(syd_process_t *current, long addr, void *buf,
 			       size_t count)
 {
-	if (!process_alive(current))
-		return -ESRCH;
-
 #if SIZEOF_LONG > 4
 	size_t wsize = abi_wordsize(SCMP_ARCH_NATIVE);
 	if (wsize < sizeof(addr))
@@ -192,12 +184,12 @@ retry_vm_readv:
 			cross_memory_attach_works = false;
 			goto retry_vm_readv;
 		} else if (errno == ESRCH) {
-			if (current->memfd >= 0)
-				close(current->memfd);
-			if (current->pidfd >= 0)
-				close(current->pidfd);
-			current->memfd = -1;
-			current->pidfd = -1;
+			/*
+			 * SECURITY:
+			 * Process dead, and may be replaced by another process.
+			 * Invalidate FDs ASAP!
+			 */
+			sydbox_proc_invalidate();
 		} else if (nread < 0 && r == 0) {
 			int save_errno = errno;
 			say_errno("process_vm_read(%d)", current->pid);
@@ -206,43 +198,39 @@ retry_vm_readv:
 		return r;
 	}
 #endif
+	/*
+	 * SECURITY:
+	 * sydbox->pifd_mem is only secure to reopen using syd_proc_mem_open().
+	 */
 	bool mem_open = false, mem_open_ok = false;
-mem_open:
 	if (mem_open) {
 		int memfd;
-		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
+		if ((memfd = syd_proc_mem_open(sydbox->pfd)) < 0)
 			return memfd;
-		if (!syd_seccomp_request_is_valid()) {
-			/* process is gone. */
-			if (memfd >= 0)
-				close(memfd);
-			errno = -ESRCH;
-			return -1;
-		}
-		current->memfd = memfd;
+		sydbox->pfd_mem = memfd;
 		if (mem_open)
 			mem_open_ok = true;
 	}
 mem_read:
 	errno = 0;
-	nread = syd_proc_mem_read(current->memfd, addr + r,
+	nread = syd_proc_mem_read(sydbox->pfd_mem, addr + r,
 				  ((char *)buf) + r, count - r);
 	if (nread > 0)
 		r += nread;
 	if (errno == EINTR || (nread > 0 && (size_t)r < count)) {
 		goto mem_read;
 	} else if (proc_esrch(errno)) {
-		if (current->memfd >= 0)
-			close(current->memfd);
-		if (current->pidfd >= 0)
-			close(current->pidfd);
-		current->memfd = -1;
-		current->pidfd = -1;
+		if (sydbox->pfd_mem >= 0)
+			close(sydbox->pfd_mem);
+		if (sydbox->pidfd >= 0)
+			close(sydbox->pidfd);
+		sydbox->pfd_mem = -1;
+		sydbox->pidfd = -1;
 		errno = ESRCH;
 		return r;
 	} else if (!mem_open && (!nread || errno == EBADF || errno == ESPIPE)) {
-		close(current->memfd);
-		current->memfd = -1;
+		close(sydbox->pfd_mem);
+		sydbox->pfd_mem = -1;
 		mem_open = true;
 		goto mem_open;
 	} else if (nread < 0 && r == 0) { /* not partial read */
@@ -250,9 +238,9 @@ mem_read:
 		say_errno("proc_mem_read(%d)", current->pid);
 		errno = save_errno;
 	}
-	if (!mem_open_ok && current->memfd >= 0) {
-		close(current->memfd);
-		current->memfd = -1;
+	if (!mem_open_ok && sydbox->pfd_mem >= 0) {
+		close(sydbox->pfd_mem);
+		sydbox->pfd_mem = -1;
 	}
 	dump(DUMP_CROSS_MEMORY, "read", current->pid, addr, nread, -r);
 	return r;
@@ -262,28 +250,25 @@ static ssize_t proc_mem_write(syd_process_t *current, long addr, void *buf, size
 {
 	int r;
 	ssize_t nwritten;
-	bool mem_open = false, mem_open_ok = false;
 
+	/*
+	 * SECURITY:
+	 * sydbox->pifd_mem is only secure to reopen using syd_proc_mem_open().
+	 */
+	bool mem_open = false, mem_open_ok = false;
 mem_open:
 	if (mem_open) {
 		int memfd;
-		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
+		if ((memfd = syd_proc_mem_open(sydbox->pfd)) < 0)
 			return memfd;
-		if (!syd_seccomp_request_is_valid()) {
-			/* process is gone. */
-			if (memfd >= 0)
-				close(memfd);
-			errno = -ESRCH;
-			return -1;
-		}
-		current->memfd = memfd;
+		sydbox->pfd_mem = memfd;
 		if (mem_open)
 			mem_open_ok = true;
 	}
 	r = 0;
 mem_write:
 	errno = 0;
-	nwritten = syd_proc_mem_write(current->memfd,
+	nwritten = syd_proc_mem_write(sydbox->pfd_mem,
 				      addr + r,
 				      ((char *)buf) + r,
 				      count - r);
@@ -292,17 +277,17 @@ mem_write:
 	if (errno == EINTR || (nwritten > 0 && (size_t)r < count)) {
 		goto mem_write;
 	} else if (proc_esrch(errno)) {
-		if (current->memfd)
-			close(current->memfd);
-		if (current->pidfd)
-			close(current->pidfd);
-		current->memfd = -1;
-		current->pidfd = -1;
+		if (sydbox->pfd_mem)
+			close(sydbox->pfd_mem);
+		if (sydbox->pidfd)
+			close(sydbox->pidfd);
+		sydbox->pfd_mem = -1;
+		sydbox->pidfd = -1;
 		errno = ESRCH;
 		return r;
 	} else if (!mem_open && (!nwritten || errno == EBADF || errno == ESPIPE)) {
-		close(current->memfd);
-		current->memfd = -1;
+		close(sydbox->pfd_mem);
+		sydbox->pfd_mem = -1;
 		mem_open = true;
 		goto mem_open;
 	} else if (nwritten < 0 && r == 0) { /* not partial write */
@@ -310,9 +295,9 @@ mem_write:
 		say_errno("proc_mem_write(%d)", current->pid);
 		errno = save_errno;
 	}
-	if (!mem_open_ok && current->memfd >= 0) {
-		close(current->memfd);
-		current->memfd = -1;
+	if (!mem_open_ok && sydbox->pfd_mem >= 0) {
+		close(sydbox->pfd_mem);
+		sydbox->pfd_mem = -1;
 	}
 	dump(DUMP_CROSS_MEMORY, "write", current->pid, addr, nwritten, -r);
 	return r;
@@ -352,12 +337,12 @@ retry_vm_writev:
 			cross_memory_attach_works = false;
 			goto retry_vm_writev;
 		} else if (errno == ESRCH) {
-			if (current->memfd >= 0)
-				close(current->memfd);
-			if (current->pidfd >= 0)
-				close(current->pidfd);
-			current->memfd = -1;
-			current->pidfd = -1;
+			/*
+			 * SECURITY:
+			 * Process dead, and may be replaced by another process.
+			 * Invalidate FDs ASAP!
+			 */
+			sydbox_proc_invalidate();
 		} else if (nwritten < 0 && r == 0) {
 			int save_errno = errno;
 			say_errno("process_vm_write(%d)", current->pid);
