@@ -420,7 +420,7 @@ void dump(enum dump what, ...)
 			J(ts)"%llu,"
 			J(pid)"%d,"
 			J(event)"{\"id\":%u,\"name\":\"exit\"},"
-			J(exit_code)"%d}",
+			J(code)"%d}",
 			id++, (unsigned long long)now,
 			sydbox->execve_pid, what, code);
 	} else if (what == DUMP_SYSENT) {
