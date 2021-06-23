@@ -431,6 +431,9 @@ check_access:
 
 	if (box_check_access(access_mode, acl_pathmatch, access_lists, 2, abspath)) {
 		r = 0;
+#if ENABLE_PSYSCALL
+		syd_rmem_write(current);
+#endif
 		goto out;
 	}
 

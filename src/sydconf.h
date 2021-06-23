@@ -173,6 +173,13 @@
 # define SYDBOX_NOEXEC_ENV "SYDBOX_NOEXEC"
 #endif
 
+#define SYD_TRACE_OPTS (PINK_TRACE_OPTION_SYSGOOD|PINK_TRACE_OPTION_FORK|\
+			PINK_TRACE_OPTION_VFORK|PINK_TRACE_OPTION_CLONE|\
+			PINK_TRACE_OPTION_EXEC)
+#define SYD_REMOTE_MEM_ONE SYDBOX_PATH_MAX
+#define SYD_REMOTE_MEM_MAX (SYD_REMOTE_MEM_ONE * 6)
+#define syd_remote_addr(addr, idx) ((addr) + (SYD_REMOTE_MEM_ONE * idx))
+
 #ifndef SYD_POLL_TIMEOUT /* poll timeout in milliseconds */
 # define SYD_POLL_TIMEOUT 42
 #endif

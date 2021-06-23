@@ -154,7 +154,13 @@ fi
 AC_SUBST([SYDBOX_LIBTOOL_FLAGS])
 AC_SUBST([SYDBOX_STATIC_CFLAGS])
 AM_CONDITIONAL([ENABLE_STATIC], test x"$enable_static" = x"yes")
-
+if test x"$enable_static" = x"yes"; then
+	ENABLE_STATIC=1
+else
+	ENABLE_STATIC=0
+fi
+AC_DEFINE_UNQUOTED([ENABLE_STATIC], [$ENABLE_STATIC],
+		   [Define to 1 if this is static build.])
 AM_CONDITIONAL([HAVE_GNU_CC], [test x"$GCC" = x"yes"])
 AM_CONDITIONAL([HAVE_GNU_LD], [test x"$with_gnu_ld" = x"yes"])
 
@@ -626,22 +632,31 @@ dnl check for pthreads
 AX_PTHREAD([],
 	   [AC_MSG_WARN([POSIX threads library is missing, some tests may not build!])])
 
+dnl check for pkg-config
+PKG_PROG_PKG_CONFIG([0.20.0])
+
 dnl enable psyscall with --enable-psyscall
+PINKTRACE_REQUIRED=0.9
 AC_ARG_ENABLE([psyscall],
 	      [AS_HELP_STRING([--enable-psyscall],
 			      [EXPERIMENTAL: use psyscall to allocate a readonly memory in tracee to mitigate TOCTOU attacks (default: disable).])],
 	      [], [enable_psyscall=no])
 case "$enable_psyscall" in
-	yes) enable_psyscall=1 ;;
-	no) enable_psyscall=0 ;;
-	*) AC_MSG_ERROR([bad value $enable_psyscall for arm-oabi option]) ;;
+yes)
+PKG_CHECK_MODULES([pinktrace], [pinktrace >= $PINKTRACE_REQUIRED],
+	[enable_psyscall=1],
+	AC_MSG_ERROR([pinktrace-$PINKTRACE_REQUIRED or newer is required for --enable-psyscall]))
+;;
+no)
+enable_psyscall=0
+;;
+*)
+AC_MSG_ERROR([bad value $enable_psyscall for --enable-psyscall option])
+;;
 esac
 AC_DEFINE_UNQUOTED([ENABLE_PSYSCALL], [$enable_psyscall],
 		   [Define to 1 for psyscall support to mitigate TOCTOU attacks.])
-AM_CONDITIONAL([ENABLE_PSYSCALL], test x"$enable_psyscall" = x"yes")
-
-dnl check for pkg-config
-PKG_PROG_PKG_CONFIG([0.20.0])
+AM_CONDITIONAL([WANT_PSYSCALL], test x"$enable_psyscall" = x"1")
 
 dnl check for libseccomp
 LIBSECCOMP_REQUIRED=2.4.3
@@ -812,7 +827,7 @@ echo "Build options:"
 echo "- debug:$WANT_DEBUG"
 echo "- dump:$WANT_DUMP_BUILTIN"
 echo "- psyscall:$enable_psyscall"
-echo "- static:$enable_static"
+echo "- static:$ENABLE_STATIC"
 echo "Secure Computing Architecture Support:"
 echo "- x86: ${SYD_SECCOMP_X86_OK:-?}"
 echo "- x86_64: ${SYD_SECCOMP_X86_64_OK:-?}"

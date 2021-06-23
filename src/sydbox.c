@@ -445,6 +445,15 @@ static syd_process_t *new_thread(pid_t pid)
 	process_proc(thread); /* Ignoring ESRCH which is fine. */
 	process_add(thread);
 
+#if ENABLE_PSYSCALL
+	int r;
+	if ((r = pink_regset_alloc(&thread->regset)) < 0) {
+		errno = -r;
+		say_errno("pink_regset_alloc");
+		thread->regset = NULL;
+	}
+#endif
+
 	dump(DUMP_THREAD_NEW, pid);
 	return thread;
 }
@@ -496,6 +505,9 @@ void reset_process(syd_process_t *p)
 	p->sysnum = 0;
 	p->sysname = NULL;
 	p->retval = 0;
+#if ENABLE_PSYSCALL
+	memset(&p->addr_arg, 0, sizeof(p->addr_arg));
+#endif
 
 	memset(p->args, 0, sizeof(p->args));
 	for (unsigned short i = 0; i < 6; i++) {
@@ -669,6 +681,10 @@ void bury_process(syd_process_t *p, bool force)
 		return;
 	}
 
+#if ENABLE_PSYSCALL
+	if (p->regset)
+		pink_regset_free(p->regset);
+#endif
 	process_remove(p);
 
 	/* Release shared memory */
@@ -802,9 +818,9 @@ static void interrupt(int sig)
 }
 
 static void sig_chld(
-	SYD_GCC_ATTR((unused)) int sig,
+	int sig SYD_GCC_ATTR((unused)),
 	siginfo_t *info,
-	SYD_GCC_ATTR((unused)) void *ucontext)
+	void *ucontext SYD_GCC_ATTR((unused)))
 {
 	pid_t pid = info->si_pid;
 
@@ -1448,6 +1464,7 @@ notify_receive:
 				if (errno == ESRCH)
 					goto notify_respond;
 			}
+			syd_rmem_alloc(current);
 		}
 
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
@@ -1535,6 +1552,7 @@ notify_receive:
 			process_reopen_proc_mem(-1, current);
 		}
 
+
 		if (!name) {
 			;
 		} else if (streq(name, "clone")) {
@@ -1562,6 +1580,7 @@ notify_respond:
 				bury_process(current, false);
 			goto out;
 		}
+
 		sigprocmask(SIG_SETMASK, &empty_set, NULL);
 		r = seccomp_notify_respond(sydbox->notify_fd,
 					   sydbox->response);
@@ -1697,6 +1716,7 @@ static pid_t startup_child(char **argv)
 		if (change_background() < 0)
 			die_errno("change_background");
 		cleanup_for_child();
+
 		if ((r = sysinit_seccomp()) < 0) {
 			errno = -r;
 			if (errno == ENOTTY || errno == ENOENT)
@@ -1735,11 +1755,11 @@ static pid_t startup_child(char **argv)
 		sydbox->exit_code = 0;
 		return pid;
 	}
-	int fd;
 
 	if ((sydbox->execve_pidfd = syd_pidfd_open(pid, 0)) < 0)
 		die_errno("failed to open pidfd for pid:%d", pid);
 
+	int fd;
 	if ((r = parent_read_int(&fd)) < 0) {
 		errno = -r;
 		say_errno("failed to load seccomp filters");
@@ -1756,13 +1776,6 @@ static pid_t startup_child(char **argv)
 				  fd, 0)) < 0)
 		die_errno("failed to obtain seccomp user fd");
 	sydbox->notify_fd = fd;
-
-	/* We're all set, let the process resume execution. */
-	if ((r = syd_pidfd_send_signal(sydbox->execve_pidfd,
-				       SIGCONT, NULL, 0)) < 0) {
-		errno = -r;
-		say_errno("failed to resume process");
-	}
 
 	return pid;
 }

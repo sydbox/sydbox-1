@@ -171,8 +171,9 @@ sydbox_SOURCES+= \
 noinst_HEADERS+= \
 		 sys-queue.h
 
-if ENABLE_PSYSCALL
+if WANT_PSYSCALL
 # imported from psyscall
+AM_CFLAGS+= $(pinktrace_CFLAGS)
 noinst_HEADERS+= psyscall_syd.h
 sydbox_SOURCES+= psyscall.c psyscall_syd.c
 endif
@@ -187,6 +188,9 @@ sydbox_LDADD= \
 	      $(CODE_COVERAGE_LIBS)
 if WANT_DEBUG
 sydbox_LDADD+= $(libunwind_LIBS)
+endif
+if WANT_PSYSCALL
+sydbox_LDADD+= $(pinktrace_LIBS)
 endif
 
 DUMP_SRCS= dump.c

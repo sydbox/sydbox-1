@@ -447,8 +447,11 @@ struct syd_process {
 	/* Last system call */
 	unsigned long sysnum;
 
-	/* Last (socket) subcall */
-	long subcall;
+#ifdef ENABLE_PSYSCALL
+	long addr; /* Read-only allocated address in child's address space. */
+	bool addr_arg[6];
+	struct pink_regset *regset;
+#endif
 
 	/* Denied system call will return this value */
 	long retval;
@@ -816,6 +819,8 @@ int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len);
 int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argval);
 ssize_t syd_write_vm_data(syd_process_t *current, long addr, char *src,
 			  size_t len);
+int syd_rmem_alloc(syd_process_t *current);
+int syd_rmem_write(syd_process_t *current);
 
 int syd_seccomp_arch_is_valid(uint32_t arch, bool *result);
 void test_setup(void);

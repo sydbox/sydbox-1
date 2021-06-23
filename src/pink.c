@@ -36,6 +36,10 @@
 
 #include "syd/syd.h"
 
+#ifdef ENABLE_PSYSCALL
+# include "psyscall_syd.h"
+#endif
+
 #ifndef HAVE_STRUCT_MMSGHDR
 struct mmsghdr {
 	struct msghdr msg_hdr;
@@ -247,6 +251,59 @@ mem_read:
 	return r;
 }
 
+static ssize_t proc_mem_write(syd_process_t *current, long addr, void *buf, size_t count)
+{
+	int r;
+	ssize_t nwritten;
+	bool mem_open = false, mem_open_ok = false;
+
+mem_open:
+	if (mem_open || !proc_mem_open_once()) {
+		int memfd;
+		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
+			return memfd;
+		current->memfd = memfd;
+		if (mem_open)
+			mem_open_ok = true;
+	}
+	r = 0;
+mem_write:
+	errno = 0;
+	nwritten = syd_proc_mem_write(current->memfd,
+				      addr + r,
+				      ((char *)buf) + r,
+				      count - r);
+	if (nwritten > 0)
+		r += nwritten;
+	if (errno == EINTR || (nwritten > 0 && (size_t)r < count)) {
+		goto mem_write;
+	} else if (proc_esrch(errno)) {
+		if (current->memfd)
+			close(current->memfd);
+		if (current->pidfd)
+			close(current->pidfd);
+		current->memfd = -1;
+		current->pidfd = -1;
+		errno = ESRCH;
+		return r;
+	} else if (!mem_open && (!nwritten || errno == EBADF || errno == ESPIPE)) {
+		close(current->memfd);
+		current->memfd = -1;
+		mem_open = true;
+		goto mem_open;
+	} else if (nwritten < 0 && r == 0) { /* not partial write */
+		int save_errno = errno;
+		say_errno("proc_mem_write(%d)", current->pid);
+		errno = save_errno;
+	}
+	if (!mem_open_ok && !proc_mem_open_once() && current->memfd >= 0) {
+		close(current->memfd);
+		current->memfd = -1;
+	}
+	dump(DUMP_MEMORY_ACCESS, "write", current->pid, addr, -r);
+	return r;
+}
+
 static ssize_t process_vm_write(syd_process_t *current, long addr, void *buf,
 				size_t count)
 {
@@ -295,51 +352,7 @@ retry_vm_writev:
 		return r;
 	}
 #endif
-	bool mem_open = false, mem_open_ok = false;
-mem_open:
-	if (mem_open || !proc_mem_open_once()) {
-		int memfd;
-		if ((memfd = syd_proc_mem_open(current->pid)) < 0)
-			return memfd;
-		current->memfd = memfd;
-		if (mem_open)
-			mem_open_ok = true;
-	}
-mem_write:
-	errno = 0;
-	nwritten = syd_proc_mem_write(current->memfd,
-				      addr + r,
-				      ((char *)buf) + r,
-				      count - r);
-	if (nwritten > 0)
-		r += nwritten;
-	if (errno == EINTR || (nwritten > 0 && (size_t)r < count)) {
-		goto mem_write;
-	} else if (proc_esrch(errno)) {
-		if (current->memfd)
-			close(current->memfd);
-		if (current->pidfd)
-			close(current->pidfd);
-		current->memfd = -1;
-		current->pidfd = -1;
-		errno = ESRCH;
-		return r;
-	} else if (!mem_open && (!nwritten || errno == EBADF || errno == ESPIPE)) {
-		close(current->memfd);
-		current->memfd = -1;
-		mem_open = true;
-		goto mem_open;
-	} else if (nwritten < 0 && r == 0) { /* not partial write */
-		int save_errno = errno;
-		say_errno("proc_mem_write(%d)", current->pid);
-		errno = save_errno;
-	}
-	if (!mem_open_ok && !proc_mem_open_once() && current->memfd >= 0) {
-		close(current->memfd);
-		current->memfd = -1;
-	}
-	dump(DUMP_MEMORY_ACCESS, "write", current->pid, addr, -r);
-	return r;
+	return proc_mem_write(current, addr, buf, count);
 }
 
 int syd_kill(pid_t pid, pid_t tgid, int sig)
@@ -616,6 +629,112 @@ ssize_t syd_write_data(syd_process_t *current, long addr, void *buf,
 	SYD_RETURN_IF_DEAD(current);
 
 	return process_vm_write(current, addr, buf, count);
+}
+
+int syd_rmem_alloc(syd_process_t *current)
+{
+#if !ENABLE_PSYSCALL
+	return -ENOSYS;
+#else
+#if ENABLE_STATIC
+	if (current->pid == sydbox->execve_pid) {
+		/* psyscall can't inject into static bin. */
+		return -ENOTSUP;
+	}
+#endif
+	if (current->addr == -1) {
+		/* psyscall could not inject to this process (is it static?).*/
+		return -ENOTSUP;
+	} else if (current->addr != 0) {
+		say("Already allocated a read-only reagion of %d bytes "
+		    "at address:%p in the memory of the process:%d, "
+		    "skipping...", SYD_REMOTE_MEM_MAX, (void*)current->addr,
+		    current->pid);
+		return 0; /* Already allocated. */
+	}
+
+	say("Allocating a read-only region of %d bytes "
+	    "within the private memory of process:%d...",
+	    SYD_REMOTE_MEM_MAX, current->pid);
+	current->addr = (long)palloc(current->pid, SYD_REMOTE_MEM_MAX);
+	if (current->addr < 0) {
+		int save_errno = errno;
+		current->addr = -1;
+		say_errno("Error allocating a read-only region of %d bytes "
+			  "within the private memory of process:%d!",
+			  SYD_REMOTE_MEM_MAX, current->pid);
+		return -save_errno;
+	}
+
+	say("Successfully allocated %d bytes at address:%p "
+	    "in the memory of process:%d.", SYD_REMOTE_MEM_MAX,
+	    (void *)current->addr, current->pid);
+	return 0;
+#endif
+}
+
+int syd_rmem_write(syd_process_t *current)
+{
+#if !ENABLE_PSYSCALL
+	return -ENOSYS;
+#else
+	int r;
+	bool write = false;
+	for (uint8_t i = 0; i < 6; i++) {
+		if (current->addr_arg[i])
+			write = true;
+		current->addr_arg[i] = false;
+	}
+	if (!write)
+		return 0;
+
+	if ((r = pink_regset_fill(current->pid, current->regset)) < 0) {
+		say_errno("pink_regset_fill");
+		return -r;
+	}
+#if 0
+#if ENABLE_PSYSCALL
+		if (current->addr > 0) {
+			/* TOCTOU Mitigation */
+			long addr = syd_remote_addr(current->addr,
+						    info->arg_index);
+			ssize_t nwritten = proc_mem_write(current, addr,
+							  abspath, sizeof(abspath));
+			if (nwritten == sizeof(abspath)) {
+				say("TOCTOU mitigation active!");
+				current->addr_arg[info->arg_index] = true;
+			} else if (!errno) {
+				say("psyscall_mem_write: short write");
+			} else {
+				say_errno("psyscall_mem_write");
+			}
+		}
+#endif
+		goto out;
+#endif
+
+	return 0;
+#if 0
+	for (uint8_t idx = 0; idx < 6; idx++) {
+		if (!current->addr_arg[idx])
+			continue;
+		long addr = syd_remote_addr(current->addr, idx);
+		say("Accessing process:%d to modify the %s() "
+		    "argument %d to read-only memory at %p...",
+		    current->pid, current->sysname,
+		    idx, (void*)addr);
+		if ((r = pink_write_argument(pid, current->regset,
+					     idx, addr)) < 0) {
+			errno = -r;
+			say_errno("pink_write_argument");
+		}
+		say("Successfully changed argument %d of the %s() "
+		    "system call for pid:%d to read-only pointer %p!",
+		    idx, current->sysname, current->pid,
+		    (void *)addr);
+	}
+#endif
+#endif
 }
 
 static volatile atomic_bool test_child_notify = ATOMIC_VAR_INIT(false);

@@ -26,6 +26,14 @@
 
 #include <seccomp.h>
 
+#if ENABLE_PSYSCALL
+# include <pinktrace/compiler.h>
+# include <pinktrace/regset.h>
+# include <pinktrace/trace.h>
+# include <pinktrace/write.h>
+# include "psyscall_syd.h"
+#endif
+
 #if defined(__aarch64__)
 # define ABIS_SUPPORTED 2
 static const uint32_t abi[ABIS_SUPPORTED] = { SCMP_ARCH_AARCH64, SCMP_ARCH_ARM };

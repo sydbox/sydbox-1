@@ -8,6 +8,9 @@
 #ifndef PSYSCALL_SYD_H
 #define PSYSCALL_SYD_H
 
+#include <stddef.h>
+#include <sys/types.h>
+
 /* Inject a system call to the given process. */
 long psyscall(pid_t pid, long number, ...);
 

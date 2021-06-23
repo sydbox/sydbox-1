@@ -19,6 +19,11 @@ AM_LDFLAGS = \
 	     `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_LIBS)` \
 	     $(CODE_COVERAGE_LDFLAGS)
 
+if WANT_PSYSCALL
+AM_CFLAGS += $(pinktrace_CFLAGS)
+AM_LDFLAGS += $(pinktrace_LIBS)
+endif
+
 wildtest_SOURCES= tap.h wildtest.c
 wildtest_CFLAGS= \
 		 -DWILD_TEST_ITERATIONS \
