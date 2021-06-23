@@ -1,5 +1,7 @@
 # Sydbox
 
+- Print (and dump unless both are stderr)
+  violations as json lines rather than the custom error message.
 - Buildhost: Test builds with --disable-dump
 - Use a hash table without memory allocation for the process table.
   This is an idea:
