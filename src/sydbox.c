@@ -1807,7 +1807,6 @@ void cleanup_for_child(void)
 
 	struct acl_node *acl_node;
 	ACLQ_FREE(acl_node, &sydbox->config.exec_kill_if_match, xfree);
-	ACLQ_FREE(acl_node, &sydbox->config.exec_resume_if_match, xfree);
 
 	ACLQ_FREE(acl_node, &sydbox->config.filter_exec, xfree);
 	ACLQ_FREE(acl_node, &sydbox->config.filter_read, xfree);

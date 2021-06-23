@@ -96,10 +96,8 @@ static int do_execve(syd_process_t *current, bool at_func)
 	char *path = NULL, *abspath = NULL, *prefix = NULL;
 
 	if (sandbox_off_exec(current) &&
-	    ACLQ_EMPTY(&sydbox->config.exec_kill_if_match) &&
-	    ACLQ_EMPTY(&sydbox->config.exec_resume_if_match)) {
+	    ACLQ_EMPTY(&sydbox->config.exec_kill_if_match))
 		return 0;
-	}
 
 	/* TODO: Avoid duplication with box_check_path */
 	badfd = false;

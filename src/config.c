@@ -55,7 +55,6 @@ void config_init(void)
 	}
 
 	ACLQ_INIT(&sydbox->config.exec_kill_if_match);
-	ACLQ_INIT(&sydbox->config.exec_resume_if_match);
 	ACLQ_INIT(&sydbox->config.filter_exec);
 	ACLQ_INIT(&sydbox->config.filter_read);
 	ACLQ_INIT(&sydbox->config.filter_write);

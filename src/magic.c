@@ -320,14 +320,6 @@ static const struct key key_table[] = {
 		.append = magic_append_exec_kill_if_match,
 		.remove = magic_remove_exec_kill_if_match,
 	},
-	[MAGIC_KEY_EXEC_RESUME_IF_MATCH] = {
-		.name   = "resume_if_match",
-		.lname  = "exec.resume_if_match",
-		.parent = MAGIC_KEY_EXEC,
-		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.append = magic_append_exec_resume_if_match,
-		.remove = magic_remove_exec_resume_if_match,
-	},
 
 	[MAGIC_KEY_ALLOWLIST_EXEC] = {
 		.name   = "exec",

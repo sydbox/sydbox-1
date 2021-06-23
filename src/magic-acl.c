@@ -217,15 +217,3 @@ int magic_remove_exec_kill_if_match(const void *val, syd_process_t *current)
 	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_NONE, val,
 			      &sydbox->config.exec_kill_if_match);
 }
-
-int magic_append_exec_resume_if_match(const void *val, syd_process_t *current)
-{
-	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_NONE, val,
-			      &sydbox->config.exec_resume_if_match);
-}
-
-int magic_remove_exec_resume_if_match(const void *val, syd_process_t *current)
-{
-	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_NONE, val,
-			      &sydbox->config.exec_resume_if_match);
-}

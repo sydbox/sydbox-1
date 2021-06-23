@@ -254,7 +254,6 @@ enum magic_key {
 
 	MAGIC_KEY_EXEC,
 	MAGIC_KEY_EXEC_KILL_IF_MATCH,
-	MAGIC_KEY_EXEC_RESUME_IF_MATCH,
 
 	MAGIC_KEY_ALLOWLIST,
 	MAGIC_KEY_ALLOWLIST_EXEC,
@@ -572,7 +571,6 @@ struct config {
 	bool violation_raise_safe;
 
 	aclq_t exec_kill_if_match;
-	aclq_t exec_resume_if_match;
 
 	aclq_t filter_exec;
 	aclq_t filter_read;
@@ -1075,8 +1073,6 @@ int magic_set_sandbox_network(const void *val, syd_process_t *current);
 int magic_set_sandbox_all(const void *val, syd_process_t *current);
 int magic_append_exec_kill_if_match(const void *val, syd_process_t *current);
 int magic_remove_exec_kill_if_match(const void *val, syd_process_t *current);
-int magic_append_exec_resume_if_match(const void *val, syd_process_t *current);
-int magic_remove_exec_resume_if_match(const void *val, syd_process_t *current);
 int magic_query_match_case_sensitive(syd_process_t *current);
 int magic_set_match_case_sensitive(const void *val, syd_process_t *current);
 int magic_set_match_no_wildcard(const void *val, syd_process_t *current);
