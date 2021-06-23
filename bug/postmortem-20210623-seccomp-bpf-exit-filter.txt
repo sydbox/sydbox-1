@@ -1,0 +1,108 @@
+MIME-Version: 1.0
+Date: Wed, 23 Jun 2021 20:22:46 +0200
+In-Reply-To: <CCB1NYUR2XK3.1JJG4NK5NT0AB@taiga>
+Message-ID: <CADv3eywJGWvFWiMds7jYK_n2s=u5zuHEeRWjF1cDcFkrbRgCiQ@mail.gmail.com>
+Subject: Re: sydbox on builds.sr.ht
+From: Ali Polatel <alip@exherbo.org>
+To: Drew DeVault <sir@cmpwn.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+I think I have figured it out. Here's a short postmortem.
+
+# About
+
+SydB☮x is a seccomp-bpf and seccomp-user-notify based application sandbox for
+non-root, regular Linux users. It puts the program in a jail with many
+restrictions, see here if you're interested in it more:
+https://sydbox.exherbo.org/#sandboxing. It is used as the default sandbox of
+Exherbo (I started writing it 10 years ago to replace Gentoo's LD_PRELOAD based
+sandbox...) SydB☮x have only recently bee= n ported to fully use seccomp,
+earlier before versions 2.0.1, it used ptrace and seccomp together. Hence this
+is a new version with a relatively untested feature. At Exherbo, we're trying
+hard to test it as good as we can running tests of many different large-scale
+projects like gcc, coreutils, python, perl, etc.
+
+# Recent Changes: How the bug was planted
+
+I have recently added a bpf filter for the exit and exit_group system calls so
+the sandbox can figure out the exit code of the processes without having to
+wait() on them or handle SIGCHLD from them. This sounded like a clever idea at
+the time, little I knew back then about the potential implications. This change
+has been around for a week or two and haven't misbehaved in our tests. It
+required another bug to activate itself.
+
+#  The Bug: How the tests triggered the bug
+
+The hidden bug here was triggered by another bug which caused SydB☮x to early
+exit while the sandboxed children are still in progress. This is not necessarily
+a security concern as when the sandbox process is gone, the kernel starts
+denying all the system calls that the sandbox had a filter for with ENOSYS. The
+fun starts here. When a bpf filter including an exit rule is left with a default
+action to DENY(ENOSYS), a process trying to exit will repeatedly fail to call
+the exit system call.
+
+Especially effected was the two test groups which spawned a large number of
+processes in parallel to check if SydB☮x manages to retur= nthe correct exit
+code. The number of processes here is usually not a problem as the only thing
+the test cases do is to wait for a random amount of time and exit with a
+certain number.
+- t0005-core-exit.sh:
+test_description=3D'test the exit return code of sydbox'
+https://git.exherbo.org/sydbox-1.git/tree/t/t0005-core-exit.sh
+- t0006-core-abort.sh:
+test_description=3D'test the termination return code of sydbox'
+https://git.exherbo.org/sydbox-1.git/tree/t/t0006-core-abort.sh
+
+# Result
+
+There are about ~30 tests in t0006-core-abort.sh with most spawning around 64
+processes.  One test case run meant 1800 processes busily trying to exit and
+none of them able to exit.
+
+# Fixes, Mitigations
+Finally, things that we have done to fix it: obviously we first removed the exit
+and exit_group system call filters from the default set of filtered system
+calls. This forced us to fix the signal-handling code and many other aspects of
+the main trace loop so it can track the hierarchy of a process tree to apply
+sandboxing rules based on parent-child relationships. There are many commits
+with the final one replacing a SIGALRM with a c11 atomic-int to handle
+interrupts for the seccomp notify receive call:
+https://git.exherbo.org/sydbox-1.git/commit/?id=3Da1359353cc75da37273ff35d8=
+8514f90ce720b8b
+
+# Current State and the Future
+
+The tests run almost in no time compared to what we have before and I'm
+relatively sure the bug is gone. Running "make -j check" on my netbook takes ~20
+seconds what took over 2(?) hours and hit the timeout on the SourceHut
+buildhost.
+
+This is a kind of bug you'd usually face during early design faces of a new
+feature which is the case here. I plan to take more precautions and make the
+testsuite kill long running tests with timeouts.
+
+A fellow Exherbo developer is testing the latest master on a couple of different
+arches now and I will not start pushing code to SourceHut master branch until
+they confirm they don't see any similar issues.
+
+# Summary
+
+This is it. tl;dr I accidentally turned my program into a very efficient fork
+bomb. It was a fun experience and I learned a lot from it. Apologies again for
+the inconvenience. And who knows maybe when SydB☮x-2 gets stable, you may have
+some uses for it to sandbox buil= d processes to prevent such stuff from
+affecting the stability of the build system. I plan to add such a feature to
+SydB☮x to prevent excessive resource requests like spawning many threads,
+opening many file descriptors, etc. in a very short period of time.
+
+Sorry for the relatively long post but I wanted to be as transparent as I can.
+Should you have further questions, feel free to ask.
+
+Best,
+alïp
+
+On Wed, 23 Jun 2021 at 15:50, Drew DeVault <sir@cmpwn.com> wrote:
+>
+> Thanks for looking into this promptly, Ali. Let me know what you find
+> out.
