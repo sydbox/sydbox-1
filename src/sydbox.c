@@ -671,8 +671,10 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 	}
 
 #if ENABLE_PSYSCALL
-	if (p->regset)
+	if (p->regset) {
 		pink_regset_free(p->regset);
+		p->regset = NULL;
+	}
 #endif
 	if (sydbox->config.allowlist_per_process_directories &&
 	    !sc_map_freed(&sydbox->config.proc_pid_auto))
