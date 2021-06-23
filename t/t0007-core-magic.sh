@@ -6,7 +6,7 @@ test_description='test the magic stat of sydbox'
 . ./test-lib.sh
 
 save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
-for magic_mem_access in 0 1 2 3; do
+for magic_mem_access in 0 1; do
     SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS -mcore/sandbox/read:allow"
     export SYDBOX_TEST_OPTIONS
 

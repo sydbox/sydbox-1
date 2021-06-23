@@ -23,7 +23,7 @@ for syscall_name in \
         {,l}listxattr {,l}setxattr {,l}removexattr \
         mount umount{,2}
 do
-    for memory_access in 0 1 2 3; do
+    for memory_access in 0 1; do
         test_expect_success EXPENSIVE,TRINITY \
             "fuzzing $syscall_name does not generate any failures [memory_access:$memory_access]" '
         sydbox \

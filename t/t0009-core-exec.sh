@@ -23,7 +23,7 @@ else
     threads_execve="${SYDBOX_BUILD_DIR}/t/test-bin/threads_execve"
 fi
 
-for ce_mem_access in 0 1 2 3; do
+for ce_mem_access in 0 1; do
 # FIXME: Add DUMP prereq!
     test_expect_failure DIFF,JQ \
         "multithreaded execve leader switch [memory_access:${ce_mem_access}]" '

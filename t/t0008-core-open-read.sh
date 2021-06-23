@@ -5,7 +5,7 @@
 test_description='test the read sandboxing for open of sydbox'
 . ./test-lib.sh
 
-for cor_mem_access in 0 1 2 3; do
+for cor_mem_access in 0 1; do
 # Note, we use test_must_fail here rather than ! so we know if sydbox exits
 # abnormally, eg. segfaults.
     test_expect_success \
