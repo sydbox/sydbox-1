@@ -37,8 +37,8 @@ enum dump {
 #define INSPECT_DUMP_FLUSH (1ULL << DUMP_FLUSH)
 	DUMP_ASSERT, /* assertion failed */
 #define INSPECT_DUMP_ASSERT (1ULL << DUMP_ASSERT)
-	DUMP_INTERRUPT, /* interrupted */
-#define INSPECT_DUMP_INTERRUPT (1ULL << DUMP_INTERRUPT)
+	DUMP_INTR, /* interrupted */
+#define INSPECT_DUMP_INTR (1ULL << DUMP_INTR)
 	DUMP_THREAD_NEW, /* new_thread() */
 #define INSPECT_DUMP_THREAD_NEW (1ULL << DUMP_THREAD_NEW)
 	DUMP_THREAD_FREE, /* free_process() */
@@ -73,7 +73,7 @@ enum dump {
 			  INSPECT_DUMP_EXEC |\
 			  INSPECT_DUMP_EXEC_MT |\
 			  INSPECT_DUMP_EXIT |\
-			  INSPECT_DUMP_INTERRUPT)
+			  INSPECT_DUMP_INTR)
 #else
 # error do not know how to define INSPECT_DEFAULT
 #endif

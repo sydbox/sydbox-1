@@ -1081,17 +1081,35 @@ static int handle_interrupt(int sig)
 	 * Returning non-zero here terminates
 	 * the main notify loop.
 	 */
+#if 0
+#warning TODO: implement signal2name()
+	const char *name = signal2name(sig);
+#endif
 	switch (sig) {
 	case SIGCHLD:
 		return sig_child();
 	case SIGUSR1:
 	case SIGUSR2:
+#if 0
+#warning TODO: nice useful work for statistics, finish up!
+		dump(DUMP_INTR, "user.info", sig, name, sig == SIGUSR2);
+#endif
 		sig_usr(sig);
 		return 0;
+#if 0
+#warning TODO: Give more details about the interrupts below.
+	case SIGHUP:
+	case SIGINT:
+	case SIGPIPE:
+	case SIGQUIT:
+	case SIGTERM:
+#endif
 	default:
-		dump(DUMP_INTERRUPT, sig);
+#if 0
+#warning TODO: nice useful work for statistics, finish up!
+		dump(DUMP_INTR, "kill.all", sig, name, sig != SIGINT;
+#endif
 		kill_all(sig);
-		dump(DUMP_CLOSE);
 		return 128 + sig;
 	}
 }
@@ -1131,6 +1149,14 @@ static void oops(int sig)
 
 static void reap_zombies(void)
 {
+#if 0
+#warning TODO: nice useful work for statistics, finish up!
+#if SYDBOX_HAVE_DUMP_BUILTIN
+	size_t zombi = 0;
+	size_t death = 0;
+	size_t alive = 0;
+#endif
+#endif
 	syd_process_t *node;
 	sc_map_foreach_value(&sydbox->tree, node) {
 		//if (node->pid == sydbox->execve_pid)
@@ -1141,9 +1167,32 @@ static void reap_zombies(void)
 		 * does not detect zombies. */
 		if (!node)
 			continue;
-		if (process_is_zombie(node->pid))
+		if (process_is_zombie(node->pid)) {
 			bury_process(node, true);
+		}
 	}
+#if 0
+#if !SYDBOX_HAVE_DUMP_BUILTIN
+		}
+#else
+		/* Send an additional 0 signal to the process pidfd
+		 * for dump only. Disable with ./configure --disable-dump
+		 */
+			++zombi;
+		} else if (process_is_alive(node->pid) {
+			++alive;
+		} else {
+			++death;
+		}
+#endif
+#endif
+#if 0
+#warning TODO: nice useful work for statistics, finish up!
+#if SYDBOX_HAVE_DUMP_BUILTIN
+	dump(DUMP_INTR, "reap.zombies", SIGCHLD, name, true,
+	     alive, zombi, death);
+#endif
+#endif
 }
 
 static int process_send_signal(pid_t pid, int sig)
@@ -2109,6 +2158,9 @@ int main(int argc, char **argv)
 		}
 	}
 out:
+	dump(DUMP_EXIT, exit_code/* sydbox->violation_exit_code */);
+	dump(DUMP_ALLOC, 0, NULL);
+	dump(DUMP_CLOSE);
 	cleanup_for_sydbox();
 	if (sydbox->violation) {
 		if (sydbox->config.violation_exit_code > 0)
@@ -2117,9 +2169,6 @@ out:
 			 sydbox->config.violation_exit_code == 0)
 			exit_code = 128 /* + sydbox->exit_code */;
 	}
-	dump(DUMP_EXIT, exit_code);
-	dump(DUMP_ALLOC, 0, NULL);
-	dump(DUMP_CLOSE);
 	free(sydbox);
 	return exit_code;
 }

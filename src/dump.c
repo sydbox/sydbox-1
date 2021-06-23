@@ -364,16 +364,39 @@ void dump(enum dump what, ...)
 			J(line)"\"%s\","
 			J(func)"\"%s\"}}",
 			expr, file, line, func);
-	} else if (what == DUMP_INTERRUPT) {
-		int sig = va_arg(ap, int);
+	} else if (what == DUMP_INTR) {
+		const char *op = va_arg(ap, const char *);
+		const int sig = va_arg(ap, int);
+#if 0
+#warning TODO: nice useful work for statistics, finish up!
+		const char *name = va_arg(ap, const char *);
+		const bool term_or_verbose = va_arg(ap, const bool);
+		const size_t count_alive = va_arg(ap, size_t);
+		const size_t count_zombi = va_arg(ap, size_t);
+		const size_t count_death = va_arg(ap, size_t);
+
+		const char *bool_name;
+		if (streq(op, "kill.all"))
+			bool_name = "term";
+		else if (streq(op, "user.info"))
+			bool_name = "user";
+		else
+			bool_name = NULL;
+#endif
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
 			J(event)"{\"id\":%u,\"name\":\"%s\"},"
-			J(sig)"%d",
+			J(sig)"%d,"
+			J(op)"\"%s\","
+			J(name)"%s}",
 			id++, (unsigned long long)now,
-			DUMP_INTERRUPT, "interrupt", sig);
+			DUMP_INTR, "intr", sig, op, "null");
+#if 0
+#warning TODO: see above
+			name, 
+#endif
 
 		fprintf(fp, "}");
 	} else if (what == DUMP_THREAD_NEW || what == DUMP_THREAD_FREE) {
@@ -414,15 +437,23 @@ void dump(enum dump what, ...)
 		if (b_cmdline) free(b_cmdline);
 	} else if (what == DUMP_EXIT) {
 		int code = va_arg(ap, int);
+		size_t proc_total = va_arg(ap, size_t);
+		size_t proc_alive = va_arg(ap, size_t);
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
 			J(pid)"%d,"
 			J(event)"{\"id\":%u,\"name\":\"exit\"},"
-			J(code)"%d}",
+			J(code)"%d,"
+			J(proc)"{"
+				J(total)"%zu,"
+				J(alive)"%zu,"
+				J(zombie)"%zu}}",
 			id++, (unsigned long long)now,
-			sydbox->execve_pid, what, code);
+			sydbox->execve_pid, what, code,
+			proc_total, proc_alive,
+			proc_total - proc_alive);
 	} else if (what == DUMP_SYSENT) {
 		struct syd_process *current = va_arg(ap, struct syd_process *);
 
