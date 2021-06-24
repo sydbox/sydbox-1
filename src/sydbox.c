@@ -495,7 +495,12 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 
 	int r;
 	char *cwd;
-	if (!parent) {
+	if (current->pid == sydbox->execve_pid) {
+		/* oh, I know this person, we're in the same directory. */
+		P_CWD(current) = xgetcwd();
+		copy_sandbox(P_BOX(current), box_current(NULL));
+		return;
+	} else if (!parent) {
 proc_getcwd:
 		if ((r = syd_proc_cwd(sydbox->pfd_cwd, sydbox->config.use_toolong_hack,
 				  &cwd)) < 0) {
