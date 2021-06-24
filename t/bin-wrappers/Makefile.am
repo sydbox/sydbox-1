@@ -13,7 +13,7 @@ else
 BUILD_EXEC_PREFIX= $(SHELL) $(top_builddir)/libtool --mode=execute
 endif
 
-syd: syd.in Makefile
+sydbox: sydbox.in Makefile
 	$(AM_V_GEN)
 	$(AM_V_at)$(SED) -e 's:@TOP_BUILDDIR@:$(abs_top_builddir):g' \
 			 -e 's:@BINDIR@:$(bindir):g' \
@@ -21,36 +21,41 @@ syd: syd.in Makefile
 			 -e 's:@BUILD_EXEC_PREFIX@:$(BUILD_EXEC_PREFIX):g' \
 			 < $< > $@
 	$(AM_V_at)chmod +x $@
-EXTRA_DIST+= syd.in
+EXTRA_DIST+= sydbox.in
 
-#syd-dump: syd-dump.in Makefile
-#	$(AM_V_GEN)
-#	$(AM_V_at)$(SED) -e 's:@TOP_BUILDDIR@:$(abs_top_builddir):g' \
-#			 -e 's:@BINDIR@:$(bindir):g' \
-#			 -e 's:@LIBEXECDIR@:$(libexecdir):g' \
-#			 -e 's:@BUILD_EXEC_PREFIX@:$(BUILD_EXEC_PREFIX):g' \
-#			 < $< > $@
-#	$(AM_V_at)chmod +x $@
-#EXTRA_DIST+= syd-dump.in
+# Not used any more.
+# Use sydbox wrapper with SYDBOX_DUMP=1 instead.
+sydbox-dump: sydbox-dump.in Makefile
+	$(AM_V_GEN)
+	$(AM_V_at)$(SED) -e 's:@TOP_BUILDDIR@:$(abs_top_builddir):g' \
+			 -e 's:@BINDIR@:$(bindir):g' \
+			 -e 's:@LIBEXECDIR@:$(libexecdir):g' \
+			 < $< > $@
+	$(AM_V_at)chmod +x $@
+EXTRA_DIST+= sydbox-dump.in
 
-#shoebox: shoebox.in Makefile
-#	$(AM_V_GEN)
-#	$(AM_V_at)$(SED) -e 's:@TOP_BUILDDIR@:$(abs_top_builddir):g' \
-#			 -e 's:@BINDIR@:$(bindir):g' \
-#			 -e 's:@LIBEXECDIR@:$(libexecdir)/$(PACKAGE):g' \
-#			 < $< > $@
-#	$(AM_V_at)chmod +x $@
-#EXTRA_DIST+= shoebox.in
-#
-syd-format: syd-format.in Makefile
+shoebox: shoebox.in Makefile
+	$(AM_V_GEN)
+	$(AM_V_at)$(SED) -e 's:@TOP_BUILDDIR@:$(abs_top_builddir):g' \
+			 -e 's:@BINDIR@:$(bindir):g' \
+			 -e 's:@LIBEXECDIR@:$(libexecdir)/$(PACKAGE):g' \
+			 < $< > $@
+	$(AM_V_at)chmod +x $@
+EXTRA_DIST+= shoebox.in
+
+sydfmt: sydfmt.in Makefile
 	$(AM_V_GEN)
 	$(AM_V_at)$(SED) -e 's:@TOP_BUILDDIR@:$(abs_top_builddir):g' \
 			 -e 's:@BINDIR@:$(bindir):g' \
 			 < $< > $@
 	$(AM_V_at)chmod +x $@
-EXTRA_DIST+= syd-format.in
+EXTRA_DIST+= sydfmt.in
 
-check_SCRIPTS= syd syd-format
+check_SCRIPTS= \
+	       sydbox \
+	       sydbox-dump \
+	       shoebox \
+	       sydfmt
 
 syddir=$(libexecdir)/$(PACKAGE)/t/bin-wrappers
 syd_SCRIPTS= $(check_SCRIPTS)

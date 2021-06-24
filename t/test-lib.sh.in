@@ -958,8 +958,8 @@ maybe_setup_pfc() {
 		done
 		rm -f "$SHOEBOX_PFC"
 	fi
-	export SYDBOX_PFC_ENABLED # To used by bin-wrappers/syd
-	export SHOEBOX_PFC        # To be used by bin-wrappers/syd
+	export SYDBOX_PFC_ENABLED # To used by bin-wrappers/sydbox
+	export SHOEBOX_PFC        # To be used by bin-wrappers/sydbox
 }
 
 maybe_setup_dump() {
@@ -997,8 +997,8 @@ maybe_setup_dump() {
 		done
 		rm -f "$SHOEBOX"
 	fi
-	export SYDBOX_DUMP_ENABLED # To used by bin-wrappers/syd
-	export SHOEBOX             # To be used by bin-wrappers/syd
+	export SYDBOX_DUMP_ENABLED # To used by bin-wrappers/sydbox
+	export SHOEBOX             # To be used by bin-wrappers/sydbox
 }
 
 maybe_setup_strace () {
@@ -1036,8 +1036,8 @@ maybe_setup_strace () {
 			fi
 		done
 	fi
-	export SYDBOX_STRACE_ENABLED # To used by bin-wrappers/syd
-	export SHOEBOX_STRACE        # To be used by bin-wrappers/syd
+	export SYDBOX_STRACE_ENABLED # To used by bin-wrappers/sydbox
+	export SHOEBOX_STRACE        # To be used by bin-wrappers/sydbox
 }
 
 maybe_setup_valgrind () {
@@ -1467,11 +1467,11 @@ else # normal case, use ../bin-wrappers only unless $with_dashes:
 		with_dashes=t
 	else
 		sydbox_bin_dir="$SYDBOX_BUILD_DIR/t/bin-wrappers"
-		if ! test -x "$sydbox_bin_dir/syd"
+		if ! test -x "$sydbox_bin_dir/sydbox"
 		then
 			if test -z "$with_dashes"
 			then
-				say "$sydbox_bin_dir/syd is not executable; using SYDBOX_EXEC_PATH"
+				say "$sydbox_bin_dir/sydbox is not executable; using SYDBOX_EXEC_PATH"
 			fi
 			with_dashes=t
 		fi
@@ -1768,7 +1768,7 @@ test_lazy_prereq ULIMIT_FILE_DESCRIPTORS '
 '
 
 build_option () {
-	syd --version |
+	sydbox --version |
 	tail -n1 |
 	sed -e 's|^Options: ||' |
 	grep -o "$1:[^ ]\+" |
