@@ -35,7 +35,12 @@ m4_define([libsyd_pc_slot],        [sydbox_version_major.sydbox_version_minor[]s
 m4_define([sydbox_api_version],    [sydbox_version_major])
 m4_define([sydbox_fname_ext],      [syd-])
 
-AC_INIT([sydbox], [sydbox_version],
+dnl sydbox-2 has PACKAGE=syd
+dnl sydbox-1 has PACKAGE=sydbox
+dnl The tarball names are the same.
+dnl This is to make sure they're parallel-installable.
+dnl Thanks justinkb for the idea.
+AC_INIT([syd], [sydbox_version],
 	[SYDBOX_BUGREPORT],
 	[sydbox],
 	[SYDBOX_HOMEPAGE])
