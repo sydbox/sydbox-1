@@ -571,7 +571,10 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid, bool genuine)
 	 * Careful here, the process may still be a thread although new
 	 * clone flags is missing CLONE_THREAD
 	 */
-	if (genuine && (p->new_clone_flags & SYD_CLONE_THREAD)) {
+	if (p->pid == sydbox->execve_pid) {
+		child->ppid = sydbox->sydbox_pid;
+		child->tgid = child->pid;
+	} else if (genuine && (p->new_clone_flags & SYD_CLONE_THREAD)) {
 		child->ppid = p->ppid;
 		child->tgid = p->tgid;
 	} else if (syd_proc_parents(child->pid, &child->tgid, &child->ppid) < 0) {
@@ -1375,8 +1378,7 @@ notify_receive:
 		 * or the process is dead and we continue without response.
 		 */
 		pid = sydbox->request->pid;
-		sydbox->p = process_lookup(pid);
-		process_validate_or_deny(current, notify_respond);
+		current = process_lookup(pid);
 
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
@@ -1395,7 +1397,6 @@ notify_receive:
 			if (!current) {
 				parent = process_lookup(leader_pid);
 				current = process_init(pid, parent, true);
-				process_validate_or_deny(current, notify_respond);
 			}
 			execve_pid = P_EXECVE_PID(current);
 			if (execve_pid == 0 && pid != leader_pid) {
@@ -1407,7 +1408,6 @@ notify_receive:
 			if (execve_pid) {
 				if (pid != execve_pid) {
 					current = process_lookup(pid);
-					process_validate_or_deny(current, notify_respond);
 					switch_execve_leader(execve_pid,
 							     current);
 					goto notify_respond;
@@ -1421,11 +1421,13 @@ notify_receive:
 			bool genuine;
 			parent = parent_process(pid, &genuine);
 			current = process_init(pid, parent, genuine);
-			process_validate_or_deny(current, notify_respond);
 		}
-		/* Current is valid.
-		 * Proceed with sandboxing.
+		/*
+		 * Perform PID validation,
+		 * if it succeeds proceed with sandboxing,
+		 * if it fails deny the system call with ESRCH.
 		 */
+		process_validate_or_deny(current, notify_respond);
 		current->sysnum = sydbox->request->data.nr;
 		current->sysname = name;
 		for (unsigned short idx = 0; idx < 6; idx++)
