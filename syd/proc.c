@@ -240,7 +240,6 @@ int syd_proc_comm(int pfd, char *dst, size_t siz)
 
 	fd = openat(pfd, "comm", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
-	close(pfd);
 	if (fd < 0)
 		return -save_errno;
 

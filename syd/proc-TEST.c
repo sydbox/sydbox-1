@@ -297,10 +297,10 @@ static void test_proc_fd_path(void)
 		close(pfd[0]);
 
 		int pfd = syd_proc_open(cpid);
-		if (fd < 0)
+		if (pfd < 0)
 			abort(); /* TODO, fail nice */
 		int pfd_fd = syd_proc_fd_open(pfd);
-		if (fd < 0)
+		if (pfd_fd < 0)
 			abort(); /* TODO, fail nice */
 		path = NULL;
 		r = syd_proc_fd_path(pfd_fd, fdp, &path);
