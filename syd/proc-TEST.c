@@ -36,7 +36,7 @@ static void test_proc_ppid(void)
 		_exit(1);
 	} else {
 		pid_t ppid, cpid = -1;
-		int r, pfd, status;
+		int r, status;
 
 		cpid = waitpid(pid, &status, WUNTRACED);
 		if (cpid < 0) {
@@ -50,7 +50,7 @@ static void test_proc_ppid(void)
 		int fd = syd_proc_open(cpid);
 		if (fd < 0)
 			abort(); /* TODO, fail nice */
-		r = syd_proc_ppid(pfd, &ppid);
+		r = syd_proc_ppid(fd, &ppid);
 		if (r < 0)
 			fail_msg("syd_proc_ppid failed: %d %s", errno, strerror(errno));
 		else if (ppid != ppid_real)
@@ -133,14 +133,14 @@ static void test_proc_comm(void)
 		fd = syd_proc_open(cpid);
 		if (fd < 0)
 			abort(); /* TODO, fail nice */
-		r = syd_proc_comm(pid, comm, comm_len);
+		r = syd_proc_comm(fd, comm, comm_len);
 		if (r < 0)
 			fail_msg("syd_proc_comm failed: %d %s", errno, strerror(errno));
 		comm[comm_len - 1] = '\0';
 		if ((r = strcmp(comm, comm_real)) != 0)
 			fail_msg("comm: strcmp('%s', '%s') = %d", comm, comm_real, r);
 
-		r = syd_proc_comm(pid, comm_trunc, comm_trunc_len);
+		r = syd_proc_comm(fd, comm_trunc, comm_trunc_len);
 		if (r < 0)
 			fail_msg("syd_proc_comm failed (trunc): %d %s", errno, strerror(errno));
 		comm_trunc[comm_trunc_len - 1] = '\0';
@@ -296,11 +296,14 @@ static void test_proc_fd_path(void)
 
 		close(pfd[0]);
 
-		int fd = syd_proc_open(cpid);
+		int pfd = syd_proc_open(cpid);
+		if (fd < 0)
+			abort(); /* TODO, fail nice */
+		int pfd_fd = syd_proc_fd_open(pfd);
 		if (fd < 0)
 			abort(); /* TODO, fail nice */
 		path = NULL;
-		r = syd_proc_fd_path(fd, fdp, &path);
+		r = syd_proc_fd_path(pfd_fd, fdp, &path);
 		if (r < 0) {
 			fail_msg("fdp: syd_proc_fd_path failed: errno:%d %s", -r, strerror(-r));
 			goto out;
@@ -314,7 +317,7 @@ static void test_proc_fd_path(void)
 			goto out;
 		}
 
-		r = syd_proc_fd_path(pid, fdl, &path);
+		r = syd_proc_fd_path(pfd_fd, fdl, &path);
 		if (r < 0) {
 			fail_msg("fdl: syd_proc_fd_path failed: errno:%d %s", -r, strerror(-r));
 			goto out;
