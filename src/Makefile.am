@@ -39,7 +39,6 @@ syscall_open_ro.lst: Makefile
 	$(AM_V_at)sh -c 'test -s "$@" || exit 1'
 
 DEFS+= \
-       -DIN_SYD=1 \
        -DIN_SYDBOX=1 \
        -DDATADIR=\"$(datadir)\" \
        -DGITVERSION=\"$(GITVERSION)\" \
@@ -66,9 +65,9 @@ AM_CPPFLAGS= $(CODE_COVERAGE_CPPFLAGS)
 AM_LFLAGS = -v
 AM_YFLAGS = -d
 
-bin_PROGRAMS= syd syd-format
-syd_CPPFLAGS= -DSYDBOX -DSYD=1
-syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
+bin_PROGRAMS= sydbox sydfmt
+sydbox_CPPFLAGS= -DSYDBOX
+sydfmt_CPPFLAGS= -DSYDFMT
 noinst_HEADERS+= \
 		 acl-queue.h \
 		 arch.h \
@@ -104,7 +103,7 @@ noinst_HEADERS+= \
 		 xfunc.h \
 		 sydconf.h \
 		 sydbox.h
-syd_SOURCES= \
+sydbox_SOURCES= \
 		 arch.c \
 		 daemon.c \
 		 errno2name.c \
@@ -151,19 +150,19 @@ sydfmt_SOURCES= \
 # Imported from rsync!
 noinst_HEADERS+= \
 		 wildmatch.h
-syd_SOURCES+= \
+sydbox_SOURCES+= \
 		 wildmatch.c
 
 # Imported from zsh!
 noinst_HEADERS+= \
 		 toolong.h
-syd_SOURCES+= \
+sydbox_SOURCES+= \
 		 toolong.c
 
 # (partly modified and) imported from FreeBSD's lib/libc/stdlib
 noinst_HEADERS+= \
 		 bsd-compat.h
-syd_SOURCES+= \
+sydbox_SOURCES+= \
 		 realpath.c \
 		 strlcat.c \
 		 strlcpy.c
@@ -176,11 +175,11 @@ if WANT_PSYSCALL
 # imported from psyscall
 AM_CFLAGS+= $(pinktrace_CFLAGS)
 noinst_HEADERS+= psyscall_syd.h
-syd_SOURCES+= psyscall.c psyscall_syd.c
+sydbox_SOURCES+= psyscall.c psyscall_syd.c
 endif
 
-syd_LDFLAGS= -lsyd_@LIBSYD_PC_SLOT@ $(CODE_COVERAGE_LDFLAGS)
-syd_LDADD= \
+sydbox_LDFLAGS= -lsyd_@LIBSYD_PC_SLOT@ $(CODE_COVERAGE_LDFLAGS)
+sydbox_LDADD= \
 	      $(top_builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la \
 	      -L$(top_builddir)/syd/.libs \
 	      -lsyd_@LIBSYD_PC_SLOT@ \
@@ -188,52 +187,52 @@ syd_LDADD= \
 	      $(libseccomp_LIBS) \
 	      $(CODE_COVERAGE_LIBS)
 if WANT_DEBUG
-syd_LDADD+= $(libunwind_LIBS)
+sydbox_LDADD+= $(libunwind_LIBS)
 endif
 if WANT_PSYSCALL
-syd_LDADD+= $(pinktrace_LIBS)
+sydbox_LDADD+= $(pinktrace_LIBS)
 endif
 
 DUMP_SRCS= dump.c
 DUMP_COMPILER_FLAGS= $(AM_CFLAGS) -O0 -g -ggdb3
 DUMP_PREPROCESSOR_FLAGS= -DSYDBOX_DUMP=1
-DUMP_LINKER_LIBRARY_ADD= $(syd_LIBADD)
+DUMP_LINKER_LIBRARY_ADD= $(sydbox_LIBADD)
 DUMP_LINKER_ADD=
 DUMP_LINKER_FLAGS=
 
 syddir=$(libexecdir)/$(PACKAGE)/dump
-syd_SCRIPTS= syd-shoebox
-syd_PROGRAMS= syd-dump
+syd_SCRIPTS= shoebox
+syd_PROGRAMS= sydbox-dump
 
-syd-shoebox: shoebox.in
+shoebox: shoebox.in
 	$(AM_V_GEN)
 	$(AM_V_at)$(SED) \
 		-e "s:@SHOEBOX_VERSION@:$(VERSION)$(GITVERSION):g" \
 		$< > $@
 	$(AM_V_at)chmod +x $@
-CLEANFILES+= syd-shoebox
-EXTRA_DIST+= syd-shoebox.in
+CLEANFILES+= shoebox
+EXTRA_DIST+= shoebox.in
 
-syd_dump_SOURCES=
-syd_dump_CFLAGS= $(DUMP_COMPILER_FLAGS)
-syd_dump_CPPFLAGS=
-syd_dump_LDADD=
-syd_dump_LDFLAGS=
+sydbox_dump_SOURCES=
+sydbox_dump_CFLAGS= $(DUMP_COMPILER_FLAGS)
+sydbox_dump_CPPFLAGS=
+sydbox_dump_LDADD=
+sydbox_dump_LDFLAGS=
 
 if SYDBOX_HAVE_DUMP_BUILTIN
-syd_SOURCES+= $(DUMP_SRCS)
-syd_LDADD+= $(DUMP_LINKER_ADD)
-syd_LDFLAGS+= $(DUMP_LINKER_FLAGS)
-syd_dump_SOURCES+= $(syd_SOURCES)
-syd_dump_CPPFLAGS+= $(syd_CPPFLAGS)
-syd_dump_LDADD+= $(syd_LDADD)
-syd_dump_LDFLAGS+= $(DUMP_LINKER_FLAGS)
+sydbox_SOURCES+= $(DUMP_SRCS)
+sydbox_LDADD+= $(DUMP_LINKER_ADD)
+sydbox_LDFLAGS+= $(DUMP_LINKER_FLAGS)
+sydbox_dump_SOURCES+= $(sydbox_SOURCES)
+sydbox_dump_CPPFLAGS+= $(sydbox_CPPFLAGS)
+sydbox_dump_LDADD+= $(sydbox_LDADD)
+sydbox_dump_LDFLAGS+= $(DUMP_LINKER_FLAGS)
 else
-syd_dump_SOURCES+= $(syd_SOURCES) $(DUMP_SRCS)
-syd_dump_CFLAGS+= $(DUMP_COMPILER_FLAGS)
-syd_dump_CPPFLAGS+= $(DUMP_PREPROCESSOR_FLAGS)
-syd_dump_LDADD+= $(syd_LDADD) $(DUMP_LINKER_ADD)
-syd_dump_LDFLAGS+= $(DUMP_LINKER_FLAGS)
+sydbox_dump_SOURCES+= $(sydbox_SOURCES) $(DUMP_SRCS)
+sydbox_dump_CFLAGS+= $(DUMP_COMPILER_FLAGS)
+sydbox_dump_CPPFLAGS+= $(DUMP_PREPROCESSOR_FLAGS)
+sydbox_dump_LDADD+= $(sydbox_LDADD) $(DUMP_LINKER_ADD)
+sydbox_dump_LDFLAGS+= $(DUMP_LINKER_FLAGS)
 endif
 
 # Convenience for users, more ugliness for meself...
@@ -241,7 +240,7 @@ endif
 # to use sydbox-dump
 install-data-hook:
 	cd $(DESTDIR)$(syddir) && \
-		$(LN_S) -f syd-dump syd
+		$(LN_S) -f sydbox-dump sydbox
 
 SPARSE=sparse
 SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \
@@ -255,20 +254,20 @@ SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \
 SPARSE_CPPFLAGS+= -D__x86_64__=1
 
 sparse-check:
-	for src in $(syd_SOURCES); \
+	for src in $(sydbox_SOURCES); \
 	do \
 		$(SPARSE) $(DEFS) $(AM_CFLAGS) $(SPARSE_CPPFLAGS) $$src || exit 1; \
 	done
 .PHONY: sparse-check
 
 cppcheck:
-	cppcheck $(syd_SOURCES) \
+	cppcheck $(sydbox_SOURCES) \
 		$(DEFS) -I$(top_builddir) -I$(top_srcdir) \
 		--std=c99 --std=posix --enable=all
 .PHONY: cppcheck
 
 splint:
-	for path in $(syd_SOURCES); do \
+	for path in $(sydbox_SOURCES); do \
 		echo "SPLINT $$path"; \
 		splint +posixlib -D__x86_64__ \
 			$(DEFS) \

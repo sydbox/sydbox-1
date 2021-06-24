@@ -80,7 +80,7 @@ fi
 SYDBOX_BUILD_DIR="@TOP_BUILDDIR@"
 if test -z "$SYDBOX_TEST_INSTALLED"
 then
-	"$SYDBOX_BUILD_DIR"/src/syd --version >/dev/null 2>&1
+	"$SYDBOX_BUILD_DIR"/src/sydbox --version >/dev/null 2>&1
 	if test $? != 0
 	then
 		echo >&2 'error: you do not seem to have built SydBox yet.'
