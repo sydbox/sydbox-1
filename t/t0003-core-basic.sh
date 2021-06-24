@@ -10,19 +10,19 @@ SYDBOX_TEST_OPTIONS=
 export SYDBOX_TEST_OPTIONS
 
 test_expect_success 'sydbox: compatible --help with sydbox-0' '
-    sydbox --help
+    syd --help
 '
 
 test_expect_success 'sydbox: compatible --version with sydbox-0' '
-    sydbox --version
+    syd --version
 '
 
 test_expect_success 'sydfmt: compatible --help with sydfmt-0' '
-    sydfmt --help
+    syd-format --help
 '
 
 test_expect_success 'sydfmt: compatible --version with sydfmt-0' '
-    sydfmt --version
+    syd-format --version
 '
 
 test_done
