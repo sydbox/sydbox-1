@@ -334,6 +334,17 @@ int syd_proc_state(int pfd, char *state)
 	return 0;
 }
 
+int syd_proc_cwd_open(int pfd)
+{
+	int fd;
+
+	if (pfd <= 0)
+		return -EBADF;
+
+	fd = openat(pfd, "cwd", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	return (fd < 0) ? -errno : fd;
+}
+
 int syd_proc_mem_open(int pfd)
 {
 	int fd;

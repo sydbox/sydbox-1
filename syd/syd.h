@@ -58,7 +58,9 @@ int syd_proc_ppid(int pfd, pid_t *ppid);
 int syd_proc_parents(int pfd, pid_t *ppid, pid_t *tgid);
 int syd_proc_comm(int pfd, char *dst, size_t siz);
 int syd_proc_cmdline(int pfd, char *dst, size_t siz);
+
 int syd_proc_state(int pfd, char *state);
+int syd_proc_cwd_open(int pfd);
 int syd_proc_mem_open(int pfd);
 ssize_t syd_proc_mem_read(int mem_fd, off_t addr, void *buf, size_t count);
 ssize_t syd_proc_mem_write(int mem_fd, off_t addr, const void *buf, size_t len);
