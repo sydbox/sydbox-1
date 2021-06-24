@@ -21,6 +21,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <fcntl.h>
+
+#include "syd/syd.h"
 
 #include "file.h"
 #include "util.h"
@@ -53,63 +56,19 @@ static char *proc_deleted(const char *path)
 	return r;
 }
 
-
-void sydbox_proc_validate(void)
-{
-	if (!syd_seccomp_request_is_valid()) {
-		sydbox_proc_invalidate();
-		return;
-	}
-
-	pid_t pid = current->pid;
-	if (pid <= 0)
-		return;
-
-	int fd;
-	if ((fd = sydbopidfd = syd_pidfd_open(pid, 0)) < 0)
-		goto err;
-	sydbox->pidfd = pidfd_open
-	sydbox->pfd =
-	sydbox->pfd_fd =
-	sydbox->pfd_mem =
-	
-	return;
-err:
-	sydbox_proc_invalidate();
-}
-
-void sydbox_proc_invalidate(void)
-{
-	close(sydbox->pidfd);
-	close(sydbox->pfd);
-	close(sydbox->pfd_fd);
-	close(sydbox->pfd_mem);
-
-	sydbox->pidfd = -1;
-	sydbox->pfd = -1;
-	sydbox->pfd_fd = -1;
-	sydbox->pfd_mem = -1;
-}
-
-
-
 /*
  * resolve /proc/$pid/cwd
  */
-int proc_cwd(pid_t pid, bool use_toolong_hack, char **buf)
+int syd_proc_cwd(int pfd_cwd, bool use_toolong_hack, char **buf)
 {
 	int r;
-	char *c, *cwd, *linkcwd;
+	char *c, *cwd;
 
-	assert(pid >= 1);
 	assert(buf);
 
-	if (syd_asprintf(&linkcwd, "/proc/%u/cwd", pid) < 0)
-		return -ENOMEM;
-
-	r = readlink_alloc(linkcwd, &cwd);
+	r = readlinkat_alloc(pfd_cwd, "", &cwd);
 	if (use_toolong_hack && r == -ENAMETOOLONG) {
-		if ((r = chdir(linkcwd)) < 0) {
+		if ((r = chdir(cwd)) < 0) {
 			r = -errno;
 			goto out;
 		}
@@ -127,7 +86,6 @@ int proc_cwd(pid_t pid, bool use_toolong_hack, char **buf)
 	*buf = cwd;
 	/* r = 0; already so */
 out:
-	free(linkcwd);
 	return r;
 }
 
@@ -245,14 +203,16 @@ int proc_comm(pid_t pid, char **name)
 }
 #endif
 
-bool proc_has_task(pid_t pid, pid_t task)
+bool syd_proc_has_task(int pfd, pid_t task)
 {
 	bool r = false;
+	int fd;
 	DIR *dir;
-	char procdir[sizeof("/proc/%d/task") + sizeof(int) * 3];
 
-	sprintf(procdir, "/proc/%d/task", pid);
-	dir = opendir(procdir);
+	fd = openat(pfd, "task", O_PATH|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
+	if (fd < 0)
+		return r;
+	dir = fdopendir(fd);
 
 	if (dir == NULL)
 		return r;
@@ -279,64 +239,23 @@ out:
 	return r;
 }
 
-/* read Tgid: and PPid: from /proc/$pid/status */
-int proc_parents(pid_t pid, pid_t *tgid, pid_t *ppid)
-{
-	char buf[LINE_MAX], *p;
-	FILE *f;
-
-	assert(pid >= 1);
-	assert(tgid);
-	assert(ppid);
-
-	if (syd_asprintf(&p, "/proc/%u/status", pid) < 0)
-		return -ENOMEM;
-
-	f = fopen(p, "r");
-	free(p);
-
-	if (!f)
-		return -errno;
-
-	pid_t ret_tgid = -1, ret_ppid = -1;
-	buf[0] = '\0';
-	while (fgets(buf, LINE_MAX, f) != NULL) {
-		if ((ret_tgid == -1 && startswith(buf, "Tgid:") &&
-		     sscanf(buf, "Tgid: %d", &ret_tgid) != 1) ||
-		    (ret_ppid == -1 && startswith(buf, "PPid:") &&
-		     sscanf(buf, "PPid: %d", &ret_ppid) != 1)) {
-			fclose(f);
-			return -EINVAL;
-		}
-		buf[0] = '\0';
-	}
-
-	fclose(f);
-	if (ret_tgid == -1 || ret_ppid == -1)
-		return -EINVAL;
-
-	*tgid = ret_tgid;
-	*ppid = ret_ppid;
-	return 0;
-}
-
 /*
  * read /proc/$pid/stat
  */
-int proc_stat(pid_t pid, struct proc_statinfo *info)
+int syd_proc_stat(int pfd, struct proc_statinfo *info)
 {
-	char *p;
+	int fd;
 	FILE *f;
 
-	assert(pid >= 1);
-	assert(info);
+	if (pfd <= 0)
+		return -EBADF;
+	if (!info)
+		return -EINVAL;
 
-	if (syd_asprintf(&p, "/proc/%u/stat", pid) < 0)
-		return -ENOMEM;
-
-	f = fopen(p, "r");
-	free(p);
-
+	fd = openat(pfd, "stat", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	if (fd < 0)
+		return -ESRCH;
+	f = fdopen(fd, "r");
 	if (!f)
 		return -errno;
 
@@ -417,22 +336,20 @@ int proc_environ(pid_t pid)
 #endif
 
 /* /proc/<PID>/fd/<N> -> socket:[<inode>] */
-int proc_socket_inode(pid_t pid, int socket_fd, unsigned long long *inode)
+int syd_proc_socket_inode(int pfd_fd, int socket_fd, unsigned long long *inode)
 {
 	int r;
-	char *p;
+	char socket_fd_str[SYD_INT_MAX];
 
-	assert(pid >= 1);
-
+	if (pfd_fd < 0)
+		return -EBADF;
 	if (socket_fd < 0)
 		return -EINVAL;
 
-	if (syd_asprintf(&p, "/proc/%d/fd/%d", pid, socket_fd) < 0)
-		return -ENOMEM;
-
+	sprintf(socket_fd_str, "%u", socket_fd);
 #define PREFIX_LEN 8
 	char *l, *link = NULL;
-	if ((r = readlink_alloc(p, &link)) < 0)
+	if ((r = readlinkat_alloc(pfd_fd, socket_fd_str, &link)) < 0)
 		goto out;
 	else if (r <= PREFIX_LEN) {
 		r = -EINVAL;
@@ -466,12 +383,11 @@ int proc_socket_inode(pid_t pid, int socket_fd, unsigned long long *inode)
 out:
 	if (link)
 		free(link);
-	free(p);
 
 	return r;
 }
 
-int proc_socket_port(unsigned long long inode, bool ipv4, int *port)
+int syd_proc_socket_port(unsigned long long inode, bool ipv4, int *port)
 {
 	char buf[LINE_MAX];
 	FILE *f;

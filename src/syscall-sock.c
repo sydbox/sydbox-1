@@ -108,8 +108,8 @@ int sys_bind(syd_process_t *current)
 	r = syd_read_socket_argument(current, 0, &fd);
 	if (r < 0)
 		goto out;
-	if ((r = proc_socket_inode(current->pid,
-				   current->args[0], &inode)) < 0)
+	if ((r = syd_proc_socket_inode(sydbox->pfd_fd,
+				       current->args[0], &inode)) < 0)
 		goto out;
 
 	struct sockinfo *si = xmalloc(sizeof(struct sockinfo));
@@ -187,7 +187,7 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 	    !sydbox->config.allowlist_successful_bind)
 		return 0;
 
-	if ((r = proc_socket_inode(current->pid,
+	if ((r = syd_proc_socket_inode(current->pid,
 				   current->args[0],
 				   &inode)) < 0)
 		return r;
@@ -204,7 +204,7 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 		port = ntohs(info->addr->u.sa_in.sin_port);
 		/* allowlist bind(0 -> port) for connect() */
 		if (!port &&
-		    (!read_net_tcp || proc_socket_port(inode, true,
+		    (!read_net_tcp || syd_proc_socket_port(inode, true,
 						       &port) < 0))
 			return 0;
 		match = sockmatch_new(info);
@@ -214,7 +214,7 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 		port = ntohs(info->addr->u.sa6.sin6_port);
 		/* allowlist bind(0 -> port) for connect() */
 		if (!port &&
-		    (!read_net_tcp || proc_socket_port(inode, false,
+		    (!read_net_tcp || syd_proc_socket_port(inode, false,
 						       &port) < 0))
 			return 0;
 		match = sockmatch_new(info);

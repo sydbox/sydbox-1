@@ -98,7 +98,6 @@ static void reap_zombies(void);
 static inline bool process_is_alive(pid_t pid);
 static inline bool process_is_zombie(pid_t pid);
 static inline size_t process_count_alive(void);
-static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current);
 static inline pid_t process_find_exec(pid_t pid);
 static inline syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 					  bool genuine);
@@ -239,57 +238,6 @@ static void kill_save_errno(pid_t pid, int sig)
 
 	(void) kill(pid, sig);
 	errno = saved_errno;
-}
-
-static int process_proc(struct syd_process *p)
-{
-	if (process_esrch(p))
-		return 0; /* Process exited, nothing to do. */
-
-	/*
-	 * Note: pidfd_open only works with thread-group leaders.
-	 * If the process id is not a thread-group leader,
-	 * pidfd_open returns EINVAL.
-	 */
-
-	/* We are about to open a resource by referencing pid,
-	 * ensure there're no race conditions by checking for
-	 * seccomp id valid:
-	 */
-
-	if (p->memfd >= 0) {
-		close(p->memfd);
-		p->memfd = -1;
-	}
-	if (p->pidfd  >= 0) {
-		close(p->pidfd);
-		p->pidfd = -1;
-	}
-
-	p->memfd = syd_proc_mem_open(p->pid);
-	if (p->memfd < 0)
-		return -errno;
-	p->pidfd = syscall(__NR_pidfd_open, p->pid, 0);
-	if (p->pidfd < 0) {
-		if (errno == EINVAL)
-			; /* process id not a thread-group leader. */
-		else
-			return -errno;
-	}
-
-	if (!syd_seccomp_request_is_valid()) {
-		if (p->memfd >= 0) {
-			close(p->memfd);
-			p->memfd = -1;
-		}
-		if (p->pidfd  >= 0) {
-			close(p->pidfd);
-			p->pidfd = -1;
-		}
-		return -ENOENT;
-	}
-
-	return 0;
 }
 
 static int seccomp_setup(void)
@@ -438,9 +386,6 @@ static syd_process_t *new_thread(pid_t pid)
 	thread->ppid = SYD_PPID_NONE;
 	thread->tgid = SYD_TGID_NONE;
 
-	thread->pidfd = -1;
-	thread->memfd = -1;
-
 	process_add(thread);
 
 #if ENABLE_PSYSCALL
@@ -552,7 +497,7 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 	char *cwd;
 	if (!parent) {
 proc_getcwd:
-		if ((r = proc_cwd(current->pid, sydbox->config.use_toolong_hack,
+		if ((r = syd_proc_cwd(current->pid, sydbox->config.use_toolong_hack,
 				  &cwd)) < 0) {
 			errno = -r;
 			say_errno("proc_cwd");
@@ -611,7 +556,7 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid, bool genuine)
 	bool new_child;
 	syd_process_t *child;
 
-	child = lookup_process(cpid);
+	child = process_lookup(cpid);
 	new_child = (child == NULL);
 
 	if (new_child)
@@ -624,7 +569,7 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid, bool genuine)
 	if (genuine && (p->new_clone_flags & SYD_CLONE_THREAD)) {
 		child->ppid = p->ppid;
 		child->tgid = p->tgid;
-	} else if (proc_parents(child->pid, &child->tgid, &child->ppid) < 0) {
+	} else if (syd_proc_parents(child->pid, &child->tgid, &child->ppid) < 0) {
 		say_errno("proc_parents");
 		child->ppid = p->pid;
 		child->tgid = child->pid;
@@ -648,17 +593,11 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 
 	if (!p)
 		return;
+	p->zombie = true;
+
 	pid = p->pid;
 	dump(DUMP_THREAD_FREE, pid);
 
-	if (p->pidfd > 0) {
-		close(p->pidfd);
-		p->pidfd = 0; /* process is dead, see process_alive() macro. */
-	}
-	if (p->memfd > 0) {
-		close(p->memfd);
-		p->memfd = -1;
-	}
 	if (p->abspath) {
 		free(p->abspath);
 		p->abspath = NULL;
@@ -715,14 +654,6 @@ static void tweak_execve_thread(syd_process_t *leader,
 {
 	if (sydbox->config.allowlist_per_process_directories)
 		procdrop(&sydbox->config.proc_pid_auto, execve_thread->pid);
-	if (execve_thread->pidfd > 0) {
-		close(execve_thread->pidfd);
-		execve_thread->pidfd = -1;
-	}
-	if (execve_thread->memfd > 0) {
-		close(execve_thread->memfd);
-		execve_thread->memfd = -1;
-	}
 	if (execve_thread->abspath) {
 		free(execve_thread->abspath);
 		execve_thread->abspath = NULL;
@@ -749,7 +680,7 @@ static void switch_execve_leader(pid_t leader_pid, syd_process_t *execve_thread)
 	dump(DUMP_EXEC_MT, execve_thread->pid, leader_pid,
 	     execve_thread->abspath);
 
-	syd_process_t *leader = lookup_process(leader_pid);
+	syd_process_t *leader = process_lookup(leader_pid);
 	if (!leader)
 		goto out;
 	process_remove(leader);
@@ -790,11 +721,11 @@ static syd_process_t *parent_process(pid_t pid_task, bool *genuine)
 	 * 2. Is it more reliable to switch steps 1 & 2?
 	 */
 	pid_t tgid, ppid;
-	proc_parents(pid_task, &tgid, &ppid);
-	syd_process_t *node_tgid = lookup_process(tgid);
+	syd_proc_parents(pid_task, &ppid, &tgid);
+	syd_process_t *node_tgid = process_lookup(tgid);
 	if (node_tgid && node_tgid->flags & (SYD_IN_CLONE|SYD_IN_EXECVE))
 		return node_tgid;
-	syd_process_t *node_ppid = lookup_process(ppid);
+	syd_process_t *node_ppid = process_lookup(ppid);
 	if (node_ppid && node_ppid->flags & (SYD_IN_CLONE|SYD_IN_EXECVE))
 		return node_ppid;
 
@@ -824,7 +755,7 @@ static syd_process_t *parent_process(pid_t pid_task, bool *genuine)
 	else if (node_ppid)
 		return node_ppid;
 	else
-		return lookup_process(sydbox->execve_pid);
+		return process_lookup(sydbox->execve_pid);
 }
 
 static unsigned get_os_release(void)
@@ -915,7 +846,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	if (!verbose)
 		return;
 
-	if (proc_stat(pid, &info) < 0) {
+	if (syd_proc_stat(sydbox->pfd, &info) < 0) {
 		fprintf(stderr, "%sproc_stat failed (errno:%d %s)%s\n",
 			CB, errno, strerror(errno), CE);
 	} else {
@@ -1053,7 +984,7 @@ static int sig_child(void)
 	pid_t pid;
 
 	if (process_is_zombie(sydbox->execve_pid)) {
-		bury_process(lookup_process(sydbox->execve_pid), true);
+		bury_process(process_lookup(sydbox->execve_pid), true);
 		return ECHILD;
 	}
 	reap_zombies();
@@ -1197,12 +1128,7 @@ static void reap_zombies(void)
 
 static int process_send_signal(pid_t pid, int sig)
 {
-	syd_process_t *current;
-
-	current = lookup_process(pid);
-	if (!current || current->pidfd <= 0)
-		return false;
-	if (syd_pidfd_send_signal(current->pidfd, sig, NULL, 0) == -1)
+	if (kill(pid, sig) < 0)
 		return -errno;
 	return 0;
 }
@@ -1251,40 +1177,13 @@ static inline bool process_is_zombie(pid_t pid)
 	}
 }
 
-static inline int process_reopen_proc_mem(pid_t pid, syd_process_t *current)
-{
-	if (!current && pid >= 0)
-		current = lookup_process(pid);
-	if (!current || !current->pidfd)
-		return -ESRCH;
-	if (current->memfd >= 0) {
-		close(current->memfd);
-		current->memfd = 0;
-	}
-	current->memfd = syd_proc_mem_open(current->pid);
-	if (current->memfd < 0) {
-		errno = -current->memfd;
-		current->memfd = 0;
-		if (proc_esrch(errno)) {
-			if (current->pidfd >= 0)
-				close(current->pidfd);
-			current->pidfd = 0;
-			return -ESRCH;
-		} else {
-			say_errno("proc_mem_open(%d)", current->pid);
-		}
-		return -errno;
-	}
-	return 0;
-}
-
 static inline pid_t process_find_exec(pid_t exec_pid)
 {
 	syd_process_t *node;
 
 	sc_map_foreach_value(&sydbox->tree, node) {
 		if (node->pid == node->tgid &&
-		    proc_has_task(node->pid, exec_pid))
+		    syd_proc_has_task(node->pid, exec_pid))
 			return node->pid;
 	}
 
@@ -1301,7 +1200,7 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 		if (genuine)
 			parent->clone_flags &= ~SYD_IN_CLONE;
 	} else {
-		parent = lookup_process(sydbox->execve_pid);
+		parent = process_lookup(sydbox->execve_pid);
 		BUG_ON(parent);
 		unsigned int save_new_clone_flags = parent->new_clone_flags;
 		parent->new_clone_flags = 0;
@@ -1333,7 +1232,7 @@ static void init_early(void)
 	config_init();
 	filter_init();
 	sc_map_init_64v(&sydbox->tree, 0, 0);
-	syd_abort_func(kill_all);
+	//syd_abort_func(kill_all);
 }
 
 static int event_clone(syd_process_t *current, const char clone_type,
@@ -1457,8 +1356,8 @@ notify_receive:
 			}
 		}
 
-		if (sydbox->request->id == 0 && sydbox->request->pid == 0)
-			goto out;
+		//if (sydbox->request->id == 0 && sydbox->request->pid == 0)
+		//	goto out;
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
 		sydbox->response->flags |= SECCOMP_USER_NOTIF_FLAG_CONTINUE;
@@ -1471,22 +1370,8 @@ notify_receive:
 		 * or the process is dead and we continue without response.
 		 */
 		pid = sydbox->request->pid;
-		current = lookup_process(pid);
-		if (current && (r = process_proc(current))) {
-			if (r == -ENOENT) {
-				/* seccomp request is no longer valid,
-				 * mark the process dead and continue.
-				 */
-				bury_process(current, true);
-				goto out;
-			}
-			/* Another (transient?) error opening file
-			 * descriptors, move on,
-			 * report it so we know if it's something we
-			 * *must* handle. */
-			errno = -r;
-			say_errno("open_process_file_descriptors");
-		}
+		sydbox->p = process_lookup(pid);
+		process_validate_or_deny(current, notify_respond);
 
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
@@ -1503,9 +1388,9 @@ notify_receive:
 			pid_t execve_pid = 0;
 			pid_t leader_pid = process_find_exec(pid);
 			if (!current) {
-				parent = lookup_process(leader_pid);
+				parent = process_lookup(leader_pid);
 				current = process_init(pid, parent, true);
-				assert(current);
+				process_validate_or_deny(current, notify_respond);
 			}
 			execve_pid = P_EXECVE_PID(current);
 			if (execve_pid == 0 && pid != leader_pid) {
@@ -1516,16 +1401,14 @@ notify_receive:
 
 			if (execve_pid) {
 				if (pid != execve_pid) {
-					current = lookup_process(pid);
-					assert(current);
-
+					current = process_lookup(pid);
+					process_validate_or_deny(current, notify_respond);
 					switch_execve_leader(execve_pid,
 							     current);
 					goto notify_respond;
 				}
 				P_EXECVE_PID(current) = 0;
 			}
-			current->flags &= ~SYD_IN_CLONE;
 			event_exec(current);
 		}
 
@@ -1533,8 +1416,11 @@ notify_receive:
 			bool genuine;
 			parent = parent_process(pid, &genuine);
 			current = process_init(pid, parent, genuine);
-			assert(current);
+			process_validate_or_deny(current, notify_respond);
 		}
+		/* Current is valid.
+		 * Proceed with sandboxing.
+		 */
 		current->sysnum = sydbox->request->data.nr;
 		current->sysname = name;
 		for (unsigned short idx = 0; idx < 6; idx++)
@@ -1620,7 +1506,7 @@ out:
 	return r;
 }
 
-static pid_t startup_child(char **argv, int *pidfd)
+static pid_t startup_child(char **argv)
 {
 	int r, pfd[2];
 	char *pathname = NULL;
@@ -1730,10 +1616,10 @@ static pid_t startup_child(char **argv, int *pidfd)
 		exit(-r);
 	}
 
-	BUG_ON(pidfd);
-	if ((*pidfd = syd_pidfd_open(pid, 0)) < 0)
+	int pidfd;
+	if ((pidfd = syd_pidfd_open(pid, 0)) < 0)
 		die_errno("failed to open pidfd for pid:%d", pid);
-	if ((fd = syd_pidfd_getfd(*pidfd, fd, 0)) < 0)
+	if ((fd = syd_pidfd_getfd(pidfd, fd, 0)) < 0)
 		 die_errno("failed to obtain seccomp user fd");
 	sydbox->notify_fd = fd;
 
@@ -2114,13 +2000,12 @@ int main(int argc, char **argv)
 	/* STARTUP_CHILD must not be called before the signal handlers get
 	   installed below as they are inherited into the spawned process. */
 	int exit_code;
-	int pidfd, status;
+	int status;
 	pid_t pid;
 	syd_process_t *child;
 	if (use_notify()) {
-		pid = startup_child((char **)my_argv, &pidfd);
+		pid = startup_child((char **)my_argv);
 		child = new_process_or_kill(pid);
-		child->pidfd = pidfd;
 		init_process_data(child, NULL, false);
 		dump(DUMP_STARTUP, pid);
 		init_signals();
@@ -2134,7 +2019,7 @@ int main(int argc, char **argv)
 			exit(exit_code);
 		}
 	} else {
-		pid = startup_child((char **)my_argv, NULL);
+		pid = startup_child((char **)my_argv);
 	}
 	for (;;) {
 		errno = 0;

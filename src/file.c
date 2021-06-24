@@ -126,6 +126,40 @@ ssize_t readlink_alloc(const char *path, char **buf)
 	}
 }
 
+/* readlinkat() wrapper which:
+ * - allocates the string itself.
+ * - appends a zero-byte at the end.
+ */
+ssize_t readlinkat_alloc(int dirfd, const char *path, char **buf)
+{
+	size_t l = 100;
+
+	for (;;) {
+		char *c;
+		ssize_t n;
+
+		c = syd_malloc(l * sizeof(char));
+		if (!c)
+			return -ENOMEM;
+
+		n = readlinkat(dirfd, path, c, l - 1);
+		if (n < 0) {
+			int ret = -errno;
+			free(c);
+			return ret;
+		}
+
+		if ((size_t)n < l - 1) {
+			c[n] = 0;
+			*buf = c;
+			return n;
+		}
+
+		free(c);
+		l *= 2;
+	}
+}
+
 int read_one_line_file(const char *fn, char **line)
 {
 	int r;

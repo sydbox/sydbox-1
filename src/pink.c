@@ -34,6 +34,7 @@
 #include <linux/un.h>
 #undef sockaddr_un
 
+#include "proc.h"
 #include "syd/syd.h"
 
 #ifdef ENABLE_PSYSCALL
@@ -59,6 +60,11 @@ typedef struct msghdr struct_msghdr;
 # warning "Please update your Linux kernel and headers."
 # define __NR_process_vm_writev 311
 #endif
+
+#define SYD_RETURN_IF_DEAD(p) do { \
+	say("TODO: implement a secure version of SYD_RETURN_IF_DEAD"); \
+	abort(); \
+} while (0)
 
 static ssize_t pink_process_vm_readv(pid_t pid,
 				     const struct iovec *local_iov,
@@ -189,7 +195,7 @@ retry_vm_readv:
 			 * Process dead, and may be replaced by another process.
 			 * Invalidate FDs ASAP!
 			 */
-			sydbox_proc_invalidate();
+			proc_invalidate();
 		} else if (nread < 0 && r == 0) {
 			int save_errno = errno;
 			say_errno("process_vm_read(%d)", current->pid);
@@ -203,6 +209,7 @@ retry_vm_readv:
 	 * sydbox->pifd_mem is only secure to reopen using syd_proc_mem_open().
 	 */
 	bool mem_open = false, mem_open_ok = false;
+mem_open:
 	if (mem_open) {
 		int memfd;
 		if ((memfd = syd_proc_mem_open(sydbox->pfd)) < 0)
@@ -306,9 +313,6 @@ mem_write:
 static ssize_t process_vm_write(syd_process_t *current, long addr, void *buf,
 				size_t count)
 {
-	if (!process_alive(current))
-		return -ESRCH;
-
 #if SIZEOF_LONG > 4
 	size_t wsize = abi_wordsize(current->arch);
 	if (wsize < sizeof(addr))
@@ -342,7 +346,7 @@ retry_vm_writev:
 			 * Process dead, and may be replaced by another process.
 			 * Invalidate FDs ASAP!
 			 */
-			sydbox_proc_invalidate();
+			proc_invalidate();
 		} else if (nwritten < 0 && r == 0) {
 			int save_errno = errno;
 			say_errno("process_vm_write(%d)", current->pid);
@@ -726,11 +730,6 @@ int syd_rmem_write(syd_process_t *current)
 	}
 #endif
 #endif
-}
-
-bool syd_seccomp_request_is_valid(void)
-{
-	return !seccomp_notify_id_valid(sydbox->notify_fd, sydbox->request->id);
 }
 
 static volatile atomic_bool test_child_notify = ATOMIC_VAR_INIT(false);

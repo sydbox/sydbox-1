@@ -393,6 +393,18 @@ struct syd_process_shared {
 
 /* process information */
 struct syd_process {
+	/*
+	 * SECURITY:
+	 * No process ID based actions if valid is false!
+	 */
+	bool valid:1;
+
+	/*
+	 * Process exited but we're keepin the entry
+	 * for bookkeeping of the sandbox.
+	 */
+	bool zombie:1;
+
 	/* Update current working directory, next step */
 	bool update_cwd:1;
 
@@ -605,9 +617,21 @@ struct sydbox {
 	int pfd;
 	int pfd_fd;
 
+	/* Only the proc_validate() function is permitted
+	 * to set this entry. Only and only this process
+	 * pointer is valid.
+	 * TODO(SECURITY): no sandbox-critical actions
+	 * must be done on any other process! This
+	 * should already not be the case but it's
+	 * best to check.
+	 */
+	syd_process_t *p;
+	pid_t pid_valid;
+
 /***************************************/
 /* Start of Process ID SAFE interface: *
 ****************************************/
+	int pfd_cwd;
 	int pfd_mem;
 
 	int notify_fd;
@@ -803,6 +827,118 @@ static inline void process_remove(syd_process_t *p)
 	sc_map_del_64v(&sydbox->tree, p->pid);
 }
 
+static inline syd_process_t *process_lookup(pid_t pid)
+{
+	syd_process_t *p = sc_map_get_64v(&sydbox->tree, pid);
+	if (sc_map_found(&sydbox->tree))
+		return p;
+	return NULL;
+}
+
+/*************************************/
+/* Security Functions */
+static inline bool syd_seccomp_request_is_valid(void)
+{
+	return seccomp_notify_id_valid(sydbox->notify_fd, sydbox->request->id) == 0;
+}
+
+static inline void proc_invalidate(void)
+{
+	close(sydbox->pidfd);
+	close(sydbox->pfd);
+	close(sydbox->pfd_fd);
+	close(sydbox->pfd_mem);
+
+	sydbox->pidfd = -1;
+	sydbox->pfd = -1;
+	sydbox->pfd_fd = -1;
+	sydbox->pfd_mem = -1;
+
+	sydbox->pid_valid = -1;
+	sydbox->p = NULL;
+}
+
+static inline bool proc_validate(pid_t pid)
+{
+	proc_invalidate();
+	if (!syd_seccomp_request_is_valid())
+		goto err;
+	if (!sydbox->p->valid)
+		goto err;
+
+	int fd;
+
+	if ((fd = sydbox->pidfd = syd_pidfd_open(pid, 0)) < 0)
+		goto err;
+	sydbox->pidfd = fd;
+
+	if ((fd = syd_proc_open(pid)) < 0)
+		goto err;
+	sydbox->pfd = fd;
+
+	if ((fd = syd_proc_fd_open(pid)) < 0)
+		goto err;
+	sydbox->pfd_fd = fd;
+
+	sydbox->pid_valid = pid;
+	sydbox->p = process_lookup(sydbox->pid_valid);
+	goto validation_done;
+err:
+	proc_invalidate();
+	return false;
+validation_done:
+
+	/* Validations are done,
+	 * the remaining file descriptors
+	 * are dependent on the above
+	 * to be valid.
+	 */
+	sydbox->pfd_cwd = syd_proc_cwd_open(sydbox->pfd);
+	sydbox->pfd_mem = syd_proc_mem_open(sydbox->pfd);
+
+	return true;
+}
+
+static inline int reopen_proc_mem(pid_t pid)
+{
+	if (sydbox->pfd_mem >= 0) {
+		close(sydbox->pfd_mem);
+		sydbox->pfd_mem = -1;
+	}
+	sydbox->pfd_mem = syd_proc_mem_open(sydbox->pid_valid);
+	if (sydbox->pfd_mem < 0)
+		return -errno;
+	return 0;
+}
+
+static inline void priv_process_invalidate(syd_process_t *p)
+{
+	if (!sydbox->p)
+		return;
+	sydbox->p->valid = false;
+}
+
+static inline bool process_validate(syd_process_t *p)
+{
+	priv_process_invalidate(p);
+	if (!p)
+		return false;
+	if (p->pid != sydbox->pid_valid)
+		return false;
+	sydbox->p = p;
+	return true;
+}
+#define process_valid(p) ((p) == sydbox->p)
+#define process_validate_or_deny(_p,  label) do {\
+	if (!process_validate(_p)) { \
+		sydbox->response->error = -ESRCH; \
+		sydbox->response->val = 0; \
+		sydbox->response->flags = 0; \
+		goto label; \
+	} (_p) = sydbox->p; \
+} while(0)
+/*************************/
+
 /* Global functions */
 int syd_kill(pid_t pid, pid_t tgid, int sig);
 int syd_read_syscall(syd_process_t *current, long *sysnum);
@@ -825,7 +961,6 @@ ssize_t syd_write_vm_data(syd_process_t *current, long addr, char *src,
 			  size_t len);
 int syd_rmem_alloc(syd_process_t *current);
 int syd_rmem_write(syd_process_t *current);
-bool syd_seccomp_request_is_valid(void);
 
 int syd_seccomp_arch_is_valid(uint32_t arch, bool *result);
 void test_setup(void);
@@ -837,14 +972,6 @@ int test_seccomp(bool report);
 
 void reset_process(syd_process_t *p);
 void bury_process(syd_process_t *p, bool force);
-
-static inline syd_process_t *lookup_process(pid_t pid)
-{
-	syd_process_t *p = sc_map_get_64v(&sydbox->tree, pid);
-	if (sc_map_found(&sydbox->tree))
-		return p;
-	return NULL;
-}
 
 void cleanup_for_child(void);
 void cleanup_for_sydbox(void);

@@ -28,10 +28,12 @@ struct proc_statinfo {
 	char comm[32];
 };
 
-int proc_cwd(pid_t pid, bool use_toolong_hack, char **buf);
-bool proc_has_task(pid_t pid, pid_t task);
-int proc_parents(pid_t pid, pid_t *tgid, pid_t *ppid);
-int proc_stat(pid_t pid, struct proc_statinfo *info);
+int syd_proc_stat(int pfd, struct proc_statinfo *info);
+int syd_proc_cwd(int pfd_cwd, bool use_toolong_hack, char **buf);
+bool syd_proc_has_task(int pfd, pid_t task);
+
+int syd_proc_socket_inode(int pfd_fd, int socket_fd, unsigned long long *inode);
+int syd_proc_socket_port(unsigned long long inode, bool ipv4, int *port);
 
 #if 0
 int proc_fd(pid_t pid, int dfd, char **buf);
@@ -40,8 +42,5 @@ int proc_comm(pid_t pid, char **name);
 
 int proc_environ(pid_t pid);
 #endif
-
-int proc_socket_inode(pid_t pid, int socket_fd, unsigned long long *inode);
-int proc_socket_port(unsigned long long inode, bool ipv4, int *port);
 
 #endif /* !PROC_H */

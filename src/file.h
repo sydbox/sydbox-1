@@ -3,7 +3,7 @@
  *
  * File related utilities
  *
- * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is
  *   Copyright 2010 Lennart Poettering
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
@@ -26,6 +26,7 @@ int basename_copy(const char *path, char *dest, size_t len);
 int basename_alloc(const char *path, char **buf);
 ssize_t readlink_copy(const char *path, char *dest, size_t len);
 ssize_t readlink_alloc(const char *path, char **buf);
+ssize_t readlinkat_alloc(int dirfd, const char *path, char **buf);
 
 int empty_dir(const char *dname);
 int utime_reset(const char *path, const struct stat *st);
