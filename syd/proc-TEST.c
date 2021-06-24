@@ -194,7 +194,7 @@ static void test_proc_cmdline(void)
 		if ((r = strcmp(cmdline, cmdline_orig)) != 0)
 			fail_msg("cmdline: strcmp('%s', '%s') = %d", cmdline, cmdline_orig, r);
 
-		r = syd_proc_cmdline(pid, cmdline_trunc1, sizeof(cmdline) - 2);
+		r = syd_proc_cmdline(fd, cmdline_trunc1, sizeof(cmdline) - 2);
 		if (r < 0)
 			fail_msg("syd_proc_cmdline (trunc1) failed: %d %s",
 				 errno, strerror(errno));
@@ -202,7 +202,7 @@ static void test_proc_cmdline(void)
 		if ((r = strcmp(cmdline_trunc1, cmdline_trunc1_orig)) != 0)
 			fail_msg("cmdline: (trunc1) strcmp('%s', '%s') = %d", cmdline_trunc1, cmdline_trunc1_orig, r);
 
-		r = syd_proc_cmdline(pid, cmdline_trunc2, sizeof(cmdline) - 3);
+		r = syd_proc_cmdline(fd, cmdline_trunc2, sizeof(cmdline) - 3);
 		if (r < 0)
 			fail_msg("syd_proc_cmdline (trunc2) failed: %d %s",
 				 errno, strerror(errno));
@@ -296,10 +296,7 @@ static void test_proc_fd_path(void)
 
 		close(pfd[0]);
 
-		int pfd = syd_proc_open(cpid);
-		if (pfd < 0)
-			abort(); /* TODO, fail nice */
-		int pfd_fd = syd_proc_fd_open(pfd);
+		int pfd_fd = syd_proc_fd_open(cpid);
 		if (pfd_fd < 0)
 			abort(); /* TODO, fail nice */
 		path = NULL;
