@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if test -z "$SYDBOX_TEST_INSTALLED"
+then
+	exec "@TOP_BUILDDIR@"/src/sydfmt "$@"
+elif test -d "$TEST_SYDBOX_BINDIR"
+then
+	exec "$TEST_SYDBOX_BINDIR"/sydfmt "$@"
+else
+	exec "@BINDIR@"/sydfmt "$@"
+fi

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if test -z "$SYDBOX_TEST_INSTALLED"
+then
+	exec "@TOP_BUILDDIR@"/src/sydbox-dump $SYDBOX_TEST_OPTIONS "$@"
+else
+	exec "@LIBEXECDIR@"/sydbox/dump/sydbox-dump $SYDBOX_TEST_OPTIONS "$@"
+fi
