@@ -108,7 +108,6 @@ int syd_proc_ppid(int pfd, pid_t *ppid)
 
 	fd = openat(pfd, "stat", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
-	close(pfd);
 	if (fd < 0)
 		return -save_errno;
 	f = fdopen(fd, "r");
@@ -171,7 +170,6 @@ int syd_proc_parents(int pfd, pid_t *ppid, pid_t *tgid)
 
 	fd = openat(pfd, "status", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
-	close(pfd);
 	if (fd < 0)
 		return -save_errno;
 	f = fdopen(fd, "r");
@@ -279,7 +277,6 @@ int syd_proc_cmdline(int pfd, char *dst, size_t siz)
 
 	fd = openat(pfd, "cmdline", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
-	close(pfd);
 	if (fd < 0)
 		return -save_errno;
 
@@ -318,7 +315,6 @@ int syd_proc_state(int pfd, char *state)
 		return -EBADF;
 	fd = openat(pfd, "stat", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
-	close(pfd);
 	if (fd < 0)
 		return -save_errno;
 	f = fdopen(fd, "r");
@@ -427,7 +423,6 @@ int syd_proc_environ(int pfd)
 
 	fd = openat(pfd, "environ", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
-	close(pfd);
 	if (fd < 0)
 		return -save_errno;
 	f = fdopen(fd, "r");
