@@ -341,7 +341,7 @@ int syd_proc_cwd_open(int pfd)
 	if (pfd <= 0)
 		return -EBADF;
 
-	fd = openat(pfd, "cwd", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	fd = openat(pfd, "cwd", O_PATH|O_NOFOLLOW|O_CLOEXEC);
 	return (fd < 0) ? -errno : fd;
 }
 
