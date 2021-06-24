@@ -497,7 +497,7 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 	char *cwd;
 	if (!parent) {
 proc_getcwd:
-		if ((r = syd_proc_cwd(current->pid, sydbox->config.use_toolong_hack,
+		if ((r = syd_proc_cwd(sydbox->pfd_cwd, sydbox->config.use_toolong_hack,
 				  &cwd)) < 0) {
 			errno = -r;
 			say_errno("proc_cwd");

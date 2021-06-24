@@ -23,17 +23,6 @@
 #define O_PATH 010000000
 #endif
 
-/*
- * 16 is sufficient since the largest number we will ever convert
- * will be 2^32-1, which is 10 digits.
- */
-#define SYD_INT_MAX 16
-#define SYD_PID_MAX SYD_INT_MAX
-#define SYD_PROC_MAX (sizeof("/proc/%u") + SYD_PID_MAX)
-#define SYD_PROC_FD_MAX (SYD_PROC_MAX + sizeof("/fd") + SYD_PID_MAX)
-#define SYD_PROC_TASK_MAX (SYD_PROC_MAX + sizeof("/task") + SYD_PID_MAX)
-#define SYD_PROC_STATUS_LINE_MAX sizeof("Tgid:") + SYD_INT_MAX + 16 /* padding */
-
 static void chomp(char *str)
 {
 	char *c;
@@ -70,6 +59,23 @@ int syd_proc_open(pid_t pid)
 		return -EINVAL;
 
 	fd = open(p, O_PATH|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
+	return (fd < 0) ? -errno : fd;
+}
+
+int syd_proc_cwd_open(pid_t pid)
+{
+	int r;
+	int fd;
+	char p[SYD_PROC_CWD_MAX];
+
+	if (pid <= 0)
+		return -EINVAL;
+
+	r = snprintf(p, sizeof(p), "/proc/%u/cwd", pid);
+	if (r < 0 || (size_t)r >= sizeof(p))
+		return -EINVAL;
+
+	fd = open(p, O_PATH|O_NOFOLLOW|O_CLOEXEC);
 	return (fd < 0) ? -errno : fd;
 }
 
@@ -332,17 +338,6 @@ int syd_proc_state(int pfd, char *state)
 	*state = state_r;
 
 	return 0;
-}
-
-int syd_proc_cwd_open(int pfd)
-{
-	int fd;
-
-	if (pfd <= 0)
-		return -EBADF;
-
-	fd = openat(pfd, "cwd", O_PATH|O_NOFOLLOW|O_CLOEXEC);
-	return (fd < 0) ? -errno : fd;
 }
 
 int syd_proc_mem_open(int pfd)

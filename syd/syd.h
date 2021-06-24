@@ -24,6 +24,24 @@
 #include <dirent.h>
 #include <time.h>
 
+/*
+ * 16 is sufficient since the largest number we will ever convert
+ * will be 2^32-1, which is 10 digits.
+ */
+#define SYD_INT_MAX 16
+#define SYD_PID_MAX SYD_INT_MAX
+#define SYD_PROC_MAX (sizeof("/proc/%u") + SYD_PID_MAX)
+#define SYD_PROC_FD_MAX (SYD_PROC_MAX + sizeof("/fd") + SYD_PID_MAX)
+#define SYD_PROC_CWD_MAX (SYD_PROC_MAX + sizeof("/cwd") + SYD_PID_MAX)
+#define SYD_PROC_TASK_MAX (SYD_PROC_MAX + sizeof("/task") + SYD_PID_MAX)
+#define SYD_PROC_STATUS_LINE_MAX sizeof("Tgid:") + SYD_INT_MAX + 16 /* padding */
+/* TODO: Any usage of the constants above in src/ is an indication to move
+ * the respective functions to syd/, mostly some leftover /proc stuff and
+ * they have already been hardened to validate with seccomp request id
+ * so this is not urgent.
+ */
+
+
 size_t syd_strlcat(char *dst, const char *src, size_t siz);
 size_t syd_strlcpy(char *dst, const char *src, size_t siz);
 
@@ -49,6 +67,7 @@ int syd_realpath_at(int fd, const char *pathname, char **buf, int mode);
  */
 int syd_proc_open(pid_t pid);
 int syd_proc_fd_open(pid_t pid);
+int syd_proc_cwd_open(pid_t pid);
 
 /***************************************/
 /* Start of Process ID SAFE interface: *
@@ -60,7 +79,6 @@ int syd_proc_comm(int pfd, char *dst, size_t siz);
 int syd_proc_cmdline(int pfd, char *dst, size_t siz);
 
 int syd_proc_state(int pfd, char *state);
-int syd_proc_cwd_open(int pfd);
 int syd_proc_mem_open(int pfd);
 ssize_t syd_proc_mem_read(int mem_fd, off_t addr, void *buf, size_t count);
 ssize_t syd_proc_mem_write(int mem_fd, off_t addr, const void *buf, size_t len);

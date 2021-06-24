@@ -846,11 +846,13 @@ static inline void proc_invalidate(void)
 {
 	close(sydbox->pidfd);
 	close(sydbox->pfd);
+	close(sydbox->pfd_cwd);
 	close(sydbox->pfd_fd);
 	close(sydbox->pfd_mem);
 
 	sydbox->pidfd = -1;
 	sydbox->pfd = -1;
+	sydbox->pfd_cwd = -1;
 	sydbox->pfd_fd = -1;
 	sydbox->pfd_mem = -1;
 
@@ -880,6 +882,10 @@ static inline bool proc_validate(pid_t pid)
 		goto err;
 	sydbox->pfd_fd = fd;
 
+	if ((fd = syd_proc_cwd_open(pid)))
+		goto err;
+	sydbox->pfd_cwd = fd;
+
 	sydbox->pid_valid = pid;
 	sydbox->p = process_lookup(sydbox->pid_valid);
 	goto validation_done;
@@ -893,7 +899,6 @@ validation_done:
 	 * are dependent on the above
 	 * to be valid.
 	 */
-	sydbox->pfd_cwd = syd_proc_cwd_open(sydbox->pfd);
 	sydbox->pfd_mem = syd_proc_mem_open(sydbox->pfd);
 
 	return true;
