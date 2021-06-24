@@ -36,7 +36,7 @@ static void test_proc_ppid(void)
 		_exit(1);
 	} else {
 		pid_t ppid, cpid = -1;
-		int r, status;
+		int r, pfd, status;
 
 		cpid = waitpid(pid, &status, WUNTRACED);
 		if (cpid < 0) {
@@ -47,7 +47,10 @@ static void test_proc_ppid(void)
 			return;
 		}
 
-		r = syd_proc_ppid(cpid, &ppid);
+		int fd = syd_proc_open(cpid);
+		if (fd < 0)
+			abort(); /* TODO, fail nice */
+		r = syd_proc_ppid(pfd, &ppid);
 		if (r < 0)
 			fail_msg("syd_proc_ppid failed: %d %s", errno, strerror(errno));
 		else if (ppid != ppid_real)
@@ -55,7 +58,6 @@ static void test_proc_ppid(void)
 
 		kill(cpid, SIGKILL);
 	}
-
 }
 
 static void test_proc_parents(void)
@@ -73,7 +75,7 @@ static void test_proc_parents(void)
 		_exit(1);
 	} else {
 		pid_t ppid, tgid, cpid = -1;
-		int r, status;
+		int r, fd, status;
 
 		cpid = waitpid(pid, &status, WUNTRACED);
 		if (cpid < 0) {
@@ -84,7 +86,10 @@ static void test_proc_parents(void)
 			return;
 		}
 
-		r = syd_proc_parents(cpid, &ppid, &tgid);
+		fd = syd_proc_open(cpid);
+		if (fd < 0)
+			abort(); /* TODO, fail nice */
+		r = syd_proc_parents(fd, &ppid, &tgid);
 		if (r < 0)
 			fail_msg("syd_proc_tgid failed: %d %s", errno, strerror(errno));
 		else if (ppid != ppid_real)
@@ -110,7 +115,7 @@ static void test_proc_comm(void)
 		_exit(1);
 	} else {
 		pid_t cpid = -1;
-		int r, status;
+		int r, fd, status;
 		char comm[sizeof(comm_real)];
 		char comm_trunc[sizeof(comm_real) - 2];
 		size_t comm_len = sizeof(comm_real);
@@ -125,6 +130,9 @@ static void test_proc_comm(void)
 			return;
 		}
 
+		fd = syd_proc_open(cpid);
+		if (fd < 0)
+			abort(); /* TODO, fail nice */
 		r = syd_proc_comm(pid, comm, comm_len);
 		if (r < 0)
 			fail_msg("syd_proc_comm failed: %d %s", errno, strerror(errno));
@@ -159,7 +167,7 @@ static void test_proc_cmdline(void)
 		_exit(1);
 	} else {
 		pid_t cpid = -1;
-		int r, status;
+		int r, fd, status;
 		char cmdline_orig[] = "check-pause arg1 arg2 arg3";
 		char cmdline_trunc1_orig[] = "check-pause arg1 arg2 ar";
 		char cmdline_trunc2_orig[] = "check-pause arg1 arg2 a";
@@ -176,7 +184,10 @@ static void test_proc_cmdline(void)
 			return;
 		}
 
-		r = syd_proc_cmdline(pid, cmdline, sizeof(cmdline));
+		fd = syd_proc_open(cpid);
+		if (fd < 0)
+			abort(); /* TODO, fail nice */
+		r = syd_proc_cmdline(fd, cmdline, sizeof(cmdline));
 		if (r < 0)
 			fail_msg("syd_proc_cmdline failed: %d %s", errno, strerror(errno));
 		cmdline[sizeof(cmdline) - 1] = '\0';
@@ -285,8 +296,11 @@ static void test_proc_fd_path(void)
 
 		close(pfd[0]);
 
+		int fd = syd_proc_open(cpid);
+		if (fd < 0)
+			abort(); /* TODO, fail nice */
 		path = NULL;
-		r = syd_proc_fd_path(pid, fdp, &path);
+		r = syd_proc_fd_path(fd, fdp, &path);
 		if (r < 0) {
 			fail_msg("fdp: syd_proc_fd_path failed: errno:%d %s", -r, strerror(-r));
 			goto out;
