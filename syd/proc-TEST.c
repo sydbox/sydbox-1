@@ -273,8 +273,7 @@ static void test_proc_fd_path(void)
 		_exit(1);
 	} else {
 		pid_t cpid = -1;
-		int fdp, fdl, status;
-		int r;
+		int r, fdp, fdl, status;
 		char *path;
 		ssize_t ret;
 
@@ -299,8 +298,11 @@ static void test_proc_fd_path(void)
 		int fd = syd_proc_open(cpid);
 		if (fd < 0) /* TODO: Fail nicely */
 			abort();
-		int pfd_fd = syd_proc_fd_open(fd);
+		int pfd_fd = syd_proc_fd_open(cpid);
 		if (pfd_fd < 0)
+			fail_msg("fd_path: syd_proc_fd_open failed:  errno:%d %s",
+				 -pfd_fd, strerror(-pfd_fd));
+			goto out;
 			abort(); /* TODO, fail nice */
 		path = NULL;
 		r = syd_proc_fd_path(pfd_fd, fdp, &path);
