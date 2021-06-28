@@ -44,6 +44,9 @@ patches-*
 patches
 series
 
+# ctags files
+tags
+
 # cscope files
 cscope.*
 ncscope.*
@@ -102,10 +105,28 @@ Makefile
 /man/sydfmt.html
 /man/sydbox.ent
 
+# Sydbox-1
 /src/sydbox
 /src/sydfmt
 /src/sydbox-dump
 /src/shoebox
+/t/sydtest
+/t/bin-wrappers/sydbox
+/t/bin-wrappers/sydbox-dump
+/t/bin-wrappers/sydfmt
+/t/bin-wrappers/shoebox
+# Sydbox-2
+/src/syd
+/src/syd-dump
+/src/syd-format
+/src/syd-shoebox
+/t/sydtest
+/t/bin-wrappers/syd
+/t/bin-wrappers/syd-dump
+/t/bin-wrappers/syd-format
+/t/bin-wrappers/syd-shoebox
+# Sydbox-2
+
 /src/kingbee.d/*
 /src/syscall_open_ro.lst
 /src/syscall_open_syd.h
@@ -131,11 +152,6 @@ tests/t[0-9][0-9][0-9]*
 /t/test-results
 /t/temporary*
 /t/trash*
-/t/sydtest
-/t/bin-wrappers/sydbox
-/t/bin-wrappers/sydbox-dump
-/t/bin-wrappers/sydfmt
-/t/bin-wrappers/shoebox
 /t/test-bin/*-[0-9]
 /t/test-bin/syd-*
 !/t/test-bin/syd-*.[ch]
