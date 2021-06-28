@@ -847,15 +847,15 @@ static inline bool syd_seccomp_request_is_valid(void)
 
 static inline void proc_invalidate(void)
 {
-	if (sydbox->pidfd != -1)
+	if (sydbox->pidfd > 0)
 		close(sydbox->pidfd);
-	if (sydbox->pfd != -1)
+	if (sydbox->pfd > 0)
 		close(sydbox->pfd);
-	if (sydbox->pfd_cwd != -1)
+	if (sydbox->pfd_cwd > 0)
 		close(sydbox->pfd_cwd);
-	if (sydbox->pfd_fd != -1)
+	if (sydbox->pfd_fd > 0)
 		close(sydbox->pfd_fd);
-	if (sydbox->pfd_mem != -1)
+	if (sydbox->pfd_mem > 0)
 		close(sydbox->pfd_mem);
 
 	sydbox->pidfd = -1;
