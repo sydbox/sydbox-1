@@ -475,7 +475,7 @@ int syd_proc_task_find(int pfd, pid_t pid_task)
 	if (pid_task <= 0)
 		return -EINVAL;
 
-	int pfd_task = openat(pfd, "task", O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
+	int pfd_task = openat(pfd, "task", O_PATH|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
 	if (pfd_task < 0)
 		return -EBADF;
 
