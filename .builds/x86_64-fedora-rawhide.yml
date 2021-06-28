@@ -56,10 +56,10 @@ tasks:
     make -j V=1
 - test: |
     cd sydbox
-    ./src/sydbox --test
+    ./src/syd --test
 - arch: |
     cd sydbox
-    ./src/sydbox -d2 true
+    ./src/syd -d2 true
 - check_static: |
     cd sydbox
     make -j V=1 check && touch .check_ok
