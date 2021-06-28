@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
   "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-  <!ENTITY % sydbox SYSTEM "sydbox.ent">
+  <!ENTITY % sydbox SYSTEM "syd.ent">
   %sydbox;
 ]>
 
@@ -10,7 +10,7 @@
    SPDX-License-Identifier: GPL-2.0-only
 -->
 
-<refentry id="sydbox" lang="en">
+<refentry id="syd" lang="en">
   <refentryinfo>
     <title>SydBox</title>
     <productname>sydbox</productname>
@@ -35,16 +35,16 @@
   </refmeta>
 
   <refnamediv>
-    <refname>sydbox</refname>
+    <refname>syd</refname>
     <refpurpose>seccomp-bpf and seccomp-notify based application sandbox</refpurpose>
   </refnamediv>
 
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
       <itemizedlist>
-        <listitem><para><command>sydbox <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..3</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt" >--chdir directory</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--startas name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
-        <listitem><para><command>sydbox <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="req">noexec</arg></command></para></listitem>
-        <listitem><para><command>sydbox --test</command></para></listitem>
+        <listitem><para><command>syd <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..3</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt" >--chdir directory</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--startas name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
+        <listitem><para><command>syd <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="req">noexec</arg></command></para></listitem>
+        <listitem><para><command>syd --test</command></para></listitem>
       </itemizedlist>
     </cmdsynopsis>
   </refsynopsisdiv>
@@ -121,14 +121,14 @@
       never completely secure. Use it at your own risk.
     </para>
     <para>
-      To be able tu use <command>sydbox</command>, you need a recent Linux kernel with the system
+      To be able to use <command>sydbox</command>, you need a recent Linux kernel with the system
       calls <function>pidfd_getfd</function>, <function>pidfd_send_signal</function>,
       <function>process_vm_readv</function> and <function>process_vm_writev</function>. The
       Secure Computing facility of the Linux kernel should support
       the <constant>SECCOMP_USER_NOTIF_FLAG_CONTINUE</constant> operation.
       is recommended. It is recommended to enable the kernel configuration option
       <constant>CONFIG_CROSS_MEMORY_ATTACH</constant>. Linux-5.11 or later is recommeded.
-      Check with <command>sydbox --test</command> to verify all the requirements are met.
+      Check with <command>syd --test</command> to verify all the requirements are met.
     </para>
   </refsect1>
 
@@ -221,7 +221,7 @@
             <simpara>
             If you just want to inspect the seccomp filters and not execute a process,
             pass the special string <constant>noexec</constant> as the command, e.g:
-            <command>sydbox -e pfc:out noexec</command> when SydBox will exit with
+            <command>syd -e pfc:out noexec</command> when SydBox will exit with
             either the numeric value of the environment variable
             <varname>SYDBOX_NOEXEC</varname> or <constant>0</constant>
             if the variable is not set. The exit happens after preparing all the
@@ -1909,10 +1909,10 @@
       <para>
         Allow all reads, deny read access to <filename>/etc/shadow</filename>:
         <programlisting>
-          $&gt; sydbox -E LC_ALL=POSIX \
-                       -m core/sandbox/read:allow \
-                       -m denylist/read+/etc/shadow \
-                       -- /bin/sh -c 'cat /etc/shadow'
+          $&gt; syd -E LC_ALL=POSIX \
+                    -m core/sandbox/read:allow \
+                    -m denylist/read+/etc/shadow \
+                    -- /bin/sh -c 'cat /etc/shadow'
           sydbox@3141592653: -- Access Violation! --
           sydbox@3141592653: process id=20926 (abi=0 name:`cat')
           sydbox@3141592653: cwd: `/home/alip'
@@ -1938,13 +1938,13 @@
         <simpara>Note the quoting to escape shell expansion.</simpara>
       </note>
       <programlisting>
-        $&gt; sydbox -E LC_ALL=POSIX \
-                     -m core/sandbox/read:deny \
-                     -m core/sandbox/write:deny \
-                     -m 'allowlist/read+/lib64/***' \
-                     -m allowlist/read+/dev/zero \
-                     -m allowlist/read+/dev/full \
-                     -- dd if=/dev/zero of=/dev/full count=1
+        $&gt; syd-E LC_ALL=POSIX \
+                 -m core/sandbox/read:deny \
+                 -m core/sandbox/write:deny \
+                 -m 'allowlist/read+/lib64/***' \
+                 -m allowlist/read+/dev/zero \
+                 -m allowlist/read+/dev/full \
+                 -- dd if=/dev/zero of=/dev/full count=1
         dd: writing to '/dev/full': No space left on device
         1+0 records in
         0+0 records out
@@ -1957,10 +1957,10 @@
         <para>The initial <function>execve</function> is <emphasis>not</emphasis> checked.</para>
       </note>
       <programlisting>
-        $&gt; sydbox -E LC_ALL=POSIX \
-                     -m exec/kill_if_match+/usr/bin/ktorrent \
-                     -m exec/kill_if_match+/usr/bin/rtorrent \
-                     -- /bin/sh -c ktorrent
+        $&gt; syd -E LC_ALL=POSIX \
+                  -m exec/kill_if_match+/usr/bin/ktorrent \
+                  -m exec/kill_if_match+/usr/bin/rtorrent \
+                  -- /bin/sh -c ktorrent
         sydbox@3141592653: callback_exec: kill_if_match pattern=`/usr/bin/ktorrent' matches execve path=`/usr/bin/ktorrent'
         sydbox@3141592653: callback_exec: killing process:3097 [abi:0 cwd:`/home/alip']
       </programlisting>
@@ -1968,7 +1968,7 @@
       <para>
         Execute a process without sandboxing so it will continue execution after sandboxing:
         <programlisting>
-          $&gt; ./sydbox -- sh -c 'stat "$(./sydfmt exec echo hello world)"'
+          $&gt; syd -- sh -c 'stat "$(./syd-format exec echo hello world)"'
           hello world
             File: ‘/dev/sydbox/cmd/exec!echo\037hello\037world’
             Size: 0               Blocks: 0          IO Block: 512    character special file

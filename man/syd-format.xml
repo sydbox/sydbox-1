@@ -7,10 +7,10 @@
    SPDX-License-Identifier: GPL-2.0-only
 -->
 
-<refentry id="sydfmt" lang="en">
+<refentry id="syd-format" lang="en">
   <refentryinfo>
-    <title>sydfmt</title>
-    <productname>sydfmt</productname>
+    <title>syd-format</title>
+    <productname>syd-format</productname>
 
     <authorgroup>
       <author>
@@ -23,22 +23,22 @@
   </refentryinfo>
 
   <refmeta>
-    <refentrytitle>sydfmt</refentrytitle>
+    <refentrytitle>syd-format</refentrytitle>
     <manvolnum>1</manvolnum>
-    <refmiscinfo class="source">sydfmt</refmiscinfo>
-    <refmiscinfo class="manual">sydfmt</refmiscinfo>
+    <refmiscinfo class="source">syd-format</refmiscinfo>
+    <refmiscinfo class="manual">syd-format</refmiscinfo>
   </refmeta>
 
   <refnamediv>
-    <refname>sydfmt</refname>
+    <refname>syd-format</refname>
     <refpurpose>sydbox magic command formatter</refpurpose>
   </refnamediv>
 
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
       <itemizedlist>
-        <listitem><command>sydfmt <arg choice="opt">-hv</arg></command></listitem>
-        <listitem><command>sydfmt <arg choice="req">exec</arg><arg choice="opt">--</arg><arg choice="req">program</arg><arg choice="opt" rep="repeat">args</arg></command></listitem>
+        <listitem><command>syd-format <arg choice="opt">-hv</arg></command></listitem>
+        <listitem><command>syd-format <arg choice="req">exec</arg><arg choice="opt">--</arg><arg choice="req">program</arg><arg choice="opt" rep="repeat">args</arg></command></listitem>
       </itemizedlist>
     </cmdsynopsis>
   </refsynopsisdiv>
@@ -47,7 +47,7 @@
     <title>Description</title>
 
     <para>
-      <command>sydfmt</command> formats special magic commands for
+      <command>syd-format</command> formats special magic commands for
       <citerefentry><refentrytitle>sydbox</refentrytitle><manvolnum>1</manvolnum></citerefentry>.
     </para>
   </refsect1>

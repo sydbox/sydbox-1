@@ -1,14 +1,14 @@
 AM_MAKEFLAGS= --no-print-directory
 CLEANFILES= \
-	    sydbox.1 \
-	    sydfmt.1 \
-	    sydbox.html \
-	    sydfmt.html \
-	    sydbox.ent
+	    syd.1 \
+	    syd-format.1 \
+	    syd.html \
+	    syd-format.html \
+	    syd.ent
 EXTRA_DIST= \
-	    sydbox.xml \
-	    sydfmt.xml \
-	    sydbox.ent.in
+	    syd.xml \
+	    syd-format.xml \
+	    syd.ent.in
 
 if HAVE_XSLTPROC
 XSLTPROC_FLAGS= \
@@ -17,7 +17,7 @@ XSLTPROC_FLAGS= \
 		--param funcsynopsis.style "'ansi'" \
 		--path "$(top_builddir)/man"
 
-BUILT_SOURCES= sydbox.ent
+BUILT_SOURCES= syd.ent
 %.ent: %.ent.in
 	$(AM_V_GEN)
 	$(AM_V_at)$(SED) \
@@ -27,31 +27,31 @@ BUILT_SOURCES= sydbox.ent
 		-e "s|:GITHEAD:|$(GITHEAD)|" \
 		$< > $@
 
-%.1: %.xml sydbox.ent
+%.1: %.xml syd.ent
 	$(AM_V_GEN)
 	$(AM_V_at)$(XSLTPROC) -o $@ $(XSLTPROC_FLAGS) http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 
-%.html: %.xml sydbox.ent
+%.html: %.xml syd.ent
 	$(AM_V_GEN)
 	$(AM_V_at)$(XSLTPROC) -o $@ $(XSLTPROC_FLAGS) http://docbook.sourceforge.net/release/xsl/current/xhtml-1_1/docbook.xsl $<
 
 dist_man_MANS= \
-	       sydbox.1 \
-	       sydfmt.1
+	       syd.1 \
+	       syd-format.1
 dist_html_DATA= \
-		sydbox.html \
-		sydfmt.html
+		syd.html \
+		syd-format.html
 
-upload: sydbox.html sydfmt.html
-	rsync --progress -ave ssh sydbox.html dev.exherbo.org:public_html/sydbox/
-	rsync --progress -ave ssh sydbox.html dev.exherbo.org:www
-	rsync --progress -ave ssh sydfmt.html dev.exherbo.org:public_html/sydbox/
+upload: syd.html syd-format.html
+	rsync --progress -ave ssh syd.html dev.exherbo.org:public_html/sydbox/sydbox.html
+	rsync --progress -ave ssh syd.html dev.exherbo.org:www/sydbox.html
+	rsync --progress -ave ssh syd-format.html dev.exherbo.org:public_html/sydbox/
 .PHONY: upload
 else
-sydbox.1:
+syd.1:
 	@echo "You don't have xsltproc installed!"
 	exit 1
-sydbox.html:
+syd.html:
 	@echo "You don't have xsltproc installed!"
 	exit 1
 upload-html:

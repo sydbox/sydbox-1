@@ -145,8 +145,8 @@ syd_SOURCES= \
 		 syscall.c \
 		 config.c \
 		 sydbox.c
-sydfmt_SOURCES= \
-		sydfmt.c
+syd_format_SOURCES= \
+		syd-format.c
 
 # Imported from rsync!
 noinst_HEADERS+= \
@@ -205,7 +205,7 @@ syddir=$(libexecdir)/$(PACKAGE)/dump
 syd_SCRIPTS= syd-shoebox
 syd_PROGRAMS= syd-dump
 
-syd-shoebox: shoebox.in
+syd-shoebox: syd-shoebox.in
 	$(AM_V_GEN)
 	$(AM_V_at)$(SED) \
 		-e "s:@SHOEBOX_VERSION@:$(VERSION)$(GITVERSION):g" \
