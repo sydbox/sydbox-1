@@ -142,6 +142,28 @@ denylist/read+/home/*/.netrc*
 denylist/read+/home/*/.ssh*
 denylist/read+/home/*/.gnupg*
 denylist/read+/home/*/.password-store/***
+denylist/write+/home/*/.*login*
+denylist/write+/home/*/.netrc*
+# This includes sh, bash, zsh and ssh.
+denylist/write+/home/*/.*sh*
+denylist/write+/home/*/.gnupg*
+denylist/write+/home/*/.password-store/***
+
+# Deny access to config and cache
+denylist/read+/home/*/.config*/***
+denylist/write+/home/*/.config*/***
+denylist/read+/home/*/.cache*/***
+denylist/write+/home/*/.cache*/***
+
+# Common mua, editor, browser directories.
+denylist/read+/home/*/.emacs*/***
+denylist/write+/home/*/.emacs*/***
+denylist/read+/home/*/.mutt*/***
+denylist/write+/home/*/.mutt*/***
+denylist/read+/home/*/.mozilla*/***
+denylist/write+/home/*/.mozilla*/***
+denylist/read+/home/*/.vim*/***
+denylist/write+/home/*/.vim*/***
 
 #
 # Allow access to standard paths
