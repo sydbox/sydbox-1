@@ -27,6 +27,7 @@
 #define J_BOOL(b)	(b) ? "true" : "false"
 
 unsigned long long dump_inspect = INSPECT_DEFAULT;
+int fd;
 static FILE *fp;
 static char pathdump[PATH_MAX];
 static int nodump = -1;
@@ -264,7 +265,7 @@ static void dump_process(pid_t pid)
 
 static int dump_init(void)
 {
-	int fd = -1;
+	fd = -1;
 	const char *pathname;
 
 	if (!nodump)
@@ -310,7 +311,7 @@ void dump(enum dump what, ...)
 	va_list ap;
 	time_t now;
 
-	if (!inspecting())
+	if (what != DUMP_OOPS && !inspecting())
 		return;
 
 	if (dump_init() != 0)
@@ -335,10 +336,9 @@ void dump(enum dump what, ...)
 		dump_cycle();
 		va_end(ap);
 		return;
-
 	}
 
-	if (!inspected_i(what)) {
+	if (what != DUMP_OOPS && !inspected_i(what)) {
 		va_end(ap);
 		return;
 	}
@@ -617,6 +617,7 @@ void dump(enum dump what, ...)
 		dump_errno(err_no);
 		fputs("}}", fp);
 	} else if (what == DUMP_OOPS) {
+		bool verbose = !!va_arg(ap, int);
 		pid_t pid = va_arg(ap, pid_t);
 		pid_t tgid = va_arg(ap, pid_t);
 		pid_t ppid = va_arg(ap, pid_t);
@@ -640,26 +641,34 @@ void dump(enum dump what, ...)
 		char *j_comm = json_escape_str(&b_comm, comm);
 		char *j_cmdline = json_escape_str(&b_cmdline, cmdline);
 
-		fprintf(fp, "{"
-			J(id)"%llu,"
-			J(ts)"%llu,"
-			J(pid)"%d,"
-			J(event)"{\"id\":%u,\"name\":\"☮☮ps\"},"
-			J(sys)"\"%s\","
-			J(syd)"\"%s\","
-			J(comm)"\"%s\","
-			J(cmd)"\"%s\","
-			J(cwd)"\"%s\","
-			J(ppid)"%d,"
-			J(tgid)"%d,"
-			J(proc)"{"
-			J(ppid)"%d,"
-			J(tgid)"%d,"
-			J(cwd)"\"%s\"}}",
-			id++, (unsigned long long)now, pid, what,
-			j_sys, j_expr, j_comm, j_cmdline, j_cwd,
-			ppid, tgid,
-			proc_ppid, proc_tgid, j_proc_cwd);
+		if (inspected_i(what) || verbose) {
+			id++;
+			bool colour = (verbose && (fd <= 0 || fd == STDERR_FILENO));
+			if (colour)
+				fputs(ANSI_DARK_MAGENTA, fp);
+			fprintf(fp, "{"
+				J(id)"%llu,"
+				J(ts)"%llu,"
+				J(pid)"%d,"
+				J(event)"{\"id\":%u,\"name\":\"☮☮ps\"},"
+				J(sys)"\"%s\","
+				J(syd)"\"%s\","
+				J(comm)"\"%s\","
+				J(cmd)"\"%s\","
+				J(cwd)"\"%s\","
+				J(ppid)"%d,"
+				J(tgid)"%d,"
+				J(proc)"{"
+				J(ppid)"%d,"
+				J(tgid)"%d,"
+				J(cwd)"\"%s\"}}",
+				id, (unsigned long long)now, pid, what,
+				j_sys, j_expr, j_comm, j_cmdline, j_cwd,
+				ppid, tgid,
+				proc_ppid, proc_tgid, j_proc_cwd);
+			if (colour)
+				fputs(ANSI_NORMAL, fp);
+		}
 
 		if (j_sys && j_sys[0] && b_sys)
 			free(b_sys);

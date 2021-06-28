@@ -123,19 +123,8 @@ static void report(syd_process_t *current, const char *fmt, va_list ap)
 	syd_proc_parents(sydbox->pfd, &ppid, &tgid);
 	syd_proc_cwd(sydbox->pfd_cwd, false, &cwd);
 	syd_proc_cmdline(sydbox->pfd, cmdline, sizeof(cmdline));
-	if (isatty(STDERR_FILENO)) {
-		say("8< -- Access Violation! --");
-		vsay(stderr, fmt, ap);
-		fputc('\n', stderr);
-		say("proc: %s[%u] (parent:%u tgid:%u ppid:%u)",
-		    comm[0] == '\0' ? "?" : comm,
-		    current->pid, current->ppid, tgid, ppid);
-		say("cwd/syd: `%s'", P_CWD(current));
-		say("cwd/pid: `%s'", cwd ? cwd : "?");
-		say("cmdline: `%s'", cmdline[0] == '\0' ? "?" : cmdline);
-		say(">8 --");
-	}
 	dump(DUMP_OOPS,
+	     isatty(STDERR_FILENO),
 	     current->pid, current->tgid, current->ppid,
 	     tgid, ppid,
 	     current->sysname,
