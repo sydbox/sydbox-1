@@ -1173,10 +1173,14 @@ static inline bool process_is_alive(pid_t pid)
 
 static inline bool process_is_zombie(pid_t pid)
 {
-	int r;
+	int r, fd;
 	char state;
 
-	r = syd_proc_state(pid, &state);
+	fd = syd_proc_open(pid);
+	if (fd < 0)
+		return true;
+	r = syd_proc_state(fd, &state);
+	close(fd);
 	switch (r) {
 	case 0:
 		return state == 'Z';
