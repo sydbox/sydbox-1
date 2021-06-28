@@ -148,11 +148,11 @@ static void dump_format(const char *argv0, const char *pathname,
 		j_argv0, j_path, j_runas,
 		sydbox->hash, j_arch);
 
-	if (j_argv0 && j_argv0[0] && b_argv0)
+	if (b_argv0 && j_argv0[0])
 		free(b_argv0);
-	if (j_runas && j_runas[0] && b_runas)
+	if (b_runas && j_runas[0])
 		free(b_runas);
-	if (j_path && j_path[0] && b_path)
+	if (b_path && j_path[0])
 		free(b_path);
 }
 
@@ -345,7 +345,73 @@ void dump(enum dump what, ...)
 
 	time(&now);
 
-	if (what == DUMP_ASSERT) {
+	if (what == DUMP_OOPS) {
+		bool verbose = !!va_arg(ap, int);
+		pid_t pid = va_arg(ap, pid_t);
+		pid_t tgid = va_arg(ap, pid_t);
+		pid_t ppid = va_arg(ap, pid_t);
+		pid_t proc_tgid = va_arg(ap, pid_t);
+		pid_t proc_ppid = va_arg(ap, pid_t);
+		const char *sys = va_arg(ap, const char *);
+		const char *expr = va_arg(ap, const char *);
+		const char *cwd = va_arg(ap, const char *);
+		const char *proc_cwd = va_arg(ap, const char *);
+		const char *comm = va_arg(ap, const char *);
+		const char *cmdline = va_arg(ap, const char *);
+
+		char *b_sys = NULL;
+		char *b_expr = NULL, *b_cwd = NULL, *b_proc_cwd = NULL;
+		char *b_comm = NULL, *b_cmdline = NULL;
+
+		char *j_sys = json_escape_str(&b_sys, sys);
+		char *j_expr = json_escape_str(&b_expr, expr);
+		char *j_cwd = json_escape_str(&b_cwd, cwd);
+		char *j_proc_cwd = json_escape_str(&b_proc_cwd, proc_cwd);
+		char *j_comm = json_escape_str(&b_comm, comm);
+		char *j_cmdline = json_escape_str(&b_cmdline, cmdline);
+
+		if (inspected_i(what) || verbose) {
+			id++;
+			bool colour = (verbose && (fd <= 0 || fd == STDERR_FILENO));
+			if (colour)
+				fputs(ANSI_DARK_MAGENTA, fp);
+			fprintf(fp, "{"
+				J(id)"%llu,"
+				J(ts)"%llu,"
+				J(pid)"%d,"
+				J(event)"{\"id\":%u,\"name\":\"☮☮ps\"},"
+				J(sys)"\"%s\","
+				J(syd)"\"%s\","
+				J(comm)"\"%s\","
+				J(cmd)"\"%s\","
+				J(cwd)"\"%s\","
+				J(ppid)"%d,"
+				J(tgid)"%d,"
+				J(proc)"{"
+				J(ppid)"%d,"
+				J(tgid)"%d,"
+				J(cwd)"\"%s\"}}",
+				id, (unsigned long long)now, pid, what,
+				j_sys, j_expr, j_comm, j_cmdline, j_cwd,
+				ppid, tgid,
+				proc_ppid, proc_tgid, j_proc_cwd);
+			if (colour)
+				fputs(ANSI_NORMAL, fp);
+		}
+
+		if (b_sys && j_sys[0])
+			free(b_sys);
+		if (b_expr && j_expr[0])
+			free(b_expr);
+		if (b_cwd && j_cwd[0])
+			free(b_cwd);
+		if (b_proc_cwd && j_proc_cwd[0])
+			free(b_proc_cwd);
+		if (b_comm && j_comm[0])
+			free(b_comm);
+		if (b_cmdline && j_cmdline[0])
+			free(b_cmdline);
+	} else if (what == DUMP_ASSERT) {
 		const char *expr = va_arg(ap, const char *);
 		const char *file = va_arg(ap, const char *);
 		const char *line = va_arg(ap, const char *);
@@ -436,7 +502,7 @@ void dump(enum dump what, ...)
 			id++, (unsigned long long)now, pid,
 			what, "startup", j_cmdline);
 
-		if (j_cmdline && j_cmdline[0] && b_cmdline) free(b_cmdline);
+		if (b_cmdline && j_cmdline[0]) free(b_cmdline);
 	} else if (what == DUMP_EXIT) {
 		int code = va_arg(ap, int);
 		size_t proc_total = va_arg(ap, size_t);
@@ -492,7 +558,7 @@ void dump(enum dump what, ...)
 			j_repr[5]);
 
 		for (uint8_t i = 0; i < 6; i++)
-			if (j_repr[i] && j_repr[i][0] && b_repr[i])
+			if (b_repr[i] && j_repr[i][0])
 				free(b_repr[i]);
 	} else if (what == DUMP_CHDIR) {
 		pid_t pid = va_arg(ap, pid_t);
@@ -525,8 +591,8 @@ void dump(enum dump what, ...)
 			dump_null();
 		fprintf(fp, "}}");
 
-		if (j_newcwd && j_newcwd[0] && b_newcwd) free(b_newcwd);
-		if (j_oldcwd && j_oldcwd[0] && b_oldcwd) free(b_oldcwd);
+		if (b_newcwd && j_newcwd[0]) free(b_newcwd);
+		if (b_oldcwd && j_oldcwd[0]) free(b_oldcwd);
 	} else if (what == DUMP_EXEC) {
 		pid_t execve_pid = va_arg(ap, pid_t);
 		const char *prog = va_arg(ap, const char *);
@@ -543,7 +609,7 @@ void dump(enum dump what, ...)
 			id++, (unsigned long long)now, execve_pid,
 			what, j_prog);
 
-		if (j_prog && j_prog[0] && b_prog) free(b_prog);
+		if (b_prog && j_prog[0]) free(b_prog);
 	} else if (what == DUMP_EXEC_MT) {
 		pid_t execve_thread, leader;
 
@@ -571,7 +637,7 @@ void dump(enum dump what, ...)
 			dump_null();
 		fputc('}', fp);
 
-		if (j_prog && j_prog[0] && b_prog) free(b_prog);
+		if (b_prog && j_prog[0]) free(b_prog);
 	} else if (what == DUMP_ALLOC) {
 		size_t size = va_arg(ap, size_t);
 		const char *func = va_arg(ap, const char *);
@@ -616,72 +682,6 @@ void dump(enum dump what, ...)
 		fputs(J(error), fp);
 		dump_errno(err_no);
 		fputs("}}", fp);
-	} else if (what == DUMP_OOPS) {
-		bool verbose = !!va_arg(ap, int);
-		pid_t pid = va_arg(ap, pid_t);
-		pid_t tgid = va_arg(ap, pid_t);
-		pid_t ppid = va_arg(ap, pid_t);
-		pid_t proc_tgid = va_arg(ap, pid_t);
-		pid_t proc_ppid = va_arg(ap, pid_t);
-		const char *sys = va_arg(ap, const char *);
-		const char *expr = va_arg(ap, const char *);
-		const char *cwd = va_arg(ap, const char *);
-		const char *proc_cwd = va_arg(ap, const char *);
-		const char *comm = va_arg(ap, const char *);
-		const char *cmdline = va_arg(ap, const char *);
-
-		char *b_sys = NULL;
-		char *b_expr = NULL, *b_cwd = NULL, *b_proc_cwd = NULL;
-		char *b_comm = NULL, *b_cmdline = NULL;
-
-		char *j_sys = json_escape_str(&b_sys, sys);
-		char *j_expr = json_escape_str(&b_expr, expr);
-		char *j_cwd = json_escape_str(&b_cwd, cwd);
-		char *j_proc_cwd = json_escape_str(&b_proc_cwd, proc_cwd);
-		char *j_comm = json_escape_str(&b_comm, comm);
-		char *j_cmdline = json_escape_str(&b_cmdline, cmdline);
-
-		if (inspected_i(what) || verbose) {
-			id++;
-			bool colour = (verbose && (fd <= 0 || fd == STDERR_FILENO));
-			if (colour)
-				fputs(ANSI_DARK_MAGENTA, fp);
-			fprintf(fp, "{"
-				J(id)"%llu,"
-				J(ts)"%llu,"
-				J(pid)"%d,"
-				J(event)"{\"id\":%u,\"name\":\"☮☮ps\"},"
-				J(sys)"\"%s\","
-				J(syd)"\"%s\","
-				J(comm)"\"%s\","
-				J(cmd)"\"%s\","
-				J(cwd)"\"%s\","
-				J(ppid)"%d,"
-				J(tgid)"%d,"
-				J(proc)"{"
-				J(ppid)"%d,"
-				J(tgid)"%d,"
-				J(cwd)"\"%s\"}}",
-				id, (unsigned long long)now, pid, what,
-				j_sys, j_expr, j_comm, j_cmdline, j_cwd,
-				ppid, tgid,
-				proc_ppid, proc_tgid, j_proc_cwd);
-			if (colour)
-				fputs(ANSI_NORMAL, fp);
-		}
-
-		if (j_sys && j_sys[0] && b_sys)
-			free(b_sys);
-		if (j_expr && j_expr[0] && b_expr)
-			free(b_expr);
-		if (j_cwd && j_cwd[0] && b_cwd)
-			free(b_cwd);
-		if (j_proc_cwd && j_proc_cwd[0] && b_proc_cwd)
-			free(b_proc_cwd);
-		if (j_comm && j_comm[0] && b_comm)
-			free(b_comm);
-		if (j_cmdline && j_cmdline[0] && b_cmdline)
-			free(b_cmdline);
 	} else {
 		abort();
 	}

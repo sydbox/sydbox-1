@@ -829,8 +829,6 @@ static unsigned get_os_release(void)
 
 static void dump_one_process(syd_process_t *current, bool verbose)
 {
-	int r;
-	char comm[32];
 	const char *CG, *CB, *CN, *CI, *CE; /* good, bad, important, normal end */
 	struct proc_statinfo info;
 
@@ -852,6 +850,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	}
 
 	fprintf(stderr, "%s-- Information on Process ID: %u%s\n", CG, pid, CE);
+	fprintf(stderr, "\t%sName: `%s'%s\n", CN, current->comm, CE);
 	if (current->pid == sydbox->execve_pid)
 		fprintf(stderr, "\t%sParent ID: SYDBOX%s\n", CN, CE);
 	else if (current->ppid > 0)
@@ -859,14 +858,11 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	else
 		fprintf(stderr, "\t%sParent ID: ? (Orphan)%s\n", CN, CE);
 	fprintf(stderr, "\t%sThread Group ID: %u%s\n", CN, tgid > 0 ? tgid : 0, CE);
-	if (syd_proc_comm(sydbox->pfd, comm, sizeof(comm)) == 0)
-		fprintf(stderr, "\t%sComm: `%s'%s\n", CN, comm, CE);
-	else
-		fprintf(stderr, "\t%sComm: `?'%s\n", CN, CE);
 	if (current->shm.clone_fs)
 		fprintf(stderr, "\t%sCwd: `%s'%s\n", CN, P_CWD(current), CE);
 	fprintf(stderr, "\t%sSyscall: {no:%lu arch:%d name:%s}%s\n", CN,
 			current->sysnum, arch, current->sysname, CE);
+#if 0
 	fprintf(stderr, "\t%sFlags: ", CN);
 	r = 0;
 	if (current->flags & SYD_STARTUP) {
@@ -877,6 +873,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 		fprintf(stderr, "%sIN_CLONE", (r == 1) ? "|" : "");
 		/*r = 1; */
 	}
+#endif
 
 	if (!verbose)
 		return;
@@ -1205,7 +1202,7 @@ static inline bool process_is_zombie(pid_t pid)
 
 	fd = syd_proc_open(pid);
 	if (fd < 0)
-		return true;
+		return true; /* dead >= zombie */
 	r = syd_proc_state(fd, &state);
 	close(fd);
 	switch (r) {
@@ -1452,6 +1449,7 @@ notify_receive:
 					current = process_lookup(pid);
 					switch_execve_leader(execve_pid,
 							     current);
+					sydbox_syscall_allow();
 					goto notify_respond;
 				}
 				P_EXECVE_PID(current) = 0;
@@ -2115,7 +2113,10 @@ int main(int argc, char **argv)
 		}
 	}
 out:
-	dump(DUMP_EXIT, exit_code/* sydbox->violation_exit_code */);
+	dump(DUMP_EXIT,
+	     exit_code/* sydbox->violation_exit_code */,
+	     process_count(),
+	     process_count_alive());
 	dump(DUMP_ALLOC, 0, NULL);
 	dump(DUMP_CLOSE);
 	cleanup_for_sydbox();

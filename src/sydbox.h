@@ -475,6 +475,10 @@ struct syd_process {
 
 	/* Resolved path argument for specially treated system calls like execve() */
 	char *abspath;
+
+	/* Process name as stated in /proc/pid/comm */
+#define SYDBOX_PROC_MAX 32
+	char comm[SYDBOX_PROC_MAX];
 };
 typedef struct syd_process syd_process_t;
 
@@ -915,6 +919,11 @@ static inline bool proc_validate(pid_t pid)
 
 	sydbox->pid_valid = pid;
 	sydbox->p = process_lookup(sydbox->pid_valid);
+
+	sydbox->p->comm[0] = '?';
+	sydbox->p->comm[1] = '\0';
+	syd_proc_comm(sydbox->pfd, sydbox->p->comm, sizeof(sydbox->p->comm));
+
 	goto validation_done;
 err:
 	proc_invalidate();
