@@ -242,6 +242,7 @@ int filter_connect(uint32_t arch)
 
 int sys_connect(syd_process_t *current)
 {
+	current->subcall = 0;
 	return sys_connect_call(current, false, SCMP_SYS(connect),
 				1, ECONNREFUSED);
 }
@@ -253,6 +254,7 @@ int filter_sendto(uint32_t arch)
 
 int sys_sendto(syd_process_t *current)
 {
+	current->subcall = 0;
 	return sys_connect_call(current, false, SCMP_SYS(sendto), 4, ENOTCONN);
 }
 
@@ -263,6 +265,7 @@ int filter_recvmsg(uint32_t arch)
 
 int sys_recvmsg(syd_process_t *current)
 {
+	current->subcall = 0;
 	return sys_connect_call(current, true, SCMP_SYS(recvmsg),
 				1, ECONNREFUSED);
 }
@@ -274,6 +277,7 @@ int filter_sendmsg(uint32_t arch)
 
 int sys_sendmsg(syd_process_t *current)
 {
+	current->subcall = 0;
 	return sys_connect_call(current, true, SCMP_SYS(sendmsg), 1, ENOTCONN);
 }
 
