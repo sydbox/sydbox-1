@@ -1209,7 +1209,7 @@ static inline bool process_is_zombie(pid_t pid)
 	case 0:
 		return state == 'Z';
 	default:
-		return true;
+		return true; /* error accessing /proc, assume dead. */
 	}
 }
 
