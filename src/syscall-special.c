@@ -185,9 +185,11 @@ static int do_execve(syd_process_t *current, bool at_func)
 	 * successful, we'll check for kill_if_match and resume_if_match lists
 	 * and kill or resume the process as necessary.
 	 */
-	if (current->abspath)
-		free(current->abspath);
-	current->abspath = abspath;
+	if (abspath) {
+		if (current->abspath)
+			free(current->abspath);
+		current->abspath = abspath;
+	}
 
 	if (current->repr[0]) {
 		free(current->repr[0]);
