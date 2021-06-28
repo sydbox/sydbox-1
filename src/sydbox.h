@@ -844,11 +844,16 @@ static inline bool syd_seccomp_request_is_valid(void)
 
 static inline void proc_invalidate(void)
 {
-	close(sydbox->pidfd);
-	close(sydbox->pfd);
-	close(sydbox->pfd_cwd);
-	close(sydbox->pfd_fd);
-	close(sydbox->pfd_mem);
+	if (sydbox->pidfd != -1)
+		close(sydbox->pidfd);
+	if (sydbox->pfd != -1)
+		close(sydbox->pfd);
+	if (sydbox->pfd_cwd != -1)
+		close(sydbox->pfd_cwd);
+	if (sydbox->pfd_fd != -1)
+		close(sydbox->pfd_fd);
+	if (sydbox->pfd_mem != -1)
+		close(sydbox->pfd_mem);
 
 	sydbox->pidfd = -1;
 	sydbox->pfd = -1;
@@ -865,8 +870,6 @@ static inline bool proc_validate(pid_t pid)
 	proc_invalidate();
 	if (!syd_seccomp_request_is_valid())
 		goto err;
-	if (!sydbox->p->valid)
-		goto err;
 
 	int fd;
 
@@ -882,7 +885,7 @@ static inline bool proc_validate(pid_t pid)
 		goto err;
 	sydbox->pfd_fd = fd;
 
-	if ((fd = syd_proc_cwd_open(pid)))
+	if ((fd = syd_proc_cwd_open(pid)) < 0)
 		goto err;
 	sydbox->pfd_cwd = fd;
 
@@ -904,6 +907,16 @@ validation_done:
 	return true;
 }
 
+#define proc_valid(p) ((p) == sydbox->p)
+#define proc_validate_or_deny(_p,  label) do {\
+	if (!proc_validate(_p->pid)) { \
+		sydbox->response->error = -ESRCH; \
+		sydbox->response->val = 0; \
+		sydbox->response->flags = 0; \
+		goto label; \
+	} (_p) = sydbox->p; \
+} while(0)
+
 static inline int reopen_proc_mem(pid_t pid)
 {
 	if (sydbox->pfd_mem >= 0) {
@@ -916,32 +929,6 @@ static inline int reopen_proc_mem(pid_t pid)
 	return 0;
 }
 
-static inline void priv_process_invalidate(syd_process_t *p)
-{
-	if (!sydbox->p)
-		return;
-	sydbox->p->valid = false;
-}
-
-static inline bool process_validate(syd_process_t *p)
-{
-	priv_process_invalidate(p);
-	if (!p)
-		return false;
-	if (p->pid != sydbox->pid_valid)
-		return false;
-	sydbox->p = p;
-	return true;
-}
-#define process_valid(p) ((p) == sydbox->p)
-#define process_validate_or_deny(_p,  label) do {\
-	if (!process_validate(_p)) { \
-		sydbox->response->error = -ESRCH; \
-		sydbox->response->val = 0; \
-		sydbox->response->flags = 0; \
-		goto label; \
-	} (_p) = sydbox->p; \
-} while(0)
 /*************************/
 
 /* Global functions */

@@ -1243,6 +1243,7 @@ static void init_early(void)
 
 	os_release = get_os_release();
 	sydbox = xcalloc(1, sizeof(sydbox_t));
+	proc_invalidate();
 	sydbox->arch[0] = UINT32_MAX;
 	sydbox->seccomp_fd = -1;
 	sydbox->notify_fd = -1;
@@ -1438,7 +1439,7 @@ notify_receive:
 		 * if it succeeds proceed with sandboxing,
 		 * if it fails deny the system call with ESRCH.
 		 */
-		process_validate_or_deny(current, notify_respond);
+		proc_validate_or_deny(current, notify_respond);
 		current->sysnum = sydbox->request->data.nr;
 		current->sysname = name;
 		for (unsigned short idx = 0; idx < 6; idx++)

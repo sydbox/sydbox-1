@@ -61,9 +61,10 @@ typedef struct msghdr struct_msghdr;
 # define __NR_process_vm_writev 311
 #endif
 
-#define SYD_RETURN_IF_DEAD(p) do { \
-	say("TODO: implement a secure version of SYD_RETURN_IF_DEAD"); \
-	abort(); \
+#define SYD_RETURN_IF_DEAD(_p) do { \
+	if ((sydbox->pidfd == -1)) { \
+		return -ESRCH; \
+	} \
 } while (0)
 
 static ssize_t pink_process_vm_readv(pid_t pid,
