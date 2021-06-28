@@ -28,7 +28,7 @@ TIMEOUT_DURATION=60
 
 # Number of parallel processes for exit test
 EXIT_NPROC=16
-if type -P nproc; then
+if type -P nproc >/dev/null 2>&1; then
 	EXIT_NPROC=$(nproc)
 fi
 
