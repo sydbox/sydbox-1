@@ -852,7 +852,16 @@ int test_proc_mem(bool report)
 		addr &= (1ul << 8 * wsize) - 1;
 #endif
 
-	int memfd = syd_proc_mem_open(pid);
+	int pfd = syd_proc_open(pid);
+	if (pfd < 0) {
+		int save_errno = errno;
+		say_errno("syd_proc_open");
+		if (report)
+			say("warning: Your system does not support /proc/pid/mem "
+			    "interface.");
+		return -save_errno;
+	}
+	int memfd = syd_proc_mem_open(pfd);
 	if (memfd < 0) {
 		int save_errno = errno;
 		say_errno("syd_proc_mem_open");
@@ -861,13 +870,14 @@ int test_proc_mem(bool report)
 			    "interface.");
 		return -save_errno;
 	}
+#define close_fds() do { close(pfd); close(memfd); } while (0)
 	if (syd_proc_mem_read(memfd, addr, dest, len) < 0) {
 		int save_errno = errno;
 		say_errno("syd_proc_mem_read");
 		if (report)
 			say("warning: Your system does not support /proc/pid/mem "
 			    "interface.");
-		close(memfd);
+		close_fds();
 		return -save_errno;
 	}
 	dest[len-1] = '\0';
@@ -875,7 +885,7 @@ int test_proc_mem(bool report)
 		if (report)
 			say("warning: Your system does not support /proc/pid/mem "
 			    "interface: \"%s\"", dest);
-		close(memfd);
+		close_fds();
 		return -ENOSYS;
 	}
 
@@ -890,8 +900,9 @@ int test_proc_mem(bool report)
 	if (report)
 		say("[*] /proc/pid/mem interface is functional.");
 
-	close(memfd);
+	close_fds();
 	return 0;
+#undef close_fds
 }
 
 int test_pidfd(bool report)
