@@ -103,8 +103,3 @@ tasks:
     cat {syd,t}/test-suite.log || true
     test -e .check_ok
     tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cjpf ../sydbox-test.tar.bz2 config.log {syd,t}/test-suite.log t/test-results t/trash*
-- clean: |
-    cd sydbox
-    make clean
-    rm -f .check_ok
-    rm -fr t/test-suite.log t/test-results t/trash*
