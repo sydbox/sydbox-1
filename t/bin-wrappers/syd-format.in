@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if test -z "$SYDBOX_TEST_INSTALLED"
+then
+	exec "@TOP_BUILDDIR@"/src/syd-format "$@"
+elif test -d "$TEST_SYDBOX_BINDIR"
+then
+	exec "$TEST_SYDBOX_BINDIR"/syd-format "$@"
+else
+	exec "@BINDIR@"/syd-format "$@"
+fi

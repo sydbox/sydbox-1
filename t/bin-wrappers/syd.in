@@ -1,0 +1,101 @@
+#!/bin/sh -x
+# vim: noet sw=8 sts=8 :
+
+SYDBOX_MEMORY_ACCESS=${SYDBOX_MEMORY_ACCESS:-0}
+if test -n "$SHOEBOX_PFC"; then
+	opt_export=:${SHOEBOX_PFC}
+else
+	opt_export=
+fi
+
+case "$SYDBOX_VALGRIND_MODE" in
+memcheck-fast)
+	;;
+memcheck)
+	VALGRIND_VERSION=$(valgrind --version)
+	VALGRIND_MAJOR=$(expr "$VALGRIND_VERSION" : '[^0-9]*\([0-9]*\)')
+	VALGRIND_MINOR=$(expr "$VALGRIND_VERSION" : '[^0-9]*[0-9]*\.\([0-9]*\)')
+	test 3 -gt "$VALGRIND_MAJOR" ||
+	test 3 -eq "$VALGRIND_MAJOR" -a 4 -gt "$VALGRIND_MINOR" ||
+	TOOL_OPTIONS="$TOOL_OPTIONS
+		--leak-check=full
+		--show-leak-kinds=all
+		--show-reachable=yes
+		--trace-children=no
+		--track-origins=yes
+		--track-fds=yes
+		--error-limit=no
+		--suppressions=$SYDBOX_VALGRIND/default.supp
+		--gen-suppressions=all
+	"
+	;;
+*)
+	TOOL_OPTIONS="--tool=$SYDBOX_VALGRIND_MODE"
+esac
+
+eexec() {
+	if test -n "$SYDBOX_VALGRIND_ENABLED"; then
+		if test -z "$SYDBOX_TEST_INSTALLED"; then
+			exec @BUILD_EXEC_PREFIX@ valgrind -q \
+				--error-exitcode=126 \
+				--time-stamp=yes \
+				$TOOL_OPTIONS \
+				--log-fd=4 \
+				--input-fd=4 \
+				$SYDBOX_VALGRIND_OPTIONS \
+				"$@"
+		else
+			exec valgrind -q \
+				--error-exitcode=126 \
+				--time-stamp=yes \
+				$TOOL_OPTIONS \
+				--log-fd=4 \
+				--input-fd=4 \
+				$SYDBOX_VALGRIND_OPTIONS \
+				"$@"
+		fi
+	elif test -n "$SYDBOX_STRACE_ENABLED"; then
+		if test -z "$SYDBOX_TEST_INSTALLED"; then
+			exec strace -fto "$SHOEBOX_STRACE" \
+				$SYDBOX_STRACE_OPTIONS \
+				@BUILD_EXEC_PREFIX@ \
+				-- \
+				"$@"
+		else
+			exec strace -fto "$SHOEBOX_STRACE" \
+				$SYDBOX_STRACE_OPTIONS \
+				"$@"
+		fi
+	else
+		exec "$@"
+	fi
+}
+
+if test -z "$SYDBOX_TEST_INSTALLED"
+then
+	if test -z "$SYDBOX_DUMP_ENABLED"
+	then
+		eexec "@TOP_BUILDDIR@"/src/syd \
+			-M ${SYDBOX_MEMORY_ACCESS} \
+			-e pfc"${opt_export}" \
+			$SYDBOX_TEST_OPTIONS "$@"
+	else
+		eexec "@TOP_BUILDDIR@"/src/syd-dump \
+			-M ${SYDBOX_MEMORY_ACCESS} \
+			-e pfc"${opt_export}" \
+			$SYDBOX_TEST_OPTIONS "$@"
+	fi
+else
+	if test -z "$SYDBOX_DUMP_ENABLED"
+	then
+		eexec "@BINDIR@"/syd \
+			-M ${SYDBOX_MEMORY_ACCESS} \
+			-e pfc"${opt_export}" \
+			$SYDBOX_TEST_OPTIONS "$@"
+	else
+		eexec "@LIBEXECDIR@"/sydbox/dump/syd-dump \
+			-M ${SYDBOX_MEMORY_ACCESS} \
+			-e pfc"${opt_export}" \
+			$SYDBOX_TEST_OPTIONS "$@"
+	fi
+fi
