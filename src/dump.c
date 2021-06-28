@@ -420,7 +420,9 @@ void dump(enum dump what, ...)
 		pid_t pid = va_arg(ap, pid_t);
 
 		char cmdline[256];
-		bool cmd = syd_proc_cmdline(pid, cmdline, sizeof(cmdline)) == 0;
+		bool cmd = syd_proc_cmdline(sydbox->pfd,
+					    cmdline,
+					    sizeof(cmdline)) == 0;
 
 		char *b_cmdline = NULL;
 		char *j_cmdline = cmd ? json_escape_str(&b_cmdline, cmdline) : "";

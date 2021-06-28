@@ -562,10 +562,12 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent,
 
 static syd_process_t *clone_process(syd_process_t *p, pid_t cpid, bool genuine)
 {
+	int pfd = -1;
 	bool new_child;
 	syd_process_t *child;
 
 	child = process_lookup(cpid);
+	pfd = syd_proc_open(cpid);
 	new_child = (child == NULL);
 
 	if (new_child)
@@ -581,12 +583,15 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid, bool genuine)
 	} else if (genuine && (p->new_clone_flags & SYD_CLONE_THREAD)) {
 		child->ppid = p->ppid;
 		child->tgid = p->tgid;
-	} else if (syd_proc_parents(child->pid, &child->tgid, &child->ppid) < 0) {
+	} else if (pfd >= 0 &&
+		   syd_proc_parents(pfd, &child->tgid, &child->ppid) < 0) {
 		say_errno("proc_parents");
 		child->ppid = p->pid;
 		child->tgid = child->pid;
 	}
 
+	if (pfd >= 0)
+		close(pfd);
 	if (new_child)
 		init_process_data(child, p, genuine);
 
@@ -725,6 +730,8 @@ out:
 
 static syd_process_t *parent_process(pid_t pid_task, bool *genuine)
 {
+	int pfd = -1;
+
 	/* Try (really) hard to find the parent process. */
 	*genuine = true;
 
@@ -734,13 +741,18 @@ static syd_process_t *parent_process(pid_t pid_task, bool *genuine)
 	 * 2. Is it more reliable to switch steps 1 & 2?
 	 */
 	pid_t tgid, ppid;
-	syd_proc_parents(pid_task, &ppid, &tgid);
-	syd_process_t *node_tgid = process_lookup(tgid);
-	if (node_tgid && node_tgid->flags & (SYD_IN_CLONE|SYD_IN_EXECVE))
-		return node_tgid;
-	syd_process_t *node_ppid = process_lookup(ppid);
-	if (node_ppid && node_ppid->flags & (SYD_IN_CLONE|SYD_IN_EXECVE))
-		return node_ppid;
+	syd_process_t *node_tgid = NULL, *node_ppid = NULL;
+	pfd = syd_proc_open(pid_task);
+	if (pfd >= 0) {
+		syd_proc_parents(pfd, &ppid, &tgid);
+		close(pfd);
+		node_tgid = process_lookup(tgid);
+		if (node_tgid && node_tgid->flags & (SYD_IN_CLONE|SYD_IN_EXECVE))
+			return node_tgid;
+		node_ppid = process_lookup(ppid);
+		if (node_ppid && node_ppid->flags & (SYD_IN_CLONE|SYD_IN_EXECVE))
+			return node_ppid;
+	}
 
 	/*
 	 * Step 2: Check for IN_CLONE|IN_EXECVE flags and /proc/$pid/task
@@ -844,7 +856,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	else
 		fprintf(stderr, "\t%sParent ID: ? (Orphan)%s\n", CN, CE);
 	fprintf(stderr, "\t%sThread Group ID: %u%s\n", CN, tgid > 0 ? tgid : 0, CE);
-	if (syd_proc_comm(current->pid, comm, sizeof(comm)) == 0)
+	if (syd_proc_comm(sydbox->pfd, comm, sizeof(comm)) == 0)
 		fprintf(stderr, "\t%sComm: `%s'%s\n", CN, comm, CE);
 	else
 		fprintf(stderr, "\t%sComm: `?'%s\n", CN, CE);
@@ -2031,8 +2043,20 @@ int main(int argc, char **argv)
 		pid = startup_child((char **)my_argv);
 		child = new_process_or_kill(pid);
 		init_process_data(child, NULL, false);
+		/* Happy birthday, child.
+		 * Let's validate your PID manually.
+		 */
+		sydbox->pid_valid = PID_INIT_VALID;
+		proc_validate(pid);
+		/* Notify the user about the startup. */
 		dump(DUMP_STARTUP, pid);
+		/* Block signals,
+		 * We want to be safe against interrupts. */
 		init_signals();
+		/* All good.
+		 * Tracing starts.
+		 * Benediximus.
+		 */
 		exit_code = notify_loop();
 		if (exit_code >= 128) {
 			/*

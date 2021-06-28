@@ -865,11 +865,19 @@ static inline void proc_invalidate(void)
 	sydbox->p = NULL;
 }
 
+#define PID_INIT_VALID (-42)
 static inline bool proc_validate(pid_t pid)
 {
-	proc_invalidate();
-	if (!syd_seccomp_request_is_valid())
-		goto err;
+	/* TODO: Is this check a security risk?
+	 * Ponder! */
+	if (sydbox->pid_valid != PID_INIT_VALID) {
+		proc_invalidate();
+		if (!syd_seccomp_request_is_valid())
+			goto err;
+	} else {
+		/* This is unnecessary but let's be safe. */
+		sydbox->pid_valid = -1;
+	}
 
 	int fd;
 

@@ -187,7 +187,7 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 	    !sydbox->config.allowlist_successful_bind)
 		return 0;
 
-	if ((r = syd_proc_socket_inode(current->pid,
+	if ((r = syd_proc_socket_inode(sydbox->pfd_fd,
 				   current->args[0],
 				   &inode)) < 0)
 		return r;

@@ -91,7 +91,7 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 	} else if (childpid == 0) {
 		if (clearenv() != 0)
 			_exit(ENOMEM);
-		if ((r = syd_proc_environ(current->pid)) < 0)
+		if ((r = syd_proc_environ(sydbox->pfd)) < 0)
 			_exit(-r);
 		if (chdir(P_CWD(current)) < 0)
 			_exit(errno);

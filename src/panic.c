@@ -57,15 +57,21 @@ static int wait_one(syd_process_t *node)
 
 int kill_one(syd_process_t *node, int fatal_sig)
 {
-	int i, r;
-	char comm[32];
+	int i, r, pfd;
+	char comm[32] = {'\0'};
 
 	if ((r = wait_one(node)) == -ESRCH)
 		return r;
 
-	r = syd_proc_comm(node->pid, comm, sizeof(comm));
+	pfd = syd_proc_open(node->pid);
+	if (pfd >= 0) {
+		syd_proc_comm(pfd, comm, sizeof(comm));
+		close(pfd);
+	} else {
+		comm[0] = '?';
+	}
 	fprintf(stderr, "sydbox: SIG<%d> -> %d <%s> ", fatal_sig,
-		node->pid, r == 0 ? comm : "?");
+		node->pid, comm);
 	r = syd_pidfd_send_signal(sydbox->pidfd, fatal_sig, NULL, 0);
 
 	for (i = 0; i < 3; i++) {
@@ -113,10 +119,10 @@ static void report(syd_process_t *current, const char *fmt, va_list ap)
 	comm[0] = '\0';
 	cmdline[0] = '\0';
 	vasprintf(&context, fmt, ap);
-	syd_proc_comm(current->pid, comm, sizeof(comm));
+	syd_proc_comm(sydbox->pfd, comm, sizeof(comm));
 	syd_proc_parents(sydbox->pfd, &ppid, &tgid);
 	syd_proc_cwd(sydbox->pfd_cwd, false, &cwd);
-	syd_proc_cmdline(current->pid, cmdline, sizeof(cmdline));
+	syd_proc_cmdline(sydbox->pfd, cmdline, sizeof(cmdline));
 	if (isatty(STDERR_FILENO)) {
 		say("8< -- Access Violation! --");
 		vsay(stderr, fmt, ap);

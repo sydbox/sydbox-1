@@ -74,7 +74,7 @@ int path_prefix(syd_process_t *current, unsigned arg_index, char **buf)
 		*buf = NULL;
 		r = -EBADF;
 	} else {
-		if ((r = syd_proc_fd_path(current->pid, fd, &prefix)) < 0) {
+		if ((r = syd_proc_fd_path(sydbox->pfd_fd, fd, &prefix)) < 0) {
 			if (fd > STDERR_FILENO)
 				say("readlink /proc/%u/fd/%d failed (errno:%d %s)",
 				    current->pid, fd, -r, strerror(-r));
