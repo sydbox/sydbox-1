@@ -339,7 +339,7 @@ int syd_proc_mem_open(int pfd)
 {
 	int fd;
 
-	if (pfd <= 0)
+	if (pfd < 0)
 		return -EBADF;
 
 	fd = openat(pfd, "mem", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
