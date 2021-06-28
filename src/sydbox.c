@@ -446,6 +446,7 @@ void reset_process(syd_process_t *p)
 		return;
 
 	p->sysnum = 0;
+	p->subcall = 0;
 	p->sysname = NULL;
 	p->retval = 0;
 #if ENABLE_PSYSCALL

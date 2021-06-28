@@ -366,6 +366,13 @@ static const sysentry_t syscall_entries[] = {
 	},
 
 	{
+		.name = "socketcall",
+		.no = SCMP_SYS(socketcall),
+		.notify = sys_socketcall,
+		.sandbox_network = true,
+		.rule_rewrite = true,
+	},
+	{
 		.name = "bind",
 		.no = SCMP_SYS(bind),
 		.filter = filter_bind,

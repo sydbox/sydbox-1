@@ -447,7 +447,10 @@ struct syd_process {
 	uint32_t arch;
 
 	/* Last system call */
-	unsigned long sysnum;
+	uint64_t sysnum;
+
+	/* Subcall of the last system call */
+	uint8_t subcall;
 
 #ifdef ENABLE_PSYSCALL
 	long addr; /* Read-only allocated address in child's address space. */
@@ -1302,6 +1305,7 @@ int sys_accept(syd_process_t *current);
 int sys_getsockname(syd_process_t *current);
 int sys_sendmsg(syd_process_t *current);
 int sys_recvmsg(syd_process_t *current);
+int sys_socketcall(syd_process_t *current);
 
 int sysx_chdir(syd_process_t *current);
 
