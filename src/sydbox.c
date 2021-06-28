@@ -745,7 +745,14 @@ static syd_process_t *parent_process(pid_t pid_task, bool *genuine)
 	sc_map_foreach_value(&sydbox->tree, node) {
 		if (!(node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE)))
 			continue;
-		if (!syd_proc_task_find(node->pid, pid_task))
+
+		int fd = syd_proc_open(node->pid);
+		if (fd < 0)
+			continue;
+
+		bool ok = !syd_proc_task_find(fd, pid_task);
+		close(fd);
+		if (ok)
 			return node;
 	}
 
@@ -1194,8 +1201,14 @@ static inline pid_t process_find_exec(pid_t exec_pid)
 	syd_process_t *node;
 
 	sc_map_foreach_value(&sydbox->tree, node) {
-		if (node->pid == node->tgid &&
-		    syd_proc_has_task(node->pid, exec_pid))
+		if (node->pid != node->tgid)
+			continue;
+		int fd = syd_proc_open(node->pid);
+		if (fd < 0)
+			continue;
+		bool ok = syd_proc_task_find(fd, exec_pid);
+		close(fd);
+		if (ok)
 			return node->pid;
 	}
 

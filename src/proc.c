@@ -203,42 +203,6 @@ int proc_comm(pid_t pid, char **name)
 }
 #endif
 
-bool syd_proc_has_task(int pfd, pid_t task)
-{
-	bool r = false;
-	int fd;
-	DIR *dir;
-
-	fd = openat(pfd, "task", O_PATH|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
-	if (fd < 0)
-		return r;
-	dir = fdopendir(fd);
-
-	if (dir == NULL)
-		return r;
-
-	struct dirent *de;
-	while ((de = readdir(dir)) != NULL) {
-		int tid;
-
-		if (de->d_fileno == 0)
-			continue;
-
-		tid = atoi(de->d_name);
-		if (tid <= 0)
-			continue;
-
-		if (tid == task) {
-			r = true;
-			goto out;
-		}
-	}
-
-out:
-	closedir(dir);
-	return r;
-}
-
 /*
  * read /proc/$pid/stat
  */

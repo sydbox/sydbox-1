@@ -468,14 +468,14 @@ int syd_proc_environ(int pfd)
 int syd_proc_task_find(int pfd, pid_t pid_task)
 {
 	int r;
-	char p[SYD_PID_MAX];
+	char p[5 + SYD_PID_MAX];
 
 	if (pfd <= 0)
 		return -EBADF;
 	if (pid_task <= 0)
 		return -EINVAL;
 
-	r = snprintf(p, sizeof(p), "%u", pid_task);
+	r = snprintf(p, sizeof(p), "task/%u", pid_task);
 	if (r < 0 || (size_t)r >= sizeof(p))
 		return -EINVAL;
 

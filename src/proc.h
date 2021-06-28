@@ -30,7 +30,6 @@ struct proc_statinfo {
 
 int syd_proc_stat(int pfd, struct proc_statinfo *info);
 int syd_proc_cwd(int pfd_cwd, bool use_toolong_hack, char **buf);
-bool syd_proc_has_task(int pfd, pid_t task);
 
 int syd_proc_socket_inode(int pfd_fd, int socket_fd, unsigned long long *inode);
 int syd_proc_socket_port(unsigned long long inode, bool ipv4, int *port);
