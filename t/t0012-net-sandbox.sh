@@ -12,14 +12,14 @@ for ns_mem_access in 0 1; do
     cdir="${pdir}/$(unique_dir)" &&
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
-    syd \
+    test_expect_code 10 syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/read:off \
         -m core/sandbox/write:off \
         -m core/sandbox/exec:off \
         -m core/sandbox/network:allow \
         dig +noall +answer @${PUBLIC_DNS} ${PUBLIC_HOST} > "$cdir"/out &&
-    test -s "$cdir"/out
+    test_expect_code 1 test -s "$cdir"/out
 '
 
     test_expect_failure DIG "network sandboxing = deny [memory_access:${ns_mem_access}]" '
