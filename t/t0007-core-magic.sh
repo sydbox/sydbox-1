@@ -6,7 +6,7 @@ test_description='test the magic stat of sydbox'
 . ./test-lib.sh
 
 save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
-for magic_mem_access in 0; do
+for magic_mem_access in 0 1; do
     SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS -mcore/sandbox/read:allow"
     export SYDBOX_TEST_OPTIONS
 
@@ -94,7 +94,7 @@ for magic_mem_access in 0; do
         -- syd-fstatat cwd /dev/sydbox/0 # EINVAL
 '
 
-    test_expect_failure \
+    test_expect_success \
         "magic /dev/sydbox boolean checking works with write:off [memory_access:${magic_mem_access}]" '
     syd \
         -M '${magic_mem_access}' \

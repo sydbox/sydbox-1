@@ -73,6 +73,7 @@ eexec() {
 
 if test -z "$SYDBOX_TEST_INSTALLED"
 then
+	#SYDBOX_DUMP_ENABLED=
 	if test -z "$SYDBOX_DUMP_ENABLED"
 	then
 		eexec "@TOP_BUILDDIR@"/src/syd \
