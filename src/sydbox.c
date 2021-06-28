@@ -459,6 +459,10 @@ void reset_process(syd_process_t *p)
 			p->repr[i] = NULL;
 		}
 	}
+	if (p->abspath) {
+		free(p->abspath);
+		p->abspath = NULL;
+	}
 }
 
 static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
