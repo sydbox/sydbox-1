@@ -1414,13 +1414,24 @@ notify_receive:
 		pid = sydbox->request->pid;
 		current = process_lookup(pid);
 
-		/* Search early for execve before getting a process entry. */
-		if (name && (streq(name, "execve") || streq(name, "execveat"))) {
+		/*
+		 * Handle critical paths early and fast.
+		 * Search early for ex{it,ecve} before getting a process entry.
+		 */
+		if (name && startswith(name, "exit")) {
+			if (current)
+				bury_process(current, true);
+			/* reap zombies after notify respond */
+			reap_my_zombies = true;
+			sydbox_syscall_allow();
+			goto notify_respond;
+		} else if (name && (streq(name, "execve") || streq(name, "execveat"))) {
 			/* memfd is no longer valid, reopen next turn,
 			 * reading /proc/pid/mem on a process stopped
 			 * for execve returns EPERM! */
 			if (sydbox->execve_wait) { /* allow the initial exec */
 				sydbox->execve_wait = false;
+				sydbox_syscall_allow();
 				goto notify_respond;
 			}
 			pid_t execve_pid = 0;
@@ -1472,11 +1483,6 @@ notify_receive:
 
 		if (!name) {
 			;
-		} else if (startswith(name, "exit")) {
-			/* reap zombies after notify respond */
-			reap_my_zombies = true;
-			sydbox_syscall_allow();
-			goto notify_respond;
 		} else if (streq(name, "clone")) {
 			sydbox_syscall_allow();
 			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
@@ -1535,8 +1541,8 @@ out:
 		if (name)
 			free(name);
 		if (reap_my_zombies) {
-			reap_zombies();
 			reap_my_zombies = false;
+			reap_zombies();
 		}
 		if (jump)
 			break;

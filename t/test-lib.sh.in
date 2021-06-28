@@ -26,6 +26,12 @@ ORIGINAL_TERM=$TERM
 # Timeouts for tests that need them.
 TIMEOUT_DURATION=60
 
+# Number of parallel processes for exit test
+EXIT_NPROC=16
+if type -P nproc; then
+	EXIT_NPROC=$(nproc)
+fi
+
 # How many threads to spawn at maximum for forking and threaded tests.
 SPAWN_MAX=64
 

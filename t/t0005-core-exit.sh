@@ -18,14 +18,14 @@ test_expect_success 'return success if tracee returns success (STATIC)' '
 '
 
 test_expect_success 'return success if initial tracee returns success (FORK)' '
-    syd -- syd-true-fork 64
+    syd -- syd-true-fork ${EXIT_NPROC}
 '
 
 test_expect_success 'return success if initial tracee returns success (STATIC|FORK)' '
-    syd -- syd-true-fork-static 64
+    syd -- syd-true-fork-static ${EXIT_NPROC}
 '
 
-test_expect_failure 'return success if initial tracee returns success (PTHREAD)' '
+test_expect_success 'return success if initial tracee returns success (PTHREAD)' '
     syd -- syd-true-pthread 32
 '
 
@@ -38,14 +38,14 @@ test_expect_success 'return failure if tracee returns failure (STATIC)' '
 '
 
 test_expect_success 'return failure if initial tracee returns failure (FORK)' '
-    test_expect_code 1 syd -- syd-false-fork 64
+    test_expect_code 1 syd -- syd-false-fork ${EXIT_NPROC}
 '
 
 test_expect_success 'return failure if initial tracee returns failure (STATIC|FORK)' '
-    test_expect_code 1 syd -- syd-false-fork-static 64
+    test_expect_code 1 syd -- syd-false-fork-static ${EXIT_NPROC}
 '
 
-test_expect_failure 'return failure if initial tracee returns failure (PTHREAD)' '
+test_expect_success 'return failure if initial tracee returns failure (PTHREAD)' '
     test_expect_code 1 syd -- syd-false-pthread 32
 '
 

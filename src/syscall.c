@@ -859,6 +859,8 @@ int sysinit_seccomp_load(void)
 		goto out;
 
 	static const int calls[] = {
+		SCMP_SYS(exit),
+		SCMP_SYS(exit_group),
 		SCMP_SYS(execve),
 #if defined(__NR_execveat)
 		SCMP_SYS(execveat),
