@@ -1389,16 +1389,10 @@ notify_receive:
 		sydbox->response->error = 0;
 		sydbox->response->val = 0;
 
-		/* From this point on until the notification response,
-		 * we have a verified-valid pid file descriptor and
-		 * /proc/pid/mem file descriptor,
-		 * or the process is dead and we continue without response.
-		 */
-		pid = sydbox->request->pid;
-		current = process_lookup(pid);
-
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
+		pid = sydbox->request->pid;
+		current = process_lookup(pid);
 
 		/* Search early for execve before getting a process entry. */
 		if (name && (streq(name, "execve") || streq(name, "execveat"))) {
