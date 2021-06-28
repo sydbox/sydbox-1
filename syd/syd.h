@@ -87,8 +87,8 @@ int syd_proc_environ(int pfd);
 
 int syd_proc_fd_path(int pfd_fd, int fd, char **dst);
 
-int syd_proc_task_find(pid_t pid, pid_t task_pid);
-int syd_proc_task_open(pid_t pid, DIR **task_dir);
+int syd_proc_task_find(int pfd, pid_t task_pid);
+int syd_proc_task_open(int pfd, DIR **task_dir);
 int syd_proc_task_next(DIR *task_dir, pid_t *task_pid);
 
 /* Wrappers for pidfd utilities */
