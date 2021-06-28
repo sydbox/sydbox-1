@@ -510,6 +510,8 @@ proc_getcwd:
 		if ((r = syd_proc_cwd(sydbox->pfd_cwd, sydbox->config.use_toolong_hack,
 				  &cwd)) < 0) {
 			errno = -r;
+			/* XXX: Debug */
+			sig_usr(SIGUSR2);
 			say_errno("proc_cwd");
 			P_CWD(current) = strdup("/");
 		} else {
