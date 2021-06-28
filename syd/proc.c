@@ -101,7 +101,7 @@ int syd_proc_ppid(int pfd, pid_t *ppid)
 	pid_t ppid_r;
 	FILE *f;
 
-	if (pfd <= 0)
+	if (pfd < 0)
 		return -EBADF;
 	if (ppid == NULL)
 		return -EINVAL;
@@ -163,7 +163,7 @@ int syd_proc_parents(int pfd, pid_t *ppid, pid_t *tgid)
 	pid_t ppid_r, tgid_r;
 	FILE *f;
 
-	if (pfd <= 0)
+	if (pfd < 0)
 		return -EBADF;
 	if (!ppid && !tgid)
 		return -EINVAL;
@@ -233,7 +233,7 @@ int syd_proc_comm(int pfd, char *dst, size_t siz)
 {
 	int fd, save_errno;
 
-	if (pfd <= 0)
+	if (pfd < 0)
 		return -EBADF;
 
 	fd = openat(pfd, "comm", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
@@ -272,7 +272,7 @@ int syd_proc_cmdline(int pfd, char *dst, size_t siz)
 {
 	int fd, save_errno;
 
-	if (pfd <= 0)
+	if (pfd < 0)
 		return -EBADF;
 
 	fd = openat(pfd, "cmdline", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
@@ -311,7 +311,7 @@ int syd_proc_state(int pfd, char *state)
 	char state_r;
 	FILE *f;
 
-	if (pfd <= 0)
+	if (pfd < 0)
 		return -EBADF;
 	fd = openat(pfd, "stat", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
 	save_errno = errno;
@@ -418,7 +418,7 @@ int syd_proc_environ(int pfd)
 	 * here (x86_64) defines it as (PAGE_SIZE * 32), I am more modest. */
 	char s[1024];
 
-	if (pfd <= 0)
+	if (pfd < 0)
 		return -EBADF;
 
 	fd = openat(pfd, "environ", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
@@ -468,19 +468,24 @@ int syd_proc_environ(int pfd)
 int syd_proc_task_find(int pfd, pid_t pid_task)
 {
 	int r;
-	char p[5 + SYD_PID_MAX];
+	char p[SYD_PID_MAX];
 
-	if (pfd <= 0)
+	if (pfd < 0)
 		return -EBADF;
 	if (pid_task <= 0)
 		return -EINVAL;
 
-	r = snprintf(p, sizeof(p), "task/%u", pid_task);
+	int pfd_task = openat(pfd, "task", O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
+	if (pfd_task < 0)
+		return -EBADF;
+
+	r = snprintf(p, sizeof(p), "%u", pid_task);
 	if (r < 0 || (size_t)r >= sizeof(p))
 		return -EINVAL;
 
 	errno = 0;
-	faccessat(pfd, p, F_OK, AT_SYMLINK_NOFOLLOW|AT_EACCESS);
+	faccessat(pfd_task, p, F_OK, AT_SYMLINK_NOFOLLOW|AT_EACCESS);
+	close(pfd_task);
 	return -errno;
 }
 
@@ -489,7 +494,7 @@ int syd_proc_task_open(int pfd, DIR **task_dir)
 	int fd;
 	DIR *d;
 
-	if (pfd <= 0)
+	if (pfd < 0)
 		return -EBADF;
 	if (!task_dir)
 		return -EINVAL;
