@@ -147,11 +147,11 @@ static void dump_format(const char *argv0, const char *pathname,
 		j_argv0, j_path, j_runas,
 		sydbox->hash, j_arch);
 
-	if (b_argv0)
+	if (j_argv0 && j_argv0[0] && b_argv0)
 		free(b_argv0);
-	if (b_runas)
+	if (j_runas && j_runas[0] && b_runas)
 		free(b_runas);
-	if (b_path)
+	if (j_path && j_path[0] && b_path)
 		free(b_path);
 }
 
@@ -436,7 +436,7 @@ void dump(enum dump what, ...)
 			id++, (unsigned long long)now, pid,
 			what, "startup", j_cmdline);
 
-		if (b_cmdline) free(b_cmdline);
+		if (j_cmdline && j_cmdline[0] && b_cmdline) free(b_cmdline);
 	} else if (what == DUMP_EXIT) {
 		int code = va_arg(ap, int);
 		size_t proc_total = va_arg(ap, size_t);
@@ -492,7 +492,7 @@ void dump(enum dump what, ...)
 			j_repr[5]);
 
 		for (uint8_t i = 0; i < 6; i++)
-			if (b_repr[i])
+			if (j_repr[i] && j_repr[i][0] && b_repr[i])
 				free(b_repr[i]);
 	} else if (what == DUMP_CHDIR) {
 		pid_t pid = va_arg(ap, pid_t);
@@ -525,8 +525,8 @@ void dump(enum dump what, ...)
 			dump_null();
 		fprintf(fp, "}}");
 
-		if (b_newcwd) free(b_newcwd);
-		if (b_oldcwd) free(b_oldcwd);
+		if (j_newcwd && j_newcwd[0] && b_newcwd) free(b_newcwd);
+		if (j_oldcwd && j_oldcwd[0] && b_oldcwd) free(b_oldcwd);
 	} else if (what == DUMP_EXEC) {
 		pid_t execve_pid = va_arg(ap, pid_t);
 		const char *prog = va_arg(ap, const char *);
@@ -543,7 +543,7 @@ void dump(enum dump what, ...)
 			id++, (unsigned long long)now, execve_pid,
 			what, j_prog);
 
-		if (b_prog) free(b_prog);
+		if (j_prog && j_prog[0] && b_prog) free(b_prog);
 	} else if (what == DUMP_EXEC_MT) {
 		pid_t execve_thread, leader;
 
@@ -571,7 +571,7 @@ void dump(enum dump what, ...)
 			dump_null();
 		fputc('}', fp);
 
-		if (b_prog) free(b_prog);
+		if (j_prog && j_prog[0] && b_prog) free(b_prog);
 	} else if (what == DUMP_ALLOC) {
 		size_t size = va_arg(ap, size_t);
 		const char *func = va_arg(ap, const char *);
@@ -661,12 +661,18 @@ void dump(enum dump what, ...)
 			ppid, tgid,
 			proc_ppid, proc_tgid, j_proc_cwd);
 
-		if (b_sys) free(b_sys);
-		if (b_expr) free(b_expr);
-		if (b_cwd) free(b_cwd);
-		if (b_proc_cwd) free(b_proc_cwd);
-		if (b_comm) free(b_comm);
-		if (b_cmdline) free(b_cmdline);
+		if (j_sys && j_sys[0] && b_sys)
+			free(b_sys);
+		if (j_expr && j_expr[0] && b_expr)
+			free(b_expr);
+		if (j_cwd && j_cwd[0] && b_cwd)
+			free(b_cwd);
+		if (j_proc_cwd && j_proc_cwd[0] && b_proc_cwd)
+			free(b_proc_cwd);
+		if (j_comm && j_comm[0] && b_comm)
+			free(b_comm);
+		if (j_cmdline && j_cmdline[0] && b_cmdline)
+			free(b_cmdline);
 	} else {
 		abort();
 	}

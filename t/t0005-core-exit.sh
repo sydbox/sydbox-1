@@ -25,7 +25,7 @@ test_expect_success 'return success if initial tracee returns success (STATIC|FO
     syd -- syd-true-fork-static 64
 '
 
-test_expect_success 'return success if initial tracee returns success (PTHREAD)' '
+test_expect_failure 'return success if initial tracee returns success (PTHREAD)' '
     syd -- syd-true-pthread 32
 '
 
@@ -45,7 +45,7 @@ test_expect_success 'return failure if initial tracee returns failure (STATIC|FO
     test_expect_code 1 syd -- syd-false-fork-static 64
 '
 
-test_expect_success 'return failure if initial tracee returns failure (PTHREAD)' '
+test_expect_failure 'return failure if initial tracee returns failure (PTHREAD)' '
     test_expect_code 1 syd -- syd-false-pthread 32
 '
 

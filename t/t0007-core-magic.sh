@@ -94,7 +94,7 @@ for magic_mem_access in 0 1; do
         -- syd-fstatat cwd /dev/sydbox/0 # EINVAL
 '
 
-    test_expect_success \
+    test_expect_failure \
         "magic /dev/sydbox boolean checking works with write:off [memory_access:${magic_mem_access}]" '
     syd \
         -M '${magic_mem_access}' \
