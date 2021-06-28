@@ -71,7 +71,10 @@ int sysx_chdir(syd_process_t *current)
 {
 	char *newcwd;
 
-	if (syd_proc_cwd(current->pid, sydbox->config.use_toolong_hack, &newcwd) < 0) {
+	if (syd_proc_cwd(sydbox->pfd_cwd,
+			 sydbox->config.use_toolong_hack,
+			 &newcwd) < 0)
+	{
 		/* TODO: dump(DUMP_SYSCALL, current, "chdir", retval, "panic"); */
 		return panic(current);
 	}
