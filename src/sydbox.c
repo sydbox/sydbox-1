@@ -710,6 +710,7 @@ static void switch_execve_leader(pid_t leader_pid, syd_process_t *execve_thread)
 		update_cwd = true;
 
 	tweak_execve_thread(leader, execve_thread);
+	leader->abspath = NULL;
 	leader->flags &= ~SYD_IN_EXECVE;
 	bury_process(leader, false);
 
