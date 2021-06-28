@@ -9,94 +9,104 @@ save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
 SYDBOX_TEST_OPTIONS=
 export SYDBOX_TEST_OPTIONS
 
-test_expect_success_foreach_option 'chdir() hook with EEXIST (mkdir -p) [RAISE_SAFE=0]' '
-    pdir="$(unique_dir)" &&
-    mkdir "$pdir" &&
-    cdir="${pdir}/$(unique_dir)" &&
-    mkdir "$cdir" &&
-    sydbox \
-        -m core/sandbox/write:deny \
-        -m core/violation/raise_safe:0 \
-        syd-mkdir-p "$cdir"
-'
+for magic_mem_access in 0 1; do
+    test_expect_success "chdir() hook with EEXIST (mkdir -p) [RAISE_SAFE=0,memory_access:${magic_mem_access}]" '
+        pdir="$(unique_dir)" &&
+        mkdir "$pdir" &&
+        cdir="${pdir}/$(unique_dir)" &&
+        mkdir "$cdir" &&
+        syd \
+            -M '${magic_mem_access}' \
+            -m core/sandbox/write:deny \
+            -m core/violation/raise_safe:0 \
+            syd-mkdir-p "$cdir"
+    '
 
-test_expect_success_foreach_option 'chdir() hook with EEXIST (mkdir -p) [RAISE_SAFE=0]' '
-    pdir="$(unique_dir)" &&
-    mkdir "$pdir" &&
-    cdir="${pdir}/$(unique_dir)" &&
-    mkdir "$cdir" &&
-    test_must_violate sydbox \
-        -m core/sandbox/write:deny \
-        -m core/violation/raise_safe:1 \
-        syd-mkdir-p "$cdir"
-'
+    test_expect_success "chdir() hook with EEXIST (mkdir -p) [RAISE_SAFE=0,memory_access:${magic_mem_access}]" '
+        pdir="$(unique_dir)" &&
+        mkdir "$pdir" &&
+        cdir="${pdir}/$(unique_dir)" &&
+        mkdir "$cdir" &&
+        test_must_violate syd \
+            -M '${magic_mem_access}' \
+            -m core/sandbox/write:deny \
+            -m core/violation/raise_safe:1 \
+            syd-mkdir-p "$cdir"
+    '
 
-test_expect_success_foreach_option 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0]' '
-    pdir="$(unique_dir)" &&
-    mkdir "$pdir" &&
-    cdir="${pdir}/$(unique_dir)" &&
-    rm -fr "$cdir" &&
-    test_expect_code 1 sydbox \
-        -m core/sandbox/write:deny \
-        -m core/violation/raise_safe:0 \
-        syd-mkdir-p "$cdir"
-'
+    test_expect_success "chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0,memory_access:${magic_mem_access}]" '
+        pdir="$(unique_dir)" &&
+        mkdir "$pdir" &&
+        cdir="${pdir}/$(unique_dir)" &&
+        rm -fr "$cdir" &&
+        test_expect_code 1 syd \
+            -M '${magic_mem_access}' \
+            -m core/sandbox/write:deny \
+            -m core/violation/raise_safe:0 \
+            syd-mkdir-p "$cdir"
+    '
 
-test_expect_success_foreach_option 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0,ALLOWLIST]' '
-    pdir="$(unique_dir)" &&
-    mkdir "$pdir" &&
-    cdir="${pdir}/$(unique_dir)" &&
-    rm -fr "$cdir" &&
-    sydbox \
-        -m core/sandbox/write:deny \
-        -m allowlist/write+"$HOMER"/"${cdir}" \
-        -m core/violation/raise_safe:0 \
-        syd-mkdir-p "$cdir"
-'
+    test_expect_success "chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0,ALLOWLIST,memory_access:${magic_mem_access}]" '
+        pdir="$(unique_dir)" &&
+        mkdir "$pdir" &&
+        cdir="${pdir}/$(unique_dir)" &&
+        rm -fr "$cdir" &&
+        syd \
+            -M '${magic_mem_access}' \
+            -m core/sandbox/write:deny \
+            -m allowlist/write+"$HOMER"/"${cdir}" \
+            -m core/violation/raise_safe:0 \
+            syd-mkdir-p "$cdir"
+    '
 
-test_expect_success_foreach_option 'chdir() hook with EEXIST (mkdir -p) [RAISE_SAFE=0]' '
-    pdir="$(unique_dir)" &&
-    mkdir "$pdir" &&
-    cdir="${pdir}/$(unique_dir)" &&
-    mkdir "$cdir" &&
-    sydbox \
-        -m core/sandbox/write:deny \
-        -m core/violation/raise_safe:0 \
-        syd-mkdir-p "$cdir"
-'
+    test_expect_success "chdir() hook with EEXIST (mkdir -p) RAISE_SAFE=0,memory_access:${magic_mem_access}]" '
+        pdir="$(unique_dir)" &&
+        mkdir "$pdir" &&
+        cdir="${pdir}/$(unique_dir)" &&
+        mkdir "$cdir" &&
+        syd \
+            -M '${magic_mem_access}' \
+            -m core/sandbox/write:deny \
+            -m core/violation/raise_safe:0 \
+            syd-mkdir-p "$cdir"
+    '
 
-test_expect_success_foreach_option 'chdir() hook with EEXIST (mkdir -p) [RAISE_SAFE=1]' '
-    pdir="$(unique_dir)" &&
-    mkdir "$pdir" &&
-    cdir="${pdir}/$(unique_dir)" &&
-    mkdir "$cdir" &&
-    test_must_violate sydbox \
-        -m core/sandbox/write:deny \
-        -m core/violation/raise_safe:1 \
-        syd-mkdir-p "$cdir"
-'
+    test_expect_success "chdir() hook with EEXIST (mkdir -p) [RAISE_SAFE=1,memory_access:${magic_mem_access}]" '
+        pdir="$(unique_dir)" &&
+        mkdir "$pdir" &&
+        cdir="${pdir}/$(unique_dir)" &&
+        mkdir "$cdir" &&
+        test_must_violate syd \
+            -M '${magic_mem_access}' \
+            -m core/sandbox/write:deny \
+            -m core/violation/raise_safe:1 \
+            syd-mkdir-p "$cdir"
+    '
 
-test_expect_success_foreach_option 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0]' '
-    pdir="$(unique_dir)" &&
-    mkdir "$pdir" &&
-    cdir="${pdir}/$(unique_dir)" &&
-    rm -fr "$cdir" &&
-    test_expect_code 1 sydbox \
-        -m core/sandbox/write:deny \
-        -m core/violation/raise_safe:0 \
-        syd-mkdir-p "$cdir"
-'
+    test_expect_success "chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0,memory_access:${magic_mem_access}]" '
+        pdir="$(unique_dir)" &&
+        mkdir "$pdir" &&
+        cdir="${pdir}/$(unique_dir)" &&
+        rm -fr "$cdir" &&
+        test_expect_code 1 syd \
+            -M '${magic_mem_access}' \
+            -m core/sandbox/write:deny \
+            -m core/violation/raise_safe:0 \
+            syd-mkdir-p "$cdir"
+    '
 
-test_expect_success_foreach_option 'chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0,ALLOWLIST]' '
-    pdir="$(unique_dir)" &&
-    mkdir "$pdir" &&
-    cdir="${pdir}/$(unique_dir)" &&
-    rm -fr "$cdir" &&
-    sydbox \
-        -m core/sandbox/write:deny \
-        -m allowlist/write+"$HOMER"/"${cdir}" \
-        -m core/violation/raise_safe:0 \
-        syd-mkdir-p "$cdir"
-'
+    test_expect_success "chdir() hook with EPERM (mkdir -p) [RAISE_SAFE=0,ALLOWLIST,memory_access:${magic_mem_access}]" '
+        pdir="$(unique_dir)" &&
+        mkdir "$pdir" &&
+        cdir="${pdir}/$(unique_dir)" &&
+        rm -fr "$cdir" &&
+        syd \
+            -M '${magic_mem_access}' \
+            -m core/sandbox/write:deny \
+            -m allowlist/write+"$HOMER"/"${cdir}" \
+            -m core/violation/raise_safe:0 \
+            syd-mkdir-p "$cdir"
+    '
+done
 
 test_done
