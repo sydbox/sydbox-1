@@ -15,7 +15,7 @@ for cor_mem_access in 0 1; do
     cdir="${pdir}/$(unique_dir)" &&
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
-    test_must_fail sydbox \
+    test_must_fail syd \
         -M '${cor_mem_access}' \
         -m core/sandbox/read:deny \
         -m core/sandbox/write:off \
@@ -31,7 +31,7 @@ for cor_mem_access in 0 1; do
     cdir="${pdir}/$(unique_dir)" &&
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
-    sydbox \
+    syd \
         -M '${cor_mem_access}' \
         -m core/sandbox/read:deny \
         -m "allowlist/read+/***" \

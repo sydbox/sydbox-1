@@ -12,7 +12,7 @@ for ns_mem_access in 0 1; do
     cdir="${pdir}/$(unique_dir)" &&
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
-    sydbox \
+    syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/read:off \
         -m core/sandbox/write:off \
@@ -28,7 +28,7 @@ for ns_mem_access in 0 1; do
     cdir="${pdir}/$(unique_dir)" &&
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
-    test_must_violate sydbox \
+    test_must_violate syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/read:off \
         -m core/sandbox/write:off \
@@ -42,7 +42,7 @@ for ns_mem_access in 0 1; do
 
     test_expect_success PY3 \
         "network sandboxing for connect works to deny IPv4 address [memory_access:${ns_mem_access}]" '
-    test_expect_code 111 sydbox \
+    test_expect_code 111 syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         syd-connect-ipv4.py
@@ -50,7 +50,7 @@ for ns_mem_access in 0 1; do
 
     test_expect_success HAVE_IPV6,PY3 \
         "network sandboxing for connect works to deny IPv6 address [memory_access:${ns_mem_access}]" '
-    test_expect_code 111 sydbox \
+    test_expect_code 111 syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         syd-connect-ipv6.py
@@ -60,7 +60,7 @@ for ns_mem_access in 0 1; do
         "network sandboxing for bind works to deny UNIX socket [memory_access:${ns_mem_access}]" '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
-    test_expect_code 99 sydbox \
+    test_expect_code 99 syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         syd-connect-unix.py "$pdir"
@@ -68,7 +68,7 @@ for ns_mem_access in 0 1; do
 
     test_expect_success PY3 \
         "network sandboxing for bind works to deny IPv4 address with port zero [memory_access:${ns_mem_access}]" '
-    test_expect_code 99 sydbox \
+    test_expect_code 99 syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         syd-connect-ipv4-0.py
@@ -76,7 +76,7 @@ for ns_mem_access in 0 1; do
 
     test_expect_success PY3 \
         "network sandboxing for bind works to deny IPv6 address with port zero [memory_access:${ns_mem_access}]" '
-    test_expect_code 99 sydbox \
+    test_expect_code 99 syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         syd-connect-ipv6-0.py
@@ -84,7 +84,7 @@ for ns_mem_access in 0 1; do
 
     test_expect_success PY3 \
         "network sandboxing for bind works to allowlist IPv4 address [memory_access:${ns_mem_access}]" '
-    test_expect_code 0 sydbox \
+    test_expect_code 0 syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         -m allowlist/network/bind+LOOPBACK@65534 \
@@ -93,7 +93,7 @@ for ns_mem_access in 0 1; do
 
     test_expect_success PY3 \
         "network sandboxing for bind works to allowlist IPv6 address [memory_access:${ns_mem_access}]" '
-    test_expect_code 0 sydbox \
+    test_expect_code 0 syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         -m allowlist/network/bind+LOOPBACK6@65534 \
@@ -103,7 +103,7 @@ for ns_mem_access in 0 1; do
 # TODO: Continue moving the python3 scripts in HERE docs to test-bin/
     test_expect_success PY3 \
         "network sandboxing for bind works to allowlist IPv4 address with port zero [memory_access:${ns_mem_access}]" '
-    test_expect_code 0 sydbox \
+    test_expect_code 0 syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         -m allowlist/network/bind+LOOPBACK@0 \
@@ -128,7 +128,7 @@ EOF
 
     test_expect_success PY3 \
         "network sandboxing for bind works to allowlist IPv6 address with port zero [memory_access:${ns_mem_access}]" '
-    test_expect_code 0 sydbox \
+    test_expect_code 0 syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         -m allowlist/network/bind+LOOPBACK6@0 \
@@ -155,7 +155,7 @@ EOF
 pdir="$(unique_dir)" &&
 mkdir "$pdir" &&
 cd "$pdir" &&
-test_expect_code 0 sydbox \
+test_expect_code 0 syd \
         -M '${ns_mem_access}' \
         -m core/sandbox/network:deny \
         -m "allowlist/network/bind+unix:$HOMER/${pdir}/test.socket" \
