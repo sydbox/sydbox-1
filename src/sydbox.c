@@ -1364,7 +1364,7 @@ static int notify_loop()
 
 	for (;;) {
 		/* Let the user-space tracing begin. */
-		bool jump = false;
+		bool jump = false, reap_my_zombies = false;
 		char *name = NULL;
 		syd_process_t *parent;
 
@@ -1406,9 +1406,8 @@ notify_receive:
 		//	goto out;
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
-		sydbox->response->flags |= SECCOMP_USER_NOTIF_FLAG_CONTINUE;
-		sydbox->response->error = 0;
 		sydbox->response->val = 0;
+		sydbox_syscall_deny();
 
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
@@ -1473,20 +1472,32 @@ notify_receive:
 
 		if (!name) {
 			;
+		} else if (startswith(name, "exit")) {
+			/* reap zombies after notify respond */
+			reap_my_zombies = true;
+			sydbox_syscall_allow();
+			goto notify_respond;
 		} else if (streq(name, "clone")) {
+			sydbox_syscall_allow();
 			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
 		} else if (streq(name, "clone2")) {
+			sydbox_syscall_allow();
 			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
 		} else if (streq(name, "clone3")) {
+			sydbox_syscall_allow();
 			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
 		} else if (streq(name, "fork")) {
+			sydbox_syscall_allow();
 			event_clone(current, 'f', 0);
 		} else if (streq(name, "vfork")) {
+			sydbox_syscall_allow();
 			event_clone(current, 'v', 0);
 		} else if (streq(name, "chdir") || !strcmp(name, "fchdir")) {
+			sydbox_syscall_allow();
 			current->flags &= ~(SYD_IN_CLONE|SYD_IN_EXECVE);
 			current->update_cwd = true;
 		} else { /* all system calls including exec end up here. */
+			sydbox_syscall_allow();
 			current->flags &= ~SYD_IN_CLONE;
 			if (!startswith(name, "execve"))
 				current->flags &= ~SYD_IN_EXECVE;
@@ -1523,6 +1534,10 @@ notify_respond:
 out:
 		if (name)
 			free(name);
+		if (reap_my_zombies) {
+			reap_zombies();
+			reap_my_zombies = false;
+		}
 		if (jump)
 			break;
 		/* We handled quick cases, we are permitted to interrupt now. */

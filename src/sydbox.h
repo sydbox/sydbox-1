@@ -840,6 +840,19 @@ static inline syd_process_t *process_lookup(pid_t pid)
 
 /*************************************/
 /* Security Functions */
+static inline void sydbox_syscall_deny(void)
+{
+	sydbox->response->error = -EPERM;
+	sydbox->response->flags = 0;
+}
+
+static inline void sydbox_syscall_allow(void)
+{
+	sydbox_syscall_deny();
+	sydbox->response->error = 0;
+	sydbox->response->flags |= SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+}
+
 static inline bool syd_seccomp_request_is_valid(void)
 {
 	return seccomp_notify_id_valid(sydbox->notify_fd, sydbox->request->id) == 0;
