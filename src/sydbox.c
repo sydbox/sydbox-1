@@ -966,6 +966,7 @@ static void init_signal_sets(void)
 	sigemptyset(&empty_set);
 	sigemptyset(&blocked_set);
 
+	sigaddset(&blocked_set, SIGALRM);
 	sigaddset(&blocked_set, SIGCHLD);
 	sigaddset(&blocked_set, SIGHUP);
 	sigaddset(&blocked_set, SIGINT);
@@ -1002,6 +1003,7 @@ static void init_signals(void)
 	sigaction(SIGTSTP, &sa, NULL);
 
 	/* Term */
+	set_sighandler(SIGALRM,  interrupt, NULL);
 	set_sighandler(SIGHUP,  interrupt, NULL);
 	set_sighandler(SIGINT,  interrupt, NULL);
 	set_sighandler(SIGQUIT, interrupt, NULL);
