@@ -59,6 +59,7 @@ tasks:
     cd sydbox
     ./src/syd -d2 true
 - check_static: |
+    exit 1
     cd sydbox
     make -j V=1 check && touch .check_ok
     cat {syd,t}/test-suite.log || true
