@@ -10,7 +10,7 @@
    SPDX-License-Identifier: GPL-2.0-only
 -->
 
-<refentry id="syd" lang="en">
+<refentry id="sydbox" lang="en">
   <refentryinfo>
     <title>SydBox</title>
     <productname>sydbox</productname>
@@ -42,7 +42,7 @@
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
       <itemizedlist>
-        <listitem><para><command>syd <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..3</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt" >--chdir directory</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--startas name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
+        <listitem><para><command>syd <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..3</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt" >--chdir &lt;directory|tmp&gt;</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--startas name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
         <listitem><para><command>syd <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="req">noexec</arg></command></para></listitem>
         <listitem><para><command>syd --test</command></para></listitem>
       </itemizedlist>
@@ -364,6 +364,23 @@
               Path to the chdir should be relative to the chroot.
             </simpara>
           </note>
+          <note>
+            <simpara>
+              If the special string <constant>tmp</constant> is given,
+              sydbox creates a temporary directory in a secure manner
+              and changes directory to it.
+            </simpara>
+          </note>
+          <note>
+            <simpara>
+              If read sandboxing is one of <constant>allow</constant>
+              or <constant>deny</constant>, this directory acts as the
+              obligatory prefix for all directory changing system calls
+              which means the process is not allowed to leave this directory
+              tree. This is functionally similar to a chroot but more
+              practical to handle.
+            </simpara>
+          </note>
         </listitem>
       </varlistentry>
 
@@ -611,6 +628,8 @@
 
       <para>List of filtered system calls are:
       <function>access</function><manvolnum>2</manvolnum>,
+      <function>chdir</function><manvolnum>2</manvolnum>,
+      <function>fchdir</function><manvolnum>2</manvolnum>,
       <function>faccessat</function><manvolnum>2</manvolnum>,
       <function>faccessat2</function><manvolnum>2</manvolnum>,
       <function>open</function><manvolnum>2</manvolnum>,
