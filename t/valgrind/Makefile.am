@@ -1,7 +1,7 @@
 AM_MAKEFLAGS= --no-print-directory
 SUBDIRS= .
 
-syddir=$(libexecdir)/$(PACKAGE)/t/valgrind
+syddir=$(libexecdir)/$(PACKAGE)/t-$(SYDBOX_API_VERSION)/valgrind
 VALGRIND_SRCS= \
 	     analyze.sh \
 syd_SCRIPTS= analyze.sh
