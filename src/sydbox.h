@@ -1063,11 +1063,16 @@ static inline void copy_sandbox(sandbox_t *box_dest, sandbox_t *box_src)
 
 	box_dest->magic_lock = box_src->magic_lock;
 
-	ACLQ_COPY(node, &box_src->acl_exec, &box_dest->acl_exec, newnode, xstrdup);
-	ACLQ_COPY(node, &box_src->acl_read, &box_dest->acl_read, newnode, xstrdup);
-	ACLQ_COPY(node, &box_src->acl_write, &box_dest->acl_write, newnode, xstrdup);
-	ACLQ_COPY(node, &box_src->acl_network_bind, &box_dest->acl_network_bind, newnode, sockmatch_xdup);
-	ACLQ_COPY(node, &box_src->acl_network_connect, &box_dest->acl_network_connect, newnode, sockmatch_xdup);
+	ACLQ_COPY(node, &box_src->acl_exec, &box_dest->acl_exec,
+		  newnode, xstrdup);
+	ACLQ_COPY(node, &box_src->acl_read, &box_dest->acl_read,
+		  newnode, xstrdup);
+	ACLQ_COPY(node, &box_src->acl_write, &box_dest->acl_write,
+		  newnode, xstrdup);
+	ACLQ_COPY(node, &box_src->acl_network_bind,
+		  &box_dest->acl_network_bind, newnode, sockmatch_xdup);
+	ACLQ_COPY(node, &box_src->acl_network_connect,
+		  &box_dest->acl_network_connect, newnode, sockmatch_xdup);
 }
 
 static inline void reset_sandbox(sandbox_t *box)

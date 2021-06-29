@@ -488,7 +488,7 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 	 */
 
 	share_thread = share_fs = share_files = false;
-	if (genuine) { /* Sharing data needs a genuine parent, check
+	if (parent && genuine) { /* Sharing data needs a genuine parent, check
 			  parent_process. */
 		if (parent->new_clone_flags & SYD_CLONE_THREAD)
 			share_thread = true;
@@ -531,7 +531,7 @@ proc_getcwd:
 		P_CLONE_THREAD_RETAIN(current);
 	} else {
 		new_shared_memory_clone_thread(current);
-		copy_sandbox(P_BOX(current), box_current(parent));
+		copy_sandbox(P_BOX(current), box_current(NULL));
 	}
 	if (share_thread)
 		P_EXECVE_PID(current) = P_EXECVE_PID(parent);
@@ -1434,6 +1434,7 @@ notify_receive:
 					   sydbox->request);
 		if (interrupted && (intr = handle_interrupt(interrupted)))
 			break;
+		interrupted = 0;
 		block_signals();
 		if (r < 0) {
 			if (r == -EINTR)
@@ -1486,18 +1487,16 @@ notify_receive:
 		pid = sydbox->request->pid;
 		current = process_lookup(pid);
 		if (current) {
+			; /* do nothing */
+#if 0
 			if (current->flags & SYD_IN_CLONE) {
 				/* Add premature children to the process tree */
 				pid_t pid_task = -1;
 				for (;;) {
 					syd_proc_pid_next(sydbox->proc_fd,
 							  &pid_task);
-					if (pid_task == 0) {
-						closedir(sydbox->proc_fd);
-						sydbox->proc_fd =
-							opendir("/proc");
+					if (pid_task == 0)
 						break;
-					}
 					int pfd;
 					pfd = syd_proc_open(pid_task);
 					if (pfd < 0)
@@ -1505,18 +1504,20 @@ notify_receive:
 					pid_t ppid = -1, tgid = -1;
 					if (!syd_proc_parents(pfd, &ppid, &tgid) &&
 					    (ppid == current->pid ||
-					     tgid == current->pid)) {
-						close(pfd);
-						closedir(sydbox->proc_fd);
-						sydbox->proc_fd =
-							opendir("/proc");
-						break;
-					}
+					     tgid == current->pid) &&
+					    !process_lookup(pid_task))
+						process_init(pid_task,
+							     current,
+							     false);
 					close(pfd);
 				}
-				if (pid_task > 0)
-					process_init(pid_task, current, false);
+				if (pid_task >= 0) {
+					closedir(sydbox->proc_fd);
+					sydbox->proc_fd =
+						opendir("/proc");
+				}
 			}
+#endif
 		} else {
 			int fd;
 
@@ -1531,13 +1532,17 @@ notify_receive:
 				if (!syd_proc_parents(fd, &ppid, &tgid))
 					parent = process_find_clone(pid, ppid, tgid);
 				close(fd);
-				if (parent) {
-					current = process_init(pid, parent, true);
-					if (current != parent)
-						parent->clone_flags &=
-							~(SYD_IN_CLONE|SYD_IN_EXECVE);
-					parent = NULL;
-				}
+				/* We call process_init regardless of the fact
+				 * that parent is NULL. If parent is NULL,
+				 * process_init is going to inherit from
+				 * sydbox->execve_pid and present the process
+				 * with a reasonable sandboxing setup.
+				 */
+				current = process_init(pid, parent, true);
+				if (current != parent)
+					parent->clone_flags &=
+						~(SYD_IN_CLONE|SYD_IN_EXECVE);
+				parent = NULL;
 			}
 		}
 		if (current) {
@@ -1653,8 +1658,8 @@ pid_validate:
 					switch_execve_leader(execve_pid,
 							     current);
 					P_EXECVE_PID(current) = 0;
-					/* reap zombies after notify respond
-					reap_my_zombies = true; */
+					/* reap zombies after notify respond */
+					reap_my_zombies = true;
 				}
 				if (current->abspath) {
 					free(current->abspath);
@@ -1713,6 +1718,7 @@ out:
 		allow_signals();
 		if (interrupted && (r = handle_interrupt(interrupted)))
 			break;
+		interrupted = 0;
 	}
 
 	seccomp_notify_free(sydbox->request, sydbox->response);

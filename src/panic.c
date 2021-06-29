@@ -57,26 +57,11 @@ static int wait_one(syd_process_t *node)
 
 int kill_one(syd_process_t *node, int fatal_sig)
 {
-	int i, r, pfd;
-	char comm[32] = {'\0'};
+	int i, r;
 
-#if 0
 	if ((r = wait_one(node)) == -ESRCH)
 		return r;
-#endif
 
-	pfd = syd_proc_open(node->pid);
-	if (pfd >= 0) {
-		syd_proc_comm(pfd, comm, sizeof(comm));
-		char *c = strchr(comm, '\n');
-		if (c)
-			*c = '\0';
-		close(pfd);
-	} else {
-		comm[0] = '?';
-	}
-	fprintf(stderr, "sydbox: SIG<%d> -> %d <%s> ", fatal_sig,
-		node->pid, comm);
 	if (node->pidfd == 0)
 		node->pidfd = syd_pidfd_open(node->pid, 0);
 	if (node->pidfd > 0)
@@ -87,16 +72,12 @@ int kill_one(syd_process_t *node, int fatal_sig)
 
 		r = wait_one(node);
 		if (r == -ESRCH) {
-			fputc('X', stderr);
-			fprintf(stderr, " = %s",
-				(fatal_sig == SIGKILL) ? "killed" : "terminated");
+			dump(DUMP_KILL, node, fatal_sig);
 			break;
 		}
-		fputc('.', stderr);
 		r = -EINVAL;
 	}
 
-	fputc('\n', stderr);
 	if (r != -ESRCH && fatal_sig != SIGKILL)
 		return kill_one(node, SIGKILL);
 	return r;

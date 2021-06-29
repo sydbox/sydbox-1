@@ -504,6 +504,29 @@ void dump(enum dump what, ...)
 
 		if (b_cmd && j_cmd && j_cmd[0])
 			free(b_cmd);
+	} else if (what == DUMP_KILL) {
+		syd_process_t *p = va_arg(ap, syd_process_t *);
+		int fatal_sig = va_arg(ap, int);
+
+		char *b_comm = NULL;
+		char *j_comm = NULL;
+
+		j_comm = json_escape_str(&b_comm, p->comm);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(ts)"%llu,"
+			J(event)"{\"id\":%u,\"name\":\"%s\"},"
+			J(pid)"%d,"
+			J(comm)"\"%s\","
+			J(sig)"%d}",
+			id++, (unsigned long long)now,
+			DUMP_KILL, "kill",
+			p->pid, j_comm,
+			fatal_sig);
+
+		if (b_comm && j_comm && j_comm[0])
+			free(b_comm);
 	} else if (what == DUMP_ASSERT) {
 		const char *expr = va_arg(ap, const char *);
 		const char *file = va_arg(ap, const char *);
