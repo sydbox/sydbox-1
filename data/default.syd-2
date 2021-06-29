@@ -92,7 +92,16 @@ denylist/read+/etc/pam*/***
 # Disable /dev/mem /dev/kmem, /dev/port and /proc/kcore.
 denylist/read+/dev/k?mem
 denylist/read+/dev/port
+denylist/read+/dev/autofs
+denylist/read+/dev/btrfs-control
+denylist/read+/dev/ram*
+# /dev/core -> /proc/kcore
+denylist/read+/dev/core
 denylist/read+/proc/kcore
+denylist/read+/dev/usb*
+denylist/read+/dev/vga_arbiter
+denylist/read+/dev/watchdog*
+denylist/read+/dev/zram*
 
 # /proc/kallsyms exposes the kernel memory space address of many kernel symbols
 # (functions, variables, etc...). This information is useful to attackers in
