@@ -98,9 +98,12 @@ static int do_execve(syd_process_t *current, bool at_func)
 	bool badfd;
 	char *path = NULL, *abspath = NULL, *prefix = NULL;
 
+#if 0
+# execve is unconditionally hooked for process/thread hierarchy tracking.
 	if (sandbox_off_exec(current) &&
 	    ACLQ_EMPTY(&sydbox->config.exec_kill_if_match))
 		return 0;
+#endif
 
 	/* TODO: Avoid duplication with box_check_path */
 	badfd = false;

@@ -499,6 +499,7 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 	}
 
 	int r;
+	int pfd_cwd = -1;
 	char *cwd;
 	if (current->pid == sydbox->execve_pid) {
 		/* oh, I know this person, we're in the same directory. */
@@ -507,16 +508,17 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 		return;
 	} else if (!parent) {
 proc_getcwd:
-		if ((r = syd_proc_cwd(sydbox->pfd_cwd, sydbox->config.use_toolong_hack,
+		if ((r = syd_proc_cwd(pfd_cwd < 0 ? sydbox->pfd_cwd : pfd_cwd,
+				      sydbox->config.use_toolong_hack,
 				  &cwd)) < 0) {
 			errno = -r;
-			/* XXX: Debug */
-			sig_usr(SIGUSR2);
 			say_errno("proc_cwd");
 			P_CWD(current) = strdup("/");
 		} else {
 			P_CWD(current) = cwd;
 		}
+		if (pfd_cwd >= 0)
+			close(pfd_cwd);
 		copy_sandbox(P_BOX(current), box_current(NULL));
 		return;
 	}
@@ -543,11 +545,13 @@ proc_getcwd:
 		P_CLONE_FS_RETAIN(current);
 	} else {
 		new_shared_memory_clone_fs(current);
-		if (!genuine) /* Child with a non-genuine parent has a
+		if (!genuine) { /* Child with a non-genuine parent has a
 				 completely separate set of shared memory
 				 pointers, as the last step we want to
 				 read cwd from /proc */
+			pfd_cwd = syd_proc_cwd_open(current->pid);
 			goto proc_getcwd;
+		}
 		P_CWD(current) = xstrdup(P_CWD(parent));
 	}
 }
@@ -1421,7 +1425,7 @@ notify_receive:
 			/* reap zombies after notify respond */
 			reap_my_zombies = true;
 			sydbox_syscall_allow();
-			goto notify_respond;
+			goto pid_validate;
 		} else if (name && (streq(name, "execve") || streq(name, "execveat"))) {
 			/* memfd is no longer valid, reopen next turn,
 			 * reading /proc/pid/mem on a process stopped
@@ -1429,7 +1433,7 @@ notify_receive:
 			if (sydbox->execve_wait) { /* allow the initial exec */
 				sydbox->execve_wait = false;
 				sydbox_syscall_allow();
-				goto notify_respond;
+				goto pid_validate;
 			}
 			pid_t execve_pid = 0;
 			pid_t leader_pid = process_find_exec(pid);
@@ -1449,14 +1453,15 @@ notify_receive:
 					current = process_lookup(pid);
 					switch_execve_leader(execve_pid,
 							     current);
-					sydbox_syscall_allow();
-					goto notify_respond;
+					P_EXECVE_PID(current) = pid;
+					goto pid_validate;
 				}
 				P_EXECVE_PID(current) = 0;
 			}
 			event_exec(current);
 		}
 
+pid_validate:
 		if (!current) {
 			bool genuine;
 			parent = parent_process(pid, &genuine);
@@ -1500,7 +1505,11 @@ notify_receive:
 			sydbox_syscall_allow();
 			current->flags &= ~(SYD_IN_CLONE|SYD_IN_EXECVE);
 			current->update_cwd = true;
-		} else { /* all system calls including exec end up here. */
+		} else if (!startswith(name, "exit")) {
+			/*
+			 * All sandboxed system calls end up here.
+			 * This includes execve*
+			 */
 			sydbox_syscall_allow();
 			current->flags &= ~SYD_IN_CLONE;
 			if (!startswith(name, "execve"))
