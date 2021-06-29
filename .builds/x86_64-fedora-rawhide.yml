@@ -65,7 +65,7 @@ tasks:
     make -j V=1 check && touch .check_ok
     cat {syd,t}/test-suite.log || true
     test -e .check_ok
-    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cjpf ../sydbox-static.tar.bz2 config.log {syd,t}/test-suite.log t/test-results
+    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf ../sydbox-static.tar.bz2 config.log {syd,t}/test-suite.log t/test-results || true
 #- clean_strace: |
 #    rm -f .check_ok
 #    rm -fr t/test-suite.log t/test-results t/trash*
@@ -74,7 +74,7 @@ tasks:
 #    make -j V=1 TEST_OPTIONS="--strace" check && touch .check_ok
 #    cat {syd,t}/test-suite.log || true
 #    test -e .check_ok
-#    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cjpf ../sydbox-strace.tar.bz2 config.log {syd,t}/test-suite.log t/test-results
+#    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf ../sydbox-strace.tar.bz2 config.log {syd,t}/test-suite.log t/test-results || true
 #- clean_valgrind: |
 #    cd sydbox
 #    rm -f .check_ok
@@ -84,7 +84,7 @@ tasks:
 #    make -j V=1 TEST_OPTIONS="--valgrind" check && touch .check_ok
 #    cat {syd,t}/test-suite.log || true
 #    test -e .check_ok
-#    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cjpf ../sydbox-valgrind.tar.bz2 config.log {syd,t}/test-suite.log t/test-results
+#    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf ../sydbox-valgrind.tar.bz2 config.log {syd,t}/test-suite.log t/test-results || true
 - clean_static: |
     cd sydbox
     make clean
@@ -102,4 +102,4 @@ tasks:
     make -j V=1 check && touch .check_ok
     cat {syd,t}/test-suite.log || true
     test -e .check_ok
-    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cjpf ../sydbox-test.tar.bz2 config.log {syd,t}/test-suite.log t/test-results
+    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf ../sydbox-test.tar.bz2 config.log {syd,t}/test-suite.log t/test-results || true
