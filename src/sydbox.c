@@ -1003,7 +1003,7 @@ static void init_signals(void)
 	sigaction(SIGTSTP, &sa, NULL);
 
 	/* Term */
-	set_sighandler(SIGALRM,  interrupt, NULL);
+	set_sighandler(SIGALRM, interrupt, NULL);
 	set_sighandler(SIGHUP,  interrupt, NULL);
 	set_sighandler(SIGINT,  interrupt, NULL);
 	set_sighandler(SIGQUIT, interrupt, NULL);
@@ -1082,6 +1082,12 @@ static int handle_interrupt(int sig)
 	const char *name = signal2name(sig);
 #endif
 	switch (sig) {
+	case SIGALRM:
+#if 0
+		reap_zombies();
+		return (process_count_alive() == 0) ? ECHILD : 0;
+#endif
+		return 0;
 	case SIGCHLD:
 		return sig_child();
 	case SIGUSR1:
@@ -1422,7 +1428,6 @@ static int notify_loop()
 		syd_process_t *parent;
 
 notify_receive:
-		alarm(1);
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
 		allow_signals();
 		r = seccomp_notify_receive(sydbox->notify_fd,
@@ -1455,7 +1460,6 @@ notify_receive:
 				goto out;
 			}
 		}
-		alarm(0);
 
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
