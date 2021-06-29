@@ -901,10 +901,6 @@ static inline bool proc_validate(pid_t pid)
 
 	int fd;
 
-	if ((fd = syd_pidfd_open(pid, 0)) < 0)
-		goto err;
-	sydbox->pidfd = fd;
-
 	if ((fd = syd_proc_open(pid)) < 0)
 		goto err;
 	sydbox->pfd = fd;
@@ -923,6 +919,12 @@ static inline bool proc_validate(pid_t pid)
 	sydbox->p->comm[0] = '?';
 	sydbox->p->comm[1] = '\0';
 	syd_proc_comm(sydbox->pfd, sydbox->p->comm, sizeof(sydbox->p->comm));
+
+	/* pidfd is optional, we'll handle it gracefully. */
+	if ((fd = syd_pidfd_open(pid, 0)) < 0)
+		sydbox->pidfd = -1;
+	else
+		sydbox->pidfd = fd;
 
 	goto validation_done;
 err:
@@ -943,12 +945,10 @@ validation_done:
 #define proc_valid(p) ((p) == sydbox->p)
 #define proc_validate_or_deny(_p,  label) do {\
 	if (!proc_validate(_p->pid)) { \
-		if (errno != EINVAL) { \
-			sydbox->response->error = -ESRCH; \
-			sydbox->response->val = 0; \
-			sydbox->response->flags = 0; \
-			goto label; \
-		} \
+		sydbox->response->error = -ESRCH; \
+		sydbox->response->val = 0; \
+		sydbox->response->flags = 0; \
+		goto label; \
 	} (_p) = sydbox->p; \
 } while(0)
 
