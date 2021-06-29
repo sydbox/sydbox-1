@@ -26,7 +26,7 @@ test_expect_success 'return success if initial tracee returns success (STATIC|FO
 '
 
 test_expect_success 'return success if initial tracee returns success (PTHREAD)' '
-    syd -- syd-true-pthread 32
+    syd -- syd-true-pthread ${SPAWN_MAX}
 '
 
 test_expect_success 'return failure if tracee returns failure' '
@@ -46,7 +46,7 @@ test_expect_success 'return failure if initial tracee returns failure (STATIC|FO
 '
 
 test_expect_success 'return failure if initial tracee returns failure (PTHREAD)' '
-    test_expect_code 1 syd -- syd-false-pthread 32
+    test_expect_code 1 syd -- syd-false-pthread ${SPAWN_MAX}
 '
 
 test_done

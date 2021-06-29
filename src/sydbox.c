@@ -1480,38 +1480,46 @@ pid_validate:
 		 */
 		if (current) {
 			proc_validate_or_deny(current, notify_respond);
-			current->sysnum = sydbox->request->data.nr;
-			current->sysname = name;
-			for (unsigned short idx = 0; idx < 6; idx++)
-				current->args[idx] = sydbox->request->data.args[idx];
-			if (current->update_cwd) {
-				r = sysx_chdir(current);
-				if (r < 0)
-					say_errno("sys_chdir");
-				current->update_cwd = false;
+			if (current) {
+				current->sysnum = sydbox->request->data.nr;
+				current->sysname = name;
+				for (unsigned short idx = 0; idx < 6; idx++)
+					current->args[idx] = sydbox->request->data.args[idx];
+				if (current->update_cwd) {
+					r = sysx_chdir(current);
+					if (r < 0)
+						say_errno("sys_chdir");
+					current->update_cwd = false;
+				}
 			}
 		}
 
+		bool not_clone = true;
+		bool not_exec = true;
 		if (!name) {
 			; /* goto notify_respond; */
 		} else if (streq(name, "clone")) {
 			sydbox_syscall_allow();
+			not_clone = false;
 			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
 		} else if (streq(name, "clone2")) {
 			sydbox_syscall_allow();
+			not_clone = false;
 			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
 		} else if (streq(name, "clone3")) {
 			sydbox_syscall_allow();
+			not_clone = false;
 			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
 		} else if (streq(name, "fork")) {
 			sydbox_syscall_allow();
+			not_clone = false;
 			event_clone(current, 'f', 0);
 		} else if (streq(name, "vfork")) {
 			sydbox_syscall_allow();
+			not_clone = false;
 			event_clone(current, 'v', 0);
 		} else if (streq(name, "chdir") || !strcmp(name, "fchdir")) {
 			sydbox_syscall_allow();
-			current->flags &= ~(SYD_IN_CLONE|SYD_IN_EXECVE);
 			current->update_cwd = true;
 		} else if (!startswith(name, "exit")) {
 			/*
@@ -1519,7 +1527,6 @@ pid_validate:
 			 * This includes execve*
 			 */
 			sydbox_syscall_allow();
-			current->flags &= ~SYD_IN_CLONE;
 			event_syscall(current);
 			if (execve_pid) {
 				event_exec(current);
@@ -1537,10 +1544,15 @@ pid_validate:
 					free(current->abspath);
 					current->abspath = NULL;
 				}
+			} else {
+				;/*not_exec = false;*/
 			}
-			if (!startswith(name, "execve"))
-				current->flags &= ~SYD_IN_EXECVE;
 		}
+
+		if (current && not_clone)
+			current->flags &= ~SYD_IN_CLONE;
+		if (current && not_exec)
+			current->flags &= ~SYD_IN_EXECVE;
 
 notify_respond:
 		r = seccomp_notify_respond(sydbox->notify_fd,

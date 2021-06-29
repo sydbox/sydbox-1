@@ -901,7 +901,7 @@ static inline bool proc_validate(pid_t pid)
 
 	int fd;
 
-	if ((fd = sydbox->pidfd = syd_pidfd_open(pid, 0)) < 0)
+	if ((fd = syd_pidfd_open(pid, 0)) < 0)
 		goto err;
 	sydbox->pidfd = fd;
 
@@ -943,10 +943,12 @@ validation_done:
 #define proc_valid(p) ((p) == sydbox->p)
 #define proc_validate_or_deny(_p,  label) do {\
 	if (!proc_validate(_p->pid)) { \
-		sydbox->response->error = -ESRCH; \
-		sydbox->response->val = 0; \
-		sydbox->response->flags = 0; \
-		goto label; \
+		if (errno != EINVAL) { \
+			sydbox->response->error = -ESRCH; \
+			sydbox->response->val = 0; \
+			sydbox->response->flags = 0; \
+			goto label; \
+		} \
 	} (_p) = sydbox->p; \
 } while(0)
 
