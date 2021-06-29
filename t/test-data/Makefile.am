@@ -9,7 +9,7 @@ EXTRA_DIST= \
 	    trinity.syd-2 \
 	    wildtest.txt
 
-syddir=$(libexecdir)/$(PACKAGE)/t/test-data
+syddir=$(libexecdir)/$(PACKAGE)/t-$(SYDBOX_API_VERSION)/test-data
 syd_DATA= \
 	  trinity.syd-2 \
 	  wildtest.txt
