@@ -4,7 +4,6 @@ EXTRA_DIST=
 sydboxsharedir= $(datadir)/$(PACKAGE)
 sydboxshare_DATA= \
 		  default.syd-2 \
-		  paludis.syd-1 \
 		  paludis.syd-2 \
 		  firefox.syd-2 \
 		  sydbox.bashrc
