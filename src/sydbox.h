@@ -423,6 +423,9 @@ struct syd_process {
 	/* Process/Thread ID */
 	pid_t pid;
 
+	/* Pidfd to the Thread group */
+	int pidfd;
+
 	/* Parent process ID */
 	pid_t ppid;
 
@@ -620,7 +623,6 @@ struct sydbox {
 	 * The lifetime of the file descriptors 1..3 is a single seccomp
 	 * notification. See: kernel/samples/seccomp/user-trap.c
 	 */
-	int pidfd;
 	int pfd;
 	int pfd_fd;
 
@@ -643,9 +645,6 @@ struct sydbox {
 
 	int notify_fd;
 	int seccomp_fd;
-#if SYDBOX_HAVE_DUMP_BUILTIN
-	int dump_fd;
-#endif
 
 	/* Export mode, BPF/PFC */
 	enum sydbox_export_mode export_mode;
@@ -654,6 +653,9 @@ struct sydbox {
 	uint32_t seccomp_action;
 	pid_t sydbox_pid; /* Process ID of the SydBox process. */
 	pid_t execve_pid; /* Process ID of the process SydBox executes. */
+
+	/* /proc */
+	DIR *proc_fd;
 
 	/* Program invocation name (for the child) */
 	char *program_invocation_name;
@@ -766,10 +768,12 @@ typedef struct syscall_info syscall_info_t;
 /* Global variables */
 extern sydbox_t *sydbox;
 
+#if 0
 #if SYDBOX_HAVE_DUMP_BUILTIN
-# define inspecting() ((sydbox) && (sydbox->dump_fd) != 0)
+# define inspecting() (dump_get_fd() != 0)
 #else
 # define inspecting() (0)
+#endif
 #endif
 
 #define tracing() (0)
@@ -864,8 +868,6 @@ static inline bool syd_seccomp_request_is_valid(void)
 
 static inline void proc_invalidate(void)
 {
-	if (sydbox->pidfd > 0)
-		close(sydbox->pidfd);
 	if (sydbox->pfd > 0)
 		close(sydbox->pfd);
 	if (sydbox->pfd_cwd > 0)
@@ -875,7 +877,6 @@ static inline void proc_invalidate(void)
 	if (sydbox->pfd_mem > 0)
 		close(sydbox->pfd_mem);
 
-	sydbox->pidfd = -1;
 	sydbox->pfd = -1;
 	sydbox->pfd_cwd = -1;
 	sydbox->pfd_fd = -1;
@@ -922,19 +923,11 @@ static inline bool proc_validate(pid_t pid)
 		syd_proc_comm(sydbox->pfd, sydbox->p->comm,
 			      sizeof(sydbox->p->comm));
 	}
-
-	/* pidfd is optional, we'll handle it gracefully. */
-	if ((fd = syd_pidfd_open(pid, 0)) < 0)
-		sydbox->pidfd = -1;
-	else
-		sydbox->pidfd = fd;
-
 	goto validation_done;
 err:
 	proc_invalidate();
 	return false;
 validation_done:
-
 	/* Validations are done,
 	 * the remaining file descriptors
 	 * are dependent on the above
@@ -1009,7 +1002,7 @@ void cleanup_for_sydbox(void);
 int parent_read_int(int *message);
 int parent_write_int(int message);
 
-void kill_all(int fatal_sig);
+void kill_all(int fatal_sig, pid_t skip_pid);
 int kill_one(syd_process_t *current, int fatal_sig);
 int deny(syd_process_t *current, int err_no);
 int restore(syd_process_t *current);

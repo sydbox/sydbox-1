@@ -63,6 +63,8 @@ enum dump {
 #define INSPECT_DUMP_OOPS (1ULL << DUMP_OOPS)
 	DUMP_SECCOMP_NOTIFY_RECV, /* seccomp notification received. */
 #define INSPECT_DUMP_SECCOMP_NOTIFY_RECV (1ULL << DUMP_SECCOMP_NOTIFY_RECV)
+	DUMP_SECCOMP_PID_VALID, /* seccomp pid is valid. */
+#define INSPECT_DUMP_SECCOMP_PID_VALID (1ULL << DUMP_SECCOMP_PID_VALID)
 };
 
 #if SYDBOX_DUMP
@@ -71,6 +73,8 @@ enum dump {
 # define INSPECT_DEFAULT (INSPECT_DUMP_STARTUP |\
 			  INSPECT_DUMP_OOPS |\
 			  INSPECT_DUMP_SYSENT |\
+			  INSPECT_DUMP_SECCOMP_NOTIFY_RECV |\
+			  INSPECT_DUMP_SECCOMP_PID_VALID |\
 			  INSPECT_DUMP_CROSS_MEMORY |\
 			  INSPECT_DUMP_EXEC |\
 			  INSPECT_DUMP_EXEC_MT |\
@@ -85,8 +89,11 @@ extern unsigned long long dump_inspect;
 #define inspected_f(what) ((dump_inspect & (what)) != 0)
 
 void dump(enum dump what, ...);
+int dump_get_fd(void);
+void dump_set_fd(int dump_fd);
 
 #else
+# define dump_fd(...) /* empty */
 # define dump(...) /* empty */
 # define inspected_i(what) (0)
 # define inspected_f(what) (0)

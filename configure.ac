@@ -545,6 +545,7 @@ AC_CHECK_HEADERS(m4_flatten([
 	linux/stat.h
 	linux/uio.h
 	linux/unistd.h
+	linux/utsname.h
 	linux/version.h
 ]))
 
@@ -597,6 +598,9 @@ if test x"$HAVE_NEWFSTATAT" = x"1"; then
 	AC_DEFINE_UNQUOTED([HAVE_NEWFSTATAT], [1], [Have newfstatat() system call])
 fi
 AC_SUBST([HAVE_NEWFSTATAT])
+
+dnl check for members
+AC_CHECK_MEMBERS([struct new_utsname.domainname],,, [#include <linux/utsname.h>])
 
 dnl check for functions
 AC_CHECK_FUNCS([asprintf],      [], [AC_MSG_ERROR([I need asprintf])])

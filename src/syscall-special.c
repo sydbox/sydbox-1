@@ -35,6 +35,9 @@
 #ifdef HAVE_LINUX_STAT_H
 # include <linux/stat.h>
 #endif
+#ifdef HAVE_LINUX_UTSNAME_H
+# include <linux/utsname.h>
+#endif
 
 #if defined(__x86_64__)
 /* These might be macros. */
@@ -255,8 +258,8 @@ int sys_execveat(syd_process_t *current)
 #define FAKE_NODENAME "sydb☮x"
 #define FAKE_RELEASE VERSION
 #define FAKE_VERSION "#"STRINGIFY(SYDBOX_API_VERSION)
-#define FAKE_MACHINE "Ⓐ"
-#define FAKE_DOMAINNAME "exherb☮.☮rg"
+#define FAKE_MACHINE "♡"
+#define FAKE_DOMAINNAME "exherb☮.♡rg"
 
 /* Write stat buffer */
 static int write_stat(syd_process_t *current, unsigned int buf_index,
@@ -365,18 +368,20 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 static int write_uname(syd_process_t *current, unsigned int buf_index)
 {
 	int r;
-	struct utsname buf;
+	struct new_utsname buf;
 
 	strlcpy(buf.sysname, FAKE_SYSNAME, sizeof(FAKE_SYSNAME));
 	strlcpy(buf.release, FAKE_RELEASE, sizeof(FAKE_RELEASE));
 	strlcpy(buf.version, FAKE_VERSION, sizeof(FAKE_VERSION));
 	strlcpy(buf.nodename, FAKE_NODENAME, sizeof(FAKE_NODENAME));
 	strlcpy(buf.machine, FAKE_MACHINE, sizeof(FAKE_MACHINE));
+#ifdef HAVE_STRUCT_NEW_UTSNAME_DOMAINNAME
 	strlcpy(buf.domainname, FAKE_DOMAINNAME, sizeof(FAKE_DOMAINNAME));
+#endif
 
 	long addr = current->args[buf_index];
 	char *bufaddr = (char *)&buf;
-	size_t bufsize = sizeof(struct utsname);
+	size_t bufsize = sizeof(struct new_utsname);
 	if ((r = syd_write_data(current, addr, bufaddr, bufsize)) < 0)
 		return r;
 	if (syd_write_vm_data(current, addr, bufaddr, bufsize) < 0)

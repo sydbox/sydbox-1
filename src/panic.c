@@ -72,7 +72,7 @@ int kill_one(syd_process_t *node, int fatal_sig)
 	}
 	fprintf(stderr, "sydbox: SIG<%d> -> %d <%s> ", fatal_sig,
 		node->pid, comm);
-	r = syd_pidfd_send_signal(sydbox->pidfd, fatal_sig, NULL, 0);
+	r = syd_pidfd_send_signal(node->pidfd, fatal_sig, NULL, 0);
 
 	for (i = 0; i < 3; i++) {
 		usleep(10000);
@@ -93,7 +93,7 @@ int kill_one(syd_process_t *node, int fatal_sig)
 	return r;
 }
 
-void kill_all(int fatal_sig)
+void kill_all(int fatal_sig, pid_t skip_pid)
 {
 	syd_process_t *node;
 
@@ -101,11 +101,13 @@ void kill_all(int fatal_sig)
 		return;
 
 	sc_map_foreach_value(&sydbox->tree, node) {
+		if (skip_pid && node->pid == skip_pid)
+			continue;
 		if (kill_one(node, fatal_sig) == -ESRCH)
 			bury_process(node, true);
 	}
-	cleanup_for_sydbox();
-	exit(fatal_sig);
+	//cleanup_for_sydbox();
+	//exit(fatal_sig);
 }
 
 SYD_GCC_ATTR((format (printf, 2, 0)))
@@ -206,8 +208,9 @@ int violation(syd_process_t *current, const char *fmt, ...)
 		return -ESRCH;
 	case VIOLATION_KILLALL:
 		say("VIOLATION_KILLALL");
-		kill_all(SIGTERM);
-		break;
+		kill_all(SIGLOST, 0);
+		cleanup_for_sydbox();
+		exit(128 + SIGLOST);
 	default:
 		assert_not_reached();
 	}

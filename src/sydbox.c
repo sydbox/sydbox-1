@@ -63,9 +63,12 @@ static const char *sydsh_argv[] = {
 };
 
 static void
-set_sighandler(int signo, void (*sighandler)(int), struct sigaction *oldact)
+set_sighandler(int signo,
+	       void (*sighandler)(int, siginfo_t *, void *),
+	       struct sigaction *oldact)
 {
-	const struct sigaction sa = { .sa_handler = sighandler };
+	const struct sigaction sa = { .sa_sigaction = sighandler,
+				      .sa_flags = SA_SIGINFO };
 	sigaction(signo, &sa, oldact);
 }
 
@@ -80,16 +83,16 @@ static uint32_t arch_native;
 static char *arch_argv[SYD_SECCOMP_ARCH_ARGV_SIZ] = { NULL };
 static size_t arch_argv_idx;
 #ifdef HAVE_SIG_ATOMIC_T
-static volatile sig_atomic_t interrupted;
+static volatile sig_atomic_t interrupted, interruptid;
 #else
-static volatile int interrupted;
+static volatile int interrupted, interruptid;
 #endif
 static sigset_t empty_set, blocked_set;
 
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
 
-static void interrupt(int sig);
+static void interrupt(int sig, siginfo_t *siginfo, void *context);
 static void reap_zombies(void);
 static inline bool process_is_alive(pid_t pid);
 static inline bool process_is_zombie(pid_t pid);
@@ -272,7 +275,7 @@ static int seccomp_setup(void)
 		say("can't optimize seccomp filter (%d %s), continuing...",
 		    -r, strerror(-r));
 #if SYDBOX_HAVE_DUMP_BUILTIN
-	if (sydbox->dump_fd > 0) {
+	if (dump_get_fd() > 0) {
 		if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_LOG, 1)) < 0)
 			say("can't log attribute for seccomp filter (%d %s), "
 			    "continuing...", -r, strerror(-r));
@@ -379,6 +382,11 @@ static syd_process_t *new_thread(pid_t pid)
 		return NULL;
 
 	thread->pid = pid;
+	if (thread->pidfd < 0) {
+		thread->pidfd = syd_pidfd_open(thread->pid, 0);
+		if (thread->pidfd < 0)
+			say_errno("pidfd_open(%d)", thread->pid);
+	}
 	thread->ppid = SYD_PPID_NONE;
 	thread->tgid = SYD_TGID_NONE;
 
@@ -594,8 +602,10 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid, bool genuine)
 
 	if (pfd >= 0)
 		close(pfd);
-	if (new_child)
+	if (new_child) {
 		init_process_data(child, p, genuine);
+		process_add(child);
+	}
 
 	if (genuine) {
 		/* clone OK: p->pid <-> cpid */
@@ -649,6 +659,18 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 		 * 3. prepare for sandboxing rules transfer from parent.
 		 */
 		return;
+	}
+
+	if (p->pidfd > 0) {
+		/* Under no circumstances we want the process to linger around
+		 * after SydBox exits. This is why we send a SIGLOST signal here
+		 * to the process which is about to be released from the process
+		 * tree. This will be repeated for 3 times every 0.01 seconds.
+		 * If this does not succeed, process is sent a SIGKILL...
+		 */
+		//kill_one(p, SIGLOST);
+		close(p->pidfd);
+		p->pidfd = 0; /* assume p is deceased, rip. */
 	}
 
 	if (id_is_valid) {
@@ -968,12 +990,16 @@ static void init_signals(void)
 {
 	init_signal_sets(); block_signals();
 
+	/* Ign */
 	set_sighandler(SIGCHLD, interrupt, &child_sa);
 
 	/* Stop */
-	set_sighandler(SIGTTOU, SIG_IGN,   NULL);
-	set_sighandler(SIGTTIN, SIG_IGN,   NULL);
-	set_sighandler(SIGTSTP, SIG_IGN,   NULL);
+	struct sigaction sa;
+	sa.sa_handler = SIG_IGN;
+	sa.sa_flags = 0;
+	sigaction(SIGTTOU, &sa, NULL);
+	sigaction(SIGTTIN, &sa, NULL);
+	sigaction(SIGTSTP, &sa, NULL);
 
 	/* Term */
 	set_sighandler(SIGHUP,  interrupt, NULL);
@@ -987,50 +1013,56 @@ static void init_signals(void)
 
 static void reset_signals(void)
 {
-	set_sighandler(SIGCHLD, SIG_DFL, NULL);
+	struct sigaction sa;
+
+	sa.sa_handler = SIG_DFL;
+	sa.sa_flags = 0;
+
+	sigaction(SIGCHLD, &sa, NULL);
 
 	/* Stop */
-	set_sighandler(SIGTTOU, SIG_DFL, NULL);
-	set_sighandler(SIGTTIN, SIG_DFL, NULL);
-	set_sighandler(SIGTSTP, SIG_DFL, NULL);
+	sigaction(SIGTTOU, &sa, NULL);
+	sigaction(SIGTTIN, &sa, NULL);
+	sigaction(SIGTSTP, &sa, NULL);
 
 	/* Term */
-	set_sighandler(SIGHUP,  SIG_DFL, NULL);
-	set_sighandler(SIGINT,  SIG_DFL, NULL);
-	set_sighandler(SIGQUIT, SIG_DFL, NULL);
-	set_sighandler(SIGPIPE, SIG_DFL, NULL);
-	set_sighandler(SIGTERM, SIG_DFL, NULL);
-	set_sighandler(SIGUSR1, SIG_DFL, NULL);
-	set_sighandler(SIGUSR2, SIG_DFL, NULL);
+	sigaction(SIGHUP,  &sa, NULL);
+	sigaction(SIGINT,  &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
+	sigaction(SIGPIPE, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGUSR1, &sa, NULL);
+	sigaction(SIGUSR2, &sa, NULL);
 }
 
-static void interrupt(int sig)
+static void interrupt(int sig, siginfo_t *siginfo, void *context)
 {
+	interruptid = siginfo->si_pid;
 	interrupted = sig;
 }
 
 static int sig_child(void)
 {
 	int status;
-	pid_t pid;
+	pid_t pid = interruptid;
 
-	if (process_is_zombie(sydbox->execve_pid)) {
-		bury_process(process_lookup(sydbox->execve_pid), true);
+	syd_process_t *p = process_lookup(pid);
+	if (process_is_zombie(p->pid)) {
+		bury_process(p, true);
 		return ECHILD;
 	}
 	reap_zombies();
-	if (process_count_alive() > 0)
-		return 0;
 
 	for (;;) {
-		pid = waitpid(-1, &status, __WALL|WNOHANG);
-		if (pid >= 0)
+		pid_t cpid;
+		cpid = waitpid(pid, &status, __WALL|WNOHANG);
+		if (cpid >= 0)
 			return 0;
 		switch (errno) {
 		case EINTR:
 			continue;
 		case ECHILD:
-			return 128;
+			return ECHILD;
 		default:
 			assert_not_reached();
 		}
@@ -1071,7 +1103,7 @@ static int handle_interrupt(int sig)
 #warning TODO: nice useful work for statistics, finish up!
 		dump(DUMP_INTR, "kill.all", sig, name, sig != SIGINT;
 #endif
-		kill_all(sig);
+		kill_all(sig, 0);
 		return 128 + sig;
 	}
 }
@@ -1105,7 +1137,7 @@ static void sig_usr(int sig)
 
 static void oops(int sig)
 {
-	kill_all(sig);
+	kill_all(sig, 0);
 	dump(DUMP_CLOSE);
 }
 
@@ -1212,6 +1244,24 @@ static inline bool process_is_zombie(pid_t pid)
 	}
 }
 
+static inline syd_process_t *process_find_clone(pid_t child_pid, pid_t ppid,
+						pid_t tgid)
+{
+	syd_process_t *node;
+
+	sc_map_foreach_value(&sydbox->tree, node) {
+		if (node->pid != ppid ||
+		    node->pid != tgid)
+			continue;
+		if (node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE))
+			return node;
+	}
+
+	node = process_lookup(sydbox->execve_pid);
+	node->new_clone_flags = 0;
+	return node;
+}
+
 static inline pid_t process_find_exec(pid_t exec_pid)
 {
 	syd_process_t *node;
@@ -1234,8 +1284,10 @@ static inline pid_t process_find_exec(pid_t exec_pid)
 static syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 				   bool genuine)
 {
-	syd_process_t *current;
+	if (pid == parent->pid)
+		return process_lookup(pid);
 
+	syd_process_t *current;
 	if (parent) {
 		current = clone_process(parent, pid, genuine);
 		if (genuine)
@@ -1265,6 +1317,7 @@ static void init_early(void)
 	sydbox->notify_fd = -1;
 	sydbox->export_mode = SYDBOX_EXPORT_NUL;
 	sydbox->hash[0] = '\0';
+	sydbox->proc_fd = opendir("/proc");
 	if (!sc_map_init_64v(&sydbox->tree,
 			     SYDBOX_PROCMAP_CAP,
 			     SYDBOX_MAP_LOAD_FAC)) {
@@ -1412,7 +1465,7 @@ notify_receive:
 
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
-		dump(DUMP_SECCOMP_NOTIFY_RECV, sydbox->request, name);
+		dump(DUMP_SECCOMP_NOTIFY_RECV, name, sydbox->request);
 		if (!name) {
 			/* TODO: make this a dump call! */
 			say("Abnormal return from libseccomp!");
@@ -1425,6 +1478,61 @@ notify_receive:
 		pid = sydbox->request->pid;
 		current = process_lookup(pid);
 		if (current) {
+			if (current->flags & SYD_IN_CLONE) {
+				/* Add premature children to the process tree */
+				pid_t pid_task = -1;
+				for (;;) {
+					syd_proc_pid_next(sydbox->proc_fd,
+							  &pid_task);
+					if (pid_task == 0) {
+						closedir(sydbox->proc_fd);
+						sydbox->proc_fd =
+							opendir("/proc");
+						break;
+					}
+					int pfd;
+					pfd = syd_proc_open(pid_task);
+					if (pfd < 0)
+						continue;
+					pid_t ppid = -1, tgid = -1;
+					if (!syd_proc_parents(pfd, &ppid, &tgid) &&
+					    (ppid == current->pid ||
+					     tgid == current->pid)) {
+						close(pfd);
+						closedir(sydbox->proc_fd);
+						sydbox->proc_fd =
+							opendir("/proc");
+						break;
+					}
+					close(pfd);
+				}
+				if (pid_task > 0)
+					process_init(pid_task, current, false);
+			}
+		} else {
+			int fd;
+
+			/* Here we make an exception and attempt to
+			 * open /proc without validation for the sake
+			 * of the completeness and aptness of our
+			 * process tree.
+			 */
+			if ((fd = syd_proc_open(pid)) >= 0) {
+				pid_t ppid = -1, tgid = -1;
+				parent = NULL;
+				if (!syd_proc_parents(fd, &ppid, &tgid))
+					parent = process_find_clone(pid, ppid, tgid);
+				close(fd);
+				if (parent) {
+					current = process_init(pid, parent, true);
+					if (current != parent)
+						parent->clone_flags &=
+							~(SYD_IN_CLONE|SYD_IN_EXECVE);
+					parent = NULL;
+				}
+			}
+		}
+		if (current) {
 			current->sysnum = sydbox->request->data.nr;
 			current->sysname = name;
 			for (unsigned short idx = 0; idx < 6; idx++)
@@ -1433,16 +1541,9 @@ notify_receive:
 
 		/*
 		 * Handle critical paths early and fast.
-		 * Search early for ex{it,ecve} before getting a process entry.
+		 * Search early for exec before getting a process entry.
 		 */
-		if (startswith(name, "exit")) {
-			if (current)
-				bury_process(current, true);
-			/* reap zombies after notify respond */
-			reap_my_zombies = true;
-			sydbox_syscall_allow();
-			goto pid_validate;
-		} else if (startswith(name, "exec")) {
+		if (startswith(name, "exec")) {
 			pid_t leader_pid = process_find_exec(pid);
 			if (!current) {
 				parent = process_lookup(leader_pid);
@@ -1482,6 +1583,13 @@ pid_validate:
 						say_errno("sys_chdir");
 					current->update_cwd = false;
 				}
+				dump(DUMP_SECCOMP_PID_VALID, name,
+				     sydbox->request);
+#if 0
+				say("pid:%d execve_pid:%d sydbox_pid:%d name:%s",
+				    pid, sydbox->execve_pid, sydbox->sydbox_pid,
+				    name);
+#endif
 			}
 		}
 
@@ -1512,7 +1620,7 @@ pid_validate:
 		} else if (streq(name, "chdir") || !strcmp(name, "fchdir")) {
 			sydbox_syscall_allow();
 			current->update_cwd = true;
-		} else if (!startswith(name, "exit")) {
+		} else {
 			/*
 			 * All sandboxed system calls end up here.
 			 * This includes execve*
@@ -1530,8 +1638,8 @@ pid_validate:
 					switch_execve_leader(execve_pid,
 							     current);
 					P_EXECVE_PID(current) = 0;
-					/* reap zombies after notify respond */
-					reap_my_zombies = true;
+					/* reap zombies after notify respond
+					reap_my_zombies = true; */
 				}
 				if (current->abspath) {
 					free(current->abspath);
@@ -1587,10 +1695,12 @@ out:
 			reap_my_zombies = false;
 			reap_zombies();
 		}
-		if (jump)
+		if (jump) {
+			jump = false;
 			break;
+		}
 		/* We handled quick cases, we are permitted to interrupt now. */
-		r =  0;
+		r = 0;
 		allow_signals();
 		if (interrupted && (r = handle_interrupt(interrupted)))
 			break;
@@ -1744,6 +1854,8 @@ void cleanup_for_child(void)
 		cleanup_for_child_done = true;
 	assert(sydbox);
 
+	if (sydbox->proc_fd)
+		closedir(sydbox->proc_fd);
 	if (sydbox->program_invocation_name)
 		free(sydbox->program_invocation_name);
 
@@ -1794,29 +1906,35 @@ int main(int argc, char **argv)
 	char *c;
 	struct utsname buf_uts;
 
-	arch_native = seccomp_arch_native();
+	/* Zero-initialise option states */
+	enum sydbox_export_mode opt_export_mode = SYDBOX_EXPORT_NUL;
+	uint8_t opt_mem_access = SYDBOX_CONFIG_MEMACCESS_MAX;
 
 	/* Early initialisations */
-	init_early();
+	dump_set_fd(-3); init_early();
+
+	arch_native = seccomp_arch_native();
 
 #if SYDBOX_HAVE_DUMP_BUILTIN
-	long dump_fd;
+	int dfd = -1;
 	char *end;
 
 # if SYDBOX_DUMP
-	sydbox->dump_fd = STDERR_FILENO;
-# else
-	if (strstr(argv[0], PACKAGE"-dump"))
-		sydbox->dump_fd = STDERR_FILENO;
+	dfd = STDERR_FILENO;
+	dump_fd(STDERR_FILENO);
 # endif
+
+	if (strstr(argv[0], PACKAGE"-dump")) {
+		dfd = STDERR_FILENO;
+		dump_set_fd(STDERR_FILENO);
+	}
 
 	const char *shoebox = getenv("SHOEBOX");
 	if (shoebox) {
-		sydbox->dump_fd = open(shoebox,
-				       SYDBOX_DUMP_FLAGS,
-				       SYDBOX_DUMP_MODE);
-		if (sydbox->dump_fd < 0)
+		dfd = open(shoebox, SYDBOX_DUMP_FLAGS, SYDBOX_DUMP_MODE);
+		if (dfd < 0)
 			die_errno("open(`%s')", shoebox);
+		dump_set_fd(dfd);
 	}
 #endif
 
@@ -1885,34 +2003,30 @@ int main(int argc, char **argv)
 			break;
 #if SYDBOX_HAVE_DUMP_BUILTIN
 		case 'd':
-			sydbox->config.violation_decision = VIOLATION_NOOP;
-			magic_set_sandbox_all("dump", NULL);
 			if (!optarg) {
 				say("option requires an argument: d");
 				usage(stderr, 1);
 			}
 			if (!strcmp(optarg, "tmp")) {
-				sydbox->dump_fd = -1;
+				dump_set_fd(-42);
 			} else {
 				errno = 0;
-				dump_fd = strtoul(optarg, &end, 10);
+				dfd = strtoul(optarg, &end, 10);
 				if ((errno && errno != EINVAL) ||
-				    (unsigned long)dump_fd > INT_MAX)
+				    (unsigned long)dfd  > INT_MAX)
 				{
 					say_errno("Invalid argument for option -d: "
 						  "`%s'", optarg);
 					usage(stderr, 1);
 				} else if (end != strchr(optarg, '\0')) {
-					dump_fd = open(optarg,
-						       SYDBOX_DUMP_FLAGS,
-						       SYDBOX_DUMP_MODE);
-					if (dump_fd < 0)
-						die_errno("Failed to open dump file "
-							  "`%s'", optarg);
+					dfd = open(optarg, SYDBOX_DUMP_FLAGS,
+						   SYDBOX_DUMP_MODE);
+					if (dfd < 0)
+						die_errno("Failed to open "
+							  "dump file `%s'",
+							  optarg);
 				}
-				if (sydbox->dump_fd > STDERR_FILENO)
-					close(sydbox->dump_fd);
-				sydbox->dump_fd = (int)dump_fd;
+				dump_set_fd(dfd);
 			}
 			break;
 #else
@@ -1922,9 +2036,9 @@ int main(int argc, char **argv)
 #endif
 		case 'e':
 			if (startswith(optarg, "bpf")) {
-				sydbox->export_mode = SYDBOX_EXPORT_BPF;
+				opt_export_mode = SYDBOX_EXPORT_BPF;
 			} else if (startswith(optarg, "pfc")) {
-				sydbox->export_mode = SYDBOX_EXPORT_PFC;
+				opt_export_mode = SYDBOX_EXPORT_PFC;
 			} else {
 				say("Invalid argument to --export");
 				usage(stderr, 1);
@@ -1989,7 +2103,7 @@ int main(int argc, char **argv)
 					  "`%s'", optarg);
 				usage(stderr, 1);
 			}
-			sydbox->config.mem_access = opt;
+			opt_mem_access = opt;
 			break;
 		case 't':
 			test_setup();
@@ -2061,6 +2175,24 @@ int main(int argc, char **argv)
 	const char *env;
 	if ((env = getenv(SYDBOX_CONFIG_ENV)))
 		config_parse_spec(env);
+#endif
+
+	if (opt_export_mode != SYDBOX_EXPORT_NUL)
+		sydbox->export_mode = opt_export_mode;
+	if (opt_mem_access < SYDBOX_CONFIG_MEMACCESS_MAX)
+		sydbox->config.mem_access = opt_mem_access;
+
+#if SYDBOX_HAVE_DUMP_BUILTIN
+	switch (dump_get_fd()) {
+	case 0:
+	case -1:
+		break;
+	case -42:
+	default:
+		sydbox->config.violation_decision = VIOLATION_NOOP;
+		magic_set_sandbox_all("dump", NULL);
+		break;
+	}
 #endif
 
 	const char *const *my_argv;
@@ -2158,6 +2290,23 @@ int main(int argc, char **argv)
 		}
 	}
 out:
+	if (use_notify()) {
+		/*
+		 * All good, we kill the remaining processes.
+		 * First with SIGLOST, then with SIGKILL (in 0.03 seconds)
+		 *
+		 * Paenitet me.
+		 */
+		pid_t skip_pid = 0;
+		syd_process_t *p = process_lookup(sydbox->execve_pid);
+		if (p) {
+			skip_pid = p->pid;
+			p->flags &= ~(SYD_IN_CLONE|SYD_IN_EXECVE);
+			bury_process(p, false);
+		}
+
+		kill_all(SIGLOST, skip_pid);
+	}
 	dump(DUMP_EXIT,
 	     exit_code/* sydbox->violation_exit_code */,
 	     process_count(),

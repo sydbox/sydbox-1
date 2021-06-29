@@ -582,7 +582,7 @@ int sysinit_seccomp_load(void)
 	if (in_sydbox_test) { say(__VA_ARGS__); } \
 	} while (0)
 #define SAY_ERRNO(...) do { \
-	if (sydbox->dump_fd > 0) { say_errno(__VA_ARGS__); } \
+	if (dump_get_fd() == STDERR_FILENO) { say_errno(__VA_ARGS__); } \
 	} while (0)
 
 	if ((r = filter_general()) < 0)
@@ -859,8 +859,6 @@ int sysinit_seccomp_load(void)
 		goto out;
 
 	static const int calls[] = {
-		SCMP_SYS(exit),
-		SCMP_SYS(exit_group),
 		SCMP_SYS(execve),
 #if defined(__NR_execveat)
 		SCMP_SYS(execveat),

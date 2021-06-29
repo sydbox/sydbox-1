@@ -27,13 +27,16 @@ ORIGINAL_TERM=$TERM
 TIMEOUT_DURATION=60
 
 # Number of parallel processes for exit test
-EXIT_NPROC=16
+EXIT_NPROC=8
 if type -P nproc >/dev/null 2>&1; then
 	EXIT_NPROC=$(nproc)
 fi
 
 # How many threads to spawn at maximum for forking and threaded tests.
-SPAWN_MAX=64
+SPAWN_MAX=16
+if type -P nproc >/dev/null 2>&1; then
+	SPAWN_MAX=$(expr "$EXIT_NPROC" '*' 3)
+fi
 
 # Install directories
 BINDIR="@BINDIR@"

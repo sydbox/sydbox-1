@@ -29,7 +29,7 @@
 #endif
 
 unsigned long long dump_inspect = INSPECT_DEFAULT;
-int fd;
+static int fd = -1;
 static FILE *fp;
 static char pathdump[PATH_MAX];
 static int nodump = -1;
@@ -267,9 +267,16 @@ static void dump_process(pid_t pid)
 }
 #endif
 
+inline int dump_get_fd(void) {
+	return fd;
+}
+
+inline void dump_set_fd(int dump_fd) {
+	fd = dump_fd;
+}
+
 static int dump_init(void)
 {
-	fd = -1;
 	const char *pathname;
 
 	if (!nodump)
@@ -277,10 +284,9 @@ static int dump_init(void)
 	if (nodump > 0)
 		return 0;
 
-#if SYDBOX_HAVE_DUMP_BUILTIN
-	fd = sydbox->dump_fd;
-#endif
-	if (fd < 0) {
+	if (fd == -3) {
+		return -EBADF; /* Early initialisation, nothing to do. */
+	} else if (fd == -42) {
 		pathname = getenv(DUMP_ENV);
 		if (pathname) {
 			strlcpy(pathdump, pathname, sizeof(pathdump));
@@ -295,9 +301,7 @@ static int dump_init(void)
 		fd = open(pathdump, O_CREAT|O_APPEND|O_WRONLY|O_NOFOLLOW, 0600);
 		if (fd < 0)
 			die_errno("open_dump(`%s')", pathdump);
-		if (sydbox->config.violation_decision == VIOLATION_NOOP) {
-			say("dumping core `%s' for inspection.", pathdump);
-		}
+		say("dumping core `%s' for inspection.", pathdump);
 	}
 	fp = fdopen(fd, "a");
 	if (!fp)
@@ -314,9 +318,6 @@ void dump(enum dump what, ...)
 {
 	va_list ap;
 	time_t now;
-
-	if (what != DUMP_OOPS && !inspecting())
-		return;
 
 	if (dump_init() != 0)
 		return;
@@ -415,25 +416,41 @@ void dump(enum dump what, ...)
 			free(b_comm);
 		if (b_cmdline && j_cmdline[0])
 			free(b_cmdline);
-	} else if (what == DUMP_SECCOMP_NOTIFY_RECV) {
+	} else if (what == DUMP_SECCOMP_NOTIFY_RECV ||
+		   what == DUMP_SECCOMP_PID_VALID) {
+		const char *name = va_arg(ap, const char *);
 		struct seccomp_notif *request = va_arg(ap,
 						       struct seccomp_notif *);
-		const char *name = va_arg(ap, const char *);
+		const char *event_name;
+		if (what == DUMP_SECCOMP_PID_VALID)
+			event_name = "pid_valid";
+		else if (what == DUMP_SECCOMP_NOTIFY_RECV)
+			event_name = "notify_recv";
+		else
+			assert_not_reached();
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(event)"{\"id\":%u,\"name\":\"%s\"},"
-			J(request)"{"
+			J(event)"{\"id\":%u,\"name\":\"%s\"},",
+			id++, (unsigned long long)now,
+			what, event_name);
+
+		fputs(J(name), fp);
+		if (name)
+			fprintf(fp, "\"%s\"", name);
+		else
+			dump_null();
+
+		fprintf(fp, ","
+			J(notif)"{"
 			J(id)"%llu,"
 			J(pid)"%"PRIu32","
 			J(data)"{"
 			J(nr)"%d,"
 			J(arch)"%"PRIu32","
 			J(ip)"%llu,"
-			J(args)"[%llu,%llu,%llu,%llu,%llu,%llu]},",
-			id++, (unsigned long long)now,
-			DUMP_SECCOMP_NOTIFY_RECV, "seccomp_notify_recv",
+			J(args)"[%llu,%llu,%llu,%llu,%llu,%llu]}}",
 			request->id,
 			request->pid,
 			request->data.nr,
@@ -445,13 +462,6 @@ void dump(enum dump what, ...)
 			request->data.args[3],
 			request->data.args[4],
 			request->data.args[5]);
-
-		fputs(J(name), fp);
-		if (name)
-			fprintf(fp, "\"%s\"", name);
-		else
-			dump_null();
-		fprintf(fp, "}");
 	} else if (what == DUMP_ASSERT) {
 		const char *expr = va_arg(ap, const char *);
 		const char *file = va_arg(ap, const char *);

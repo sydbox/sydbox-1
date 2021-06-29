@@ -340,8 +340,11 @@ inline int term_sig(int signum)
 #ifdef SIGPWR
 	case SIGPWR:
 #endif
+#if 0
+#warning duplicate with SIGIO
 #ifdef SIGLOST
 	case SIGLOST:
+#endif
 #endif
 		return signum;
 	default:

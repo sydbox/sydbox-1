@@ -43,7 +43,6 @@
  * so this is not urgent.
  */
 
-
 size_t syd_strlcat(char *dst, const char *src, size_t siz);
 size_t syd_strlcpy(char *dst, const char *src, size_t siz);
 
@@ -92,6 +91,15 @@ int syd_proc_fd_path(int pfd_fd, int fd, char **dst);
 int syd_proc_task_find(int pfd, pid_t task_pid);
 int syd_proc_task_open(int pfd, DIR **task_dir);
 int syd_proc_task_next(DIR *task_dir, pid_t *task_pid);
+/********************************/
+/********************************/
+/********************************/
+
+/*
+ * Function for traversing all processes under /proc.
+ * You really should have a good reason to use this..
+ */
+int syd_proc_pid_next(DIR *proc, pid_t *pid_task);
 
 /* Wrappers for pidfd utilities */
 int syd_pidfd_open(pid_t pid, unsigned int flags);

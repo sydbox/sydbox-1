@@ -122,6 +122,10 @@
 # endif
 #endif
 
+#ifndef SIGLOST
+# define SIGLOST 29
+#endif
+
 #ifndef SYDBOX_FNAME_EXT
 # define SYDBOX_FNAME_EXT "syd-"
 #endif

@@ -531,9 +531,24 @@ retry:
 	} else if (dent->d_name[0] == '.') {
 		goto retry;
 	} else {
-		p = atol(dent->d_name);
+		char *endptr = NULL;
+		errno = 0;
+		p = strtol(dent->d_name, &endptr, 10);
+		if (errno)
+			goto retry;
+		if (!(dent->d_name[0] != '\0' &&
+		      endptr &&
+		      endptr[0] == '\0')) {
+			/* Not the entirety of the string is valid. */
+			goto retry;
+		}
 	}
 
 	*task_pid = p;
 	return 0;
+}
+
+int syd_proc_pid_next(DIR *proc, pid_t *pid_task)
+{
+	return syd_proc_task_next(proc, pid_task);
 }

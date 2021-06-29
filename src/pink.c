@@ -62,7 +62,7 @@ typedef struct msghdr struct_msghdr;
 #endif
 
 #define SYD_RETURN_IF_DEAD(_p) do { \
-	if (sydbox->pidfd == 0) { \
+	if ((_p)->pidfd < 0) { \
 		return -ESRCH; \
 	} \
 } while (0)
@@ -230,10 +230,7 @@ mem_read:
 	} else if (proc_esrch(errno)) {
 		if (sydbox->pfd_mem >= 0)
 			close(sydbox->pfd_mem);
-		if (sydbox->pidfd >= 0)
-			close(sydbox->pidfd);
 		sydbox->pfd_mem = -1;
-		sydbox->pidfd = -1;
 		errno = ESRCH;
 		return r;
 	} else if (!mem_open && (!nread || errno == EBADF || errno == ESPIPE)) {
@@ -287,10 +284,7 @@ mem_write:
 	} else if (proc_esrch(errno)) {
 		if (sydbox->pfd_mem)
 			close(sydbox->pfd_mem);
-		if (sydbox->pidfd)
-			close(sydbox->pidfd);
 		sydbox->pfd_mem = -1;
-		sydbox->pidfd = -1;
 		errno = ESRCH;
 		return r;
 	} else if (!mem_open && (!nwritten || errno == EBADF || errno == ESPIPE)) {

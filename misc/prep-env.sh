@@ -1,7 +1,7 @@
 #!/bin/sh -x
 
 CFLAGS="-D__ALIP_WAS_HERE"
-CFLAGS="${CFLAGS} -O2 -pipe -ggdb"
+CFLAGS="${CFLAGS} -O0 -pipe -ggdb"
 CFLAGS="${CFLAGS} -D__PINK_IS_BEHIND_THE_WALL"
 export CFLAGS
 

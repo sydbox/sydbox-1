@@ -55,14 +55,14 @@ TESTS= \
 	t0013-sys-fuzzer.sh
 check_SCRIPTS+= $(TESTS)
 
-syddir=$(libexecdir)/$(PACKAGE)/t
+syddir=$(libexecdir)/$(PACKAGE)/t-$(SYDBOX_API_VERSION)
 syd_SCRIPTS= aggregate-results.sh check-non-portable-shell.pl chainlint.sed $(check_SCRIPTS)
 syd_DATA= README
 EXTRA_DIST+= $(syd_SCRIPTS) $(syd_DATA)
 
-bin_SCRIPTS= sydtest
-EXTRA_DIST+= sydtest.sh.in
-sydtest: sydtest.sh.in
+bin_SCRIPTS= syd-test
+EXTRA_DIST+= syd-test.sh.in
+syd-test: syd-test.sh.in
 	$(AM_V_GEN)
 	$(AM_V_at)$(SED) \
 		-e "s:@SYDBOX_MAKE@:$(MAKE):g" \
