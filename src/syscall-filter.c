@@ -608,6 +608,8 @@ bool filter_includes(int sysnum)
 
 	switch (sydbox->config.restrict_general) {
 	case 0:
+		filter = NULL;
+		max = 0;
 		break; /* Level 0 is checked unconditionally, below */
 	case 1:
 		filter = filter_gen_level1;

@@ -8,7 +8,7 @@
  */
 
 #include "sydconf.h"
-#include "compiler.h"
+#include <syd/compiler.h>
 
 #ifdef PACKAGE
 # undef PACKAGE

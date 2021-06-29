@@ -6,7 +6,7 @@
  */
 
 #include "sydconf.h"
-#include "compiler.h"
+#include <syd/compiler.h>
 #include "errno2name.h"
 #include "xfunc.h"
 #include "dump.h"
@@ -22,11 +22,13 @@
 
 /* ANSI colour codes */
 #define ANSI_NORMAL		"[00;00m"
-#define ANSI_MAGENTA		"[00;35m"
 #define ANSI_DARK_MAGENTA	"[01;35m"
+#if 0
+#define ANSI_MAGENTA		"[00;35m"
 #define ANSI_GREEN		"[00;32m"
 #define ANSI_YELLOW		"[00;33m"
 #define ANSI_CYAN		"[00;36m"
+#endif
 
 #if IN_SYDBOX
 # define in_child()	((sydbox)->in_child)

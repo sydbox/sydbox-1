@@ -24,6 +24,8 @@
 #include <dirent.h>
 #include <time.h>
 
+#include <syd/compiler.h>
+
 /*
  * 16 is sufficient since the largest number we will ever convert
  * will be 2^32-1, which is 10 digits.

@@ -484,7 +484,8 @@ int syd_proc_task_find(int pfd, pid_t pid_task)
 		return -EINVAL;
 
 	errno = 0;
-	faccessat(pfd_task, p, F_OK, AT_SYMLINK_NOFOLLOW|AT_EACCESS);
+	int r_unused SYD_GCC_ATTR((unused));
+	r_unused = faccessat(pfd_task, p, F_OK, AT_SYMLINK_NOFOLLOW|AT_EACCESS);
 	close(pfd_task);
 	return -errno;
 }

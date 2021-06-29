@@ -29,14 +29,6 @@
 #include "util.h"
 #include "toolong.h"
 
-/* Useful macros */
-#ifndef MAX
-#define MAX(a,b)	(((a) > (b)) ? (a) : (b))
-#endif
-#ifndef MIN
-#define MIN(a,b)	(((a) < (b)) ? (a) : (b))
-#endif
-
 static char *proc_deleted(const char *path)
 {
 	char *r;
@@ -363,7 +355,9 @@ int syd_proc_socket_port(unsigned long long inode, bool ipv4, int *port)
 	if (!f)
 		return -errno;
 
-	fgets(buf, LINE_MAX, f); /* skip the header */
+	/* Skip the header */
+	if (fgets(buf, LINE_MAX, f) == NULL)
+		goto err;
 	while (fgets(buf, LINE_MAX, f) != NULL) {
 		int n;
 		unsigned int port_r;
@@ -386,6 +380,7 @@ int syd_proc_socket_port(unsigned long long inode, bool ipv4, int *port)
 		return 0;
 	}
 
+err:
 	fclose(f);
 	return -ESRCH;
 }

@@ -38,7 +38,7 @@
 #include "util.h"
 #include "xfunc.h"
 #include "arch.h"
-#include "compiler.h"
+#include <syd/compiler.h>
 
 #include "sc_map_syd.h"
 #include "sha1dc_syd.h"

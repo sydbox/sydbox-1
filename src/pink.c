@@ -761,7 +761,8 @@ int test_cross_memory_attach(bool report)
 		const char *addr = "ping";
 
 		close(pipefd[0]);
-		write(pipefd[1], &addr, sizeof(long));
+		int r_unused SYD_GCC_ATTR((unused));
+		r_unused = write(pipefd[1], &addr, sizeof(long));
 		close(pipefd[1]);
 		pause();
 		_exit(0);
@@ -831,7 +832,8 @@ int test_proc_mem(bool report)
 		const char *addr = "ping";
 
 		close(pipefd[0]);
-		write(pipefd[1], &addr, sizeof(long));
+		int r_unused SYD_GCC_ATTR((unused));
+		r_unused = write(pipefd[1], &addr, sizeof(long));
 		close(pipefd[1]);
 		pause();
 		_exit(0);

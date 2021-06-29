@@ -73,7 +73,6 @@ noinst_HEADERS+= \
 		 acl-queue.h \
 		 arch.h \
 		 asyd.h \
-		 compiler.h \
 		 daemon.h \
 		 dump.h \
 		 errno2name.h \

@@ -11,7 +11,7 @@
  */
 
 #include "sydbox.h"
-#include "compiler.h"
+#include <syd/compiler.h>
 #include "daemon.h"
 #include "dump.h"
 
@@ -45,10 +45,6 @@
 #if SYDBOX_DEBUG
 # define UNW_LOCAL_ONLY
 # include <libunwind.h>
-#endif
-
-#ifndef NR_OPEN
-# define NR_OPEN 1024
 #endif
 
 #define switch_execve_flags(f) ((f) & ~(SYD_IN_CLONE|SYD_IN_EXECVE))
@@ -1354,8 +1350,8 @@ static int event_syscall(syd_process_t *current)
 static int notify_loop()
 {
 	int r, intr;
-	pid_t pid;
-	syd_process_t *current;
+	pid_t pid = -1;
+	syd_process_t *current = NULL;
 
 	if ((r = seccomp_notify_alloc(&sydbox->request,
 				      &sydbox->response)) < 0) {
@@ -2105,7 +2101,7 @@ int main(int argc, char **argv)
 
 	/* STARTUP_CHILD must not be called before the signal handlers get
 	   installed below as they are inherited into the spawned process. */
-	int exit_code;
+	int exit_code = 128;
 	int status;
 	pid_t pid;
 	syd_process_t *child;

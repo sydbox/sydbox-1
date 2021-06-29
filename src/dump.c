@@ -24,7 +24,9 @@
 #include "proc.h"
 
 #define J(s)		"\""#s"\":"
+#if 0
 #define J_BOOL(b)	(b) ? "true" : "false"
+#endif
 
 unsigned long long dump_inspect = INSPECT_DEFAULT;
 int fd;
@@ -80,7 +82,9 @@ static void dump_format(const char *argv0, const char *pathname,
 	char *b_argv0 = NULL;
 	char *b_runas = NULL;
 	char *b_path = NULL;
-	char *j_argv0, *j_runas, *j_path;
+	char *j_argv0 = NULL;
+	char *j_runas = NULL;
+	char *j_path = NULL;
 
 	/* Step 1: Generate escaped JSON strings. */
 	if (!argv0 || !argv0[0])
@@ -148,11 +152,11 @@ static void dump_format(const char *argv0, const char *pathname,
 		j_argv0, j_path, j_runas,
 		sydbox->hash, j_arch);
 
-	if (b_argv0 && j_argv0[0])
+	if (b_argv0 && j_argv0 && j_argv0[0])
 		free(b_argv0);
-	if (b_runas && j_runas[0])
+	if (b_runas && j_runas && j_runas[0])
 		free(b_runas);
-	if (b_path && j_path[0])
+	if (b_path && j_path && j_path[0])
 		free(b_path);
 }
 
@@ -655,7 +659,7 @@ void dump(enum dump what, ...)
 		const char *prog = va_arg(ap, const char *);
 
 		char *b_prog = NULL;
-		char *j_prog;
+		char *j_prog = NULL;
 
 		if (prog)
 			j_prog = json_escape_str(&b_prog, prog);
@@ -674,7 +678,7 @@ void dump(enum dump what, ...)
 			dump_null();
 		fputc('}', fp);
 
-		if (b_prog && j_prog[0]) free(b_prog);
+		if (b_prog && j_prog && j_prog[0]) free(b_prog);
 	} else if (what == DUMP_ALLOC) {
 		size_t size = va_arg(ap, size_t);
 		const char *func = va_arg(ap, const char *);

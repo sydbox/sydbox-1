@@ -105,7 +105,8 @@ int change_user(void)
 	if (!uid)
 		return 0;
 	errno = 0;
-	setuid(uid);
+	int r_unused SYD_GCC_ATTR((unused));
+	r_unused = setuid(uid);
 	return -errno;
 }
 
@@ -114,7 +115,8 @@ int change_group(void)
 	if (!gid)
 		return 0;
 	errno = 0;
-	setgid(gid);
+	int r_unused SYD_GCC_ATTR((unused));
+	r_unused = setgid(gid);
 	return -errno;
 }
 
@@ -126,7 +128,8 @@ int change_root_directory(void)
 	if (chroot(root_directory) == -1)
 		return -errno;
 	errno = 0;
-	chdir("/");
+	int r_unused SYD_GCC_ATTR((unused));
+	r_unused = chdir("/");
 	return -errno;
 }
 
@@ -135,7 +138,8 @@ int change_working_directory(void)
 	if (!working_directory)
 		return 0;
 	errno = 0;
-	chdir(working_directory);
+	int r_unused SYD_GCC_ATTR((unused));
+	r_unused = chdir(working_directory);
 	return -errno;
 }
 
@@ -216,7 +220,8 @@ int change_nice(void)
 	if (!nice_inc)
 		return 0;
 	errno = 0;
-	nice(nice_inc);
+	int r_unused SYD_GCC_ATTR((unused));
+	r_unused = nice(nice_inc);
 	return -errno;
 }
 

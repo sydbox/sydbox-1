@@ -14,7 +14,7 @@
 # include "config.h"
 #endif
 
-#include "compiler.h"
+#include <syd/compiler.h>
 #include "dump.h"
 
 #include <string.h>

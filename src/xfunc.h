@@ -11,7 +11,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include "compiler.h"
+#include <syd/compiler.h>
 
 extern void syd_abort_func(void (*func)(int));
 

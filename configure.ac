@@ -125,13 +125,14 @@ AX_CHECK_COMPILER_FLAGS([-std=gnu11],
 	  SYDBOX_CC=c11],
 	 [AC_MSG_ERROR(["Sydbox requires a C compiler that supports ISO C11!"])])])
 dnl extra CFLAGS
-SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow
+SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wno-cpp
 -Wunused-label
 -Wunused-macros
 -Wno-unused-parameter
 -Wunused-result
 -Wunused-value
--Wunused-variable -Wunused-const-variable
+-Wunused-variable
+-Wno-unused-const-variable
 -Walloca
 -Wvla
 "
@@ -539,6 +540,7 @@ AC_CHECK_HEADERS(m4_flatten([
 	linux/stat.h
 	linux/uio.h
 	linux/unistd.h
+	linux/version.h
 ]))
 
 dnl check for types

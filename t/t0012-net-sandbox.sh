@@ -22,7 +22,7 @@ for ns_mem_access in 0 1; do
     test_expect_code 1 test -s "$cdir"/out
 '
 
-    test_expect_failure DIG "network sandboxing = deny [memory_access:${ns_mem_access}]" '
+    test_expect_success DIG "network sandboxing = deny [memory_access:${ns_mem_access}]" '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&

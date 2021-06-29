@@ -16,6 +16,14 @@
 #include <sys/mount.h> /* TODO: check in configure.ac */
 #include <errno.h>
 #include <fcntl.h>
+#ifdef HAVE_LINUX_VERSION_H
+# include <linux/version.h>
+#else
+# ifdef KERNEL_VERSION
+#  undef KERNEL_VERSION
+# endif
+# define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
+#endif
 #include "pink.h"
 #include "bsd-compat.h"
 #include "sockmap.h"
@@ -385,9 +393,14 @@ int sys_openat2(syd_process_t *current)
 	/*
 	 * This can happen if buildhost did not have support for openat2.
 	 */
-#warning "No support for openat2(), sydbox will deny the system call unconditionally."
-#warning "This won't be an issue unless you run sydbox on a system running a Linux kernel 5.6 or newer."
-#warning "If this is the case, please update your kernel and kernel headers as necessary and rebuild sydbox."
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,6,0)
+# warning "No support for openat2()"
+# warning "SydBox will deny the system call unconditionally."
+# warning "This won't be an issue unless you run SydBox on a system"
+# warning "running a Linux kernel 5.6 or newer."
+# warning "If this is the case, please update your kernel and kernel headers,"
+# warning "and rebuild SydBox!"
+#endif
 	return deny(current, ENOTSUP);
 }
 #endif
