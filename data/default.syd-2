@@ -14,15 +14,27 @@ core/sandbox/network:deny
 core/allowlist/per_process_directories:false
 
 core/allowlist/successful_bind:true
-core/allowlist/unsupported_socket_families:true
+
+# We only passthrough UNIX sockets, UNIX abstract
+# sockets, IPv4 and IPv6 addresses. The rest,
+# e.g: NETLINK addresses are denied by default.
+core/allowlist/unsupported_socket_families:false
 
 core/violation/decision:deny
 core/violation/exit_code:-1
+
+# The defaults are not noisy, but the shell
+# is allowed to make a bit more noise......
 core/violation/raise_fail:false
-core/violation/raise_safe:false
+core/violation/raise_safe:true
 
 core/trace/memory_access:0
 core/trace/program_checksum:2
+
+# Try very hard to find a current working
+# directory to check the path argument
+# with. Otherwise the system call will
+# be denied.
 core/trace/use_toolong_hack:true
 
 core/restrict/id_change:true
@@ -118,7 +130,25 @@ denylist/read+/proc/iomem
 denylist/read+/proc/slabinfo
 denylist/read+/proc/vmallocinfo
 denylist/read+/proc/vmstat
+denylist/read+/proc/self/auxv
+denylist/read+/proc/self/cgroup
+denylist/read+/proc/self/cwd
+denylist/read+/proc/self/environ
 denylist/read+/proc/self/mtab
+denylist/read+/proc/self/net/***
+denylist/read+/proc/self/ns/***
+# Take into account both {numa_,}maps {,s}maps{_rollup}
+denylist/read+/proc/self/*map*
+denylist/read+/proc/self/map_files/***
+denylist/read+/proc/self/mem
+denylist/read+/proc/self/mount*
+denylist/read+/proc/self/oom*
+denylist/read+/proc/self/root
+denylist/read+/proc/self/setgroups
+# Take into account {sched,}stat{m,us}
+denylist/read+/proc/self/*stat*
+denylist/read+/proc/self/syscall
+denylist/read+/proc/self/task
 
 # More restrictions:
 denylist/read+/sys/fs/***
