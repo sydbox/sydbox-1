@@ -1453,7 +1453,9 @@ notify_receive:
 					current = process_lookup(pid);
 					switch_execve_leader(execve_pid,
 							     current);
-					P_EXECVE_PID(current) = pid;
+					//P_EXECVE_PID(current) = pid;
+					/* reap zombies after notify respond */
+					reap_my_zombies = true;
 					goto pid_validate;
 				}
 				P_EXECVE_PID(current) = 0;
