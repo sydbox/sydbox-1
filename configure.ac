@@ -15,7 +15,7 @@ dnl Program, version
 AC_PREREQ(2.59)
 
 dnl Homepage
-m4_define([SYDBOX_BUGREPORT], [https://gitlab.exherbo.org/exherbo-misc/sydbox-1/-/issues])
+m4_define([SYDBOX_BUGREPORT], [https://todo.sr.ht/~alip/sydbox])
 m4_define([SYDBOX_HOMEPAGE], [http://sydbox.exherbo.org/])
 
 dnl Versioning
