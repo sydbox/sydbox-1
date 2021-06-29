@@ -315,8 +315,11 @@ static int dump_init(enum dump what)
 	if (fd > STDERR_FILENO &&
 	    fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
 		die_errno("fcntl");
-	if (what == DUMP_OOPS)
+	if (what == DUMP_OOPS && fd_orig == STDERR_FILENO) {
 		fd = fd_orig;
+		fclose(fp);
+		fp = fdopen(fd, "a");
+	}
 	nodump = 1;
 
 	return 0;
