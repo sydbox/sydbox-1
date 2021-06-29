@@ -46,8 +46,10 @@ unsigned acl_pathmatch(enum acl_action defaction, const aclq_t *aclq,
 	/* The last matching pattern decides */
 	node_match = NULL;
 	ACLQ_FOREACH(node, aclq) {
-		if (pathmatch(node->match, path))
+		if (pathmatch(node->match, path)) {
+			say("match: %s ⊆ %s", node->match, path);
 			node_match = node;
+		}
 	}
 
 	return acl_check(defaction, node_match, match);
