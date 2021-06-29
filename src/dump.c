@@ -275,8 +275,9 @@ inline void dump_set_fd(int dump_fd) {
 	fd = dump_fd;
 }
 
-static int dump_init(void)
+static int dump_init(enum dump what)
 {
+	int fd_orig = -1;
 	const char *pathname;
 
 	if (!nodump)
@@ -284,7 +285,10 @@ static int dump_init(void)
 	if (nodump > 0)
 		return 0;
 
-	if (fd == -3) {
+	if (what == DUMP_OOPS && fd <= 0) {
+		fd_orig = fd;
+		fd = STDERR_FILENO;
+	} else if (fd == -3) {
 		return -EBADF; /* Early initialisation, nothing to do. */
 	} else if (fd == -42) {
 		pathname = getenv(DUMP_ENV);
@@ -303,12 +307,16 @@ static int dump_init(void)
 			die_errno("open_dump(`%s')", pathdump);
 		say("dumping core `%s' for inspection.", pathdump);
 	}
+	if (fp)
+		fclose(fp);
 	fp = fdopen(fd, "a");
 	if (!fp)
 		die_errno("fdopen_dump");
 	if (fd > STDERR_FILENO &&
 	    fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
 		die_errno("fcntl");
+	if (what == DUMP_OOPS)
+		fd = fd_orig;
 	nodump = 1;
 
 	return 0;
@@ -319,7 +327,7 @@ void dump(enum dump what, ...)
 	va_list ap;
 	time_t now;
 
-	if (dump_init() != 0)
+	if (dump_init(what) != 0)
 		return;
 	if (what == DUMP_CLOSE) {
 		dump_close();
@@ -378,30 +386,32 @@ void dump(enum dump what, ...)
 		if (inspected_i(what) || verbose) {
 			id++;
 			bool colour = (verbose && (fd <= 0 || fd == STDERR_FILENO));
-			if (colour)
-				fputs(ANSI_DARK_MAGENTA, fp);
-			fprintf(fp, "{"
-				J(id)"%llu,"
-				J(ts)"%llu,"
-				J(pid)"%d,"
-				J(event)"{\"id\":%u,\"name\":\"☮☮ps\"},"
-				J(sys)"\"%s\","
-				J(syd)"\"%s\","
-				J(comm)"\"%s\","
-				J(cmd)"\"%s\","
-				J(cwd)"\"%s\","
-				J(ppid)"%d,"
-				J(tgid)"%d,"
-				J(proc)"{"
-				J(ppid)"%d,"
-				J(tgid)"%d,"
-				J(cwd)"\"%s\"}}",
-				id, (unsigned long long)now, pid, what,
-				j_sys, j_expr, j_comm, j_cmdline, j_cwd,
-				ppid, tgid,
-				proc_ppid, proc_tgid, j_proc_cwd);
-			if (colour)
-				fputs(ANSI_NORMAL, fp);
+			if (fd >= 0) {
+				if (colour)
+					fputs(ANSI_DARK_MAGENTA, fp);
+				fprintf(fp, "{"
+					J(id)"%llu,"
+					J(ts)"%llu,"
+					J(pid)"%d,"
+					J(event)"{\"id\":%u,\"name\":\"☮☮ps\"},"
+					J(sys)"\"%s\","
+					J(syd)"\"%s\","
+					J(comm)"\"%s\","
+					J(cmd)"\"%s\","
+					J(cwd)"\"%s\","
+					J(ppid)"%d,"
+					J(tgid)"%d,"
+					J(proc)"{"
+					J(ppid)"%d,"
+					J(tgid)"%d,"
+					J(cwd)"\"%s\"}}",
+					id, (unsigned long long)now, pid, what,
+					j_sys, j_expr, j_comm, j_cmdline, j_cwd,
+					ppid, tgid,
+					proc_ppid, proc_tgid, j_proc_cwd);
+				if (colour)
+					fputs(ANSI_NORMAL, fp);
+			}
 		}
 
 		if (b_sys && j_sys[0])
@@ -416,6 +426,14 @@ void dump(enum dump what, ...)
 			free(b_comm);
 		if (b_cmdline && j_cmdline[0])
 			free(b_cmdline);
+
+		if (verbose && fd != STDERR_FILENO) {
+			int fd_orig = fd;
+			fd = STDERR_FILENO;
+			dump(DUMP_OOPS, verbose, pid, tgid, ppid, proc_tgid, proc_ppid,
+			     sys, expr, cwd, proc_cwd, comm, cmdline);
+			fd = fd_orig;
+		}
 	} else if (what == DUMP_SECCOMP_NOTIFY_RECV ||
 		   what == DUMP_SECCOMP_PID_VALID) {
 		const char *name = va_arg(ap, const char *);
