@@ -411,6 +411,43 @@ void dump(enum dump what, ...)
 			free(b_comm);
 		if (b_cmdline && j_cmdline[0])
 			free(b_cmdline);
+	} else if (what == DUMP_SECCOMP_NOTIFY_RECV) {
+		struct seccomp_notif *request = va_arg(ap,
+						       struct seccomp_notif *);
+		const char *name = va_arg(ap, const char *);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(ts)"%llu,"
+			J(event)"{\"id\":%u,\"name\":\"%s\"},"
+			J(request)"{"
+			J(id)"%llu,"
+			J(pid)"%"PRIu32","
+			J(data)"{"
+			J(nr)"%d,"
+			J(arch)"%"PRIu32","
+			J(ip)"%llu,"
+			J(args)"[%llu,%llu,%llu,%llu,%llu,%llu]},",
+			id++, (unsigned long long)now,
+			DUMP_SECCOMP_NOTIFY_RECV, "seccomp_notify_recv",
+			request->id,
+			request->pid,
+			request->data.nr,
+			request->data.arch,
+			request->data.instruction_pointer,
+			request->data.args[0],
+			request->data.args[1],
+			request->data.args[2],
+			request->data.args[3],
+			request->data.args[4],
+			request->data.args[5]);
+
+		fputs(J(name), fp);
+		if (name)
+			fprintf(fp, "\"%s\"", name);
+		else
+			dump_null();
+		fprintf(fp, "}");
 	} else if (what == DUMP_ASSERT) {
 		const char *expr = va_arg(ap, const char *);
 		const char *file = va_arg(ap, const char *);

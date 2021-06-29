@@ -460,12 +460,9 @@ void reset_process(syd_process_t *p)
 			p->repr[i] = NULL;
 		}
 	}
-#if 0
-	if (p->abspath) {
+	if (p->abspath)
 		free(p->abspath);
-		p->abspath = NULL;
-	}
-#endif
+	p->abspath = NULL;
 }
 
 static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
@@ -1342,8 +1339,9 @@ static int event_exec(syd_process_t *current)
 		dump(DUMP_EXEC, current->pid, current->abspath);
 	}
 
-	free(current->abspath);
-	current->abspath = NULL;
+	//Intentionally not freeing to handle multithreaded execve. */
+	//free(current->abspath);
+	//current->abspath = NULL;
 
 	return r;
 }
@@ -1369,6 +1367,7 @@ static int notify_loop()
 		/* Let the user-space tracing begin. */
 		bool jump = false, reap_my_zombies = false;
 		char *name = NULL;
+		pid_t execve_pid = 0;
 		syd_process_t *parent;
 
 notify_receive:
@@ -1405,31 +1404,27 @@ notify_receive:
 			}
 		}
 
-		//if (sydbox->request->id == 0 && sydbox->request->pid == 0)
-		//	goto out;
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
 		sydbox->response->val = 0;
 		sydbox_syscall_deny();
+		if (sydbox->request->id == 0 && sydbox->request->pid == 0) {
+			say("warning: seccomp request with neither id nor pid! "
+			    "Denying...");
+			goto notify_respond;
+		}
 
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
+		dump(DUMP_SECCOMP_NOTIFY_RECV, sydbox->request, name);
 		if (!name) {
 			/* TODO: make this a dump call! */
-			say("libseccomp unknown syscall: "
-			    "%d<arch:%"PRIu32",ip:%llu,"
-			    "%llu,%llu,%llu,%llu,%llu,%llu>"
-			    ". Denying...",
-			    sydbox->request->data.nr,
-			    sydbox->request->data.arch,
-			    sydbox->request->data.instruction_pointer,
-			    sydbox->request->data.args[0],
-			    sydbox->request->data.args[1],
-			    sydbox->request->data.args[2],
-			    sydbox->request->data.args[3],
-			    sydbox->request->data.args[4],
-			    sydbox->request->data.args[5]);
-			goto notify_respond;
+			say("Abnormal return from libseccomp!");
+			say("System call name unknown, enable dump for details.");
+			say("Denying system call...");
+			say("Please submit a bug to "
+			    "<"PACKAGE_BUGREPORT">");
+			goto pid_validate;
 		}
 		pid = sydbox->request->pid;
 		current = process_lookup(pid);
@@ -1460,7 +1455,6 @@ notify_receive:
 				sydbox_syscall_allow();
 				goto pid_validate;
 			}
-			pid_t execve_pid = 0;
 			pid_t leader_pid = process_find_exec(pid);
 			if (!current) {
 				parent = process_lookup(leader_pid);
@@ -1469,24 +1463,12 @@ notify_receive:
 			execve_pid = P_EXECVE_PID(current);
 			if (execve_pid == 0 && pid != leader_pid)
 				execve_pid = leader_pid;
-
-			if (execve_pid) {
-				if (pid == execve_pid) {
-					P_EXECVE_PID(current) = 0;
-				} else {
-					current = process_lookup(pid);
-					switch_execve_leader(execve_pid,
-							     current);
-					P_EXECVE_PID(current) = 0;
-					/* reap zombies after notify respond */
-					reap_my_zombies = true;
-				}
-			}
-			event_exec(current);
+			/* The remaining part of exec will be handled as part
+			 * of the event_syscall branch after pid_validate */
 		}
 
 pid_validate:
-		if (!current) {
+		if (name && !current) {
 			bool genuine;
 			parent = parent_process(pid, &genuine);
 			current = process_init(pid, parent, genuine);
@@ -1496,20 +1478,22 @@ pid_validate:
 		 * if it succeeds proceed with sandboxing,
 		 * if it fails deny the system call with ESRCH.
 		 */
-		proc_validate_or_deny(current, notify_respond);
-		current->sysnum = sydbox->request->data.nr;
-		current->sysname = name;
-		for (unsigned short idx = 0; idx < 6; idx++)
-			current->args[idx] = sydbox->request->data.args[idx];
-		if (current->update_cwd) {
-			r = sysx_chdir(current);
-			if (r < 0)
-				say_errno("sys_chdir");
-			current->update_cwd = false;
+		if (current) {
+			proc_validate_or_deny(current, notify_respond);
+			current->sysnum = sydbox->request->data.nr;
+			current->sysname = name;
+			for (unsigned short idx = 0; idx < 6; idx++)
+				current->args[idx] = sydbox->request->data.args[idx];
+			if (current->update_cwd) {
+				r = sysx_chdir(current);
+				if (r < 0)
+					say_errno("sys_chdir");
+				current->update_cwd = false;
+			}
 		}
 
 		if (!name) {
-			;
+			; /* goto notify_respond; */
 		} else if (streq(name, "clone")) {
 			sydbox_syscall_allow();
 			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
@@ -1536,9 +1520,26 @@ pid_validate:
 			 */
 			sydbox_syscall_allow();
 			current->flags &= ~SYD_IN_CLONE;
+			event_syscall(current);
+			if (execve_pid) {
+				event_exec(current);
+				if (pid == execve_pid) {
+					P_EXECVE_PID(current) = 0;
+				} else {
+					current = process_lookup(pid);
+					switch_execve_leader(execve_pid,
+							     current);
+					P_EXECVE_PID(current) = 0;
+					/* reap zombies after notify respond */
+					reap_my_zombies = true;
+				}
+				if (current->abspath) {
+					free(current->abspath);
+					current->abspath = NULL;
+				}
+			}
 			if (!startswith(name, "execve"))
 				current->flags &= ~SYD_IN_EXECVE;
-			event_syscall(current);
 		}
 
 notify_respond:

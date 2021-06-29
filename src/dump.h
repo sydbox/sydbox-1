@@ -61,6 +61,8 @@ enum dump {
 #define INSPECT_DUMP_CROSS_MEMORY (1ULL << DUMP_CROSS_MEMORY)
 	DUMP_OOPS, /* violation() */
 #define INSPECT_DUMP_OOPS (1ULL << DUMP_OOPS)
+	DUMP_SECCOMP_NOTIFY_RECV, /* seccomp notification received. */
+#define INSPECT_DUMP_SECCOMP_NOTIFY_RECV (1ULL << DUMP_SECCOMP_NOTIFY_RECV)
 };
 
 #if SYDBOX_DUMP
