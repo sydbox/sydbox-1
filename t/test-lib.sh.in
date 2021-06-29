@@ -38,6 +38,9 @@ if type -P nproc >/dev/null 2>&1; then
 	SPAWN_MAX=$(expr "$EXIT_NPROC" '*' 3)
 fi
 
+# SydBox API Version
+API_VERSION=@SYDBOX_API_VERSION@
+
 # Install directories
 BINDIR="@BINDIR@"
 LIBEXECDIR="@LIBEXECDIR@"
@@ -1144,7 +1147,7 @@ test_run_ () {
 		# 117 is magic because it is unlikely to match the exit
 		# code of other programs
 		if test -n "$SYDBOX_TEST_INSTALLED"; then
-			chainlint="@LIBEXECDIR@/sydbox/t/chainlint.sed"
+			chainlint="@LIBEXECDIR@/sydbox/t-${API_VERSION}/chainlint.sed"
 		else
 			chainlint="$SYDBOX_BUILD_DIR/t/chainlint.sed"
 		fi
@@ -1467,7 +1470,7 @@ then
 	export SYDBOX_VALGRIND_ENABLED
 elif test -n "$SYDBOX_TEST_INSTALLED"
 then
-	SYDBOX_EXEC_PATH="@LIBEXECDIR@/sydbox/t/bin-wrappers"
+	SYDBOX_EXEC_PATH="@LIBEXECDIR@/sydbox/t-${API_VERSION}/bin-wrappers"
 	PATH=$SYDBOX_EXEC_PATH:$SYDBOX_BUILD_DIR/t/helper:$PATH
 	SYDBOX_EXEC_PATH=${SYDBOX_TEST_EXEC_PATH:-$SYDBOX_EXEC_PATH}
 else # normal case, use ../bin-wrappers only unless $with_dashes:

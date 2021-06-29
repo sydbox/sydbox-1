@@ -25,6 +25,7 @@ test-lib.sh: test-lib.sh.in
 		-e "s:@SYDBOX_HAVE_NEWFSTATAT@:$(HAVE_NEWFSTATAT):g" \
 		-e 's:@BINDIR@:$(bindir):g' \
 		-e 's:@LIBEXECDIR@:$(libexecdir):g' \
+		-e 's:@SYDBOX_API_VERSION@:$(SYDBOX_API_VERSION):g' \
 		$< > $@
 CLEANFILES+= test-lib.sh
 EXTRA_DIST+= test-lib.sh.in
