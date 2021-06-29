@@ -192,7 +192,9 @@ static const int allow_list_level0[] = {
 	SCMP_SYS(exit),
 	SCMP_SYS(exit_group),
 	SCMP_SYS(faccessat),
+#ifdef __SNR_faccessat2
 	SCMP_SYS(faccessat2),
+#endif
 	SCMP_SYS(fadvise64),
 	SCMP_SYS(fadvise64_64),
 	SCMP_SYS(fallocate),
