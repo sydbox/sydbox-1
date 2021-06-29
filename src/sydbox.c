@@ -460,10 +460,12 @@ void reset_process(syd_process_t *p)
 			p->repr[i] = NULL;
 		}
 	}
+#if 0
 	if (p->abspath) {
 		free(p->abspath);
 		p->abspath = NULL;
 	}
+#endif
 }
 
 static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
@@ -1336,7 +1338,7 @@ static int event_exec(syd_process_t *current)
 	/* execve path does not match if_match patterns */
 
 	if (magic_query_violation_raise_safe(current)) {
-		say("execve: %d executed `%s'", current->pid, current->abspath);
+		//say("execve: %d executed `%s'", current->pid, current->abspath);
 		dump(DUMP_EXEC, current->pid, current->abspath);
 	}
 
