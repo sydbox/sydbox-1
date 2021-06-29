@@ -510,6 +510,7 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 		copy_sandbox(P_BOX(current), box_current(NULL));
 		return;
 	} else if (!parent) {
+		copy_sandbox(P_BOX(current), box_current(NULL));
 proc_getcwd:
 		if ((r = syd_proc_cwd(pfd_cwd < 0 ? sydbox->pfd_cwd : pfd_cwd,
 				      sydbox->config.use_toolong_hack,
@@ -522,7 +523,6 @@ proc_getcwd:
 		}
 		if (pfd_cwd >= 0)
 			close(pfd_cwd);
-		copy_sandbox(P_BOX(current), box_current(NULL));
 		return;
 	}
 
