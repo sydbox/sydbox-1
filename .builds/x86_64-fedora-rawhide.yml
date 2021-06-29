@@ -1,6 +1,6 @@
 image: fedora/rawhide
 arch: x86_64
-artifacts: [ sydbox-test.tar.bz2, sydbox-static.tar.bz2, sydbox-strace.tar.bz2, sydbox-valgrind.tar.bz2 ]
+artifacts: [ sydbox-test.tar.bz2, sydbox-static.tar.bz2 ]
 packages:
 - kernel-devel
 - kernel-headers
