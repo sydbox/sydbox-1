@@ -10,10 +10,6 @@
 #include "sockmatch.h"
 #include "util.h"
 
-#ifndef UNIX_PATH_MAX
-# define UNIX_PATH_MAX 108
-#endif
-
 int main(int argc, char *argv[])
 {
 	struct sockmatch *haystack, *needle;
