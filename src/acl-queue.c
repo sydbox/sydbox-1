@@ -47,8 +47,11 @@ unsigned acl_pathmatch(enum acl_action defaction, const aclq_t *aclq,
 	node_match = NULL;
 	ACLQ_FOREACH(node, aclq) {
 		if (pathmatch(node->match, path)) {
-			say("match: %s ⊆ %s", node->match, path);
+			say("match: %s ⊆ %s", (const char *)node->match, path);
 			node_match = node;
+		} else {
+			say("nomatch: %s ⨂ %s", (const char *)node->match,
+			    path);
 		}
 	}
 
