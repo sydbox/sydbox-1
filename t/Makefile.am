@@ -52,8 +52,9 @@ TESTS= \
 	t0009-core-exec.sh \
 	t0010-core-chdir.sh \
 	t0011-net-netmatch.sh \
-	t0012-net-sandbox.sh \
-	t0013-sys-fuzzer.sh
+	t0012-exec-sandbox.sh \
+	t0013-net-sandbox.sh \
+	t0014-sys-fuzzer.sh
 check_SCRIPTS+= $(TESTS)
 
 syddir=$(libexecdir)/$(PACKAGE)/t-$(SYDBOX_API_VERSION)

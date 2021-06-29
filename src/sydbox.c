@@ -1627,7 +1627,14 @@ pid_validate:
 			 */
 			if (current) {
 				sydbox_syscall_allow();
-				event_syscall(current);
+				if (startswith(name, "exec") &&
+				    sydbox->execve_wait) {
+					/* allow the initial exec */
+					not_exec = true;
+					sydbox->execve_wait = false;
+				} else {
+					event_syscall(current);
+				}
 			}
 			if (execve_pid) {
 				event_exec(current);
@@ -1644,12 +1651,6 @@ pid_validate:
 				if (current->abspath) {
 					free(current->abspath);
 					current->abspath = NULL;
-				}
-				if (sydbox->execve_wait) {
-					/* allow the initial exec */
-					sydbox_syscall_allow();
-					not_exec = true;
-					sydbox->execve_wait = false;
 				}
 			} else {
 				;/*not_exec = false;*/
