@@ -125,8 +125,16 @@ AX_CHECK_COMPILER_FLAGS([-std=gnu11],
 	  SYDBOX_CC=c11],
 	 [AC_MSG_ERROR(["Sydbox requires a C compiler that supports ISO C11!"])])])
 dnl extra CFLAGS
-SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow"
-SYDBOX_DEV_WANTED_CFLAGS="-Werror=format-security -Werror=implicit-function-declaration"
+SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow
+-Wunused-label
+-Wunused-macros
+-Wno-unused-parameter
+-Wunused-result
+-Wunused-value
+-Wunused-variable -Wunused-const-variable
+-Walloca
+-Wvla
+"
 SYDBOX_SAFE_WANTED_CFLAGS="-D_FORTIFY_SOURCE=2
 -D_GLIBCXX_ASSERTIONS
 -fasynchronous-unwind-tables
