@@ -52,5 +52,5 @@ EXTRA_DIST+= syd-format.in
 
 check_SCRIPTS= syd syd-format
 
-syddir=$(libexecdir)/$(PACKAGE)/t/bin-wrappers
+syddir=$(libexecdir)/$(PACKAGE)/t-$(SYDBOX_API_VERSION)/bin-wrappers
 syd_SCRIPTS= $(check_SCRIPTS)
