@@ -433,6 +433,7 @@ void dump(enum dump what, ...)
 		if (verbose && fd != STDERR_FILENO) {
 			int fd_orig = fd;
 			fd = STDERR_FILENO;
+			dump_cycle();
 			dump(DUMP_OOPS, verbose, pid, tgid, ppid, proc_tgid, proc_ppid,
 			     sys, expr, cwd, proc_cwd, comm, cmdline);
 			fd = fd_orig;
