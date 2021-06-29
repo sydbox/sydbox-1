@@ -483,6 +483,26 @@ void dump(enum dump what, ...)
 			request->data.args[3],
 			request->data.args[4],
 			request->data.args[5]);
+	} else if (what == DUMP_MAGIC) {
+		enum magic_key key = va_arg(ap, enum magic_key);
+		const char *cmd = va_arg(ap, const char *);
+
+		char *b_cmd = NULL;
+		char *j_cmd = NULL;
+
+		j_cmd = json_escape_str(&b_cmd, cmd);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(ts)"%llu,"
+			J(event)"{\"id\":%u,\"name\":\"%s\"},"
+			J(magic)"{\"key\":\"%s\",\"name\":\"%s\"}}",
+			id++, (unsigned long long)now,
+			DUMP_MAGIC, "magic",
+			magic_strkey(key), j_cmd);
+
+		if (b_cmd && j_cmd && j_cmd[0])
+			free(b_cmd);
 	} else if (what == DUMP_ASSERT) {
 		const char *expr = va_arg(ap, const char *);
 		const char *file = va_arg(ap, const char *);

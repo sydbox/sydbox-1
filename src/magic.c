@@ -673,6 +673,7 @@ int magic_cast_string(syd_process_t *current, const char *magic, int prefix)
 		if (key == MAGIC_KEY_INVALID)
 			return MAGIC_RET_INVALID_KEY;
 
+		dump(DUMP_MAGIC, key, cmd);
 		cmd += strlen(key_table[key].name);
 		if (*cmd == '/') {
 			if (key_table[key].type != MAGIC_TYPE_OBJECT)
