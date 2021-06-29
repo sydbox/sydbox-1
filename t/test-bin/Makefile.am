@@ -54,7 +54,7 @@ threads_execve_SOURCES= threads_execve.c \
 threads_execve_CFLAGS= $(AM_CFLAGS) $(PTHREAD_CFLAGS)
 threads_execve_LDADD= $(PTHREAD_LIBS)
 
-syddir=$(libexecdir)/$(PACKAGE)/t/test-bin
+syddir=$(libexecdir)/$(PACKAGE)/t-$(SYDBOX_API_VERSION)/test-bin
 syd_SCRIPTS= \
 	syd-bind-auto-unix-socket.py \
 	syd-bind-ipv4-port.py \
