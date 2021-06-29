@@ -38,6 +38,8 @@
 #define SYDBOX_DUMP_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT)
 #define SYDBOX_DUMP_MODE 0600
 
+#define SYSCALL_ARG_MAX 6
+
 #ifndef NR_FILE
 # warning "Your system does not define NR_FILE, defaulting to 1024"
 # define NR_FILE 1024

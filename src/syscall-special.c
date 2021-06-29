@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sched.h>
+#include "daemon.h"
 #include "pink.h"
 #include "path.h"
 #include "pathdecode.h"
@@ -69,6 +70,46 @@ struct stat32 { /* for 32bit emulation */
 #elif !defined(__aarch64__) && ABIS_SUPPORTED > 1
 # warning do not know the size of stat buffer for non-default ABIs
 #endif
+
+int sys_chdir(syd_process_t *current)
+{
+	int r;
+	syscall_info_t info;
+
+	current->update_cwd = true;
+	if (sandbox_off_read(current))
+		return 0;
+
+	init_sysinfo(&info);
+	info.deny_errno = EACCES;
+	info.prefix = get_working_directory();
+
+	r = box_check_path(current, &info);
+	if (r != 0)
+		current->update_cwd = false;
+	return r;
+}
+
+int sys_fchdir(syd_process_t *current)
+{
+	int r;
+	syscall_info_t info;
+
+	current->update_cwd = true;
+	if (sandbox_off_read(current))
+		return 0;
+
+	init_sysinfo(&info);
+	info.at_func = true;
+	info.arg_index = SYSCALL_ARG_MAX;
+	info.deny_errno = EACCES;
+	info.prefix = get_working_directory();
+
+	r = box_check_path(current, &info);
+	if (r != 0)
+		current->update_cwd = false;
+	return r;
+}
 
 int sysx_chdir(syd_process_t *current)
 {

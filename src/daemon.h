@@ -30,7 +30,7 @@ void set_gid(gid_t new_gid);
 void set_nice(int new_nice);
 void set_startas(const char *new_startas);
 void set_root_directory(const char *cwd);
-void set_working_directory(const char *cwd);
+void set_working_directory(char *cwd);
 void set_umask(mode_t mode);
 void set_ionice(int c, int d);
 int set_username(const char *name);

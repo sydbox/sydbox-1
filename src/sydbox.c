@@ -861,10 +861,10 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	struct sockmatch *match;
 
 	if (isatty(STDERR_FILENO)) {
-		CG = ANSI_GREEN;
+		CG = ANSI_DARK_GREEN;
 		CB = ANSI_DARK_MAGENTA;
-		CI = ANSI_CYAN;
-		CN = ANSI_YELLOW;
+		CI = ANSI_DARK_CYAN;
+		CN = ANSI_DARK_YELLOW;
 		CE = ANSI_NORMAL;
 	} else {
 		CG = CB = CI = CN = CE = "";
@@ -1630,9 +1630,6 @@ pid_validate:
 			sydbox_syscall_allow();
 			not_clone = false;
 			event_clone(current, 'v', 0);
-		} else if (streq(name, "chdir") || !strcmp(name, "fchdir")) {
-			sydbox_syscall_allow();
-			current->update_cwd = true;
 		} else {
 			/*
 			 * All sandboxed system calls end up here.
@@ -2217,6 +2214,7 @@ int main(int argc, char **argv)
 		set_uid(getuid());
 		set_gid(getgid());
 		set_startas("sydsh");
+		set_working_directory(xstrdup("tmp"));
 		my_argv = sydsh_argv;
 		sydbox->program_invocation_name = xstrdup("sydsh");
 	} else {

@@ -365,7 +365,10 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 	}
 
 	/* Step 2: read path */
-	if ((r = path_decode(current, info->arg_index, &path)) < 0) {
+	if (info->arg_index == SYSCALL_ARG_MAX) {
+		/* e.g: fchdir */
+		path = NULL;
+	} else if ((r = path_decode(current, info->arg_index, &path)) < 0) {
 		/*
 		 * For EFAULT we assume path argument is NULL.
 		 * For some `at' suffixed functions, NULL as path
@@ -410,7 +413,11 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 	current->repr[info->arg_index] = syd_strdup(abspath);
 	dump(DUMP_SYSENT, current);
 
-	/* Step 5: Check for access */
+	/* Step 5: Check for access by prefix */
+	if (info->prefix && !startswith(path, info->prefix))
+		goto deny;
+
+	/* Step 6: Check for access */
 	enum sys_access_mode access_mode;
 	const aclq_t *access_lists[2];
 	const aclq_t *access_filter;
@@ -444,7 +451,7 @@ check_access:
 	}
 
 	/*
-	 * Step 6: stat() if required (unless already cached)
+	 * Step 7: stat() if required (unless already cached)
 	 * Note to security geeks: we ignore TOCTOU issues at various points,
 	 * mostly because this is a debugging tool and there isn't a simple
 	 * practical solution with ptrace(). This caching case is no exception.
@@ -458,7 +465,8 @@ check_access:
 		}
 	}
 
-	/* Step 6: report violation */
+	/* Step 8: report violation */
+deny:
 	r = deny(current, deny_errno);
 
 	if (info->access_filter)

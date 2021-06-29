@@ -85,7 +85,7 @@
 #define ANSI_DARK_RED		"[01;31m"
 #define ANSI_DARK_GREEN		"[01;32m"
 #define ANSI_DARK_YELLOW	"[01;33m"
-#define ANSI_CYAN		"[00;36m"
+#define ANSI_DARK_CYAN		"[01;36m"
 
 /* Type declarations */
 enum sandbox_mode {
@@ -683,6 +683,8 @@ struct sydbox {
 };
 typedef struct sydbox sydbox_t;
 
+#define is_shell() (streq(sydbox->program_invocation_name, "sydsh"))
+
 typedef int (*sysfunc_t) (syd_process_t *current);
 typedef int (*sysfilter_t) (uint32_t arch);
 
@@ -747,6 +749,13 @@ struct syscall_info {
 
 	/* Deny errno */
 	int deny_errno;
+
+	/* If this prefix is set, the pathnames
+	 * must be under this directory tree or
+	 * the system call will be denied.
+	 * Used by chdir() and
+	 * change_working_directory() */
+	const char *prefix;
 
 	/* Access control lists (per-process, global) */
 	aclq_t *access_list;
@@ -1282,6 +1291,8 @@ int sys_openat(syd_process_t *current);
 int sys_openat2(syd_process_t *current);
 int sys_creat(syd_process_t *current);
 int sys_close(syd_process_t *current);
+int sys_chdir(syd_process_t *current);
+int sys_fchdir(syd_process_t *current);
 int sys_mkdir(syd_process_t *current);
 int sys_mkdirat(syd_process_t *current);
 int sys_mknod(syd_process_t *current);

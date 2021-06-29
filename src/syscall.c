@@ -173,6 +173,19 @@ static const sysentry_t syscall_entries[] = {
 	},
 
 	{
+		.name = "chdir",
+		.no = SCMP_SYS(chdir),
+		.notify = sys_chdir,
+		.sandbox_exec = true,
+	},
+	{
+		.name = "fchdir",
+		.no = SCMP_SYS(fchdir),
+		.notify = sys_fchdir,
+		.sandbox_exec = true,
+	},
+
+	{
 		.name = "execve",
 		.no = SCMP_SYS(execve),
 		.notify = sys_execve,
@@ -866,8 +879,6 @@ int sysinit_seccomp_load(void)
 #else
 # define calls_execve_max 1
 #endif
-		SCMP_SYS(chdir),
-		SCMP_SYS(fchdir),
 		SCMP_SYS(clone),
 #if defined(__NR_clone3) && (__NR_clone3 != __NR_clone)
 		SCMP_SYS(clone3),
