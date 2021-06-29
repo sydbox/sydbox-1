@@ -73,6 +73,7 @@ syd-test: syd-test.sh.in
 
 EXTRA_DIST+= Makefile.test
 install-data-local:
+	$(MKDIR_P) -m700 $(DESTDIR)$(syddir)
 	cp Makefile.test $(DESTDIR)$(syddir)/Makefile
 
 .PHONY: check-build
