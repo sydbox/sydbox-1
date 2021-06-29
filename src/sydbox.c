@@ -1420,6 +1420,7 @@ static int notify_loop()
 		syd_process_t *parent;
 
 notify_receive:
+		alarm(1);
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
 		allow_signals();
 		r = seccomp_notify_receive(sydbox->notify_fd,
@@ -1452,6 +1453,7 @@ notify_receive:
 				goto out;
 			}
 		}
+		alarm(0);
 
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
