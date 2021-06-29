@@ -11,7 +11,7 @@
  */
 
 #include "sydconf.h"
-#include "compiler.h"
+#include <syd/compiler.h>
 #include "errno2name.h"
 #include <stdarg.h>
 #include <string.h>
