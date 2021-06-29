@@ -135,6 +135,11 @@ SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wno-cpp
 -Wno-unused-const-variable
 -Walloca
 -Wvla
+-Werror=implicit-function-declaration
+-Werror=implicit-int
+-Werror=pointer-sign
+-Werror=pointer-arith
+
 "
 SYDBOX_SAFE_WANTED_CFLAGS="-D_FORTIFY_SOURCE=2
 -D_GLIBCXX_ASSERTIONS

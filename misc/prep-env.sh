@@ -1,13 +1,7 @@
 #!/bin/sh -x
 
 CFLAGS="-D__ALIP_WAS_HERE"
-CFLAGS="${CFLAGS} -pedantic -W -Wall -Wextra -Wshadow -Wno-unused-parameter"
-CFLAGS="${CFLAGS} -O0 -g -ggdb3"
-CFLAGS="${CFLAGS} -Wall"
-CFLAGS="${CFLAGS} -Werror=implicit-function-declaration"
-CFLAGS="${CFLAGS} -Werror=implicit-int"
-CFLAGS="${CFLAGS} -Werror=pointer-sign"
-CFLAGS="${CFLAGS} -Werror=pointer-arith"
+CFLAGS="${CFLAGS} -O2 -pipe -ggdb"
 CFLAGS="${CFLAGS} -D__PINK_IS_BEHIND_THE_WALL"
 export CFLAGS
 
