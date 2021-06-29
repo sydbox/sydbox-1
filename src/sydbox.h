@@ -82,8 +82,9 @@
 #define ANSI_NORMAL		"[00;00m"
 #define ANSI_MAGENTA		"[00;35m"
 #define ANSI_DARK_MAGENTA	"[01;35m"
-#define ANSI_GREEN		"[00;32m"
-#define ANSI_YELLOW		"[00;33m"
+#define ANSI_DARK_RED		"[01;31m"
+#define ANSI_DARK_GREEN		"[01;32m"
+#define ANSI_DARK_YELLOW	"[01;33m"
 #define ANSI_CYAN		"[00;36m"
 
 /* Type declarations */

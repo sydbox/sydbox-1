@@ -395,23 +395,56 @@ void dump(enum dump what, ...)
 				fprintf(fp, "{"
 					J(id)"%llu,"
 					J(ts)"%llu,"
-					J(pid)"%d,"
-					J(event)"{\"id\":%u,\"name\":\"☮☮ps\"},"
-					J(sys)"\"%s\","
-					J(syd)"\"%s\","
-					J(comm)"\"%s\","
-					J(cmd)"\"%s\","
-					J(cwd)"\"%s\","
-					J(ppid)"%d,"
-					J(tgid)"%d,"
+					J(pid)"%s%d%s,"
+					J(event)"{\"id\":%u,\"name\":\"%s☮☮ps%s\"},"
+					J(sys)"\"%s%s%s\","
+					J(syd)"\"%s%s%s\","
+					J(comm)"\"%s%s%s\","
+					J(cmd)"\"%s%s%s\","
+					J(cwd)"\"%s%s%s\","
+					J(ppid)"%s%d%s,"
+					J(tgid)"%s%d%s,"
 					J(proc)"{"
-					J(ppid)"%d,"
-					J(tgid)"%d,"
-					J(cwd)"\"%s\"}}",
-					id, (unsigned long long)now, pid, what,
-					j_sys, j_expr, j_comm, j_cmdline, j_cwd,
-					ppid, tgid,
-					proc_ppid, proc_tgid, j_proc_cwd);
+					J(ppid)"%s%d%s,"
+					J(tgid)"%s%d%s,"
+					J(cwd)"\"%s%s%s\"}}",
+					id, (unsigned long long)now,
+					colour ? ANSI_DARK_GREEN : "",
+					pid,
+					colour ? ANSI_DARK_MAGENTA : "",
+					what,
+					colour ? ANSI_DARK_RED : "",
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_RED : "",
+					j_sys,
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_RED : "",
+					j_expr,
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_YELLOW : "",
+					j_comm,
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_YELLOW : "",
+					j_cmdline,
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_YELLOW : "",
+					j_cwd,
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_GREEN : "",
+					ppid,
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_GREEN : "",
+					tgid,
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_GREEN : "",
+					proc_ppid,
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_GREEN : "",
+					proc_tgid,
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_YELLOW : "",
+					j_proc_cwd,
+					colour ? ANSI_DARK_MAGENTA : "");
 				if (colour)
 					fputs(ANSI_NORMAL, fp);
 			}
