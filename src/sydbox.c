@@ -1925,7 +1925,7 @@ int main(int argc, char **argv)
 	dump_fd(STDERR_FILENO);
 # endif
 
-	if (strstr(argv[0], PACKAGE"-dump")) {
+	if (strstr(argv[0], "-dump")) {
 		dfd = STDERR_FILENO;
 		dump_set_fd(STDERR_FILENO);
 	}
