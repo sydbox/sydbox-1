@@ -1526,8 +1526,10 @@ pid_validate:
 			 * All sandboxed system calls end up here.
 			 * This includes execve*
 			 */
-			sydbox_syscall_allow();
-			event_syscall(current);
+			if (current) {
+				sydbox_syscall_allow();
+				event_syscall(current);
+			}
 			if (execve_pid) {
 				event_exec(current);
 				if (pid == execve_pid) {
