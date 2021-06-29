@@ -68,7 +68,7 @@ static const int deny_list_level0[] = {
 #ifdef __SNR_pidfd_getfd
 	SCMP_SYS(pidfd_getfd),
 #else
-	438,
+	438, /* __NR_pidfd_getfd */
 #endif
 	SCMP_SYS(pidfd_open),
 	SCMP_SYS(pidfd_send_signal),
