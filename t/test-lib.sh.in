@@ -39,7 +39,7 @@ if type -P nproc >/dev/null 2>&1; then
 fi
 
 # SydBox API Version
-API_VERSION=@SYDBOX_API_VERSION@
+API_VERSION=@API_VERSION@
 
 # Install directories
 BINDIR="@BINDIR@"
