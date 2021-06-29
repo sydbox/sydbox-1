@@ -1414,21 +1414,44 @@ notify_receive:
 
 		name = seccomp_syscall_resolve_num_arch(sydbox->request->data.arch,
 							sydbox->request->data.nr);
+		if (!name) {
+			/* TODO: make this a dump call! */
+			say("libseccomp unknown syscall: "
+			    "%d<arch:%"PRIu32",ip:%llu,"
+			    "%llu,%llu,%llu,%llu,%llu,%llu>"
+			    ". Denying...",
+			    sydbox->request->data.nr,
+			    sydbox->request->data.arch,
+			    sydbox->request->data.instruction_pointer,
+			    sydbox->request->data.args[0],
+			    sydbox->request->data.args[1],
+			    sydbox->request->data.args[2],
+			    sydbox->request->data.args[3],
+			    sydbox->request->data.args[4],
+			    sydbox->request->data.args[5]);
+			goto notify_respond;
+		}
 		pid = sydbox->request->pid;
 		current = process_lookup(pid);
+		if (current) {
+			current->sysnum = sydbox->request->data.nr;
+			current->sysname = name;
+			for (unsigned short idx = 0; idx < 6; idx++)
+				current->args[idx] = sydbox->request->data.args[idx];
+		}
 
 		/*
 		 * Handle critical paths early and fast.
 		 * Search early for ex{it,ecve} before getting a process entry.
 		 */
-		if (name && startswith(name, "exit")) {
+		if (startswith(name, "exit")) {
 			if (current)
 				bury_process(current, true);
 			/* reap zombies after notify respond */
 			reap_my_zombies = true;
 			sydbox_syscall_allow();
 			goto pid_validate;
-		} else if (name && (streq(name, "execve") || streq(name, "execveat"))) {
+		} else if (startswith(name, "exec")) {
 			/* memfd is no longer valid, reopen next turn,
 			 * reading /proc/pid/mem on a process stopped
 			 * for execve returns EPERM! */
@@ -1444,23 +1467,20 @@ notify_receive:
 				current = process_init(pid, parent, true);
 			}
 			execve_pid = P_EXECVE_PID(current);
-			if (execve_pid == 0 && pid != leader_pid) {
+			if (execve_pid == 0 && pid != leader_pid)
 				execve_pid = leader_pid;
-				current->sysnum = sydbox->request->data.nr;
-				current->sysname = name;
-			}
 
 			if (execve_pid) {
-				if (pid != execve_pid) {
+				if (pid == execve_pid) {
+					P_EXECVE_PID(current) = 0;
+				} else {
 					current = process_lookup(pid);
 					switch_execve_leader(execve_pid,
 							     current);
-					//P_EXECVE_PID(current) = pid;
+					P_EXECVE_PID(current) = 0;
 					/* reap zombies after notify respond */
 					reap_my_zombies = true;
-					goto pid_validate;
 				}
-				P_EXECVE_PID(current) = 0;
 			}
 			event_exec(current);
 		}
