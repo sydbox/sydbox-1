@@ -1443,20 +1443,15 @@ notify_receive:
 			sydbox_syscall_allow();
 			goto pid_validate;
 		} else if (startswith(name, "exec")) {
-			/* memfd is no longer valid, reopen next turn,
-			 * reading /proc/pid/mem on a process stopped
-			 * for execve returns EPERM! */
-			if (sydbox->execve_wait) { /* allow the initial exec */
-				sydbox->execve_wait = false;
-				sydbox_syscall_allow();
-				goto pid_validate;
-			}
 			pid_t leader_pid = process_find_exec(pid);
 			if (!current) {
 				parent = process_lookup(leader_pid);
 				current = process_init(pid, parent, true);
 			}
-			execve_pid = P_EXECVE_PID(current);
+			if (current && current->shm.clone_thread)
+				execve_pid = P_EXECVE_PID(current);
+			else
+				execve_pid = pid;
 			if (execve_pid == 0 && pid != leader_pid)
 				execve_pid = leader_pid;
 			/* The remaining part of exec will be handled as part
@@ -1541,6 +1536,12 @@ pid_validate:
 				if (current->abspath) {
 					free(current->abspath);
 					current->abspath = NULL;
+				}
+				if (sydbox->execve_wait) {
+					/* allow the initial exec */
+					sydbox_syscall_allow();
+					not_exec = true;
+					sydbox->execve_wait = false;
 				}
 			} else {
 				;/*not_exec = false;*/
