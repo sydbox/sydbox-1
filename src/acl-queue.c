@@ -172,8 +172,8 @@ int acl_append_pathmatch(enum acl_action action, const char *pattern, aclq_t *ac
 		node->match = xstrdup(list[c]);
 		ACLQ_INSERT_TAIL(aclq, node);
 	}
-	if (list && list[0])
-		say("match append ok: `%s'", list[0]);
+	//if (list && list[0])
+	//	say("match append ok: `%s'", list[0]);
 
 	for (; f >= 0; f--)
 		free(list[f]);

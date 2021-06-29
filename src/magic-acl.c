@@ -21,7 +21,7 @@ static int magic_edit_acl(int (*edit_func)(enum acl_action, const char *, aclq_t
 int magic_append_allowlist_exec(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	say("exec allowlist append ok: `%s'", (const char *)val);
+	//say("exec allowlist append ok: `%s'", (const char *)val);
 	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_ALLOWLIST, val,
 			      &box->acl_exec);
 }
@@ -36,7 +36,7 @@ int magic_remove_allowlist_exec(const void *val, syd_process_t *current)
 int magic_append_denylist_exec(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
-	say("exec denylist append ok: `%s'", (const char *)val);
+	//say("exec denylist append ok: `%s'", (const char *)val);
 	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_DENYLIST, val,
 			      &box->acl_exec);
 }
