@@ -47,12 +47,15 @@ unsigned acl_pathmatch(enum acl_action defaction, const aclq_t *aclq,
 	node_match = NULL;
 	ACLQ_FOREACH(node, aclq) {
 		if (pathmatch(node->match, path)) {
-			say("match: %s ⊆ %s", (const char *)node->match, path);
+			//say("match: %s ⊆ %s", (const char *)node->match, path);
 			node_match = node;
+		}
+#if 0
 		} else {
 			say("nomatch: %s ⨂ %s", (const char *)node->match,
 			    path);
 		}
+#endif
 	}
 
 	return acl_check(defaction, node_match, match);
@@ -156,7 +159,7 @@ bool acl_match_saun(enum acl_action defaction, const aclq_t *aclq,
 int acl_append_pathmatch(enum acl_action action, const char *pattern, aclq_t *aclq)
 {
 	int c, f;
-	char **list;
+	char **list = NULL;
 
 	if (!aclq || !pattern || !*pattern)
 		return -EINVAL;
@@ -169,6 +172,8 @@ int acl_append_pathmatch(enum acl_action action, const char *pattern, aclq_t *ac
 		node->match = xstrdup(list[c]);
 		ACLQ_INSERT_TAIL(aclq, node);
 	}
+	if (list && list[0])
+		say("match append ok: `%s'", list[0]);
 
 	for (; f >= 0; f--)
 		free(list[f]);
