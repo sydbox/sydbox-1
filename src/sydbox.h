@@ -916,9 +916,12 @@ static inline bool proc_validate(pid_t pid)
 	sydbox->pid_valid = pid;
 	sydbox->p = process_lookup(sydbox->pid_valid);
 
-	sydbox->p->comm[0] = '?';
-	sydbox->p->comm[1] = '\0';
-	syd_proc_comm(sydbox->pfd, sydbox->p->comm, sizeof(sydbox->p->comm));
+	if (sydbox->p) {
+		sydbox->p->comm[0] = '?';
+		sydbox->p->comm[1] = '\0';
+		syd_proc_comm(sydbox->pfd, sydbox->p->comm,
+			      sizeof(sydbox->p->comm));
+	}
 
 	/* pidfd is optional, we'll handle it gracefully. */
 	if ((fd = syd_pidfd_open(pid, 0)) < 0)
