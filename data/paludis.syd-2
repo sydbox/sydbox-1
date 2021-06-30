@@ -18,7 +18,7 @@ core/violation/raise_safe:false
 
 core/trace/magic_lock:off
 core/trace/memory_access:0
-core/trace/program_checksum:2
+core/trace/program_checksum:1
 core/trace/use_toolong_hack:true
 
 core/restrict/id_change:false
