@@ -879,10 +879,6 @@ fn esandbox(cmd: &Vec<&str>) -> bool
     }
 }
 
-<<<<<<< HEAD
->>>>>>> b2e1681d... sydsh: check for /dev/sydbox on init
-=======
->>>>>>> f1f8127e... pandora: implement pandora sandbox to interface /dev/sydbox
 fn parse_json_line(
     serialized: &str,
     magic: &mut std::collections::HashSet<(Sandbox, String)>,
