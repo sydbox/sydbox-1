@@ -47,36 +47,211 @@ impl std::fmt::Display for Sandbox {
     }
 }
 
-const PALUDIS: &str = "
-core/sandbox/exec:off
-core/sandbox/read:off
+const DEFAULT: &str = "
+core/sandbox/exec:allow
+core/sandbox/read:allow
 core/sandbox/write:deny
 core/sandbox/network:deny
 
-core/allowlist/per_process_directories:true
+# This is important or our configuration
+# below won't work as expected for paths
+# under /proc/self.
+core/allowlist/per_process_directories:false
+
 core/allowlist/successful_bind:true
-core/allowlist/unsupported_socket_families:true
+
+# We only passthrough UNIX sockets, UNIX abstract
+# sockets, IPv4 and IPv6 addresses. The rest,
+# e.g: NETLINK addresses are denied by default.
+core/allowlist/unsupported_socket_families:false
 
 core/violation/decision:deny
 core/violation/exit_code:-1
-core/violation/raise_fail:false
-core/violation/raise_safe:false
 
-core/trace/magic_lock:off
+# The defaults are not noisy, but the shell
+# is allowed to make a bit more noise......
+core/violation/raise_fail:false
+core/violation/raise_safe:true
+
 core/trace/memory_access:0
 core/trace/program_checksum:2
+
+# Try very hard to find a current working
+# directory to check the path argument
+# with. Otherwise the system call will
+# be denied.
 core/trace/use_toolong_hack:true
 
-core/restrict/id_change:false
+core/restrict/id_change:true
+core/restrict/system_info:true
 core/restrict/io_control:false
 core/restrict/memory_map:false
-core/restrict/shared_memory_writable:false
-core/restrict/system_info:false
+core/restrict/shared_memory_writable:true
 core/restrict/general:0
 
 core/match/case_sensitive:true
-core/match/no_wildcard:prefix
+core/match/no_wildcard:literal
 
+# Kill programs executed from /home.
+# exec/kill_if_match+/home/***
+
+# Use binaries under well-known locations.
+# Leave out HOME for now till we have support
+# to substitute environment variables in
+# configuration.
+denylist/exec+/etc/***
+denylist/exec+/dev/***
+denylist/exec+/proc/***
+denylist/exec+/run/***
+denylist/exec+/sys/***
+denylist/exec+/var/***
+denylist/exec+/tmp/***
+#denylist/exec+/home/***
+
+# Deny access to potentially dangerous paths.
+denylist/read+/boot/***
+denylist/read+/root/***
+
+# Restrict /etc
+denylist/read+/etc/security/***
+denylist/read+/etc/g?shadow*
+denylist/read+/etc/passwd*
+denylist/read+/etc/group+
+denylist/read+/etc/ftpusers
+denylist/read+/etc/aliases
+denylist/read+/etc/services
+denylist/read+/etc/conf.*/***
+denylist/read+/etc/init.*/***
+denylist/read+/etc/rc.*/***
+denylist/read+/etc/system.*/***
+denylist/read+/etc/xinet.*/***
+denylist/read+/etc/ssl*/***
+denylist/read+/etc/mtab
+denylist/read+/etc/fstab
+denylist/read+/etc/crontab
+denylist/read+/etc/cron*/***
+denylist/read+/etc/crypttab
+denylist/read+/etc/securetty
+denylist/read+/etc/pam*/***
+
+# Disable /dev/mem /dev/kmem, /dev/port and /proc/kcore.
+denylist/read+/dev/k?mem
+denylist/read+/dev/port
+denylist/read+/dev/autofs
+denylist/read+/dev/btrfs-control
+denylist/read+/dev/ram*
+# /dev/core -> /proc/kcore
+denylist/read+/dev/core
+denylist/read+/proc/kcore
+denylist/read+/dev/usb*
+denylist/read+/dev/vga_arbiter
+denylist/read+/dev/watchdog*
+denylist/read+/dev/zram*
+
+# /proc/kallsyms exposes the kernel memory space address of many kernel symbols
+# (functions, variables, etc...). This information is useful to attackers in
+# identifying kernel versions/configurations and in preparing payloads for the
+# exploits of kernel space.
+denylist/read+/proc/kallsyms
+
+# Disable process memory attach.
+denylist/read+/proc/*/mem
+denylist/read+/proc/*/*map*
+denylist/read+/proc/*/map_files/***
+denylist/read+/proc/*/syscall
+
+# More critical paths under proc:
+denylist/read+/proc/*/root/***
+
+# No access to system logs
+denylist/read+/var/log/***
+
+# Disable tools to get information on the running
+# kernel and its configuration.
+denylist/read+/dev/kmsg
+denylist/read+/proc/cmdline
+denylist/read+/proc/config*
+denylist/read+/proc/version
+denylist/read+/proc/sys/***
+denylist/read+/etc/sysctl.conf
+denylist/read+/etc/sysctl.d/***
+
+# Deny access to system information.
+denylist/read+/proc/cpuinfo
+denylist/read+/proc/meminfo
+denylist/read+/proc/swaps
+denylist/read+/proc/iomem
+denylist/read+/proc/slabinfo
+denylist/read+/proc/vmallocinfo
+denylist/read+/proc/vmstat
+denylist/read+/proc/self/auxv
+denylist/read+/proc/self/cgroup
+denylist/read+/proc/self/cwd
+denylist/read+/proc/self/environ
+denylist/read+/proc/self/mtab
+denylist/read+/proc/self/net/***
+denylist/read+/proc/self/ns/***
+# Take into account both {numa_,}maps {,s}maps{_rollup}
+denylist/read+/proc/self/*map*
+denylist/read+/proc/self/map_files/***
+denylist/read+/proc/self/mem
+denylist/read+/proc/self/mount*
+denylist/read+/proc/self/oom*
+denylist/read+/proc/self/root
+denylist/read+/proc/self/setgroups
+# Take into account {sched,}stat{m,us}
+denylist/read+/proc/self/*stat*
+denylist/read+/proc/self/syscall
+denylist/read+/proc/self/task
+
+# More restrictions:
+denylist/read+/sys/fs/***
+
+# Fuse could lead to local dos for instance creating file a la /dev/null with
+# random content. Moreover they are past problem in the fuse kernel code that
+# lead to dos.
+# Filesystem created by fuse are not visible by other user including root in
+# order to avoid dos. For instance an user that create an infinite depth
+# filesystem in order to fool updatedb.
+denylist/read+/dev/fuse
+
+# Deny access to Device Mapper data nodes.
+denylist/read+/dev/dm*/***
+denylist/read+/dev/mapper/***
+
+# Some critical paths under /home
+# We leave shell rc files alone except login.
+denylist/read+/home/*/.*login*
+denylist/read+/home/*/.netrc*
+denylist/read+/home/*/.ssh*
+denylist/read+/home/*/.gnupg*
+denylist/read+/home/*/.password-store/***
+denylist/write+/home/*/.*login*
+denylist/write+/home/*/.netrc*
+# This includes sh, bash, zsh and ssh.
+denylist/write+/home/*/.*sh*
+denylist/write+/home/*/.gnupg*
+denylist/write+/home/*/.password-store/***
+
+# Deny access to config and cache
+denylist/read+/home/*/.config*/***
+denylist/write+/home/*/.config*/***
+denylist/read+/home/*/.cache*/***
+denylist/write+/home/*/.cache*/***
+
+# Common mua, editor, browser directories.
+denylist/read+/home/*/.emacs*/***
+denylist/write+/home/*/.emacs*/***
+denylist/read+/home/*/.mutt*/***
+denylist/write+/home/*/.mutt*/***
+denylist/read+/home/*/.mozilla*/***
+denylist/write+/home/*/.mozilla*/***
+denylist/read+/home/*/.vim*/***
+denylist/write+/home/*/.vim*/***
+
+#
+# Allow access to standard paths
+#
 allowlist/write+/dev/stdout
 allowlist/write+/dev/stderr
 allowlist/write+/dev/zero
@@ -90,7 +265,7 @@ allowlist/write+/dev/fd/***
 allowlist/write+/dev/tty*
 allowlist/write+/dev/pty*
 allowlist/write+/dev/tts
-allowlist/write+/dev/pts
+allowlist/write+/dev/pts/***
 allowlist/write+/dev/shm/***
 allowlist/write+/selinux/context/***
 allowlist/write+/proc/self/attr/***
@@ -100,6 +275,11 @@ allowlist/write+/tmp/***
 allowlist/write+/var/tmp/***
 allowlist/write+/var/cache/***
 
+# Allow access to Tor via IPv{4,6}
+allowlist/network/connect+LOOPBACK@9050
+allowlist/network/connect+LOOPBACK6@9050
+
+# Partly allow access to the localhost.
 allowlist/network/bind+LOOPBACK@0
 allowlist/network/bind+LOOPBACK@1024-65535
 allowlist/network/bind+LOOPBACK6@0
@@ -108,6 +288,13 @@ allowlist/network/bind+LOOPBACK6@1024-65535
 allowlist/network/connect+unix:/var/run/nscd/socket
 allowlist/network/connect+unix:/run/nscd/socket
 allowlist/network/connect+unix:/var/lib/sss/pipes/nss
+
+# Allow getaddrinfo() with AI_ADDRCONFIG on musl systems.
+allowlist/network/connect+LOOPBACK@65535
+allowlist/network/connect+LOOPBACK6@65535
+
+# Lock configuration
+core/trace/magic_lock:on
 ";
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
@@ -267,6 +454,13 @@ fn command_inspect(input_path: &str, output_path: &str, path_limit: u8) -> i32 {
 }
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() <= 1 {
+        spawn_sydbox_shell(true, &vec![]);
+        return;
+    }
+
     let arch_values = [
         "native", "x86_64", "x86", "x32", "arm", "aarch64", "mips", "mips64", "ppc", "ppc64",
         "ppc64le", "s390", "s390x", "parisc", "parisc64", "riscv64",
@@ -311,7 +505,7 @@ Repository: {}
                 .about("Execute the given command under sydbox")
                 .arg(
                     Arg::with_name("bin")
-                        .default_value("sydbox")
+                        .default_value("syd")
                         .required(true)
                         .help("Path to sydbox binary")
                         .long("bin")
@@ -384,7 +578,7 @@ Repository: {}
                 .about("Execute a program under inspection and write a sydbox profile")
                 .arg(
                     Arg::with_name("bin")
-                        .default_value("sydbox")
+                        .default_value("syd")
                         .required(true)
                         .help("Path to sydbox binary")
                         .long("bin")
@@ -444,6 +638,11 @@ Repository: {}
                 .about("Configure Sydbox' sandbox using the /dev/sydbox magic link")
                 .arg(Arg::with_name("cmd").required(true).multiple(true))
         )
+        .subcommand(
+            SubCommand::with_name("shell")
+                .about("Run SydBox' restricted login shell")
+                .arg(Arg::with_name("args").required(false).multiple(true))
+        )
         .get_matches();
 
     if let Some(ref matches) = matches.subcommand_matches("box") {
@@ -478,6 +677,14 @@ Repository: {}
     } else if let Some(ref matches) = matches.subcommand_matches("sandbox") {
         let cmd: Vec<&str> = matches.values_of("cmd").unwrap().collect();
         esandbox(&cmd);
+    } else if let Some(ref matches) = matches.subcommand_matches("shell") {
+        let args: Vec<&str>;
+        if matches.is_present("args") {
+            args = matches.values_of("args").unwrap().collect();
+        } else {
+            args = vec![];
+        }
+        spawn_sydbox_shell(false, &args);
     } else if let Some(ref matches) = matches.subcommand_matches("profile") {
         let bin = matches.value_of("bin").unwrap();
         let out = matches.value_of("output").unwrap();
@@ -512,48 +719,7 @@ Repository: {}
             limit,
         ));
     } else {
-        let shell = match std::env::var("SHELL") {
-            Ok(s) => s,
-            Err(_) => "/bin/sh".to_string(),
-        };
-
-        let home;
-        let mut homeargs = Vec::new();
-        if let Ok(s) = std::env::var("HOME") {
-            home = format!("allowlist/write+{}/***", s);
-            homeargs.push("-m");
-            homeargs.push(&home);
-        }
-
-        let mut paludis = Vec::new();
-        for magic in PALUDIS.split('\n').filter(|&magic| !magic.is_empty()) {
-            paludis.push("-m");
-            paludis.push(magic);
-        }
-
-        let rcname = "/etc/pandora.syd-2";
-        let rc = std::path::Path::new(rcname);
-        let mut rcargs = Vec::new();
-        if rc.exists() {
-            rcargs.push("-c");
-            rcargs.push(rcname);
-        }
-
-        let mut child = Command::new("sydbox")
-            .args(&paludis)
-            .args(&homeargs)
-            .args(&rcargs)
-            .arg("--")
-            .arg(shell)
-            .arg("-l")
-            .spawn()
-            .unwrap_or_else(|_| {
-                Command::new("pandora")
-                    .arg("-h")
-                    .spawn()
-                    .expect("Neither sydbox nor pandora not in PATH")
-            });
-        child.wait().expect("failed to wait for shell");
+        spawn_sydbox_shell(true, &vec![]);
     }
 }
 
@@ -702,6 +868,77 @@ allowlist/network/connect+unix:/var/lib/sss/pipes/nss
     0
 }
 
+fn spawn_sydbox_shell(env_shell: bool, args: &Vec<&str>) -> ()
+{
+    let tmpname = format!("pandora-{}-{}-{}",
+        built_info::PKG_VERSION,
+        nix::unistd::getuid(),
+        nix::unistd::getpid());
+    let tmpdir = match tempfile::Builder::new().prefix(&tmpname).tempdir() {
+        Ok(dir) => dir,
+        Err(e) => {
+            eprintln!("[0;1;31;91mFailed to create temporary directory: {}[0m", e);
+            return;
+        }
+    };
+
+    let shell: String;
+    if env_shell {
+        shell = match std::env::var("SHELL") {
+            Ok(s) => s,
+            Err(_) => "/bin/bash".to_string(),
+        };
+    } else {
+        shell = "/bin/bash".to_string();
+    }
+
+    let home;
+    let mut homeargs = Vec::new();
+    if let Ok(s) = std::env::var("HOME") {
+        home = format!("allowlist/write+{}/***", s);
+        homeargs.push("-m");
+        homeargs.push(&home);
+    }
+
+    let mut default = Vec::new();
+    for magic in DEFAULT.split('\n').filter(|&magic|
+            !magic.is_empty() &&
+            magic.chars().next().unwrap() != '#') {
+        default.push("-m");
+        default.push(magic);
+    }
+
+    let rcname = "/etc/pandora.syd-2";
+    let rc = std::path::Path::new(rcname);
+    let mut rcargs = Vec::new();
+    if rc.exists() {
+        rcargs.push("-c");
+        rcargs.push(rcname);
+    }
+
+    let mut child = Command::new("syd")
+        .args(&default)
+        .args(&homeargs)
+        .args(&rcargs)
+        .arg("--chdir")
+        .arg(tmpdir.path())
+        .arg("--uid")
+        .arg(format!("{}", nix::unistd::getuid()))
+        .arg("--gid")
+        .arg(format!("{}", nix::unistd::getgid()))
+        .arg("--")
+        .arg(shell)
+        .arg("-l")
+        .args(&*args)
+        .spawn()
+        .unwrap_or_else(|e| {
+            eprintln!("[0;1;31;91mFailed to spawn SydB☮x shell: {}[0m", e);
+            eprintln!("[0;1;31;91mIs `syd' in your PATH?[0m");
+            std::process::exit(1);
+        });
+    child.wait().expect("failed to wait for shell");
+}
+
 fn magic_stat(path: &str) -> bool
 {
     match nix::sys::stat::lstat(path) {
@@ -786,27 +1023,39 @@ fn esandbox(cmd: &Vec<&str>) -> bool
             magic_stat("/dev/sydbox/core/sandbox/network:off"),
         "allow"|"allow_path" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("allowlist/write", '+', &cmd[1..])
             }
-            sydbox_internal_path_2("allowlist/write", '+', &cmd[1..])
         },
         "disallow"|"disallow_path" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("allowlist/write", '-', &cmd[1..])
             }
-            sydbox_internal_path_2("allowlist/write", '-', &cmd[1..])
         },
         "allow_exec" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("allowlist/exec", '+', &cmd[1..])
             }
-            sydbox_internal_path_2("allowlist/exec", '+', &cmd[1..])
         },
         "disallow_exec" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("allowlist/exec", '-', &cmd[1..])
             }
-            sydbox_internal_path_2("allowlist/exec", '-', &cmd[1..])
         },
         "allow_net" => {
             let mut c="allowlist/network/bin";
@@ -828,52 +1077,77 @@ fn esandbox(cmd: &Vec<&str>) -> bool
         },
         "addfilter"|"addfilter_path" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("filter/write", '+', &cmd[1..])
             }
-            sydbox_internal_path_2("filter/write", '+', &cmd[1..])
         },
         "rmfilter"|"rmfilter_path" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("filter/write", '-', &cmd[1..])
             }
-            sydbox_internal_path_2("filter/write", '-', &cmd[1..])
         },
         "addfilter_exec" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("filter/exec", '+', &cmd[1..])
             }
-            sydbox_internal_path_2("filter/exec", '+', &cmd[1..])
         },
         "rmfilter_exec" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("filter/exec", '-', &cmd[1..])
             }
-            sydbox_internal_path_2("filter/exec", '-', &cmd[1..])
         },
         "addfilter_net" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("filter/network", '+', &cmd[1..])
             }
-            sydbox_internal_path_2("filter/network", '+', &cmd[1..])
         },
         "rmfilter_net" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("filter/network", '-', &cmd[1..])
             }
-            sydbox_internal_path_2("filter/network", '-', &cmd[1..])
         },
         "exec" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                /* TODO: syd-format exec -- cmd[1..] */
+                eprintln!("[0;1;31;91mexec is not implemented yet![0m");
+                true
             }
-            /* TODO: syd-format exec -- cmd[1..] */
-            true
         },
         "kill" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("exec/kill_if_match", '+', &cmd[1..])
             }
-            sydbox_internal_path_2("exec/kill_if_match", '+', &cmd[1..])
         },
         _ => { panic!("Unknown command {}", command); },
     }

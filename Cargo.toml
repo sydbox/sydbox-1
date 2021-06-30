@@ -1,6 +1,6 @@
 [package]
 name = "pandora_box"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["Alï Polatel <alip@exherbo.org>"]
 edition = "2018"
 description = "Pandora's Box: A helper for SydBox, a seccomp-bpf based application sandbox, to make sandboxing practical"
@@ -36,6 +36,7 @@ chrono = "0.4"
 clap = "2.33"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+tempfile = "3.2.0"
 
 [build-dependencies]
 built = {version = "0.4.4", features=["git2", "chrono"]}
