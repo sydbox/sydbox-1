@@ -87,7 +87,14 @@ fi
 
 # Greet the user.
 test -n "$SYDBOX" && echo "$SYDBOX"
-sig_ign() { : }
+echo >&2 ""
+echo >&2 "Welcome to Sydb☮x shell. Have fun."
+echo >&2 "Type \`exit' to exit."
+echo >&2 ""
+
+sig_ign() {
+    :
+}
 trap sig_ign SIGALRM SIGHUP SIGINT SIGQUIT SIGPIPE SIGTERM SIGUSR1 SIGUSR2
 exit() {
     if test -x "@SYDBOX_SHARE_DIR@"/tao.pl; then

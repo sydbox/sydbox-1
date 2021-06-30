@@ -647,7 +647,7 @@ configure and extend it. In Exherbo (see: Exheres for Smarties[1]), we
 have the command `esandbox` to interface with the sandbox. The subcommand
 `pandora sandbox` provides the exact same interface.
 
-**Note**: `pandora sandbox` works as long as the magic lock of Sydb☮x  is not
+**Note**: `pandora sandbox` works as long as the magic lock of Sydb☮x is not
 locked either via the magic command `core/trace/magic_lock:on` or via the
 command-line option `--lock`. You may also lock the magic command using
 `pandora` with `pandora sandbox lock` after which no more sandboxing
