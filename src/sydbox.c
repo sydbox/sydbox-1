@@ -1012,7 +1012,7 @@ static void init_signals(void)
 
 	/* Ign */
 	sa.sa_sigaction = interrupt;
-	sa.sa_flags = SA_NOCLDSTOP|SA_NOCLDWAIT|SA_RESTART|SA_SIGINFO;
+	sa.sa_flags = SA_NOCLDSTOP|SA_RESTART|SA_SIGINFO;
 	sigaction(SIGCHLD, &sa, &child_sa);
 
 	/* Stop */
