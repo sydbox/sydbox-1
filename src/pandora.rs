@@ -439,6 +439,11 @@ Repository: {}
                         .short("l"),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("sandbox")
+                .about("Configure Sydbox' sandbox using the /dev/sydbox magic link")
+                .arg(Arg::with_name("cmd").required(true).multiple(true))
+        )
         .get_matches();
 
     if let Some(ref matches) = matches.subcommand_matches("box") {
@@ -470,6 +475,9 @@ Repository: {}
         std::process::exit(command_box(
             bin, &mut cmd, &arch, &config, &magic, bpf, &dump, &export,
         ));
+    } else if let Some(ref matches) = matches.subcommand_matches("sandbox") {
+        let cmd: Vec<&str> = matches.values_of("cmd").unwrap().collect();
+        esandbox(&cmd);
     } else if let Some(ref matches) = matches.subcommand_matches("profile") {
         let bin = matches.value_of("bin").unwrap();
         let out = matches.value_of("output").unwrap();
@@ -874,7 +882,10 @@ fn esandbox(cmd: &Vec<&str>) -> bool
     }
 }
 
+<<<<<<< HEAD
 >>>>>>> b2e1681d... sydsh: check for /dev/sydbox on init
+=======
+>>>>>>> f1f8127e... pandora: implement pandora sandbox to interface /dev/sydbox
 fn parse_json_line(
     serialized: &str,
     magic: &mut std::collections::HashSet<(Sandbox, String)>,
