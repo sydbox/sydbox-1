@@ -1,6 +1,6 @@
 [package]
 name = "pandora_box"
-version = "0.5.2"
+version = "0.6.0"
 authors = ["Alï Polatel <alip@exherbo.org>"]
 edition = "2018"
 description = "Pandora's Box: A helper for SydBox, a seccomp-bpf based application sandbox, to make sandboxing practical"
@@ -17,6 +17,7 @@ include = [
 	"**/*.rs",
 	"Cargo.toml",
 	"data/*.syd-2",
+	"data/sydbox.bashrc",
 	"logo/sydbox160.png",
 	"/ChangeLog",
 	"/README",
