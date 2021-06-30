@@ -439,6 +439,11 @@ Repository: {}
                         .short("l"),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("sandbox")
+                .about("Configure Sydbox' sandbox using the /dev/sydbox magic link")
+                .arg(Arg::with_name("cmd").required(true).multiple(true))
+        )
         .get_matches();
 
     if let Some(ref matches) = matches.subcommand_matches("box") {
@@ -470,6 +475,9 @@ Repository: {}
         std::process::exit(command_box(
             bin, &mut cmd, &arch, &config, &magic, bpf, &dump, &export,
         ));
+    } else if let Some(ref matches) = matches.subcommand_matches("sandbox") {
+        let cmd: Vec<&str> = matches.values_of("cmd").unwrap().collect();
+        esandbox(&cmd);
     } else if let Some(ref matches) = matches.subcommand_matches("profile") {
         let bin = matches.value_of("bin").unwrap();
         let out = matches.value_of("output").unwrap();
@@ -692,6 +700,186 @@ allowlist/network/connect+unix:/var/lib/sss/pipes/nss
     .unwrap_or_else(|_| panic!("failed to lock configuration for output `{}'", output_path));
 
     0
+}
+
+fn magic_stat(path: &str) -> bool
+{
+    let cpath = CString::new(path).expect("invalid magic stat path");
+    let vpath: Vec<u8> = cpath.into_bytes_with_nul();
+    let mut tmp: Vec<i8> = vpath.into_iter().map(|c| c as i8).collect::<_>();
+    let ppath: *mut i8 = tmp.as_mut_ptr();
+    let r = unsafe {
+        libc::lstat(ppath, std::ptr::null_mut())
+    };
+    if r == 0 {
+        println!("{}: [0;1;32;92mmOK[0m", path);
+        true
+    } else {
+        println!("{}: [0;1;31;91mNOT OK[0m", path);
+        false
+    }
+}
+
+fn sydbox_internal_net_2(cmd: &str, op: char, argv: &[&str]) -> bool
+{
+    match op {
+        '+' | '-' => {},
+        _ => { panic!("invalid operation character {}", op); }
+    };
+
+    let mut ok: bool = true;
+    for i in 0..argv.len() {
+        let addr = argv[i];
+        let r = magic_stat(&format!("/dev/sydbox/{}{}{}", cmd, op, addr));
+        if !r { ok = false; };
+    }
+    ok
+}
+
+fn sydbox_internal_path_2(cmd: &str, op: char, argv: &[&str]) -> bool
+{
+    match op {
+        '+' | '-' => {},
+        _ => { panic!("invalid operation character {}", op); }
+    };
+
+    let mut ok: bool = true;
+    for i in 0..argv.len() {
+        let path = argv[i];
+        if path.chars().next().expect("expected absolute path, got empty path") != '/' {
+            panic!("sydbox_internal_path_2 expects absolute path, got: {}", path);
+        }
+        let r = magic_stat(&format!("/dev/sydbox/{}{}{}", cmd, op, path));
+        if !r { ok = false; };
+    }
+    ok
+}
+
+fn esandbox(cmd: &Vec<&str>) -> bool
+{
+    let command = cmd[0];
+    match command {
+        "check" =>
+            magic_stat("/dev/sydbox"),
+        "lock" =>
+            magic_stat("/dev/sydbox/core/trace/magic_lock:on"),
+        "exec_lock" =>
+            magic_stat("/dev/sydbox/core/trace/magic_lock:exec"),
+        "wait_all" =>
+            magic_stat("/dev/sydbox/core/trace/exit_wait_all:true"),
+        "wait_eldest" =>
+            magic_stat("/dev/sydbox/core/trace/exit_wait_all:false"),
+        "enabled"|"enabled_path" =>
+            magic_stat("/dev/sydbox/core/sandbox/write?"),
+        "enable"|"enable_path" =>
+            magic_stat("/dev/sydbox/core/sandbox/write:deny"),
+        "disable"|"disable_path" =>
+            magic_stat("/dev/sydbox/core/sandbox/write:off"),
+        "enabled_exec" =>
+            magic_stat("/dev/sydbox/core/sandbox/exec?"),
+        "enable_exec" =>
+            magic_stat("/dev/sydbox/core/sandbox/exec:deny"),
+        "disable_exec" =>
+            magic_stat("/dev/sydbox/core/sandbox/exec:off"),
+        "enabled_net" =>
+            magic_stat("/dev/sydbox/core/sandbox/network?"),
+        "enable_net" =>
+            magic_stat("/dev/sydbox/core/sandbox/network:deny"),
+        "disable_net" =>
+            magic_stat("/dev/sydbox/core/sandbox/network:off"),
+        "allow"|"allow_path" => {
+            if cmd.len() <= 1 {
+                panic!("{} takes at least one extra argument", command);
+            }
+            sydbox_internal_path_2("allowlist/write", '+', &cmd[1..])
+        },
+        "disallow"|"disallow_path" => {
+            if cmd.len() <= 1 {
+                panic!("{} takes at least one extra argument", command);
+            }
+            sydbox_internal_path_2("allowlist/write", '-', &cmd[1..])
+        },
+        "allow_exec" => {
+            if cmd.len() <= 1 {
+                panic!("{} takes at least one extra argument", command);
+            }
+            sydbox_internal_path_2("allowlist/exec", '+', &cmd[1..])
+        },
+        "disallow_exec" => {
+            if cmd.len() <= 1 {
+                panic!("{} takes at least one extra argument", command);
+            }
+            sydbox_internal_path_2("allowlist/exec", '-', &cmd[1..])
+        },
+        "allow_net" => {
+            let mut c="allowlist/network/bin";
+            let mut i=1;
+            if cmd[1] == "--connect" {
+                c="allowlist/network/connect";
+                i=2;
+            };
+            sydbox_internal_net_2(c, '+', &cmd[i..])
+        },
+        "disallow_net" => {
+            let mut c="allowlist/network/bin";
+            let mut i=1;
+            if cmd[1] == "--connect" {
+                c="allowlist/network/connect";
+                i=2;
+            };
+            sydbox_internal_net_2(c, '-', &cmd[i..])
+        },
+        "addfilter"|"addfilter_path" => {
+            if cmd.len() <= 1 {
+                panic!("{} takes at least one extra argument", command);
+            }
+            sydbox_internal_path_2("filter/write", '+', &cmd[1..])
+        },
+        "rmfilter"|"rmfilter_path" => {
+            if cmd.len() <= 1 {
+                panic!("{} takes at least one extra argument", command);
+            }
+            sydbox_internal_path_2("filter/write", '-', &cmd[1..])
+        },
+        "addfilter_exec" => {
+            if cmd.len() <= 1 {
+                panic!("{} takes at least one extra argument", command);
+            }
+            sydbox_internal_path_2("filter/exec", '+', &cmd[1..])
+        },
+        "rmfilter_exec" => {
+            if cmd.len() <= 1 {
+                panic!("{} takes at least one extra argument", command);
+            }
+            sydbox_internal_path_2("filter/exec", '-', &cmd[1..])
+        },
+        "addfilter_net" => {
+            if cmd.len() <= 1 {
+                panic!("{} takes at least one extra argument", command);
+            }
+            sydbox_internal_path_2("filter/network", '+', &cmd[1..])
+        },
+        "rmfilter_net" => {
+            if cmd.len() <= 1 {
+                panic!("{} takes at least one extra argument", command);
+            }
+            sydbox_internal_path_2("filter/network", '-', &cmd[1..])
+        },
+        "exec" => {
+            if cmd.len() <= 1 {
+                panic!("{} takes at least one extra argument", command);
+            }
+            /* TODO: syd-format exec -- cmd[1..] */
+            true
+        },
+        "kill" => {
+            if cmd.len() <= 1 {
+                panic!("{} takes at least one extra argument", command);
+            }
+            sydbox_internal_path_2("exec/kill_if_match", '+', &cmd[1..])
+        },
+        _ => { panic!("Unknown command {}", command); },
+    }
 }
 
 fn parse_json_line(
