@@ -1701,11 +1701,13 @@ pid_validate:
 					/* reap zombies after notify respond
 					reap_my_zombies = true; */
 				}
-				if (current->abspath) {
-					free(current->abspath);
-					current->abspath = NULL;
+				if (current) {
+					if (current->abspath) {
+						free(current->abspath);
+						current->abspath = NULL;
+					}
+					sysx_chdir(current);
 				}
-				sysx_chdir(current);
 			} else {
 				;/*not_exec = false;*/
 			}
