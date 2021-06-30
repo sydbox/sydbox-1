@@ -397,6 +397,7 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 	}
 
 	/* Step 3: resolve path */
+resolve_path:
 	if ((r = box_resolve_path(path, prefix ? prefix : P_CWD(current),
 				  pid, info->rmode, &abspath)) < 0) {
 		r = deny(current, -r);
@@ -442,6 +443,18 @@ check_access:
 		syd_rmem_write(current);
 #endif
 		goto out;
+	}
+
+	if (!prefix) {
+		char *p = xstrdup(P_CWD(current));
+		sysx_chdir(current);
+		bool cwd_ok = streq(p, P_CWD(current));
+		free(p);
+		if (!cwd_ok) {
+			say("cwd mismatch, retrying box resolve path!");
+			free(abspath);
+			goto resolve_path;
+		}
 	}
 
 	if (info->safe && !sydbox->config.violation_raise_safe) {
