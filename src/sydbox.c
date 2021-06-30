@@ -1651,7 +1651,8 @@ pid_validate:
 				}
 			}
 			if (execve_pid) {
-				event_exec(current);
+				if (current)
+					event_exec(current);
 				if (pid == execve_pid) {
 					P_EXECVE_PID(current) = 0;
 				} else {
