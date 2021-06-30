@@ -509,13 +509,6 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 	} else {
 		current->clone_flags = SIGCHLD;
 	}
-	/* We manually disable these for now.
-	 * Handling these efficiently may mean sacrificing on security.
-	 * So they're best to be thought out thoroughly before reenabling.
-	 */
-	share_thread = false;
-	share_fs = false;
-	share_files = false;
 
 	int r;
 	int pfd_cwd = -1;
