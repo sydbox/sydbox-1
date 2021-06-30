@@ -352,6 +352,10 @@ default sandboxing profile installed by Sydbox and may also be used as basic con
 for other applications. It's installed under `$sharedir/sydbox/default.syd-2` where
 `$sharedir` is usually `/usr/share`.
 
+**Note**: By default, Sydbox allows interacting with the sandbox. Try with
+`syd --lock` to disable this for a more real jail experience. Note in this
+mode `/dev/sydbox` is inaccessible.
+
 ```
 $ syd
 There is no other day
