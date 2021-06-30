@@ -56,7 +56,8 @@ export PUBLIC_DNS_ALT
 export PUBLIC_HOST
 
 # Used for execve sandboxing test.
-TRUE_BIN=$(readlink -f "$(type -P true 2>/dev/null)")
+TRUE_BIN=$(which true)
+TRUE_BIN=$(readlink -f "${TRUE_BIN}")
 export TRUE_BIN
 
 # Test the binaries we have just built.  The tests are kept in
