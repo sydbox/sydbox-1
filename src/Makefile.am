@@ -96,6 +96,7 @@ noinst_HEADERS+= \
 		 serializer.h \
 		 sha1dc/sha1.h \
 		 sha1dc/ubc_check.h \
+		 sha1dc_syd.h \
 		 syd_seccomp_arch_default.c \
 		 sockmatch.h \
 		 sockmap.h \
