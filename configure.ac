@@ -684,9 +684,27 @@ AC_DEFINE_UNQUOTED([ENABLE_PSYSCALL], [$enable_psyscall],
 AM_CONDITIONAL([WANT_PSYSCALL], test x"$enable_psyscall" = x"1")
 
 dnl check for libseccomp
+dnl we check without pkg-config because a pkg-config file is not always available.
 LIBSECCOMP_REQUIRED=2.4.3
-PKG_CHECK_MODULES([libseccomp], [libseccomp >= $LIBSECCOMP_REQUIRED],,
-		  AC_MSG_ERROR([sydbox requires libseccomp-$LIBSECCOMP_REQUIRED or newer]))
+AC_ARG_VAR([libseccomp][_CFLAGS], [C compiler flags for $1, overriding sydbox configure])dnl
+AC_ARG_VAR([libseccomp][_LIBS], [linker flags for $1, overriding sydbox configure])dnl
+libseccomp_CFLAGS=
+libseccomp_LIBS="-lseccomp"
+save_LIBS="$LIBS"
+LIBS="-lseccomp"
+AC_MSG_CHECKING([for libseccomp >= $LIBSECCOMP_REQUIRED])
+AC_RUN_IFELSE([AC_LANG_PROGRAM([
+#include <stdlib.h>
+#include <seccomp.h>
+],
+[[
+const struct scmp_version *v = seccomp_version();
+exit(v->major > 2 || (v->major == 2 && v->minor >= 4) ? 0 : 1);
+]])],
+[AC_MSG_RESULT([yes])
+],[AC_MSG_ERROR([sydbox requires libseccomp-$LIBSECCOMP_REQUIRED or newer])
+],[SYD_ARCH_CROSS_COMPILE_WARN=yes])
+LIBS="$save_LIBS"
 
 dnl check for libseccomp architectures
 m4_sinclude([m4/syd-seccomp-arch-check.m4])
