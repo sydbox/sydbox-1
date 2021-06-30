@@ -125,7 +125,7 @@ static void usage(FILE *outfp, int code)
 usage: "PACKAGE" [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
               [--export <bpf|pfc:filename>] [--memaccess 0..3]\n\
               [--arch arch...] [--config pathspec...] [--magic magic...]\n\
-              [--chroot directory] [--chdir directory]\n\
+              [--lock] [--chroot directory] [--chdir directory]\n\
               [--env var...] [--env var=val...]\n\
               [--ionice class:data] [--nice level]\n\
               [--background] [--stdout logfile] [--stderr logfile]\n\
