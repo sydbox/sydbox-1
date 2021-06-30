@@ -8,7 +8,7 @@ CLEANFILES= \
 	    *.gcda \
 	    *.gcno \
 	    *.gcov
-EXTRA_DIST=
+EXTRA_DIST= syscall_open_syd.h.in
 noinst_HEADERS=
 
 noinst_SCRIPTS= \
