@@ -431,7 +431,7 @@ fn command_profile<'b>(bin: &'b str, cmd: &[&'b str], output_path: &'b str, path
         .arg("--")
         .args(cmd)
         .spawn()
-        .expect("sydbox command failed to start");
+        .expect("sydb☮x command failed to start");
 
     nix::unistd::close(fd_rw).expect("failed to close write end of pipe");
     let input = Box::new(std::io::BufReader::new(unsafe {
@@ -439,11 +439,11 @@ fn command_profile<'b>(bin: &'b str, cmd: &[&'b str], output_path: &'b str, path
     }));
     let r = do_inspect(input, output_path, path_limit);
 
-    child.wait().expect("failed to wait for sydbox");
+    child.wait().expect("failed to wait for sydb☮x");
     eprintln!("success writing output to `{}' dump", output_path);
     eprintln!("Edit the file ẁith your editor as necessary.");
-    eprintln!("Then use 'pandora box -c \"{}\" <command>'", output_path);
-    eprintln!("To run the command under SydBox.");
+    eprintln!("Then use 'pand☮rⒶ box -c \"{}\" <command>'", output_path);
+    eprintln!("To run the command under SydB☮x.");
 
     r
 }
@@ -473,14 +473,14 @@ fn main() {
         .about(built_info::PKG_DESCRIPTION)
         .after_help(&*format!(
             "\
-If no subcommands are given, Pandora executes a shell with the argument `-l'.
+If no subcommands are given, Pand☮rⒶ executes a shell with the argument `-l'.
 To figure out the shell first the SHELL environment variable is checked.
 If this is not set, the default shell is `/bin/sh'.
 
 In login shell mode, if the file `/etc/pandora.syd-2' exists,
-Pandora will tell SydBox to use this file as configuration.
+Pand☮rⒶ will tell SydB☮x to use this file as configuration.
 
-In login shell mode, SydBox uses the Paludis profile as the default set of configuration values.
+In login shell mode, SydB☮x uses the PⒶludis profile as the default set of configuration values.
 To see this default set of configuration values and white lists of system paths, check:
 https://git.exherbo.org/sydbox-1.git/plain/data/paludis.syd-2
 
@@ -502,12 +502,12 @@ Repository: {}
         ))
         .subcommand(
             SubCommand::with_name("box")
-                .about("Execute the given command under sydbox")
+                .about("Execute the given command under sydb☮x")
                 .arg(
                     Arg::with_name("bin")
                         .default_value("syd")
                         .required(true)
-                        .help("Path to sydbox binary")
+                        .help("Path to sydb☮x binary")
                         .long("bin")
                         .env("SYDBOX_BIN"),
                 )
@@ -575,12 +575,12 @@ Repository: {}
         )
         .subcommand(
             SubCommand::with_name("profile")
-                .about("Execute a program under inspection and write a sydbox profile")
+                .about("Execute a program under inspection and write a sydb☮x profile")
                 .arg(
                     Arg::with_name("bin")
                         .default_value("syd")
                         .required(true)
-                        .help("Path to sydbox binary")
+                        .help("Path to sydb☮x binary")
                         .long("bin")
                         .env("SYDBOX_BIN"),
                 )
@@ -588,7 +588,7 @@ Repository: {}
                     Arg::with_name("output")
                         .default_value("./out.syd-2")
                         .required(true)
-                        .help("Path to sydbox profile output")
+                        .help("Path to sydb☮x profile output")
                         .long("output")
                         .short("o")
                         .env("SHOEBOX_OUT"),
@@ -605,12 +605,12 @@ Repository: {}
         )
         .subcommand(
             SubCommand::with_name("inspect")
-                .about("Read a sydbox core dump and write a sydbox profile")
+                .about("Read a sydb☮x core dump and write a sydb☮x profile")
                 .arg(
                     Arg::with_name("input")
                         .default_value("./sydcore")
                         .required(true)
-                        .help("Path to sydbox core dump")
+                        .help("Path to sydb☮x core dump")
                         .long("input")
                         .short("i")
                         .env("SHOEBOX"),
@@ -619,7 +619,7 @@ Repository: {}
                     Arg::with_name("output")
                         .default_value("./out.syd-2")
                         .required(true)
-                        .help("Path to sydbox profile output")
+                        .help("Path to sydb☮x profile output")
                         .long("output")
                         .short("o")
                         .env("SHOEBOX_OUT"),
@@ -635,16 +635,121 @@ Repository: {}
         )
         .subcommand(
             SubCommand::with_name("sandbox")
-                .about("Configure Sydbox' sandbox using the /dev/sydbox magic link")
-                .arg(Arg::with_name("cmd").required(true).multiple(true))
+                .about("Configure Sydb☮x' sandbox using the /dev/sydb☮x magic link")
+                .arg(
+                    Arg::with_name("cmd")
+                        .required(true)
+                        .multiple(true)
+                        .help("
+SydB☮x may be configured through the magic path `/dev/sydb☮x` which is a virtual
+path that exists solely for inter-process communication with the sandbox to
+configure and extend it. In Exherbo (see: Exheres for Smarties[1]), we
+have the command `esandbox` to interface with the sandbox. The subcommand
+`pandora sandbox` provides the exact same interface.
+
+**Note**: `pandora sandbox` works as long as the magic lock of Sydb☮x  is not
+locked either via the magic command `core/trace/magic_lock:on` or via the
+command-line option `--lock`. You may also lock the magic command using
+`pandora` with `pandora sandbox lock` after which no more sandboxing
+commands are permitted.
+
+Here's a list of `pandora sandbox` commands:
+
+# Querying sandbox status
+- `check`: Check whether the program is being executed under
+  sandboxing.
+- `enabled` or `enabled_path`: Check whether path
+  sandboxing is enabled.
+- `enabled_exec`: Check whether exec sandboxing is enabled.
+- `enabled_net`: Check whether network sandboxing is enabled.
+
+# Turning sandboxing on/off
+- `enable` or `enable_path`: Enable path sandboxing.
+- `disable` or `disable_path`: Disable path sandboxing.
+- `enable_exec`: Enable exec sandboxing.
+- `disable_exec`: Disable exec sandboxing.
+- `enable_net`: Enable network sandboxing.
+- `disable_net`: Disable network sandboxing.
+
+# Whitelisting
+- `allow` or `allow_path`: Whitelist a path for path
+  sandboxing.  Takes one extra argument which must be an __absolute__ path.
+- `disallow` or `disallow_path`: Removes a path from
+  the path sandboxing whitelist. Takes one extra argument which must be an
+  __absolute__ path.
+- `allow_exec`: Whitelist a path for `execve()` sandboxing.  Takes
+  one extra argument which must be an __absolute__ path.
+- `disallow_exec`: Removes a path from the `execve()` sandboxing whitelist.
+Takes one extra argument which must be an __absolute__ path.
+- `allow_net`: Whitelist a network address for `bind()` whitelist -
+  or for `connect()` whitelist if _--connect_ option is given.
+- `disallow_net`: Removes a network address from the `bind()`
+  whitelist - or from `connect()` whitelist if _--connect_ option is given.
+
+# Filtering
+- `addfilter` or `addfilter_path`: Add a pattern as
+  a path sandboxing filter. Takes one extra argument which is a `fnmatch()` pattern.
+- `rmfilter` or `rmfilter_path`: Removes a pattern
+  from the path sandboxing filter list. Takes one extra argument which is a
+  `fnmatch()` pattern.
+- `addfilter_exec`: Add a pattern as a `execve()` sandboxing filter.
+  Takes one extra argument which is a `fnmatch()` pattern.
+- `rmfilter_exec`: Removes a pattern from the `execve()` sandboxing
+  filter list. Takes one extra argument which is a `fnmatch()` pattern.
+- `addfilter_net`: Add a network address as a network sandboxing
+  filter.  Takes one extra argument which is a network address.
+- `rmfilter_net`: Removes a pattern from the network sandboxing
+  filter list. Takes one extra argument which is a network address.
+
+# Miscellaneous commands
+- `lock`: Lock magic commands. After calling this none of the
+  `sandbox` commands will work. You don't need to call this, see
+  `exec_lock`.
+- `exec_lock`: Lock magic commands upon `execve()`.
+- `wait_eldest`: By default, sydb☮x waits for all traced processes
+  to exit before exiting. However, this isn't desired in some cases. For example
+  when a daemon, like udev, is restarted from within an exheres which will go on its
+  execution after installation. This command makes sydb☮x resume all processes and
+  exit after the eldest process has exited.
+- `wait_all`: Wait for all processes before exiting. This is the
+  default.
+
+# Specifying Network Addresses
+Network addresses may be specified in the following forms:
+
+- unix:FNMATCH_PATTERN
+- unix-abstract:FNMATCH_PATTERN
+- inet:ipv4_address/NETMASK@PORT_RANGE
+- inet6:ipv6_address/NETMASK@PORT_RANGE
+
+where /NETMASK can be omitted and PORT_RANGE can either be a number or two
+numbers in the form BEGIN-END. In addition, there are a few network aliases
+that are expanded to network addresses. They are listed below:
+
+- LOOPBACK is expanded to inet://127.0.0.0/8
+- LOOPBACK6 is expanded to inet6://::1/8
+- LOCAL is expanded to four addresses as defined in RFC1918:
+  * inet:127.0.0.0/8
+  * inet:10.0.0.0/8
+  * inet:172.16.0.0/12
+  * inet:192.168.0.0/16
+- LOCAL6 is expanded to four addresses:
+  * inet6:::1
+  * inet6:fe80::/7
+  * inet6:fc00::/7
+  * inet6:fec0::/7
+
+So you may use LOOPBACK@0 instead of inet:127.0.0.0/8@0
+")
+                )
         )
         .subcommand(
             SubCommand::with_name("shell")
-                .about("Run SydBox' restricted login shell")
+                .about("Run SydB☮x' restricted login shell")
                 .arg(
                     Arg::with_name("lock")
                         .required(false)
-                        .help("Lock /dev/sydbox IPC in sandbox")
+                        .help("Lock /dev/sydb☮x IPC in sandbox")
                         .long("lock")
                         .short("l"),
                 )
