@@ -1646,23 +1646,31 @@ pid_validate:
 		} else if (streq(name, "clone")) {
 			sydbox_syscall_allow();
 			not_clone = false;
-			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
+			if (current)
+				event_clone(current, 'c',
+					    current->args[SYD_CLONE_ARG_FLAGS]);
 		} else if (streq(name, "clone2")) {
 			sydbox_syscall_allow();
 			not_clone = false;
-			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
+			if (current)
+				event_clone(current, 'c',
+					    current->args[SYD_CLONE_ARG_FLAGS]);
 		} else if (streq(name, "clone3")) {
 			sydbox_syscall_allow();
 			not_clone = false;
-			event_clone(current, 'c', current->args[SYD_CLONE_ARG_FLAGS]);
+			if (current)
+				event_clone(current, 'c',
+					    current->args[SYD_CLONE_ARG_FLAGS]);
 		} else if (streq(name, "fork")) {
 			sydbox_syscall_allow();
 			not_clone = false;
-			event_clone(current, 'f', 0);
+			if (current)
+				event_clone(current, 'f', 0);
 		} else if (streq(name, "vfork")) {
 			sydbox_syscall_allow();
 			not_clone = false;
-			event_clone(current, 'v', 0);
+			if (current)
+				event_clone(current, 'v', 0);
 		} else {
 			/*
 			 * All sandboxed system calls end up here.
