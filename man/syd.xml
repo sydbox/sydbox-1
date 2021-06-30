@@ -42,8 +42,8 @@
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
       <itemizedlist>
-        <listitem><para><command>syd <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..3</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt" >--chdir &lt;directory|tmp&gt;</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--startas name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
-        <listitem><para><command>syd <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="req">noexec</arg></command></para></listitem>
+        <listitem><para><command>syd <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..3</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt">--lock</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt" >--chdir &lt;directory|tmp&gt;</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--startas name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
+        <listitem><para><command>syd <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg>  <arg choice="req">noexec</arg></command></para></listitem>
         <listitem><para><command>syd --test</command></para></listitem>
       </itemizedlist>
     </cmdsynopsis>
@@ -338,6 +338,21 @@
           <simpara>
             Run a magic command during init, may be repeated.
             See <xref linkend="configuration"/> for more information.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-l</option></term>
+        <term><option>--lock</option></term>
+        <listitem>
+          <simpara>
+            Lock magic commands after initialization. By default,
+            sydbox may be configured during runtime from inside
+            the sandbox via Paludis' esandbox command or via
+            <command>pandora</command>. Locking prevents this
+            and makes sydbox' sandbox tamper-free making it
+            a true jail replacement.
           </simpara>
         </listitem>
       </varlistentry>
