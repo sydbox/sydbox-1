@@ -61,7 +61,6 @@ static const int deny_list_level0[] = {
 	SCMP_SYS(kexec_file_load),
 	SCMP_SYS(kexec_load),
 	SCMP_SYS(keyctl),
-	SCMP_SYS(memfd_create),
 	SCMP_SYS(mount),
 	SCMP_SYS(move_mount),
 	SCMP_SYS(nfsservctl),
@@ -70,8 +69,6 @@ static const int deny_list_level0[] = {
 #else
 	438, /* __NR_pidfd_getfd */
 #endif
-	SCMP_SYS(pidfd_open),
-	SCMP_SYS(pidfd_send_signal),
 	SCMP_SYS(pivot_root),
 	SCMP_SYS(pkey_alloc),
 	SCMP_SYS(pkey_free),
@@ -82,14 +79,9 @@ static const int deny_list_level0[] = {
 	SCMP_SYS(quotactl),
 	SCMP_SYS(reboot),
 	SCMP_SYS(request_key),
-	SCMP_SYS(seccomp),
 	SCMP_SYS(security),
 	SCMP_SYS(setdomainname),
 	SCMP_SYS(sethostname),
-	SCMP_SYS(shmat),
-	SCMP_SYS(shmctl),
-	SCMP_SYS(shmdt),
-	SCMP_SYS(shmget),
 	SCMP_SYS(swapoff),
 	SCMP_SYS(swapon),
 	SCMP_SYS(umount),

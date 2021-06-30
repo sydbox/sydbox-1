@@ -1011,7 +1011,54 @@
             <para>default: <varname>0</varname></para>
             <para>
               An integer specifying the level of permitted system calls.
-              Level 0 performs no restrictions and every system call is permitted.
+              Level 0 performs the default restrictions of SydBox where there
+              is a list of system calls which are denylisted and are denied
+              unconditionaly with the errno <constant>ECANCELED</constant>.
+              These restrictions are present to improve the security of SydBox
+              and are applied regardless of the restrict level.
+            </para>
+            <para>
+              The list of denylisted system calls in Level 0 are
+              <function>acct</function><manvolnum>2</manvolnum>,
+              <function>add_key</function><manvolnum>2</manvolnum>,
+              <function>adjtimex</function><manvolnum>2</manvolnum>,
+              <function>afs_syscall</function><manvolnum>2</manvolnum>,
+              <function>chroot</function><manvolnum>2</manvolnum>,
+              <function>finit_module</function><manvolnum>2</manvolnum>,
+              <function>fsmount</function><manvolnum>2</manvolnum>,
+              <function>get_kernel_syms</function><manvolnum>2</manvolnum>,
+              <function>init_module</function><manvolnum>2</manvolnum>,
+              <function>kexec_file_load</function><manvolnum>2</manvolnum>,
+              <function>kexec_load</function><manvolnum>2</manvolnum>,
+              <function>keyctl</function><manvolnum>2</manvolnum>,
+              <function>mount</function><manvolnum>2</manvolnum>,
+              <function>move_mount</function><manvolnum>2</manvolnum>,
+              <function>nfsservctl</function><manvolnum>2</manvolnum>,
+              <function>pidfd_getfd</function><manvolnum>2</manvolnum>,
+              <function>pivot_root</function><manvolnum>2</manvolnum>,
+              <function>pkey_alloc</function><manvolnum>2</manvolnum>,
+              <function>pkey_free</function><manvolnum>2</manvolnum>,
+              <function>pkey_mprotect</function><manvolnum>2</manvolnum>,
+              <function>process_vm_readv</function><manvolnum>2</manvolnum>,
+              <function>process_vm_writev</function><manvolnum>2</manvolnum>,
+              <function>ptrace</function><manvolnum>2</manvolnum>,
+              <function>quotactl</function><manvolnum>2</manvolnum>,
+              <function>reboot</function><manvolnum>2</manvolnum>,
+              <function>request_key</function><manvolnum>2</manvolnum>,
+              <function>security</function><manvolnum>2</manvolnum>,
+              <function>setdomainname</function><manvolnum>2</manvolnum>,
+              <function>sethostname</function><manvolnum>2</manvolnum>,
+              <function>swapoff</function><manvolnum>2</manvolnum>,
+              <function>swapon</function><manvolnum>2</manvolnum>,
+              <function>umount</function><manvolnum>2</manvolnum>,
+              <function>umount2</function><manvolnum>2</manvolnum>,
+              <function>unshare</function><manvolnum>2</manvolnum>,
+              <function>uselib</function><manvolnum>2</manvolnum>,
+              <function>vm86</function><manvolnum>2</manvolnum>,
+              <function>vm86old</function><manvolnum>2</manvolnum>,
+              <function>vserver</function><manvolnum>2</manvolnum>,
+            </para>
+            <para>
               Level 1 is strict and resembles the first version of the Secure
               Computing Mode. Level 2 is less strict than Level 1. Both Level 1
               and Level 2 permit only read access to the filesystem. Level 3 is
