@@ -55,6 +55,8 @@ int magic_set_trace_magic_lock(const void *val, syd_process_t *current)
 		return MAGIC_RET_INVALID_VALUE;
 
 	box->magic_lock = l;
+	if (!current)
+		return MAGIC_RET_OK;
 
 #if 0
 	say("set magic lock to %u<%s> for process:%u<%s,%s,%u-%u>.",
@@ -62,7 +64,6 @@ int magic_set_trace_magic_lock(const void *val, syd_process_t *current)
 	    current->pid, current->comm, current->hash,
 	    current->ppid, current->tgid);
 #endif
-
 
 	/* Set magic lock for grand ppid and grand tgid too,
 	 * so that tools that execute have their parents'
