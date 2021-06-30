@@ -1691,7 +1691,8 @@ pid_validate:
 				if (current)
 					event_exec(current);
 				if (pid == execve_pid) {
-					P_EXECVE_PID(current) = 0;
+					if (current)
+						P_EXECVE_PID(current) = 0;
 				} else {
 					current = process_lookup(pid);
 					switch_execve_leader(execve_pid,
