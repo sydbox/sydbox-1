@@ -704,12 +704,6 @@ allowlist/network/connect+unix:/var/lib/sss/pipes/nss
 
 fn magic_stat(path: &str) -> bool
 {
-    /*
-    let cpath = CString::new(path).expect("invalid magic stat path");
-    let vpath: Vec<u8> = cpath.into_bytes_with_nul();
-    let mut tmp: Vec<i8> = vpath.into_iter().map(|c| c as i8).collect::<_>();
-    let ppath: *mut i8 = tmp.as_mut_ptr();
-    */
     match nix::sys::stat::lstat(path) {
         Ok(_fstat) => {
             println!("{}: [0;1;32;92mOK[0m", path);
