@@ -294,7 +294,7 @@ allowlist/network/connect+LOOPBACK@65535
 allowlist/network/connect+LOOPBACK6@65535
 
 # Lock configuration
-core/trace/magic_lock:on
+# core/trace/magic_lock:on
 ";
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
@@ -457,7 +457,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() <= 1 {
-        spawn_sydbox_shell(true, &vec![]);
+        spawn_sydbox_shell(true, true, &vec![]);
         return;
     }
 
@@ -641,6 +641,13 @@ Repository: {}
         .subcommand(
             SubCommand::with_name("shell")
                 .about("Run SydBox' restricted login shell")
+                .arg(
+                    Arg::with_name("lock")
+                        .required(false)
+                        .help("Lock /dev/sydbox IPC in sandbox")
+                        .long("lock")
+                        .short("l"),
+                )
                 .arg(Arg::with_name("args").required(false).multiple(true))
         )
         .get_matches();
@@ -678,13 +685,14 @@ Repository: {}
         let cmd: Vec<&str> = matches.values_of("cmd").unwrap().collect();
         esandbox(&cmd);
     } else if let Some(ref matches) = matches.subcommand_matches("shell") {
+        let lock: bool = matches.is_present("lock");
         let args: Vec<&str>;
         if matches.is_present("args") {
             args = matches.values_of("args").unwrap().collect();
         } else {
             args = vec![];
         }
-        spawn_sydbox_shell(false, &args);
+        spawn_sydbox_shell(false, lock, &args);
     } else if let Some(ref matches) = matches.subcommand_matches("profile") {
         let bin = matches.value_of("bin").unwrap();
         let out = matches.value_of("output").unwrap();
@@ -719,7 +727,7 @@ Repository: {}
             limit,
         ));
     } else {
-        spawn_sydbox_shell(true, &vec![]);
+        spawn_sydbox_shell(true, false, &vec![]);
     }
 }
 
@@ -868,7 +876,7 @@ allowlist/network/connect+unix:/var/lib/sss/pipes/nss
     0
 }
 
-fn spawn_sydbox_shell(env_shell: bool, args: &Vec<&str>) -> ()
+fn spawn_sydbox_shell(env_shell: bool, magic_lock: bool, args: &Vec<&str>) -> ()
 {
     let tmpname = format!("pandora-{}-{}-{}",
         built_info::PKG_VERSION,
@@ -881,6 +889,25 @@ fn spawn_sydbox_shell(env_shell: bool, args: &Vec<&str>) -> ()
             return;
         }
     };
+
+    match nix::unistd::chdir(tmpdir.path()) {
+        Ok(_) => {
+            match nix::unistd::symlinkat("/dev/sydbox", None, "sydbox") {
+                Ok(_) => {
+                    magic_stat("/dev/sydbox");
+                }
+                Err(e) => {
+                    eprintln!("[0;1;31;91mFailed to create /dev/SydB☮x symbolic link: {}[0m", e);
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("[0;1;31;91mFailed to change directory to temporary directory: {}[0m", e);
+        }
+    }
+
+    /* TODO: We pass a default flag, mem-access is irrelevant. */
+    let lock = if magic_lock { "--lock" } else { "-M0" };
 
     let shell: String;
     if env_shell {
@@ -920,6 +947,7 @@ fn spawn_sydbox_shell(env_shell: bool, args: &Vec<&str>) -> ()
         .args(&default)
         .args(&homeargs)
         .args(&rcargs)
+        .arg(lock)
         .arg("--chdir")
         .arg(tmpdir.path())
         .arg("--uid")

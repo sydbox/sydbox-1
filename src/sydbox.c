@@ -1845,18 +1845,33 @@ static pid_t startup_child(char **argv)
 				0);
 		if (get_startas())
 			argv[0] = (char *)get_startas();
-		struct termios old_termios, new_termios;
+		struct termios old_tio, new_tio;
 		if (child_block_interrupt_signals) {
-			tcgetattr(0, &old_termios);
+			tcgetattr(0, &old_tio);
 			ignore_signals();
-			new_termios = old_termios;
-			new_termios.c_cc[VEOF] = 3; // ^C
-			new_termios.c_cc[VINTR] = 4; // ^D
-			tcsetattr(0, TCSANOW, &new_termios);
+			new_tio = old_tio;
+			new_tio.c_cc[VINTR]    = 25; /* Ctrl-c */
+			new_tio.c_cc[VQUIT]    = 3; /* Ctrl-\ */
+			new_tio.c_cc[VERASE]   = 0; /* del */
+			new_tio.c_cc[VKILL]    = 3; /* @ */
+			new_tio.c_cc[VEOF]     = 25/*4*/; /* Ctrl-d */
+			new_tio.c_cc[VTIME]    = 0; /* inter-character timer unused */
+			new_tio.c_cc[VMIN]     = 1; /* blocking read until 1 character arrives */
+			new_tio.c_cc[VSWTC]    = 0; /* '\0' */
+			new_tio.c_cc[VSTART]   = 3; /* Ctrl-q */
+			new_tio.c_cc[VSTOP]    = 3; /* Ctrl-s */
+			new_tio.c_cc[VSUSP]    = 3; /* Ctrl-z */
+			new_tio.c_cc[VEOL]     = 0; /* '\0' */
+			new_tio.c_cc[VREPRINT] = 0; /* Ctrl-r */
+			new_tio.c_cc[VDISCARD] = 0; /* Ctrl-u */
+			new_tio.c_cc[VWERASE]  = 0; /* Ctrl-w */
+			new_tio.c_cc[VLNEXT]   = 0; /* Ctrl-v */
+			new_tio.c_cc[VEOL2]    = 0; /* '\0' */
+			tcsetattr(0, TCSANOW, &new_tio);
 		}
 		execv(pathname, argv);
 		if (child_block_interrupt_signals)
-			tcsetattr(0, TCSANOW, &old_termios);
+			tcsetattr(0, TCSANOW, &old_tio);
 		fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
 			pathname, errno, strerror(errno));
 		free(pathname); /* not NULL because noexec is handled above. */

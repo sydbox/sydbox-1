@@ -87,3 +87,6 @@ fi
 
 # Greet the user.
 test -n "$SYDBOX" && echo "$SYDBOX"
+exit() {
+    :
+}
