@@ -18,8 +18,8 @@ sydboxshare_DATA= \
 		  firefox.syd-2 \
 		  sydbox.bashrc \
 		  sydbox.supp \
-		  tao.pl \
 		  tao.fortune
+sydboxshare_SCRIPTS= tao.pl
 EXTRA_DIST+= $(sydboxshare_DATA)
 
 dist_doc_DATA= \
