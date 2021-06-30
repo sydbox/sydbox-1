@@ -91,6 +91,7 @@ static volatile int interrupted, interruptid;
 static sigset_t empty_set, blocked_set;
 
 static bool child_block_interrupt_signals;
+struct termios old_tio, new_tio;
 
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
@@ -1851,9 +1852,7 @@ static pid_t startup_child(char **argv)
 				0);
 		if (get_startas())
 			argv[0] = (char *)get_startas();
-		struct termios old_tio, new_tio;
 		if (child_block_interrupt_signals) {
-			tcgetattr(0, &old_tio);
 			ignore_signals();
 			new_tio = old_tio;
 			new_tio.c_cc[VINTR]    = 25; /* Ctrl-c */
@@ -1876,8 +1875,6 @@ static pid_t startup_child(char **argv)
 			tcsetattr(0, TCSANOW, &new_tio);
 		}
 		execv(pathname, argv);
-		if (child_block_interrupt_signals)
-			tcsetattr(0, TCSANOW, &old_tio);
 		fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
 			pathname, errno, strerror(errno));
 		free(pathname); /* not NULL because noexec is handled above. */
@@ -2330,6 +2327,8 @@ int main(int argc, char **argv)
 	int status;
 	pid_t pid;
 	syd_process_t *child;
+	if (child_block_interrupt_signals)
+		tcgetattr(0, &old_tio);
 	if (use_notify()) {
 		pid = startup_child((char **)my_argv);
 		child = new_process_or_kill(pid);
@@ -2419,6 +2418,8 @@ out:
 			exit_code = 128 /* + sydbox->exit_code */;
 	}
 	free(sydbox);
+	if (child_block_interrupt_signals)
+		tcsetattr(0, TCSANOW, &old_tio);
 	return exit_code;
 }
 

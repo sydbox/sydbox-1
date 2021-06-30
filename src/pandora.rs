@@ -458,7 +458,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() <= 1 {
-        spawn_sydbox_shell(true, true, &vec![]);
+        spawn_sydbox_shell(true, true, &[]);
         return;
     }
 
@@ -637,11 +637,8 @@ Repository: {}
         .subcommand(
             SubCommand::with_name("sandbox")
                 .about("Configure Sydb☮x' sandbox using the /dev/sydb☮x magic link")
-                .arg(
-                    Arg::with_name("cmd")
-                        .required(true)
-                        .multiple(true)
-                        .help("
+                .arg(Arg::with_name("cmd").required(true).multiple(true).help(
+                    "
 SydB☮x may be configured through the magic path `/dev/sydb☮x` which is a virtual
 path that exists solely for inter-process communication with the sandbox to
 configure and extend it. In Exherbo (see: Exheres for Smarties[1]), we
@@ -741,8 +738,8 @@ that are expanded to network addresses. They are listed below:
   * inet6:fec0::/7
 
 So you may use LOOPBACK@0 instead of inet:127.0.0.0/8@0
-")
-                )
+",
+                )),
         )
         .subcommand(
             SubCommand::with_name("shell")
@@ -754,7 +751,7 @@ So you may use LOOPBACK@0 instead of inet:127.0.0.0/8@0
                         .long("lock")
                         .short("l"),
                 )
-                .arg(Arg::with_name("args").required(false).multiple(true))
+                .arg(Arg::with_name("args").required(false).multiple(true)),
         )
         .get_matches();
 
@@ -833,7 +830,7 @@ So you may use LOOPBACK@0 instead of inet:127.0.0.0/8@0
             limit,
         ));
     } else {
-        spawn_sydbox_shell(true, false, &vec![]);
+        spawn_sydbox_shell(true, false, &[]);
     }
 }
 
@@ -982,12 +979,13 @@ allowlist/network/connect+unix:/var/lib/sss/pipes/nss
     0
 }
 
-fn spawn_sydbox_shell(env_shell: bool, magic_lock: bool, args: &Vec<&str>) -> ()
-{
-    let tmpname = format!("pandora-{}-{}-{}",
+fn spawn_sydbox_shell(env_shell: bool, magic_lock: bool, args: &[&str]) {
+    let tmpname = format!(
+        "pandora-{}-{}-{}",
         built_info::PKG_VERSION,
         nix::unistd::getuid(),
-        nix::unistd::getpid());
+        nix::unistd::getpid()
+    );
     let tmpdir = match tempfile::Builder::new().prefix(&tmpname).tempdir() {
         Ok(dir) => dir,
         Err(e) => {
@@ -997,18 +995,22 @@ fn spawn_sydbox_shell(env_shell: bool, magic_lock: bool, args: &Vec<&str>) -> ()
     };
 
     match nix::unistd::chdir(tmpdir.path()) {
-        Ok(_) => {
-            match fs::symlink("/dev/sydbox", "None") {
-                Ok(_) => {
-                    magic_stat("/dev/sydbox");
-                }
-                Err(e) => {
-                    eprintln!("[0;1;31;91mFailed to create /dev/SydB☮x symbolic link: {}[0m", e);
-                }
+        Ok(_) => match fs::symlink("/dev/sydbox", "None") {
+            Ok(_) => {
+                magic_stat("/dev/sydbox");
             }
-        }
+            Err(e) => {
+                eprintln!(
+                    "[0;1;31;91mFailed to create /dev/SydB☮x symbolic link: {}[0m",
+                    e
+                );
+            }
+        },
         Err(e) => {
-            eprintln!("[0;1;31;91mFailed to change directory to temporary directory: {}[0m", e);
+            eprintln!(
+                "[0;1;31;91mFailed to change directory to temporary directory: {}[0m",
+                e
+            );
         }
     }
 
@@ -1024,9 +1026,10 @@ fn spawn_sydbox_shell(env_shell: bool, magic_lock: bool, args: &Vec<&str>) -> ()
     }
 
     let mut default = Vec::new();
-    for magic in DEFAULT.split('\n').filter(|&magic|
-            !magic.is_empty() &&
-            magic.chars().next().unwrap() != '#') {
+    for magic in DEFAULT
+        .split('\n')
+        .filter(|&magic| !magic.is_empty() && !magic.starts_with('#'))
+    {
         default.push("-m");
         default.push(magic);
     }
@@ -1092,13 +1095,12 @@ fn spawn_sydbox_shell(env_shell: bool, magic_lock: bool, args: &Vec<&str>) -> ()
     child.wait().expect("failed to wait for shell");
 }
 
-fn magic_stat(path: &str) -> bool
-{
+fn magic_stat(path: &str) -> bool {
     match nix::sys::stat::lstat(path) {
         Ok(_fstat) => {
             println!("{}: [0;1;32;92mOK[0m", path);
             true
-        },
+        }
         Err(_error) => {
             //eprintln!("{}: {}", path, error);
             println!("{}: [0;1;31;91mLOCKED[0m", path);
@@ -1107,202 +1109,222 @@ fn magic_stat(path: &str) -> bool
     }
 }
 
-fn sydbox_internal_net_2(cmd: &str, op: char, argv: &[&str]) -> bool
-{
+fn sydbox_internal_net_2(cmd: &str, op: char, argv: &[&str]) -> bool {
     match op {
-        '+' | '-' => {},
-        _ => { panic!("invalid operation character {}", op); }
-    };
-
-    let mut ok: bool = true;
-    for i in 0..argv.len() {
-        let addr = argv[i];
-        let r = magic_stat(&format!("/dev/sydbox/{}{}{}", cmd, op, addr));
-        if !r { ok = false; };
-    }
-    ok
-}
-
-fn sydbox_internal_path_2(cmd: &str, op: char, argv: &[&str]) -> bool
-{
-    match op {
-        '+' | '-' => {},
-        _ => { panic!("invalid operation character {}", op); }
-    };
-
-    let mut ok: bool = true;
-    for i in 0..argv.len() {
-        let path = argv[i];
-        if path.chars().next().expect("expected absolute path, got empty path") != '/' {
-            panic!("sydbox_internal_path_2 expects absolute path, got: {}", path);
+        '+' | '-' => {}
+        _ => {
+            panic!("invalid operation character {}", op);
         }
-        let r = magic_stat(&format!("/dev/sydbox/{}{}{}", cmd, op, path));
-        if !r { ok = false; };
+    };
+
+    let mut ok: bool = true;
+    for addr in argv.iter() {
+        if !magic_stat(&format!("/dev/sydbox/{}{}{}", cmd, op, addr)) {
+            ok = false;
+        }
     }
     ok
 }
 
-fn esandbox(cmd: &Vec<&str>) -> bool
-{
+fn sydbox_internal_path_2(cmd: &str, op: char, argv: &[&str]) -> bool {
+    if op != '+' && op != '-' {
+        panic!("invalid operation character {}", op);
+    }
+
+    let mut ok: bool = true;
+    for path in argv.iter() {
+        if path
+            .chars()
+            .next()
+            .expect("expected absolute path, got empty path")
+            != '/'
+        {
+            eprintln!(
+                "[0;1;31;91msydbox_internal_path_2 expects absolute path, got: {}[0m",
+                path
+            );
+            std::process::exit(1);
+        }
+        if !magic_stat(&format!("/dev/sydbox/{}{}{}", cmd, op, path)) {
+            ok = false;
+        }
+    }
+    ok
+}
+
+fn esandbox(cmd: &[&str]) -> bool {
     let command = cmd[0];
     match command {
-        "check" =>
-            magic_stat("/dev/sydbox"),
-        "lock" =>
-            magic_stat("/dev/sydbox/core/trace/magic_lock:on"),
-        "exec_lock" =>
-            magic_stat("/dev/sydbox/core/trace/magic_lock:exec"),
-        "wait_all" =>
-            magic_stat("/dev/sydbox/core/trace/exit_wait_all:true"),
-        "wait_eldest" =>
-            magic_stat("/dev/sydbox/core/trace/exit_wait_all:false"),
-        "enabled"|"enabled_path" =>
-            magic_stat("/dev/sydbox/core/sandbox/write?"),
-        "enable"|"enable_path" =>
-            magic_stat("/dev/sydbox/core/sandbox/write:deny"),
-        "disable"|"disable_path" =>
-            magic_stat("/dev/sydbox/core/sandbox/write:off"),
-        "enabled_exec" =>
-            magic_stat("/dev/sydbox/core/sandbox/exec?"),
-        "enable_exec" =>
-            magic_stat("/dev/sydbox/core/sandbox/exec:deny"),
-        "disable_exec" =>
-            magic_stat("/dev/sydbox/core/sandbox/exec:off"),
-        "enabled_net" =>
-            magic_stat("/dev/sydbox/core/sandbox/network?"),
-        "enable_net" =>
-            magic_stat("/dev/sydbox/core/sandbox/network:deny"),
-        "disable_net" =>
-            magic_stat("/dev/sydbox/core/sandbox/network:off"),
-        "allow"|"allow_path" => {
+        "check" => magic_stat("/dev/sydbox"),
+        "lock" => magic_stat("/dev/sydbox/core/trace/magic_lock:on"),
+        "exec_lock" => magic_stat("/dev/sydbox/core/trace/magic_lock:exec"),
+        "wait_all" => magic_stat("/dev/sydbox/core/trace/exit_wait_all:true"),
+        "wait_eldest" => magic_stat("/dev/sydbox/core/trace/exit_wait_all:false"),
+        "enabled" | "enabled_path" => magic_stat("/dev/sydbox/core/sandbox/write?"),
+        "enable" | "enable_path" => magic_stat("/dev/sydbox/core/sandbox/write:deny"),
+        "disable" | "disable_path" => magic_stat("/dev/sydbox/core/sandbox/write:off"),
+        "enabled_exec" => magic_stat("/dev/sydbox/core/sandbox/exec?"),
+        "enable_exec" => magic_stat("/dev/sydbox/core/sandbox/exec:deny"),
+        "disable_exec" => magic_stat("/dev/sydbox/core/sandbox/exec:off"),
+        "enabled_net" => magic_stat("/dev/sydbox/core/sandbox/network?"),
+        "enable_net" => magic_stat("/dev/sydbox/core/sandbox/network:deny"),
+        "disable_net" => magic_stat("/dev/sydbox/core/sandbox/network:off"),
+        "allow" | "allow_path" => {
             if cmd.len() <= 1 {
-                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
-                          command);
+                eprintln!(
+                    "[0;1;31;91m{} takes at least one extra argument[0m",
+                    command
+                );
                 false
             } else {
                 sydbox_internal_path_2("allowlist/write", '+', &cmd[1..])
             }
-        },
-        "disallow"|"disallow_path" => {
+        }
+        "disallow" | "disallow_path" => {
             if cmd.len() <= 1 {
-                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
-                          command);
+                eprintln!(
+                    "[0;1;31;91m{} takes at least one extra argument[0m",
+                    command
+                );
                 false
             } else {
                 sydbox_internal_path_2("allowlist/write", '-', &cmd[1..])
             }
-        },
+        }
         "allow_exec" => {
             if cmd.len() <= 1 {
-                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
-                          command);
+                eprintln!(
+                    "[0;1;31;91m{} takes at least one extra argument[0m",
+                    command
+                );
                 false
             } else {
                 sydbox_internal_path_2("allowlist/exec", '+', &cmd[1..])
             }
-        },
+        }
         "disallow_exec" => {
             if cmd.len() <= 1 {
-                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
-                          command);
+                eprintln!(
+                    "[0;1;31;91m{} takes at least one extra argument[0m",
+                    command
+                );
                 false
             } else {
                 sydbox_internal_path_2("allowlist/exec", '-', &cmd[1..])
             }
-        },
+        }
         "allow_net" => {
-            let mut c="allowlist/network/bin";
-            let mut i=1;
+            let mut c = "allowlist/network/bin";
+            let mut i = 1;
             if cmd[1] == "--connect" {
-                c="allowlist/network/connect";
-                i=2;
+                c = "allowlist/network/connect";
+                i = 2;
             };
             sydbox_internal_net_2(c, '+', &cmd[i..])
-        },
+        }
         "disallow_net" => {
-            let mut c="allowlist/network/bin";
-            let mut i=1;
+            let mut c = "allowlist/network/bin";
+            let mut i = 1;
             if cmd[1] == "--connect" {
-                c="allowlist/network/connect";
-                i=2;
+                c = "allowlist/network/connect";
+                i = 2;
             };
             sydbox_internal_net_2(c, '-', &cmd[i..])
-        },
-        "addfilter"|"addfilter_path" => {
+        }
+        "addfilter" | "addfilter_path" => {
             if cmd.len() <= 1 {
-                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
-                          command);
+                eprintln!(
+                    "[0;1;31;91m{} takes at least one extra argument[0m",
+                    command
+                );
                 false
             } else {
                 sydbox_internal_path_2("filter/write", '+', &cmd[1..])
             }
-        },
-        "rmfilter"|"rmfilter_path" => {
+        }
+        "rmfilter" | "rmfilter_path" => {
             if cmd.len() <= 1 {
-                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
-                          command);
+                eprintln!(
+                    "[0;1;31;91m{} takes at least one extra argument[0m",
+                    command
+                );
                 false
             } else {
                 sydbox_internal_path_2("filter/write", '-', &cmd[1..])
             }
-        },
+        }
         "addfilter_exec" => {
             if cmd.len() <= 1 {
-                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
-                          command);
+                eprintln!(
+                    "[0;1;31;91m{} takes at least one extra argument[0m",
+                    command
+                );
                 false
             } else {
                 sydbox_internal_path_2("filter/exec", '+', &cmd[1..])
             }
-        },
+        }
         "rmfilter_exec" => {
             if cmd.len() <= 1 {
-                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
-                          command);
+                eprintln!(
+                    "[0;1;31;91m{} takes at least one extra argument[0m",
+                    command
+                );
                 false
             } else {
                 sydbox_internal_path_2("filter/exec", '-', &cmd[1..])
             }
-        },
+        }
         "addfilter_net" => {
             if cmd.len() <= 1 {
-                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
-                          command);
+                eprintln!(
+                    "[0;1;31;91m{} takes at least one extra argument[0m",
+                    command
+                );
                 false
             } else {
                 sydbox_internal_path_2("filter/network", '+', &cmd[1..])
             }
-        },
+        }
         "rmfilter_net" => {
             if cmd.len() <= 1 {
-                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
-                          command);
+                eprintln!(
+                    "[0;1;31;91m{} takes at least one extra argument[0m",
+                    command
+                );
                 false
             } else {
                 sydbox_internal_path_2("filter/network", '-', &cmd[1..])
             }
-        },
+        }
         "exec" => {
             if cmd.len() <= 1 {
-                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
-                          command);
+                eprintln!(
+                    "[0;1;31;91m{} takes at least one extra argument[0m",
+                    command
+                );
                 false
             } else {
                 /* TODO: syd-format exec -- cmd[1..] */
                 eprintln!("[0;1;31;91mexec is not implemented yet![0m");
                 true
             }
-        },
+        }
         "kill" => {
             if cmd.len() <= 1 {
-                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
-                          command);
+                eprintln!(
+                    "[0;1;31;91m{} takes at least one extra argument[0m",
+                    command
+                );
                 false
             } else {
                 sydbox_internal_path_2("exec/kill_if_match", '+', &cmd[1..])
             }
-        },
-        _ => { panic!("Unknown command {}", command); },
+        }
+        _ => {
+            eprintln!("[0;1;31;91mUnknown command {}[0m", command);
+            std::process::exit(1);
+        }
     }
 }
 
