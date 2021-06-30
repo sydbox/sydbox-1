@@ -1689,8 +1689,8 @@ pid_validate:
 					switch_execve_leader(execve_pid,
 							     current);
 					P_EXECVE_PID(current) = 0;
-					/* reap zombies after notify respond */
-					reap_my_zombies = true;
+					/* reap zombies after notify respond
+					reap_my_zombies = true; */
 				}
 				if (current->abspath) {
 					free(current->abspath);
