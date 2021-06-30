@@ -77,5 +77,13 @@ unset _f _match_lhs _safe_term _use_color _used_default_dircolors
 # Make bash check if the window has been resized
 shopt -s checkwinsize
 
+# Check magic command status.
+if test -e '/dev/sydbox'; then
+    stat /dev/sydbox
+    echo "/dev/sydbox: [0;1;32;92mOK[0m"
+else
+    echo "/dev/sydbox: [0;1;31;91mLOCKED[0m"
+fi
+
 # Greet the user.
 test -n "$SYDBOX" && echo "$SYDBOX"
