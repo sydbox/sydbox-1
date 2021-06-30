@@ -3,7 +3,7 @@ SUBDIRS= .
 
 syddir=$(libexecdir)/$(PACKAGE)/t-$(SYDBOX_API_VERSION)/valgrind
 VALGRIND_SRCS= \
-	     analyze.sh \
+	     analyze.sh
 syd_SCRIPTS= analyze.sh
 syd_DATA= default.supp
 
