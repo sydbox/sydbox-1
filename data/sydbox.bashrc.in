@@ -307,6 +307,14 @@ esac
 # }}}
 
 # {{{ Prompt
+ps_sandbox() {
+    if test -e /dev/sydbox; then
+        echo -e "${bashrc_colour_l_pink}>${bashrc_colour_m_gren}syd:🔑"
+    else
+        echo -e "${bashrc_colour_l_pink}>${bashrc_colour_m_orng}syd:🔒"
+    fi
+}
+
 ps_retc_f() {
     if [[ ${1} -eq 0 ]] ; then
         echo -e "${bashrc_colour_rok}"
@@ -344,8 +352,8 @@ ps_scr_f() {
 
 PROMPT_COMMAND="export prompt_exit_status=\$? ; $PROMPT_COMMAND"
 ps_usr="\[${bashrc_colour_usr}\]\u@"
-ps_hst="\[${bashrc_colour_hst}\]\h "
-ps_cwd="\[${bashrc_colour_cwd}\]\W\[${bashrc_colour_wrk}\]\$(ps_wrk_f) "
+ps_hst="\[${bashrc_colour_hst}\]\h\$(ps_sandbox) "
+ps_cwd="\[${bashrc_colour_cwd}\]\W\[${bashrc_colour_wrk}\] "
 ps_mrk="\[${bashrc_colour_mrk}\]\$ "
 ps_end="\[${bashrc_colour_end}\]"
 ps_ret='\[$(ps_retc_f $prompt_exit_status)\]$prompt_exit_status '
