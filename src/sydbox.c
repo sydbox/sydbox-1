@@ -1086,7 +1086,7 @@ static int sig_child(void)
 		bury_process(p, true);
 		return ECHILD;
 	}
-	reap_zombies();
+	// reap_zombies();
 
 	for (;;) {
 		pid_t cpid;
