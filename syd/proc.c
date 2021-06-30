@@ -302,6 +302,14 @@ int syd_proc_cmdline(int pfd, char *dst, size_t siz)
 	close(fd);
 	*s = '\0';
 	convert_zeroes(dst, s);
+
+	/* Trim trailing space */
+	char *end = dst + strlen(dst) - 1;
+	while(end > dst && isspace((unsigned char)*end)) {
+		*end = '\0';
+		end--;
+	}
+
 	return 0;
 }
 
