@@ -5,10 +5,14 @@
 use strict;
 use warnings;
 use feature 'say';
+use File::Basename;
 
+my $dirname = dirname $0;
 my $cookie;
-if (-f 'tao.fortune') {
-	$cookie='tao.fortune';
+if (-f "$dirname/tao.fortune") {
+	$cookie="$dirname/tao.fortune";
+} elsif (-f 'data/tao.fortune') {
+	$cookie='data/tao.fortune';
 } elsif (-f 'tao/tao.fortune') {
 	$cookie='tao/tao.fortune';
 } else {

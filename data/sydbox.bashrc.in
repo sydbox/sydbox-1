@@ -87,6 +87,11 @@ fi
 
 # Greet the user.
 test -n "$SYDBOX" && echo "$SYDBOX"
+sig_ign() { : }
+trap sig_ign SIGALRM SIGHUP SIGINT SIGQUIT SIGPIPE SIGTERM SIGUSR1 SIGUSR2
 exit() {
-    :
+    if test -x "@SYDBOX_SHARE_DIR@"/tao.pl; then
+        "@SYDBOX_SHARE_DIR@"/tao.pl
+    fi
+    builtin exit "$@"
 }

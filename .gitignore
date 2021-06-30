@@ -99,6 +99,8 @@ Makefile
 /m4/lt*.m4
 
 # Specific ignores
+/data/sydbox.bashrc
+
 /man/sydbox.1
 /man/sydbox.html
 /man/sydfmt.1

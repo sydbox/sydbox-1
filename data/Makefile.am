@@ -1,17 +1,29 @@
 AM_MAKEFLAGS= --no-print-directory
+CLEANFILES=
 EXTRA_DIST=
 
+EXTRA_DIST+= sydbox.bashrc.in
+CLEANFILES+= sydbox.bashrc
+
+
 sydboxsharedir= $(datadir)/$(PACKAGE)
+sydbox.bashrc: sydbox.bashrc.in
+	$(AM_V_GEN)
+	$(AM_V_at)$(SED) \
+		-e 's:@SYDBOX_SHARE_DIR@:$(sydboxsharedir):g' \
+		$< > $@
 sydboxshare_DATA= \
 		  default.syd-2 \
 		  paludis.syd-2 \
 		  firefox.syd-2 \
-		  sydbox.bashrc
-		  sydbox.supp
+		  sydbox.bashrc \
+		  sydbox.supp \
+		  tao.pl \
+		  tao.fortune
 EXTRA_DIST+= $(sydboxshare_DATA)
 
 dist_doc_DATA= \
-	       poems.txt
+	       poems.txt \
 	       sydbox-logo.svg \
 	       sydbox-jade-hexagram.svg
 

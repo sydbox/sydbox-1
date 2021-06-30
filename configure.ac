@@ -913,9 +913,9 @@ then
 	AC_MSG_WARN([Try updating your kernel headers or using a newer Linux kernel version.])
 fi
 
-if test -x ./tao/tao.pl; then
+if test -x ./data/tao.pl; then
 	dnl We don't distribute this file and the fortune cookie in the tarball.
-	./tao/tao.pl
+	./data/tao.pl
 else
 	dnl Krad ASCII ART#!#@$!@#$
 	dnl Randomly store the name of one of the ASCII Art files in FILENAME
