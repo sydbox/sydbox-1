@@ -792,27 +792,39 @@ fn esandbox(cmd: &Vec<&str>) -> bool
             magic_stat("/dev/sydbox/core/sandbox/network:off"),
         "allow"|"allow_path" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("allowlist/write", '+', &cmd[1..])
             }
-            sydbox_internal_path_2("allowlist/write", '+', &cmd[1..])
         },
         "disallow"|"disallow_path" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("allowlist/write", '-', &cmd[1..])
             }
-            sydbox_internal_path_2("allowlist/write", '-', &cmd[1..])
         },
         "allow_exec" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("allowlist/exec", '+', &cmd[1..])
             }
-            sydbox_internal_path_2("allowlist/exec", '+', &cmd[1..])
         },
         "disallow_exec" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("allowlist/exec", '-', &cmd[1..])
             }
-            sydbox_internal_path_2("allowlist/exec", '-', &cmd[1..])
         },
         "allow_net" => {
             let mut c="allowlist/network/bin";
@@ -834,52 +846,77 @@ fn esandbox(cmd: &Vec<&str>) -> bool
         },
         "addfilter"|"addfilter_path" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("filter/write", '+', &cmd[1..])
             }
-            sydbox_internal_path_2("filter/write", '+', &cmd[1..])
         },
         "rmfilter"|"rmfilter_path" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("filter/write", '-', &cmd[1..])
             }
-            sydbox_internal_path_2("filter/write", '-', &cmd[1..])
         },
         "addfilter_exec" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("filter/exec", '+', &cmd[1..])
             }
-            sydbox_internal_path_2("filter/exec", '+', &cmd[1..])
         },
         "rmfilter_exec" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("filter/exec", '-', &cmd[1..])
             }
-            sydbox_internal_path_2("filter/exec", '-', &cmd[1..])
         },
         "addfilter_net" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("filter/network", '+', &cmd[1..])
             }
-            sydbox_internal_path_2("filter/network", '+', &cmd[1..])
         },
         "rmfilter_net" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("filter/network", '-', &cmd[1..])
             }
-            sydbox_internal_path_2("filter/network", '-', &cmd[1..])
         },
         "exec" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                /* TODO: syd-format exec -- cmd[1..] */
+                eprintln!("[0;1;31;91mexec is not implemented yet![0m");
+                true
             }
-            /* TODO: syd-format exec -- cmd[1..] */
-            true
         },
         "kill" => {
             if cmd.len() <= 1 {
-                panic!("{} takes at least one extra argument", command);
+                eprintln!("[0;1;31;91m{} takes at least one extra argument[0m",
+                          command);
+                false
+            } else {
+                sydbox_internal_path_2("exec/kill_if_match", '+', &cmd[1..])
             }
-            sydbox_internal_path_2("exec/kill_if_match", '+', &cmd[1..])
         },
         _ => { panic!("Unknown command {}", command); },
     }
