@@ -63,11 +63,15 @@ core/violation/raise_fail:false
 core/violation/raise_safe:false
 
 core/trace/magic_lock:off
+core/trace/memory_access:0
+core/trace/program_checksum:2
 core/trace/use_toolong_hack:true
 
+core/restrict/id_change:false
 core/restrict/io_control:false
 core/restrict/memory_map:false
 core/restrict/shared_memory_writable:false
+core/restrict/system_info:false
 core/restrict/general:0
 
 core/match/case_sensitive:true
