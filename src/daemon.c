@@ -51,11 +51,14 @@ void set_startas(const char *new_startas) { startas = new_startas; }
 void set_root_directory(const char *cwd) { root_directory = cwd; }
 void set_working_directory(char *cwd) {
 	if (streq(cwd, "tmp")) {
-		char *tmpl;
-		xasprintf(&tmpl, "/tmp/syd-%u-%u-XXXXXX",
-			  SYDBOX_API_VERSION, getuid());
+		char *tmpl, *linkpath;
+		xasprintf(&tmpl, "/tmp/syd-%u-%u-%u-XXXXXX",
+			  SYDBOX_API_VERSION, getuid(), getpid());
 		free(cwd);
 		cwd = xstrdup(mkdtemp(tmpl));
+		xasprintf(&linkpath, "%s/sydbox", cwd);
+		symlink("/dev/sydbox", linkpath);
+		free(linkpath);
 		free(tmpl);
 	}
 	working_directory = cwd;

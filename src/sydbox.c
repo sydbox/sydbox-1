@@ -2060,7 +2060,7 @@ int main(int argc, char **argv)
 				sydbox->export_path = xstrdup(optarg + 4);
 			break;
 		case 'l':
-			opt_magic = "core/trace/magic_lock_on";
+			opt_magic = "core/trace/magic_lock:on";
 			break;
 		case 'm':
 			r = magic_cast_string(NULL, optarg, 0);
