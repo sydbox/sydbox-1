@@ -100,15 +100,12 @@ discovered and consensus on a better solution is reached."
 SydBox is a [seccomp](http://man7.org/linux/man-pages/man2/seccomp.2.html) based
 sandbox for modern [Linux](https://kernel.org) machines to sandbox unwanted process
 access to filesystem and network resources.
-SydBox is a [seccomp-bpf](http://man7.org/linux/man-pages/man2/seccomp.2.html) &amp;
-[seccomp-notify](https://git.kernel.org/linus/fb3c5386b382d4097476ce9647260fc89b34afdb)
-based sandbox for modern Linux machines to sandbox unwanted process access to
-file system and network resources.
 
 SydBox requires **no root access** and
 **no [ptrace](https://man7.org/linux/man-pages/man2/ptrace.2.html)** rights.
 They don't depend on any specific Linux kernel option to function.
-The only dependency is libseccomp which is available on many different architectures,
+The only dependency is [libseccomp](https://github.com/seccomp/libseccomp)
+which is available on many different architectures,
 including x86, x86\_64, x32, arm, aarch64, mips, mips64...
 
 This makes it very easy for a regular user to use. This is the motto
