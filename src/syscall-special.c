@@ -533,6 +533,13 @@ int sys_stat(syd_process_t *current)
 		/* No magic allowed! */
 		return 0;
 	}
+#if 0
+	say("magic lock is %u<%s> for process:%u<%s,%s,ppid:%u,tgid:%u>, allowing magic...",
+	    P_BOX(current)->magic_lock,
+	    lock_state_to_string(P_BOX(current)->magic_lock),
+	    current->pid, current->comm, current->hash,
+	    current->ppid, current->tgid);
+#endif
 
 	addr = current->args[0];
 	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
