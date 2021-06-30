@@ -712,10 +712,10 @@ fn magic_stat(path: &str) -> bool
         libc::lstat(ppath, std::ptr::null_mut())
     };
     if r == 0 {
-        println!("{}: [0;1;32;92mmOK[0m", path);
+        println!("{}: [0;1;32;92mOK[0m", path);
         true
     } else {
-        println!("{}: [0;1;31;91mNOT OK[0m", path);
+        println!("{}: [0;1;31;91mLOCKED[0m", path);
         false
     }
 }
