@@ -1099,8 +1099,8 @@ fn magic_stat(path: &str) -> bool
             println!("{}: [0;1;32;92mOK[0m", path);
             true
         },
-        Err(error) => {
-            eprintln!("{}: {}", path, error);
+        Err(_error) => {
+            //eprintln!("{}: {}", path, error);
             println!("{}: [0;1;31;91mLOCKED[0m", path);
             false
         }
