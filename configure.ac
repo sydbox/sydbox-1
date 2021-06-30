@@ -490,6 +490,7 @@ AC_CHECK_HEADER([arpa/inet.h],   [], AC_MSG_ERROR([I need arpa/inet.h]))
 AC_CHECK_HEADER([netdb.h],       [], AC_MSG_ERROR([I need netdb.h]))
 AC_CHECK_HEADER([sched.h],       [], AC_MSG_ERROR([I need sched.h]))
 AC_CHECK_HEADER([asm/unistd.h],  [], AC_MSG_ERROR([I need asm/unistd.h]))
+AC_CHECK_HEADER([termios.h],  [], AC_MSG_ERROR([I need termios.h]))
 
 dnl check for everything (for tests)
 AC_FUNC_ALLOCA

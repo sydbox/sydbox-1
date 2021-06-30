@@ -33,6 +33,7 @@
 #include <getopt.h>
 #include <time.h>
 #include <pthread.h>
+#include <termios.h>
 #include <seccomp.h>
 #include "asyd.h"
 #include "macro.h"
@@ -88,6 +89,8 @@ static volatile sig_atomic_t interrupted, interruptid;
 static volatile int interrupted, interruptid;
 #endif
 static sigset_t empty_set, blocked_set;
+
+static bool child_block_interrupt_signals;
 
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
@@ -504,7 +507,7 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 	 * Handling these efficiently may mean sacrificing on security.
 	 * So they're best to be thought out thoroughly before reenabling.
 	 */
-	shared_thread = false;
+	share_thread = false;
 	share_fs = false;
 	share_files = false;
 
@@ -997,13 +1000,16 @@ static inline void block_signals(void)
 /* Signals are blocked by default. */
 static void init_signals(void)
 {
+	struct sigaction sa;
+
 	init_signal_sets(); block_signals();
 
 	/* Ign */
-	set_sighandler(SIGCHLD, interrupt, &child_sa);
+	sa.sa_sigaction = interrupt;
+	sa.sa_flags = SA_NOCLDSTOP|SA_NOCLDWAIT|SA_RESTART|SA_SIGINFO;
+	sigaction(SIGCHLD, &sa, &child_sa);
 
 	/* Stop */
-	struct sigaction sa;
 	sa.sa_handler = SIG_IGN;
 	sa.sa_flags = 0;
 	sigaction(SIGTTOU, &sa, NULL);
@@ -1019,6 +1025,26 @@ static void init_signals(void)
 	set_sighandler(SIGTERM, interrupt, NULL);
 	set_sighandler(SIGUSR1, interrupt, NULL);
 	set_sighandler(SIGUSR2, interrupt, NULL);
+}
+
+static void ignore_signals(void)
+{
+	struct sigaction sa;
+	sa.sa_handler = SIG_IGN;
+	sa.sa_flags = 0;
+
+	sigaction(SIGTTOU, &sa, NULL);
+	sigaction(SIGTTIN, &sa, NULL);
+	sigaction(SIGTTOU, &sa, NULL);
+	sigaction(SIGTSTP, &sa, NULL);
+	sigaction(SIGALRM, &sa, NULL);
+	sigaction(SIGHUP,  &sa, NULL);
+	sigaction(SIGINT,  &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
+	sigaction(SIGPIPE, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGUSR1, &sa, NULL);
+	sigaction(SIGUSR2, &sa, NULL);
 }
 
 static void reset_signals(void)
@@ -1819,7 +1845,18 @@ static pid_t startup_child(char **argv)
 				0);
 		if (get_startas())
 			argv[0] = (char *)get_startas();
+		struct termios old_termios, new_termios;
+		if (child_block_interrupt_signals) {
+			tcgetattr(0, &old_termios);
+			ignore_signals();
+			new_termios = old_termios;
+			new_termios.c_cc[VEOF] = 3; // ^C
+			new_termios.c_cc[VINTR] = 4; // ^D
+			tcsetattr(0, TCSANOW, &new_termios);
+		}
 		execv(pathname, argv);
+		if (child_block_interrupt_signals)
+			tcsetattr(0, TCSANOW, &old_termios);
 		fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
 			pathname, errno, strerror(errno));
 		free(pathname); /* not NULL because noexec is handled above. */
@@ -2230,6 +2267,7 @@ int main(int argc, char **argv)
 		set_working_directory(xstrdup("tmp"));
 		my_argv = sydsh_argv;
 		sydbox->program_invocation_name = xstrdup("sydsh");
+		child_block_interrupt_signals = true;
 	} else {
 		my_argv = (const char *const *)(argv + optind);
 		/*
