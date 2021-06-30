@@ -141,9 +141,10 @@ for
 [IPv4](https://en.wikipedia.org/wiki/IPv4) and
 [IPv6](https://en.wikipedia.org/wiki/IPv6) addresses
 and perform an action which is by default denying the system call with an
-appropriate error -- which is usually **permission denied** -- or
-kill the process running the system call, or kill all processes at once
-with [**SIGKILL**](https://en.wikipedia.org/wiki/Signal_(IPC)#SIGKILL).
+appropriate error -- which is usually **permission denied**, or
+**operation canceled** -- or kill the process running the system call,
+or kill all processes at once with
+[**SIGKILL**](https://en.wikipedia.org/wiki/Signal_(IPC)#SIGKILL).
 
 See: https://sydbox.exherbo.org
 
@@ -168,7 +169,8 @@ In addition, it is recommended that you enable the kernel option
 and
 [process_vm_writev](https://man7.org/linux/man-pages/man2/process_vm_readv.2.html).
 These system calls are available in Linux since 3.2. Note SydBox will use the file
-`/proc/pid/mem` if these system calls are unavailable or not working.
+`/proc/pid/mem` if these system calls are unavailable or not working so this is
+not a hard dependency.
 
 For more information about these requirements, check the following links:
 - [kernelnewbies.org/Linux-5.6](https://kernelnewbies.org/Linux_5.6#A_new_pidfd_syscall.2C_pidfd_getfd.282.29)
@@ -177,27 +179,6 @@ For more information about these requirements, check the following links:
 [commit](https://git.kernel.org/linus/fb3c5386b382d4097476ce9647260fc89b34afdb),
 [commit](https://git.kernel.org/linus/223e660bc7638d126a0e4fbace4f33f2895788c4), and
 [commit](https://git.kernel.org/linus/0eebfed2954f152259cae0ad57b91d3ea92968e8).
-
-### PinkTrace
-
-If you do not have a very recent Linux version, you may use Sydbox-1.2.1 which
-requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/api/c/)
-
-**NOTE: SydBox-2.0.1 and newer do not use ptrace() but use seccomp user notify
-facilities in recent Linux kernels 5.6 and newer. Hence, PinkTrace is no longer a
-dependency.**
-
-See: https://pinktrace.exherbo.org
-
-- Exheres:
-  - [pinktrace-1.exlib](https://git.exherbo.org/arbor.git/tree/packages/dev-libs/pinktrace/pinktrace.exlib)
-  - [pinktrace-scm.exheres-0](https://git.exherbo.org/arbor.git/tree/packages/dev-libs/pinktrace/pinktrace-scm.exheres-0)
-- Git: https://git.exherbo.org/git/pinktrace-1.git
-- Lightweight [ptrace](http://linux.die.net/man/2/ptrace) wrapper library
-  providing a robust API for tracing processes.
-- An extensive API reference is available [here](http://dev.exherbo.org/~alip/pinktrace/api/c/).
-- Tar: https://dev.exherbo.org/distfiles/pinktrace/pinktrace-0.9.6.tar.bz2
-- Git: https://git.exherbo.org/git/pinktrace-1.git
 
 ## Sandboxing
 
@@ -215,7 +196,7 @@ parts which are of particular interest to read are:
 ## SydBox &amp; Pandora
 
 **NOTE:** Pandora is in its early stages of development. To be able to use Pandora
-you need **Sydbox-2.0.1** or later.
+you need **Sydbox-2.2.0** or later.
 
 |  .  | @                                                                       |
 |-----|:------------------------------------------------------------------------|
@@ -252,7 +233,7 @@ sydbox: [>] SydBox is supported on this system!
 ```
 
 To verify **SydBox** is working correctly, either use `make -j check` during
-installation or use the helper utility `sydtest` to run the installed tests.
+installation or use the helper utility `syd-test` to run the installed tests.
 
 # Pandora
 
@@ -261,7 +242,140 @@ https://pandora.exherbo.org
 Pandora's Box: A helper for SydBox, a ptrace & seccomp based sandbox to make sandboxing practical.
 This makes it easy for the end user to use secure computing for practical purposes.
 
-Simple Example:
+## pandora sandbox
+
+SydBox may be configured through the magic path `/dev/sydbox` which is a virtual
+path that exists solely for inter-process communication with the sandbox to
+configure and extend it. [In
+Exherbo](https://exherbo.org/docs/eapi/exheres-for-smarties.html#magic_commands), we
+have the command `esandbox` to interface with the sandbox. The subcommand
+`pandora sandbox` provides the exact same interface.
+
+**Note**: `pandora sandbox` works as long as the magic lock of Sydbox is not
+locked either via the magic command `core/trace/magic_lock:on` or via the
+command-line option `--lock`. You may also lock the magic command using
+`pandora` with `pandora sandbox lock` after which no more sandboxing
+commands are permitted.
+
+Here's a list of `pandora sandbox` commands:
+
+### Querying sandbox status
+- `pandora sandbox check`: Check whether the program is being executed under
+  sandboxing.
+- `pandora sandbox enabled` or `pandora sandbox enabled_path`: Check whether path
+  sandboxing is enabled.
+- `pandora sandbox enabled_exec`: Check whether exec sandboxing is enabled.
+- `pandora sandbox enabled_net`: Check whether network sandboxing is enabled.
+
+### Turning sandboxing on/off
+- `pandora sandbox enable` or `pandora sandbox enable_path`: Enable path sandboxing.
+- `pandora sandbox disable` or `pandora sandbox disable_path`: Disable path sandboxing.
+- `pandora sandbox enable_exec`: Enable exec sandboxing.
+- `pandora sandbox disable_exec`: Disable exec sandboxing.
+- `pandora sandbox enable_net`: Enable network sandboxing.
+- `pandora sandbox disable_net`: Disable network sandboxing.
+
+#### Whitelisting
+- `pandora sandbox allow` or `pandora sandbox allow_path`: Whitelist a path for path
+  sandboxing.  Takes one extra argument which must be an __absolute__ path.
+- `pandora sandbox disallow` or `pandora sandbox disallow_path`: Removes a path from
+  the path sandboxing whitelist. Takes one extra argument which must be an
+  __absolute__ path.
+- `pandora sandbox allow_exec`: Whitelist a path for `execve()` sandboxing.  Takes
+  one extra argument which must be an __absolute__ path.
+- `pandora sandbox disallow_exec`: Removes a path from the `execve()` sandboxing whitelist.
+Takes one extra argument which must be an __absolute__ path.
+- `pandora sandbox allow_net`: Whitelist a network address for `bind()` whitelist -
+  or for `connect()` whitelist if _--connect_ option is given.
+- `pandora sandbox disallow_net`: Removes a network address from the `bind()`
+  whitelist - or from `connect()` whitelist if _--connect_ option is given.
+
+#### Filtering
+- `pandora sandbox addfilter` or `pandora sandbox addfilter_path`: Add a pattern as
+  a path sandboxing filter. Takes one extra argument which is a `fnmatch()` pattern.
+- `pandora sandbox rmfilter` or `pandora sandbox rmfilter_path`: Removes a pattern
+  from the path sandboxing filter list. Takes one extra argument which is a
+  `fnmatch()` pattern.
+- `pandora sandbox addfilter_exec`: Add a pattern as a `execve()` sandboxing filter.
+  Takes one extra argument which is a `fnmatch()` pattern.
+- `pandora sandbox rmfilter_exec`: Removes a pattern from the `execve()` sandboxing
+  filter list. Takes one extra argument which is a `fnmatch()` pattern.
+- `pandora sandbox addfilter_net`: Add a network address as a network sandboxing
+  filter.  Takes one extra argument which is a network address.
+- `pandora sandbox rmfilter_net`: Removes a pattern from the network sandboxing
+  filter list. Takes one extra argument which is a network address.
+
+#### Miscellaneous commands
+- `pandora sandbox lock`: Lock magic commands. After calling this none of the
+  `pandora sandbox` commands will work. You don't need to call this, see
+  `exec_lock`.
+- `pandora sandbox exec_lock`: Lock magic commands upon `execve()`.
+- `pandora sandbox wait_eldest`: By default, sydbox waits for all traced processes
+  to exit before exiting. However, this isn't desired in some cases. For example
+  when a daemon, like udev, is restarted from within an exheres which will go on its
+  execution after installation. This command makes sydbox resume all processes and
+  exit after the eldest process has exited.
+- `pandora sandbox wait_all`: Wait for all processes before exiting. This is the
+  default.
+
+### Specifying Network Addresses
+Network addresses may be specified in the following forms:
+
+- unix:FNMATCH\_PATTERN
+- unix-abstract:FNMATCH\_PATTERN
+- inet:ipv4\_address/NETMASK@PORT\_RANGE
+- inet6:ipv6\_address/NETMASK@PORT\_RANGE
+
+where /NETMASK can be omitted and PORT\_RANGE can either be a number or two
+numbers in the form BEGIN-END. In addition, there are a few network aliases
+that are expanded to network addresses. They are listed below:
+
+- LOOPBACK is expanded to inet://127.0.0.0/8
+- LOOPBACK6 is expanded to inet6://::1/8
+- LOCAL is expanded to four addresses as defined in RFC1918:
+  * inet:127.0.0.0/8
+  * inet:10.0.0.0/8
+  * inet:172.16.0.0/12
+  * inet:192.168.0.0/16
+- LOCAL6 is expanded to four addresses:
+  * inet6:::1
+  * inet6:fe80::/7
+  * inet6:fc00::/7
+  * inet6:fec0::/7
+
+So you may use LOOPBACK@0 instead of inet:127.0.0.0/8@0
+
+## Example 1: Restricted Login Shell
+
+When run without arguments Sydbox drops into a restricted login shell.  This is the
+default sandboxing profile installed by Sydbox and may also be used as basic config
+for other applications. It's installed under `$sharedir/sydbox/default.syd-2` where
+`$sharedir` is usually `/usr/share`.
+
+```
+$ syd
+There is no other day
+Let's try it another way
+You'll lose your mind and play
+Free games for may
+See Emily play
+
+I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ pandora sandbox check
+/dev/sydbox: OK
+I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ uname -a
+☮ sydb☮x 2.2.0 #2 ♡ GNU/Linux
+I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ hostname
+sydb☮x
+I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ cat /etc/passwd
+{"id":5,"ts":1625053319,"pid":520579,"event":{"id":15,"name":"☮☮ps"},"sys":"open","syd":"open(`/etc/passwd')","comm":"cat","cmd":"cat /etc/passwd ","cwd":"/tmp/syd-2-1000-423516-FOBHci","ppid":423516,"tgid":520579,"proc":{"ppid":423517,"tgid":520579,"cwd":"/tmp/syd-2-1000-423516-FOBHci"}}
+cat: /etc/passwd: Operation not permitted
+I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ cd /tmp
+{"id":9,"ts":1625053379,"pid":423517,"event":{"id":15,"name":"☮☮ps"},"sys":"chdir","syd":"chdir(`/tmp')","comm":"bash","cmd":"bash --rcfile /usr/share/sydbox/sydbox.bashrc -i ","cwd":"/tmp/syd-2-1000-423516-FOBHci","ppid":0,"tgid":423517,"proc":{"ppid":423516,"tgid":423517,"cwd":"/tmp/syd-2-1000-423516-FOBHci"}}
+bash: cd: /tmp: Permission denied
+I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $
+```
+
+## Example 2: Sandbox Firefox
 
 Step 1: Inspect and gather data about the given process.
 
@@ -346,6 +460,27 @@ Last but not least,
 Here is a Firefox profile edited by yours truly:
 
 https://git.exherbo.org/sydbox-1.git/plain/data/firefox.syd-2
+
+# PinkTrace
+
+If you do not have a very recent Linux version, you may use Sydbox-1.2.1 which
+requires [Pink's Tracing Library](http://dev.exherbo.org/~alip/pinktrace/api/c/)
+
+**NOTE: SydBox-2.0.1 and newer do not use ptrace() but use seccomp user notify
+facilities in recent Linux kernels 5.6 and newer. Hence, PinkTrace is no longer a
+dependency.**
+
+See: https://pinktrace.exherbo.org
+
+- Exheres:
+  - [pinktrace-1.exlib](https://git.exherbo.org/arbor.git/tree/packages/dev-libs/pinktrace/pinktrace.exlib)
+  - [pinktrace-scm.exheres-0](https://git.exherbo.org/arbor.git/tree/packages/dev-libs/pinktrace/pinktrace-scm.exheres-0)
+- Git: https://git.exherbo.org/git/pinktrace-1.git
+- Lightweight [ptrace](http://linux.die.net/man/2/ptrace) wrapper library
+  providing a robust API for tracing processes.
+- An extensive API reference is available [here](http://dev.exherbo.org/~alip/pinktrace/api/c/).
+- Tar: https://dev.exherbo.org/distfiles/pinktrace/pinktrace-0.9.6.tar.bz2
+- Git: https://git.exherbo.org/git/pinktrace-1.git
 
 # Bugs
 Read [BUGS](https://git.exherbo.org/sydbox-1.git/plain/BUGS).
