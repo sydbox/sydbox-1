@@ -414,7 +414,11 @@ resolve_path:
 	current->repr[info->arg_index] = syd_strdup(abspath);
 	dump(DUMP_SYSENT, current);
 
-	/* Step 5: Check for access */
+	/* Step 5: Check for access by prefix */
+	if (info->prefix && !startswith(path, info->prefix))
+		goto deny;
+
+	/* Step 6: Check for access */
 	enum sys_access_mode access_mode;
 	const aclq_t *access_lists[2];
 	const aclq_t *access_filter;
@@ -453,10 +457,6 @@ check_access:
 		}
 	}
 
-	/* Step 6: Check for access by prefix */
-	if (info->prefix && !startswith(path, info->prefix))
-		goto deny;
-
 	if (info->safe && !sydbox->config.violation_raise_safe) {
 		/* ignore safe system call */
 		r = deny(current, ECANCELED/*deny_errno*/);
@@ -469,6 +469,7 @@ check_access:
 	 * mostly because this is a debugging tool and there isn't a simple
 	 * practical solution with ptrace(). This caching case is no exception.
 	 */
+deny:
 	if ((stat_errno = box_check_ftype(abspath, info)) != 0) {
 		deny_errno = stat_errno;
 		if (!sydbox->config.violation_raise_safe) {
@@ -479,7 +480,6 @@ check_access:
 	}
 
 	/* Step 8: report violation */
-deny:
 	r = deny(current, deny_errno);
 
 	if (info->access_filter)
