@@ -10,6 +10,7 @@ use std::ffi::CString;
 use std::fs::OpenOptions;
 use std::io::BufRead;
 use std::iter::FromIterator;
+use std::os::unix::fs;
 use std::os::unix::io::FromRawFd;
 use std::process::Command;
 
@@ -997,7 +998,7 @@ fn spawn_sydbox_shell(env_shell: bool, magic_lock: bool, args: &Vec<&str>) -> ()
 
     match nix::unistd::chdir(tmpdir.path()) {
         Ok(_) => {
-            match nix::unistd::symlinkat("/dev/sydbox", None, "sydbox") {
+            match fs::symlink("/dev/sydbox", "None") {
                 Ok(_) => {
                     magic_stat("/dev/sydbox");
                 }
@@ -1013,16 +1014,6 @@ fn spawn_sydbox_shell(env_shell: bool, magic_lock: bool, args: &Vec<&str>) -> ()
 
     /* TODO: We pass a default flag, mem-access is irrelevant. */
     let lock = if magic_lock { "--lock" } else { "-M0" };
-
-    let shell: String;
-    if env_shell {
-        shell = match std::env::var("SHELL") {
-            Ok(s) => s,
-            Err(_) => "/bin/bash".to_string(),
-        };
-    } else {
-        shell = "/bin/bash".to_string();
-    }
 
     let home;
     let mut homeargs = Vec::new();
@@ -1048,6 +1039,34 @@ fn spawn_sydbox_shell(env_shell: bool, magic_lock: bool, args: &Vec<&str>) -> ()
         rcargs.push(rcname);
     }
 
+    let mut is_bash: bool = false;
+    let mut bashrcargs = Vec::new();
+
+    let mut bashrcname = "/usr/share/sydbox/sydbox.bashrc";
+    let mut bashrc = std::path::Path::new(bashrcname);
+    if bashrc.exists() {
+        bashrcargs.push("--rcfile");
+        bashrcargs.push(bashrcname);
+        is_bash = true;
+    }
+    bashrcname = "/usr/local/share/sydbox/sydbox.bashrc";
+    bashrc = std::path::Path::new(bashrcname);
+    if bashrc.exists() {
+        bashrcargs.push("--rcfile");
+        bashrcargs.push(bashrcname);
+        is_bash = true;
+    }
+
+    let shell: String;
+    if !is_bash && env_shell {
+        shell = match std::env::var("SHELL") {
+            Ok(s) => s,
+            Err(_) => "/bin/bash".to_string(),
+        };
+    } else {
+        shell = "/bin/bash".to_string();
+    }
+
     let mut child = Command::new("syd")
         .args(&default)
         .args(&homeargs)
@@ -1061,7 +1080,8 @@ fn spawn_sydbox_shell(env_shell: bool, magic_lock: bool, args: &Vec<&str>) -> ()
         .arg(format!("{}", nix::unistd::getgid()))
         .arg("--")
         .arg(shell)
-        .arg("-l")
+        .args(&bashrcargs)
+        .arg("-i")
         .args(&*args)
         .spawn()
         .unwrap_or_else(|e| {
