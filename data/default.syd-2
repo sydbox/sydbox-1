@@ -249,4 +249,4 @@ allowlist/network/connect+LOOPBACK@65535
 allowlist/network/connect+LOOPBACK6@65535
 
 # Lock configuration
-core/trace/magic_lock:on
+# core/trace/magic_lock:on

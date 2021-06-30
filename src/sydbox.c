@@ -1915,7 +1915,7 @@ int main(int argc, char **argv)
 {
 	int opt, r, opt_t[5];
 	size_t i;
-	char *c;
+	char *c, *opt_magic = NULL;
 	struct utsname buf_uts;
 
 	/* Zero-initialise option states */
@@ -1963,6 +1963,7 @@ int main(int argc, char **argv)
 		{"bpf",		no_argument,		NULL,	'b'},
 		{"config",	required_argument,	NULL,	'c'},
 		{"magic",	required_argument,	NULL,	'm'},
+		{"lock",	no_argument,		NULL,	'l'},
 		{"env",		required_argument,	NULL,	'E'},
 		{"arch",	required_argument,	NULL,	'a'},
 		{"dump",	no_argument,		NULL,	'd'},
@@ -1987,7 +1988,7 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "a:A:bBc:d:e:C:D:m:E:M:I:N:K:thv1:2:U:G:",
+	while ((opt = getopt_long(argc, argv, "a:A:bBc:d:e:C:D:m:E:M:I:N:K:thlv1:2:U:G:",
 				  long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
@@ -2057,6 +2058,9 @@ int main(int argc, char **argv)
 			}
 			if (strlen(optarg) > 4 && optarg[3] == ':')
 				sydbox->export_path = xstrdup(optarg + 4);
+			break;
+		case 'l':
+			opt_magic = "core/trace/magic_lock_on";
 			break;
 		case 'm':
 			r = magic_cast_string(NULL, optarg, 0);
@@ -2226,6 +2230,13 @@ int main(int argc, char **argv)
 		sydbox->program_invocation_name = xstrdup(argv[optind]);
 	}
 	config_done();
+
+	if (opt_magic) {
+		r = magic_cast_string(NULL, opt_magic, 0);
+		if (MAGIC_ERROR(r))
+			die("invalid magic: `%s': %s",
+			    opt_magic, magic_strerror(r));
+	}
 
 	/* Late validations for options */
 	if (!sydbox->config.restrict_general &&
