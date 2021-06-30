@@ -1696,7 +1696,7 @@ pid_validate:
 					free(current->abspath);
 					current->abspath = NULL;
 				}
-				sysx_chdir(current);
+				//sysx_chdir(current);
 			} else {
 				;/*not_exec = false;*/
 			}
