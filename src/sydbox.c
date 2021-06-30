@@ -500,16 +500,20 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 	} else {
 		current->clone_flags = SIGCHLD;
 	}
-	/* We manually disable this for now.
-	 * The current working directory handler works
-	 * more efficient this way... */
-	//share_files = false;
+	/* We manually disable these for now.
+	 * Handling these efficiently may mean sacrificing on security.
+	 * So they're best to be thought out thoroughly before reenabling.
+	 */
+	shared_thread = false;
+	share_fs = false;
+	share_files = false;
 
 	int r;
 	int pfd_cwd = -1;
 	char *cwd;
+
 	if (current->pid == sydbox->execve_pid) {
-		/* oh, I know this person, we're in the same directory. */
+		/* Oh, I know this person, we're in the same directory. */
 		P_CWD(current) = xgetcwd();
 		copy_sandbox(P_BOX(current), box_current(NULL));
 		return;
