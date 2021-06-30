@@ -322,7 +322,7 @@ int sys_execveat(syd_process_t *current)
 #define FAKE_CTIME -2036448000
 
 #define FAKE_SYSNAME "[01;36m☮[0m"
-#define FAKE_NODENAME "[01;35msydb☮x[0m"
+#define FAKE_NODENAME "sydb☮x"
 #define FAKE_RELEASE VERSION
 #define FAKE_VERSION "#"STRINGIFY(SYDBOX_API_VERSION)
 #define FAKE_MACHINE "[0;1;31;91m♡[0m"
