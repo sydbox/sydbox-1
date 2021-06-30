@@ -236,6 +236,32 @@ static int do_execve(syd_process_t *current, bool at_func)
 		if (current->abspath)
 			free(current->abspath);
 		current->abspath = abspath;
+
+		/*
+		 * Calculate the SHA1 checksum of the pathname
+		 * of the command to be executed by the process.
+		 * This should be enabled with the magic command
+		 * core/trace/program_checksum by setting it to
+		 * 2 or higher.
+		 */
+		if (magic_query_trace_program_checksum(NULL) > 1) {
+			syd_proc_comm(sydbox->pfd, current->comm,
+				      SYDBOX_PROC_MAX - 1);
+			current->comm[SYDBOX_PROC_MAX-1] = '\0';
+
+			syd_proc_cmdline(sydbox->pfd, current->prog,
+					 LINE_MAX-1);
+			current->prog[LINE_MAX-1] = '\0';
+
+			if ((r = path_to_hex(abspath)) < 0) {
+				errno = -r;
+				say_errno("can't calculate checksum of file "
+					  "`%s'", abspath);
+			} else {
+				strlcpy(current->hash, sydbox->hash,
+					SYD_SHA1_HEXSZ);
+			}
+		}
 	}
 
 	if (current->repr[0]) {

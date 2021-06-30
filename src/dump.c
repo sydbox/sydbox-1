@@ -372,19 +372,18 @@ void dump(enum dump what, ...)
 		const char *expr = va_arg(ap, const char *);
 		const char *cwd = va_arg(ap, const char *);
 		const char *proc_cwd = va_arg(ap, const char *);
-		const char *comm = va_arg(ap, const char *);
-		const char *cmdline = va_arg(ap, const char *);
+		syd_process_t *p = process_lookup(pid);
 
 		char *b_sys = NULL;
 		char *b_expr = NULL, *b_cwd = NULL, *b_proc_cwd = NULL;
-		char *b_comm = NULL, *b_cmdline = NULL;
+		char *b_comm = NULL, *b_prog = NULL;
 
 		char *j_sys = json_escape_str(&b_sys, sys);
 		char *j_expr = json_escape_str(&b_expr, expr);
 		char *j_cwd = json_escape_str(&b_cwd, cwd);
 		char *j_proc_cwd = json_escape_str(&b_proc_cwd, proc_cwd);
-		char *j_comm = json_escape_str(&b_comm, comm);
-		char *j_cmdline = json_escape_str(&b_cmdline, cmdline);
+		char *j_comm = json_escape_str(&b_comm, p ? p->comm : "?");
+		char *j_prog = json_escape_str(&b_prog, p ? p->prog : "?");
 
 		if (inspected_i(what) || verbose) {
 			id++;
@@ -395,25 +394,41 @@ void dump(enum dump what, ...)
 				fprintf(fp, "{"
 					J(id)"%llu,"
 					J(ts)"%llu,"
-					J(pid)"%s%d%s,"
 					J(event)"{\"id\":%u,\"name\":\"%s☮☮ps%s\"},"
+					J(proc)"{\"pid\":%s%d%s,comm:%s\"%s\"%s,"
+						"prog:%s\"%s\"%s,"
+						"hash:%s\"%s\"%s,"
+						"cwd:%s\"%s\"%s,"
+						"proc_cwd:%s\"%s\"%s},"
 					J(sys)"\"%s%s%s\","
 					J(syd)"\"%s%s%s\","
-					J(comm)"\"%s%s%s\","
 					J(cmd)"\"%s%s%s\","
-					J(cwd)"\"%s%s%s\","
 					J(ppid)"%s%d%s,"
 					J(tgid)"%s%d%s,"
 					J(proc)"{"
 					J(ppid)"%s%d%s,"
 					J(tgid)"%s%d%s,"
 					J(cwd)"\"%s%s%s\"}}",
-					id, (unsigned long long)now,
+					id, (unsigned long long)now, what,
+					colour ? ANSI_DARK_RED : "",
+					colour ? ANSI_DARK_MAGENTA : "",
 					colour ? ANSI_DARK_GREEN : "",
 					pid,
 					colour ? ANSI_DARK_MAGENTA : "",
-					what,
-					colour ? ANSI_DARK_RED : "",
+					colour ? ANSI_DARK_YELLOW : "",
+					j_comm,
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_YELLOW : "",
+					j_prog,
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_GREEN : "",
+					p ? p->hash : "?",
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_CYAN : "",
+					j_cwd,
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_GREEN : "",
+					j_proc_cwd,
 					colour ? ANSI_DARK_MAGENTA : "",
 					colour ? ANSI_DARK_RED : "",
 					j_sys,
@@ -422,13 +437,7 @@ void dump(enum dump what, ...)
 					j_expr,
 					colour ? ANSI_DARK_MAGENTA : "",
 					colour ? ANSI_DARK_YELLOW : "",
-					j_comm,
-					colour ? ANSI_DARK_MAGENTA : "",
-					colour ? ANSI_DARK_YELLOW : "",
-					j_cmdline,
-					colour ? ANSI_DARK_MAGENTA : "",
-					colour ? ANSI_DARK_YELLOW : "",
-					j_cwd,
+					j_prog,
 					colour ? ANSI_DARK_MAGENTA : "",
 					colour ? ANSI_DARK_GREEN : "",
 					ppid,
@@ -460,15 +469,15 @@ void dump(enum dump what, ...)
 			free(b_proc_cwd);
 		if (b_comm && j_comm[0])
 			free(b_comm);
-		if (b_cmdline && j_cmdline[0])
-			free(b_cmdline);
+		if (b_prog && j_prog[0])
+			free(b_prog);
 
 		if (verbose && fd != STDERR_FILENO) {
 			int fd_orig = fd;
 			fd = STDERR_FILENO;
 			dump_cycle();
-			dump(DUMP_OOPS, verbose, pid, tgid, ppid, proc_tgid, proc_ppid,
-			     sys, expr, cwd, proc_cwd, comm, cmdline);
+			dump(DUMP_OOPS, verbose, pid, tgid, ppid,
+			     proc_tgid, proc_ppid, sys, expr, cwd, proc_cwd);
 			fd = fd_orig;
 		}
 	} else if (what == DUMP_SECCOMP_NOTIFY_RECV ||
@@ -497,10 +506,20 @@ void dump(enum dump what, ...)
 		else
 			dump_null();
 
+		syd_process_t *p = process_lookup(request->pid);
+
+		char *b_prog = NULL, *j_prog = NULL;
+		char *b_comm = NULL, *j_comm = NULL;
+
+		j_comm = json_escape_str(&b_comm, p ? p->comm : "?");
+		j_prog = json_escape_str(&b_prog, p ? p->prog : "?");
+
 		fprintf(fp, ","
 			J(notif)"{"
 			J(id)"%llu,"
-			J(pid)"%"PRIu32","
+			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
+				"prog:\"%s\","
+				"hash:\"%s\"},"
 			J(data)"{"
 			J(nr)"%d,"
 			J(arch)"%"PRIu32","
@@ -508,6 +527,7 @@ void dump(enum dump what, ...)
 			J(args)"[%llu,%llu,%llu,%llu,%llu,%llu]}}",
 			request->id,
 			request->pid,
+			j_comm, j_prog, p ? p->hash : "?",
 			request->data.nr,
 			request->data.arch,
 			request->data.instruction_pointer,
@@ -517,6 +537,11 @@ void dump(enum dump what, ...)
 			request->data.args[3],
 			request->data.args[4],
 			request->data.args[5]);
+
+		if (b_comm && j_comm[0])
+			free(b_comm);
+		if (b_prog && j_prog[0])
+			free(b_prog);
 	} else if (what == DUMP_MAGIC) {
 		enum magic_key key = va_arg(ap, enum magic_key);
 		const char *cmd = va_arg(ap, const char *);
@@ -541,25 +566,29 @@ void dump(enum dump what, ...)
 		syd_process_t *p = va_arg(ap, syd_process_t *);
 		int fatal_sig = va_arg(ap, int);
 
-		char *b_comm = NULL;
-		char *j_comm = NULL;
+		char *b_comm = NULL, *j_comm = NULL;
+		char *b_prog = NULL, *j_prog = NULL;
 
 		j_comm = json_escape_str(&b_comm, p->comm);
+		j_prog = json_escape_str(&b_prog, p->prog);
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
 			J(event)"{\"id\":%u,\"name\":\"%s\"},"
-			J(pid)"%d,"
-			J(comm)"\"%s\","
+			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
+				"prog:\"%s\","
+				"hash:\"%s\"},"
 			J(sig)"%d}",
 			id++, (unsigned long long)now,
 			DUMP_KILL, "kill",
-			p->pid, j_comm,
+			p->pid, j_comm, j_prog, p->hash,
 			fatal_sig);
 
 		if (b_comm && j_comm && j_comm[0])
 			free(b_comm);
+		if (b_prog && j_prog && j_prog[0])
+			free(b_prog);
 	} else if (what == DUMP_ASSERT) {
 		const char *expr = va_arg(ap, const char *);
 		const char *file = va_arg(ap, const char *);
@@ -614,23 +643,42 @@ void dump(enum dump what, ...)
 #endif
 
 		fprintf(fp, "}");
-	} else if (what == DUMP_THREAD_NEW || what == DUMP_THREAD_FREE) {
+	} else if (what == DUMP_THREAD_NEW) {
 		pid_t pid = va_arg(ap, pid_t);
-		const char *event_name;
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(ts)"%llu,"
+			J(proc)"{\"pid\":%u},"
+			J(event)"{\"id\":%u,\"name\":\"%s\"}}",
+			id++, (unsigned long long)now, pid,
+			what, "thread_new");
+	} else if (what == DUMP_THREAD_FREE)  {
+		pid_t pid = va_arg(ap, pid_t);
 
-		if (what == DUMP_THREAD_NEW)
-			event_name = "thread_new";
-		else /* if (what == DUMP_THREAD_FREE) */
-			event_name = "thread_free";
+		syd_process_t *p = process_lookup(pid);
+
+		char *b_comm = NULL, *j_comm = NULL;
+		char *b_prog = NULL, *j_prog = NULL;
+
+		j_comm = json_escape_str(&b_comm, p ? p->comm : "?");
+		j_prog = json_escape_str(&b_prog, p ? p->prog : "?");
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(pid)"%u,"
+			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
+				"prog:\"%s\","
+				"hash:\"%s\"},"
 			J(event)"{\"id\":%u,\"name\":\"%s\"}}",
-			id++, (unsigned long long)now, pid,
-			what, event_name);
+			id++, (unsigned long long)now,
+			pid, j_comm, j_prog,
+			p ? p->hash : "?",
+			what, "thread_free");
 
+		if (b_comm && j_comm && j_comm[0])
+			free(b_comm);
+		if (b_prog && j_prog && j_prog[0])
+			free(b_prog);
 	} else if (what == DUMP_STARTUP) {
 		pid_t pid = va_arg(ap, pid_t);
 
@@ -645,11 +693,11 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(pid)"%u,"
 			J(event)"{\"id\":%u,\"name\":\"%s\"},"
+			J(proc)"{\"pid\":%u},"
 			J(cmd)"\"%s\"}",
-			id++, (unsigned long long)now, pid,
-			what, "startup", j_cmdline);
+			id++, (unsigned long long)now, what, "startup",
+			pid, j_cmdline);
 
 		if (b_cmdline && j_cmdline[0]) free(b_cmdline);
 	} else if (what == DUMP_EXIT) {
@@ -657,22 +705,46 @@ void dump(enum dump what, ...)
 		size_t proc_total = va_arg(ap, size_t);
 		size_t proc_alive = va_arg(ap, size_t);
 
+		syd_process_t *p = process_lookup(sydbox->execve_pid);
+
+		char *b_comm = NULL, *j_comm = NULL;
+		char *b_prog = NULL, *j_prog = NULL;
+
+		j_comm = json_escape_str(&b_comm, p ? p->comm : "?");
+		j_prog = json_escape_str(&b_prog, p ? p->prog : "?");
+
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(pid)"%d,"
 			J(event)"{\"id\":%u,\"name\":\"exit\"},"
+			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
+				"prog:\"%s\","
+				"hash:\"%s\"},"
 			J(code)"%d,"
-			J(proc)"{"
+			J(stat)"{"
 				J(total)"%zu,"
 				J(alive)"%zu,"
 				J(zombie)"%zu}}",
-			id++, (unsigned long long)now,
-			sydbox->execve_pid, what, code,
+			id++, (unsigned long long)now, what,
+			sydbox->execve_pid,
+			j_comm, j_prog,
+			p ? p->hash : "?",
+			code,
 			proc_total, proc_alive,
 			proc_total - proc_alive);
+
+		if (b_comm && j_comm && j_comm[0])
+			free(b_comm);
+		if (b_prog && j_prog && j_prog[0])
+			free(b_prog);
 	} else if (what == DUMP_SYSENT) {
 		struct syd_process *current = va_arg(ap, struct syd_process *);
+
+		char *b_comm = NULL, *j_comm = NULL;
+		char *b_prog = NULL, *j_prog = NULL;
+
+		j_comm = json_escape_str(&b_comm, current->comm);
+		j_prog = json_escape_str(&b_prog, current->prog);
 
 		char *b_repr[6] = { NULL };
 		char *j_repr[6];
@@ -685,13 +757,17 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(pid)"%u,"
 			J(event)"{\"id\":%u,\"name\":\"sys\"},"
+			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
+				"prog:\"%s\","
+				"hash:\"%s\"},"
 			J(name)"\"%s\","
 			J(args)"[%ld,%ld,%ld,%ld,%ld,%ld],"
 			J(repr)"[\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"]}",
-			id++, (unsigned long long)now, current->pid,
-			what,
+			id++, (unsigned long long)now, what,
+			current->pid,
+			j_comm, j_prog,
+			current->hash,
 			current->sysname,
 			current->args[0],
 			current->args[1],
@@ -719,13 +795,24 @@ void dump(enum dump what, ...)
 		char *j_newcwd = newcwd ? json_escape_str(&b_newcwd, newcwd) : NULL;
 		char *j_oldcwd = oldcwd ? json_escape_str(&b_oldcwd, oldcwd) : NULL;
 
+		syd_process_t *p = process_lookup(pid);
+
+		char *b_comm = NULL, *j_comm = NULL;
+		char *b_prog = NULL, *j_prog = NULL;
+
+		j_comm = json_escape_str(&b_comm, p ? p->comm : "?");
+		j_prog = json_escape_str(&b_prog, p ? p->prog : "?");
+
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(pid)"%u,"
-			J(event)"{\"id\":%u,\"name\":\"chdir\"}",
-			id++, (unsigned long long)now, pid,
-			what);
+			J(event)"{\"id\":%u,\"name\":\"chdir\"},"
+			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
+				"prog:\"%s\","
+				"hash:\"%s\"}",
+			id++, (unsigned long long)now, what,
+			pid, j_comm, j_prog,
+			p ? p->hash : "?");
 
 		fprintf(fp, ","J(cwd)"{");
 		fprintf(fp, J(new));
@@ -738,13 +825,31 @@ void dump(enum dump what, ...)
 			fprintf(fp, "\"%s\"", j_oldcwd);
 		else
 			dump_null();
+		fprintf(fp, ","J(syd));
+		if (p && P_CWD(p))
+			fprintf(fp, "\"%s\"", P_CWD(p));
+		else
+			dump_null();
+
 		fprintf(fp, "}}");
 
+		if (b_comm && j_comm && j_comm[0])
+			free(b_comm);
+		if (b_prog && j_prog && j_prog[0])
+			free(b_prog);
 		if (b_newcwd && j_newcwd[0]) free(b_newcwd);
 		if (b_oldcwd && j_oldcwd[0]) free(b_oldcwd);
 	} else if (what == DUMP_EXEC) {
 		pid_t execve_pid = va_arg(ap, pid_t);
 		const char *prog = va_arg(ap, const char *);
+
+		syd_process_t *p = process_lookup(execve_pid);
+
+		char *b_comm = NULL, *j_comm = NULL;
+		char *b_cmdline = NULL, *j_cmdline = NULL;
+
+		j_comm = json_escape_str(&b_comm, p ? p->comm : "?");
+		j_cmdline = json_escape_str(&b_cmdline, p ? p->prog : "?");
 
 		char *b_prog = NULL;
 		char *j_prog = json_escape_str(&b_prog, prog);
@@ -752,12 +857,20 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(pid)"%u,"
 			J(event)"{\"id\":%u,\"name\":\"exec\"},"
+			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
+				"prog:\"%s\","
+				"hash:\"%s\"},"
 			J(cmd)"\"%s\"}",
-			id++, (unsigned long long)now, execve_pid,
-			what, j_prog);
+			id++, (unsigned long long)now, what,
+			execve_pid, j_comm, j_cmdline,
+			p ? p->hash : "?",
+			j_prog);
 
+		if (b_comm && j_comm && j_comm[0])
+			free(b_comm);
+		if (b_cmdline && j_cmdline && j_cmdline[0])
+			free(b_cmdline);
 		if (b_prog && j_prog[0]) free(b_prog);
 	} else if (what == DUMP_EXEC_MT) {
 		pid_t execve_thread, leader;
@@ -765,6 +878,23 @@ void dump(enum dump what, ...)
 		execve_thread = va_arg(ap, pid_t);
 		leader = va_arg(ap, pid_t);
 		const char *prog = va_arg(ap, const char *);
+
+		syd_process_t *execve_p = process_lookup(execve_thread);
+		syd_process_t *leader_p = process_lookup(leader);
+
+		char *b_execve_comm = NULL, *j_execve_comm = NULL;
+		char *b_leader_comm = NULL, *j_leader_comm = NULL;
+		char *b_execve_prog = NULL, *j_execve_prog = NULL;
+		char *b_leader_prog = NULL, *j_leader_prog = NULL;
+
+		j_execve_comm = json_escape_str(&b_execve_comm,
+						execve_p ? execve_p->comm : "?");
+		j_leader_comm = json_escape_str(&b_leader_comm,
+						leader_p ? leader_p->comm : "?");
+		j_execve_prog = json_escape_str(&b_execve_prog,
+						execve_p ? execve_p->prog : "?");
+		j_leader_prog = json_escape_str(&b_leader_prog,
+						leader_p ? leader_p->prog : "?");
 
 		char *b_prog = NULL;
 		char *j_prog = NULL;
@@ -776,9 +906,20 @@ void dump(enum dump what, ...)
 			J(id)"%llu,"
 			J(ts)"%llu,"
 			J(event)"{\"id\":%u,\"name\":\"exec_mt\"},"
-			J(leader_pid)"%u,"J(execve_pid)"%u,",
+			J(proc)"{"
+			J(leader)"{\"pid\":%"PRIu32",comm:\"%s\","
+				"prog:\"%s\","
+				"hash:\"%s\"},"
+			J(execve)"{\"pid\":%"PRIu32",comm:\"%s\","
+				"prog:\"%s\","
+				"hash:\"%s\"}},",
 			id++, (unsigned long long)now, what,
-			leader, execve_thread);
+			leader,
+			j_leader_comm, j_leader_prog,
+			leader_p ? leader_p->hash : "?",
+			execve_thread,
+			j_execve_comm, j_execve_prog,
+			execve_p ? execve_p->hash : "?");
 		fputs(J(cmd), fp);
 		if (prog)
 			fprintf(fp, "\"%s\"", j_prog);
@@ -786,6 +927,14 @@ void dump(enum dump what, ...)
 			dump_null();
 		fputc('}', fp);
 
+		if (b_leader_comm && j_leader_comm && j_leader_comm[0])
+			free(b_leader_comm);
+		if (b_leader_prog && j_leader_prog && j_leader_prog[0])
+			free(b_leader_prog);
+		if (b_execve_comm && j_execve_comm && j_execve_comm[0])
+			free(b_execve_comm);
+		if (b_execve_prog && j_execve_prog && j_execve_prog[0])
+			free(b_execve_prog);
 		if (b_prog && j_prog && j_prog[0]) free(b_prog);
 	} else if (what == DUMP_ALLOC) {
 		size_t size = va_arg(ap, size_t);

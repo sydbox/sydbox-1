@@ -483,6 +483,12 @@ struct syd_process {
 	/* Process name as stated in /proc/pid/comm */
 #define SYDBOX_PROC_MAX 32
 	char comm[SYDBOX_PROC_MAX];
+
+	/* SHA1 hash of the binary which executed the process. */
+	char hash[SYD_SHA1_HEXSZ];
+
+	/* The command line of the binary which executed the process. */
+	char prog[LINE_MAX];
 };
 typedef struct syd_process syd_process_t;
 

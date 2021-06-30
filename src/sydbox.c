@@ -393,6 +393,11 @@ static syd_process_t *new_thread(pid_t pid)
 	thread->ppid = SYD_PPID_NONE;
 	thread->tgid = SYD_TGID_NONE;
 
+	thread->comm[0] = '?';
+	thread->comm[1] = '\0';
+	thread->hash[0] = '?';
+	thread->hash[1] = '\0';
+
 	process_add(thread);
 
 #if ENABLE_PSYSCALL
@@ -2333,6 +2338,11 @@ int main(int argc, char **argv)
 		 */
 		sydbox->pid_valid = PID_INIT_VALID;
 		proc_validate(pid);
+		strlcpy(child->comm, sydbox->program_invocation_name,
+			SYDBOX_PROC_MAX);
+		syd_proc_cmdline(sydbox->pfd, child->prog, LINE_MAX-1);
+		child->prog[LINE_MAX-1] = '\0';
+
 		/* Notify the user about the startup. */
 		dump(DUMP_STARTUP, pid);
 		/* Block signals,

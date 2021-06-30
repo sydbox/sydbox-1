@@ -104,27 +104,23 @@ SYD_GCC_ATTR((format (printf, 2, 0)))
 static void report(syd_process_t *current, const char *fmt, va_list ap)
 {
 	int r;
-	char cmdline[80], comm[32];
+	char comm[32];
 	pid_t ppid, tgid;
 	char *cwd = NULL;
 	char *context = NULL;
 
 	comm[0] = '\0';
-	cmdline[0] = '\0';
 	r = vasprintf(&context, fmt, ap);
 	syd_proc_comm(sydbox->pfd, comm, sizeof(comm));
 	syd_proc_parents(sydbox->pfd, &ppid, &tgid);
 	syd_proc_cwd(sydbox->pfd_cwd, false, &cwd);
-	syd_proc_cmdline(sydbox->pfd, cmdline, sizeof(cmdline));
 	dump(DUMP_OOPS,
 	     isatty(STDERR_FILENO),
 	     current->pid, current->tgid, current->ppid,
 	     tgid, ppid,
 	     current->sysname,
 	     r == -1 ? NULL : context,
-	     P_CWD(current), cwd,
-	     comm[0] == '\0' ? NULL : comm,
-	     cmdline[0] == '\0' ? NULL : cmdline);
+	     P_CWD(current), cwd);
 
 	if (context)
 		free(context);
