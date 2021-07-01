@@ -115,13 +115,14 @@ int sysx_chdir(syd_process_t *current)
 {
 	char *newcwd;
 
-	if (sydbox->pfd_cwd < 0) {
+	if (sydbox->pfd_cwd < 0 &&
+	    sydbox->pid_valid == current->pid) {
 		int fd;
-		if ((fd = syd_proc_cwd_open(pid)) >= 0)
+		if ((fd = syd_proc_cwd_open(sydbox->pid_valid)) >= 0)
 			sydbox->pfd_cwd = fd;
-		if (sydbox->pfd_cwd < 0)
-			return 0;
 	}
+	if (sydbox->pfd_cwd < 0)
+		return 0;
 
 	if (syd_proc_cwd(sydbox->pfd_cwd,
 			 sydbox->config.use_toolong_hack,

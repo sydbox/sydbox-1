@@ -1539,7 +1539,7 @@ notify_receive:
 				 * with a reasonable sandboxing setup.
 				 */
 				current = process_init(pid, parent, true);
-				if (current != parent)
+				if (parent && current != parent)
 					parent->clone_flags &=
 						~(SYD_IN_CLONE|SYD_IN_EXECVE);
 				parent = NULL;

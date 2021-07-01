@@ -38,7 +38,7 @@ void syd_about(void);
 /*
 Execute a process under various restrictions and options.
  */
-SYD_GCC_ATTR((must_use))
+SYD_GCC_ATTR((warn_unused_result))
 int32_t syd_execv(const char *command,
                   char **args,
                   const char *alias,

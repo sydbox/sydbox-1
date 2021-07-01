@@ -45,7 +45,7 @@ item_types = ["enums", "structs", "opaque", "functions"]
 
 [fn]
 rename_args = "None"
-must_use = "SYD_GCC_ATTR((must_use))"
+must_use = "SYD_GCC_ATTR((warn_unused_result))"
 no_return = "SYD_GCC_ATTR((noreturn))"
 #prefix = "/*"
 #postfix = "*/"
@@ -54,7 +54,7 @@ sort_by = "Name"
 
 [struct]
 rename_fields = "None"
-must_use = "SYD_GCC_ATTR((must_use))"
+must_use = "SYD_GCC_ATTR((warn_unused_result))"
 derive_constructor = true
 derive_eq = true
 derive_neq = true
