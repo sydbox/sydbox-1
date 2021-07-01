@@ -219,8 +219,10 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.cfg.gid.is_some() {
         child.cfg.gid.as_ref().map(|&gid| {
-            if gid != libc::getgid() {
-                eprintln!("[0;1;31;91msydb☮x: Changing gid to `{}'.[0m", gid);
+            let egid = libc::getegid();
+            if gid != egid {
+                eprintln!("[0;1;31;91msydb☮x: Changing gid from `{}' to `{}'.[0m",
+                          egid, gid);
                 if libc::setgid(gid) != 0 {
                     fail(Err::SetUser, epipe);
                 }
@@ -252,8 +254,10 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.cfg.uid.is_some() {
         child.cfg.uid.as_ref().map(|&uid| {
-            if uid != libc::getuid() {
-                eprintln!("[0;1;31;91msydb☮x: Changing uid to `{}'.[0m", uid);
+            let euid = libc::geteuid();
+            if uid != euid {
+                eprintln!("[0;1;31;91msydb☮x: Changing uid from `{}' to `{}'.[0m",
+                          euid, uid);
                 if libc::setuid(uid) != 0 {
                     fail(Err::SetUser, epipe);
                 }
