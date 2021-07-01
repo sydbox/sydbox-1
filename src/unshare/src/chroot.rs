@@ -1,6 +1,5 @@
 use std::ffi::CString;
 
-
 pub struct Pivot {
     pub new_root: CString,
     pub put_old: CString,

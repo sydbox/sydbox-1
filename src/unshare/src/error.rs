@@ -1,9 +1,8 @@
-use std::io;
-use std::fmt;
 use crate::status::ExitStatus;
+use std::fmt;
+use std::io;
 
 use nix;
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorCode {
@@ -35,7 +34,7 @@ pub enum Error {
     /// Frankly, this error should not happen when running process. We just
     /// keep it here in case `nix` returns this error, which should not happen.
     NixError, // Not sure it's possible, but it is here to convert from
-                 // nix::Error safer
+    // nix::Error safer
     /// Some invalid error code received from child application
     UnknownError,
     /// Error happened when we were trying to create pipe. The pipes used for
@@ -159,12 +158,21 @@ impl fmt::Display for Error {
             let errno = nix::errno::from_i32(code);
             if let nix::errno::Errno::UnknownErrno = errno {
                 // May be OS knows error name better
-                write!(fmt, "{}: {}", self.title(),
-                    io::Error::from_raw_os_error(code))
+                write!(
+                    fmt,
+                    "{}: {}",
+                    self.title(),
+                    io::Error::from_raw_os_error(code)
+                )
             } else {
                 // Format similar to that of std::io::Error
-                write!(fmt, "{}: {} (os error {})", self.title(),
-                    errno.desc(), code)
+                write!(
+                    fmt,
+                    "{}: {} (os error {})",
+                    self.title(),
+                    errno.desc(),
+                    code
+                )
             }
         } else {
             match self {
@@ -178,16 +186,15 @@ impl fmt::Display for Error {
 }
 
 #[inline]
-pub fn result<T, E: IntoError>(code: ErrorCode, r: Result<T, E>)
-    -> Result<T, Error>
-{
+pub fn result<T, E: IntoError>(code: ErrorCode, r: Result<T, E>) -> Result<T, Error> {
     r.map_err(|e| e.into_error(code))
 }
 
 #[inline]
-pub fn cmd_result<E: IntoError>(def_code: ErrorCode, r: Result<ExitStatus, E>)
-    -> Result<(), Error>
-{
+pub fn cmd_result<E: IntoError>(
+    def_code: ErrorCode,
+    r: Result<ExitStatus, E>,
+) -> Result<(), Error> {
     match r.map_err(|e| e.into_error(def_code))? {
         ExitStatus::Exited(0) => Ok(()),
         ExitStatus::Exited(x) => Err(Error::AuxCommandExited(x as i32)),
@@ -220,11 +227,10 @@ impl IntoError for Error {
     }
 }
 
-
 impl ErrorCode {
     pub fn wrap(self, errno: i32) -> Error {
-        use self::ErrorCode as C;
         use self::Error as E;
+        use self::ErrorCode as C;
         match self {
             C::CreatePipe => E::CreatePipe(errno),
             C::Fork => E::Fork(errno),
@@ -243,15 +249,14 @@ impl ErrorCode {
         }
     }
     pub fn from_i32(code: i32, errno: i32) -> Error {
-        use self::ErrorCode as C;
         use self::Error as E;
+        use self::ErrorCode as C;
         match code {
             c if c == C::CreatePipe as i32 => E::CreatePipe(errno),
             c if c == C::Fork as i32 => E::Fork(errno),
             c if c == C::Exec as i32 => E::Exec(errno),
             c if c == C::Chdir as i32 => E::Chdir(errno),
-            c if c == C::ParentDeathSignal as i32
-                                                => E::ParentDeathSignal(errno),
+            c if c == C::ParentDeathSignal as i32 => E::ParentDeathSignal(errno),
             c if c == C::PipeError as i32 => E::PipeError(errno),
             c if c == C::StdioError as i32 => E::StdioError(errno),
             c if c == C::SetUser as i32 => E::SetUser(errno),

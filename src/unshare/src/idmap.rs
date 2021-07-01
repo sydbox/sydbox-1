@@ -1,5 +1,4 @@
-use libc::{uid_t, gid_t};
-
+use libc::{gid_t, uid_t};
 
 /// Entry (row) in the uid map
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

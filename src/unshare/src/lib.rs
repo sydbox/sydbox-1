@@ -29,48 +29,49 @@
 #![warn(missing_docs)]
 extern crate libc;
 extern crate nix;
-#[cfg(test)] extern crate rand;
+#[cfg(test)]
+extern crate rand;
 
-mod caps;
-mod namespace;
-mod idmap;
-mod chroot;
-mod ffi_util;
-mod std_api;
-mod config;
-mod error;
-mod pipe;
-mod child;
 mod callbacks;
-mod linux;
+mod caps;
+mod child;
+mod chroot;
+mod config;
+mod debug;
+mod error;
 mod fds;
+mod ffi_util;
+mod idmap;
+mod linux;
+mod namespace;
+mod pipe;
 mod run;
 mod status;
-mod wait;
+mod std_api;
 mod stdio;
-mod debug;
+mod wait;
 mod zombies;
 
+pub use crate::caps::Capability;
+pub use crate::debug::{Printer, Style};
 pub use crate::error::Error;
-pub use crate::status::ExitStatus;
-pub use crate::stdio::{Stdio, Fd};
+pub use crate::idmap::{GidMap, UidMap};
+pub use crate::namespace::Namespace;
 pub use crate::pipe::{PipeReader, PipeWriter};
-pub use crate::namespace::{Namespace};
-pub use crate::idmap::{UidMap, GidMap};
-pub use crate::zombies::{reap_zombies, child_events, ChildEvent};
+pub use crate::status::ExitStatus;
+pub use crate::stdio::{Fd, Stdio};
+pub use crate::zombies::{child_events, reap_zombies, ChildEvent};
 pub use nix::sys::signal::Signal;
-pub use crate::debug::{Style, Printer};
-pub use crate::caps::{Capability};
 
-use std::ffi::{CString, OsString};
-use std::path::PathBuf;
-use std::os::unix::io::RawFd;
 use std::collections::{HashMap, HashSet};
+use std::ffi::{CString, OsString};
 use std::io;
+use std::os::unix::io::RawFd;
+use std::path::PathBuf;
 
 use crate::pipe::PipeHolder;
 
-use libc::{pid_t};
+use libc::pid_t;
 
 type BoxError = Box<dyn (::std::error::Error) + Send + Sync + 'static>;
 

@@ -1,15 +1,14 @@
+use std::collections::HashMap;
 use std::default::Default;
 use std::ffi::CString;
-use std::collections::HashMap;
 
-use nix::sys::signal::{Signal, SIGKILL};
+use libc::{gid_t, uid_t};
 use nix::sched::CloneFlags;
-use libc::{uid_t, gid_t};
+use nix::sys::signal::{Signal, SIGKILL};
 
-use crate::idmap::{UidMap, GidMap};
+use crate::idmap::{GidMap, UidMap};
 use crate::namespace::Namespace;
 use crate::stdio::Closing;
-
 
 pub struct Config {
     pub death_sig: Option<Signal>,

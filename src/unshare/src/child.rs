@@ -1,20 +1,20 @@
 use std::ffi::CStr;
 use std::ffi::OsStr;
+use std::mem;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::io::RawFd;
-use std::mem;
 use std::ptr;
 
 use libc;
-use nix;
-use libc::{c_void, c_ulong, gid_t, sigset_t, size_t};
+use libc::{c_ulong, c_void, gid_t, sigset_t, size_t};
 use libc::{kill, signal};
-use libc::{F_GETFD, F_SETFD, F_DUPFD_CLOEXEC, FD_CLOEXEC, MNT_DETACH};
+use libc::{FD_CLOEXEC, F_DUPFD_CLOEXEC, F_GETFD, F_SETFD, MNT_DETACH};
 use libc::{SIG_DFL, SIG_SETMASK};
+use nix;
 use nix::sched::CloneFlags;
 
-use crate::run::{ChildInfo, MAX_PID_LEN};
 use crate::error::ErrorCode as Err;
+use crate::run::{ChildInfo, MAX_PID_LEN};
 
 // And at this point we've reached a special time in the life of the
 // child. The child must now be considered hamstrung and unable to
@@ -33,8 +33,10 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.cfg.death_sig.is_some() {
         child.cfg.death_sig.as_ref().map(|&sig| {
-            eprintln!("[0;1;31;91msydb☮x: Setting parent-death signal to `{}'.[0m",
-                sig);
+            eprintln!(
+                "[0;1;31;91msydb☮x: Setting parent-death signal to `{}'.[0m",
+                sig
+            );
             if libc::prctl(ffi::PR_SET_PDEATHSIG, sig as c_ulong, 0, 0, 0) != 0 {
                 fail(Err::ParentDeathSignal, epipe);
             }
@@ -47,8 +49,7 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
     let mut wbuf = [0u8];
     loop {
         // TODO(tailhook) put some timeout on this pipe?
-        let rc = libc::read(child.wakeup_pipe,
-                            (&mut wbuf).as_ptr() as *mut c_void, 1);
+        let rc = libc::read(child.wakeup_pipe, (&mut wbuf).as_ptr() as *mut c_void, 1);
         if rc == 0 {
             // Parent already dead presumably before we had a chance to
             // set PDEATHSIG, so just send signal ourself in that case
@@ -65,10 +66,8 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
             }
         } else if rc < 0 {
             let errno = nix::errno::errno();
-            if errno == libc::EINTR as i32 ||
-               errno == libc::EAGAIN as i32
-            {
-                    continue;
+            if errno == libc::EINTR as i32 || errno == libc::EAGAIN as i32 {
+                continue;
             } else {
                 fail(Err::PipeError, errno);
             }
@@ -89,47 +88,55 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     for &(nstype, fd) in child.setns_namespaces {
         match nstype {
-        CloneFlags::CLONE_NEWPID => {
-            eprintln!("[0;1;31;91msydb☮x: Unsharing pid namespace.[0m");
-        },
-        CloneFlags::CLONE_NEWNET => {
-            eprintln!("[0;1;31;91msydb☮x: Unsharing net namespace.[0m");
-        }
-        CloneFlags::CLONE_NEWNS => {
-            eprintln!("[0;1;31;91msydb☮x: Unsharing mount namespace.[0m");
-        }
-        CloneFlags::CLONE_NEWUTS => {
-            eprintln!("[0;1;31;91msydb☮x: Unsharing uts namespace.[0m");
-        }
-        CloneFlags::CLONE_NEWIPC => {
-            eprintln!("[0;1;31;91msydb☮x: Unsharing ipc namespace.[0m");
-        }
-        CloneFlags::CLONE_NEWUSER => {
-            eprintln!("[0;1;31;91msydb☮x: Unsharing user namespace.[0m");
-        },
-        _ => {
-            eprintln!("[0;1;31;91msydb☮x: Setting unknown clone flag `{:?}'.[0m", nstype);
-        }};
+            CloneFlags::CLONE_NEWPID => {
+                eprintln!("[0;1;31;91msydb☮x: Unsharing pid namespace.[0m");
+            }
+            CloneFlags::CLONE_NEWNET => {
+                eprintln!("[0;1;31;91msydb☮x: Unsharing net namespace.[0m");
+            }
+            CloneFlags::CLONE_NEWNS => {
+                eprintln!("[0;1;31;91msydb☮x: Unsharing mount namespace.[0m");
+            }
+            CloneFlags::CLONE_NEWUTS => {
+                eprintln!("[0;1;31;91msydb☮x: Unsharing uts namespace.[0m");
+            }
+            CloneFlags::CLONE_NEWIPC => {
+                eprintln!("[0;1;31;91msydb☮x: Unsharing ipc namespace.[0m");
+            }
+            CloneFlags::CLONE_NEWUSER => {
+                eprintln!("[0;1;31;91msydb☮x: Unsharing user namespace.[0m");
+            }
+            _ => {
+                eprintln!(
+                    "[0;1;31;91msydb☮x: Setting unknown clone flag `{:?}'.[0m",
+                    nstype
+                );
+            }
+        };
         if libc::setns(fd, nstype.bits()) != 0 {
             fail(Err::SetNs, epipe);
         }
     }
 
     if !child.pid_env_vars.is_empty() {
-        let mut buf = [0u8; MAX_PID_LEN+1];
+        let mut buf = [0u8; MAX_PID_LEN + 1];
         let data = format_pid_fixed(&mut buf, libc::getpid());
         for &(index, offset) in child.pid_env_vars {
             let slice = CStr::from_ptr(child.environ[index]);
             let osstr = OsStr::from_bytes(slice.to_bytes());
             match osstr.to_str() {
                 Some(environ) => {
-                    eprintln!("[0;1;31;91msydb☮x: Add environment variable `{}' with pid.[0m", environ);
-                },
+                    eprintln!(
+                        "[0;1;31;91msydb☮x: Add environment variable `{}' with pid.[0m",
+                        environ
+                    );
+                }
                 None => {}
             };
 
             // we know that there are at least MAX_PID_LEN+1 bytes in buffer
-            child.environ[index].offset(offset as isize)
+            child.environ[index]
+                .offset(offset as isize)
                 .copy_from(data.as_ptr() as *const libc::c_char, data.len());
         }
     }
@@ -180,9 +187,11 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
             let osstr = OsStr::from_bytes(slice.to_bytes());
             match osstr.to_str() {
                 Some(root) => {
-                    eprintln!("[0;1;31;91msydb☮x: Changing root directory to `{}'.[0m",
-                        root);
-                },
+                    eprintln!(
+                        "[0;1;31;91msydb☮x: Changing root directory to `{}'.[0m",
+                        root
+                    );
+                }
                 None => {}
             };
             if libc::chroot(chroot.root.as_ptr()) != 0 {
@@ -196,9 +205,11 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
             let osstr = OsStr::from_bytes(slice.to_bytes());
             match osstr.to_str() {
                 Some(workdir) => {
-                    eprintln!("[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
-                        workdir);
-                },
+                    eprintln!(
+                        "[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
+                        workdir
+                    );
+                }
                 None => {}
             }
             if libc::chdir(chroot.workdir.as_ptr()) != 0 {
@@ -221,8 +232,10 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         child.cfg.gid.as_ref().map(|&gid| {
             let egid = libc::getegid();
             if gid != egid {
-                eprintln!("[0;1;31;91msydb☮x: Changing gid from `{}' to `{}'.[0m",
-                          egid, gid);
+                eprintln!(
+                    "[0;1;31;91msydb☮x: Changing gid from `{}' to `{}'.[0m",
+                    egid, gid
+                );
                 if libc::setgid(gid) != 0 {
                     fail(Err::SetUser, epipe);
                 }
@@ -239,12 +252,11 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
                 .map(|x| *x)
                 .collect();
             if gids.len() > 0 {
-                let gstr: Vec<String> = gids
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect();
-                eprintln!("[0;1;31;91msydb☮x: Adding supplementary gids `{}'.[0m",
-                    gstr.join(","));
+                let gstr: Vec<String> = gids.iter().map(|x| x.to_string()).collect();
+                eprintln!(
+                    "[0;1;31;91msydb☮x: Adding supplementary gids `{}'.[0m",
+                    gstr.join(",")
+                );
                 if libc::setgroups(groups.len() as size_t, gids.as_ptr()) != 0 {
                     fail(Err::SetUser, epipe);
                 }
@@ -256,8 +268,10 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         child.cfg.uid.as_ref().map(|&uid| {
             let euid = libc::geteuid();
             if uid != euid {
-                eprintln!("[0;1;31;91msydb☮x: Changing uid from `{}' to `{}'.[0m",
-                          euid, uid);
+                eprintln!(
+                    "[0;1;31;91msydb☮x: Changing uid from `{}' to `{}'.[0m",
+                    euid, uid
+                );
                 if libc::setuid(uid) != 0 {
                     fail(Err::SetUser, epipe);
                 }
@@ -281,12 +295,9 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         if libc::syscall(libc::SYS_capset, &header, &data) != 0 {
             fail(Err::CapSet, epipe);
         }
-        for idx in 0..caps.len()*32 {
+        for idx in 0..caps.len() * 32 {
             if caps[(idx >> 5) as usize] & (1 << (idx & 31)) != 0 {
-                let rc = libc::prctl(
-                    libc::PR_CAP_AMBIENT,
-                    libc::PR_CAP_AMBIENT_RAISE,
-                    idx, 0, 0);
+                let rc = libc::prctl(libc::PR_CAP_AMBIENT, libc::PR_CAP_AMBIENT_RAISE, idx, 0, 0);
                 if rc != 0 && nix::errno::errno() == libc::ENOTSUP {
                     // no need to iterate if ambient caps are notsupported
                     break;
@@ -299,9 +310,11 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         let osstr = OsStr::from_bytes(child.cfg.work_dir.as_ref().unwrap().to_bytes());
         match osstr.to_str() {
             Some(workdir) => {
-                eprintln!("[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
-                    workdir);
-            },
+                eprintln!(
+                    "[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
+                    workdir
+                );
+            }
             None => {}
         };
         child.cfg.work_dir.as_ref().map(|dir| {
@@ -311,13 +324,10 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         });
     }
 
-
     for &(dest_fd, src_fd) in child.fds {
         if src_fd == dest_fd {
             let flags = libc::fcntl(src_fd, F_GETFD);
-            if flags < 0 ||
-                libc::fcntl(src_fd, F_SETFD, flags & !FD_CLOEXEC) < 0
-            {
+            if flags < 0 || libc::fcntl(src_fd, F_SETFD, flags & !FD_CLOEXEC) < 0 {
                 fail(Err::StdioError, epipe);
             }
         } else {
@@ -349,16 +359,16 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if let Some(callback) = child.pre_exec {
         if let Err(e) = callback() {
-            fail_errno(Err::PreExec,
-                e.raw_os_error().unwrap_or(10873289),
-                epipe);
+            fail_errno(Err::PreExec, e.raw_os_error().unwrap_or(10873289), epipe);
         }
     }
 
-    libc::execve(child.filename,
-                 child.args.as_ptr(),
-                 // cancelling mutability, it should be fine
-                 child.environ.as_ptr() as *const *const libc::c_char);
+    libc::execve(
+        child.filename,
+        child.args.as_ptr(),
+        // cancelling mutability, it should be fine
+        child.environ.as_ptr() as *const *const libc::c_char,
+    );
     fail(Err::Exec, epipe);
 }
 
@@ -370,11 +380,11 @@ unsafe fn fail_errno(code: Err, errno: i32, output: RawFd) -> ! {
         code as u8,
         (errno >> 24) as u8,
         (errno >> 16) as u8,
-        (errno >>  8) as u8,
-        (errno >>  0)  as u8,
+        (errno >> 8) as u8,
+        (errno >> 0) as u8,
         // TODO(tailhook) rustc adds a special sentinel at the end of error
         // code. Do we really need it? Assuming our pipes are always cloexec'd.
-        ];
+    ];
     // Writes less than PIPE_BUF should be atomic. It's also unclear what
     // to do if error happened anyway
     libc::write(output, bytes.as_ptr() as *const c_void, 5);
@@ -382,14 +392,14 @@ unsafe fn fail_errno(code: Err, errno: i32, output: RawFd) -> ! {
 }
 
 fn format_pid_fixed<'a>(buf: &'a mut [u8], pid: libc::pid_t) -> &'a [u8] {
-    buf[buf.len()-1] = 0;
+    buf[buf.len() - 1] = 0;
     if pid == 0 {
-        buf[buf.len()-2] = b'0';
-        return &buf[buf.len()-2..]
+        buf[buf.len() - 2] = b'0';
+        return &buf[buf.len() - 2..];
     } else {
         let mut tmp = pid;
         // can't use stdlib function because that can allocate
-        for n in (0..buf.len()-1).rev() {
+        for n in (0..buf.len() - 1).rev() {
             buf[n] = (tmp % 10) as u8 + b'0';
             tmp /= 10;
             if tmp == 0 {
@@ -423,24 +433,25 @@ mod ffi {
         pub inheritable_s1: u32,
     }
 
-    extern {
-        pub fn pivot_root(new_root: *const c_char, put_old: *const c_char)
-            -> c_int;
+    extern "C" {
+        pub fn pivot_root(new_root: *const c_char, put_old: *const c_char) -> c_int;
     }
 }
 
 #[cfg(test)]
 mod test {
-    use rand::{thread_rng, Rng};
-    use crate::run::MAX_PID_LEN;
-    use std::ffi::CStr;
     use super::format_pid_fixed;
+    use crate::run::MAX_PID_LEN;
+    use rand::{thread_rng, Rng};
+    use std::ffi::CStr;
 
     fn fmt_normal(val: i32) -> String {
-        let mut buf = [0u8; MAX_PID_LEN+1];
+        let mut buf = [0u8; MAX_PID_LEN + 1];
         let slice = format_pid_fixed(&mut buf, val);
-        return CStr::from_bytes_with_nul(slice).unwrap()
-            .to_string_lossy().to_string();
+        return CStr::from_bytes_with_nul(slice)
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
     }
     #[test]
     fn test_format() {
@@ -456,7 +467,9 @@ mod test {
     fn test_random() {
         for _ in 0..100000 {
             let x = thread_rng().gen();
-            if x < 0 { continue; }
+            if x < 0 {
+                continue;
+            }
             assert_eq!(fmt_normal(x), format!("{}", x));
         }
     }

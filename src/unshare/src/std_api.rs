@@ -5,17 +5,16 @@
 // file at the top-level directory of this distribution and at
 // http://rust-lang.org/COPYRIGHT.
 //
-use std::ffi::OsStr;
-use std::default::Default;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::default::Default;
 use std::env;
+use std::ffi::OsStr;
 use std::path::Path;
 
-use libc::{uid_t, gid_t};
 use crate::ffi_util::ToCString;
-use crate::{Command, Stdio, Fd};
-
+use crate::{Command, Fd, Stdio};
+use libc::{gid_t, uid_t};
 
 impl Command {
     /// Constructs a new `Command` for launching the program at
@@ -36,11 +35,9 @@ impl Command {
             config: Default::default(),
             chroot_dir: None,
             pivot_root: None,
-            fds: vec![
-                (0, Fd::inherit()),
-                (1, Fd::inherit()),
-                (2, Fd::inherit()),
-                ].into_iter().collect(),
+            fds: vec![(0, Fd::inherit()), (1, Fd::inherit()), (2, Fd::inherit())]
+                .into_iter()
+                .collect(),
             close_fds: Vec::new(),
             id_map_commands: None,
             pid_env_vars: HashSet::new(),
@@ -73,30 +70,37 @@ impl Command {
 
     /// Inserts or updates an environment variable mapping.
     pub fn env<K, V>(&mut self, key: K, val: V) -> &mut Command
-        where K: AsRef<OsStr>, V: AsRef<OsStr>
+    where
+        K: AsRef<OsStr>,
+        V: AsRef<OsStr>,
     {
         self.init_env_map();
-        self.environ.as_mut().unwrap().insert(
-            key.as_ref().to_os_string(),
-            val.as_ref().to_os_string());
+        self.environ
+            .as_mut()
+            .unwrap()
+            .insert(key.as_ref().to_os_string(), val.as_ref().to_os_string());
         self.pid_env_vars.remove(key.as_ref());
         self
     }
 
     /// Inserts or updates multiple environment variable mappings.
-    pub fn envs<I, K, V>(&mut self, vars: I)-> &mut Command
-        where I: IntoIterator<Item=(K, V)>, K: AsRef<OsStr>, V: AsRef<OsStr>
+    pub fn envs<I, K, V>(&mut self, vars: I) -> &mut Command
+    where
+        I: IntoIterator<Item = (K, V)>,
+        K: AsRef<OsStr>,
+        V: AsRef<OsStr>,
     {
         for (ref key, ref val) in vars {
             self.init_env_map();
-            self.environ.as_mut().unwrap().insert(
-                key.as_ref().to_os_string(),
-                val.as_ref().to_os_string());
+            self.environ
+                .as_mut()
+                .unwrap()
+                .insert(key.as_ref().to_os_string(), val.as_ref().to_os_string());
             self.pid_env_vars.remove(key.as_ref());
         }
         self
     }
-    
+
     /// Removes an environment variable mapping.
     pub fn env_remove<K: AsRef<OsStr>>(&mut self, key: K) -> &mut Command {
         self.init_env_map();
@@ -131,8 +135,7 @@ impl Command {
     ///
     /// At the end of the day, the ``cmd.current_dir(env::current_dir())`` is
     /// not no-op if using chroot/pivot_root.
-    pub fn current_dir<P: AsRef<Path>>(&mut self, dir: P) -> &mut Command
-    {
+    pub fn current_dir<P: AsRef<Path>>(&mut self, dir: P) -> &mut Command {
         self.config.work_dir = Some(dir.as_ref().to_cstring());
         self
     }
@@ -176,4 +179,3 @@ impl Command {
         self
     }
 }
-

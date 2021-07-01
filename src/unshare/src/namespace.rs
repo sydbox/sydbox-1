@@ -1,6 +1,5 @@
 use nix::sched::CloneFlags;
 
-
 /// Namespace name to unshare
 ///
 /// See `man 7 namespaces` for more information

@@ -1,7 +1,6 @@
 use std::io;
 
-use crate::{Command, BoxError};
-
+use crate::{BoxError, Command};
 
 impl Command {
     /// Set a callback to run when child is already forked but not yet run
