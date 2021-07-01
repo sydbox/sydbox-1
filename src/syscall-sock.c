@@ -192,9 +192,29 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 				   &inode)) < 0)
 		return r;
 
-	info = sockmap_find(&P_SOCKMAP(current), inode);
-	if (!info)
+	struct sc_map_64v sockmap = P_SOCKMAP(current);
+	syd_process_t *tgp, *pp;
+	info = sockmap_find(&sockmap, inode);
+	if (!info) {
+		tgp = process_lookup(current->tgid);
+		if (tgp) {
+			info = sockmap_find(&P_SOCKMAP(tgp), inode);
+			if (info) {
+				sockmap = P_SOCKMAP(tgp);
+				goto inode_hit;
+			}
+		}
+		pp = process_lookup(current->ppid);
+		if (pp) {
+			info = sockmap_find(&P_SOCKMAP(tgp), inode);
+			if (info) {
+				sockmap = P_SOCKMAP(pp);
+				goto inode_hit;
+			}
+		}
 		return 0;
+	}
+inode_hit:
 
 	switch (info->addr->family) {
 	case AF_UNIX:
@@ -223,7 +243,7 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 	default:
 		assert_not_reached();
 	}
-	sockmap_remove(&P_SOCKMAP(current), inode);
+	sockmap_remove(&sockmap, inode);
 
 	/* allowlist successful bind. */
 	struct acl_node *node;

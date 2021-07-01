@@ -603,10 +603,12 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 		free(p->cwd);
 		p->cwd = NULL;
 	}
+	/*
 	if (p->abspath) {
 		free(p->abspath);
 		p->abspath = NULL;
 	}
+	*/
 	if (sc_map_size_64v(&p->sockmap)) {
 		sc_map_clear_64v(&p->sockmap);
 		sc_map_term_64v(&p->sockmap);
