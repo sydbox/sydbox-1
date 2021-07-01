@@ -665,12 +665,10 @@ PINKTRACE_REQUIRED=0.9
 AC_ARG_ENABLE([psyscall],
 	      [AS_HELP_STRING([--enable-psyscall],
 			      [EXPERIMENTAL: use psyscall to allocate a readonly memory in tracee to mitigate TOCTOU attacks (default: disable).])],
-	      [], [enable_psyscall=no])
+	      [], [enable_psyscall=1])
 case "$enable_psyscall" in
 yes)
-PKG_CHECK_MODULES([pinktrace], [pinktrace >= $PINKTRACE_REQUIRED],
-	[enable_psyscall=1],
-	AC_MSG_ERROR([pinktrace-$PINKTRACE_REQUIRED or newer is required for --enable-psyscall]))
+enable_psyscall=1
 ;;
 no)
 enable_psyscall=0
