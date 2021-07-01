@@ -309,7 +309,7 @@ int sys_socketcall(syd_process_t *current)
 		return r;
 
 	current->subcall = subcall;
-	current->sysname = name_socket_subcall(subcall);
+	current->sysname = (char *)name_socket_subcall(subcall);
 
 	switch (subcall) {
 	case PINK_SOCKET_SUBCALL_BIND:

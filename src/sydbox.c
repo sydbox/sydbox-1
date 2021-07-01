@@ -1494,9 +1494,6 @@ static int notify_loop()
 		/* Let the user-space tracing begin. */
 		bool jump = false, reap_my_zombies = false;
 		char *name = NULL;
-#if ENABLE_PSYSCALL
-		bool set_process_name = false;
-#endif
 		pid_t execve_pid = 0;
 		syd_process_t *parent;
 
@@ -1804,9 +1801,6 @@ out:
 			reap_my_zombies = false;
 			reap_zombies();
 		}
-		if (set_process_name) {
-			set_process_name = false;
-
 #if 0
 #if ENABLE_PSYSCALL
 		if (pprctl(current->pid, PR_SET_NAME, (unsigned long)comm,
@@ -1816,7 +1810,6 @@ out:
 			say("pprctl: comm:%s", comm);
 #endif
 #endif
-		}
 		if (jump) {
 			jump = false;
 			break;
