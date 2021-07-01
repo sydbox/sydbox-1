@@ -487,23 +487,23 @@ struct filter {
 
 struct config {
 	/* magic access to core.*  */
-	bool magic_core_allow;
+	bool magic_core_allow:1;
 
-	bool allowlist_per_process_directories;
-	bool allowlist_successful_bind;
-	bool allowlist_unsupported_socket_families;
+	bool allowlist_per_process_directories:1;
+	bool allowlist_successful_bind:1;
+	bool allowlist_unsupported_socket_families:1;
 
 	/* restrict knobs are not inherited, they're global config */
-	bool restrict_id;
-	bool restrict_sysinfo;
-	bool restrict_ioctl;
-	bool restrict_mmap;
-	bool restrict_shm_wr;
-	unsigned int restrict_general;
+	bool restrict_id:1;
+	bool restrict_sysinfo:1;
+	bool restrict_ioctl:1;
+	bool restrict_mmap:1;
+	bool restrict_shm_wr:1;
+	uint8_t restrict_general;
 
 	/* same for these, not inherited: global */
-	bool use_seize;
-	bool use_toolong_hack;
+	bool use_seize:1;
+	bool use_toolong_hack:1;
 #define SYDBOX_CONFIG_MEMACCESS_MAX 2
 	uint8_t mem_access:1;
 	uint8_t prog_hash:2; /* 0: disabled, 1: initial execve, 2: all execves */
@@ -516,8 +516,8 @@ struct config {
 	 ***/
 	enum violation_decision violation_decision;
 	int violation_exit_code;
-	bool violation_raise_fail;
-	bool violation_raise_safe;
+	bool violation_raise_fail:1;
+	bool violation_raise_safe:1;
 
 	aclq_t exec_kill_if_match;
 

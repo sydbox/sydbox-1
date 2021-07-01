@@ -2424,7 +2424,7 @@ out:
 	     process_count_alive());
 	dump(DUMP_ALLOC, 0, NULL);
 	dump(DUMP_CLOSE);
-	cleanup_for_sydbox();
+	//cleanup_for_sydbox();
 	if (sydbox->violation) {
 		if (sydbox->config.violation_exit_code > 0)
 			exit_code = sydbox->config.violation_exit_code;
@@ -2432,7 +2432,7 @@ out:
 			 sydbox->config.violation_exit_code == 0)
 			exit_code = 128 /* + sydbox->exit_code */;
 	}
-	free(sydbox);
+	//free(sydbox);
 	if (child_block_interrupt_signals)
 		tcsetattr(0, TCSANOW, &old_tio);
 	return exit_code;

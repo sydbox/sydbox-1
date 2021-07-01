@@ -191,6 +191,7 @@ static const struct key key_table[] = {
 		.set    = magic_set_restrict_sysinfo,
 		.query  = magic_query_restrict_sysinfo,
 	},
+
 	[MAGIC_KEY_CORE_RESTRICT_IDENTITY_CHANGE] = {
 		.name   = "id_change",
 		.lname  = "core.restrict.id_change",

@@ -141,6 +141,7 @@ SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wno-cpp
 -Werror=pointer-arith
 
 "
+
 SYDBOX_SAFE_WANTED_CFLAGS="-D_FORTIFY_SOURCE=2
 -D_GLIBCXX_ASSERTIONS
 -fasynchronous-unwind-tables
