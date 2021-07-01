@@ -152,9 +152,13 @@ For updates, check out my blog at https://pink.exherbo.org
 
 ## Build &amp; Requirements
 
-SydBox uses autotools. To build, simply do `./configure`, `make`, `make -j check`
-and `sudo make install`. By default this will produce a statically linked *SydBox* binary.
+SydBox uses autotools and cargo. To build, simply do `./configure`, `make`, `make -j check`
+and `sudo make install`. Make sure you have `cargo` and `cbindgen` under `PATH`.
+By default this will produce a statically linked *SydBox* binary.
 If you want use dynamic linking, give the `--disable-static` option to `./configure`.
+
+Make sure you have `xsltproc` under `PATH` if you want to build the manual page.
+You may also browse the manual of the latest version at https://sydbox.exherbo.org.
 
 To use SydBox you need a [Linux](https://kernel.org) kernel with version 5.6 or
 newer which includes [the secure computing mode](https://en.wikipedia.org/wiki/Seccomp)
