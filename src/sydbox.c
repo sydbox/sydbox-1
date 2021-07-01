@@ -97,6 +97,7 @@ struct termios old_tio, new_tio;
 bool unshare_pid, unshare_net, unshare_mount;
 bool unshare_uts, unshare_ipc, unshare_user;
 bool escape_stdout;
+uint32_t close_fds[2];
 
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
@@ -126,7 +127,8 @@ usage: "PACKAGE" [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
               [--uid user-id] [--gid group-id] [--add-gid group-id]\n\
               [--unshare-pid] [--unshare-net] [--unshare-mount]\n\
               [--unshare-uts] [--unshare-ipc] [--unshare-user]\n\
-              [--escape-stdout] [--env-var-with-pid <varname>]\n\
+              [--close-fds <begin:end>] [--escape-stdout]\n\
+              [--env-var-with-pid <varname>]\n\
               {command [arg...]}\n\
        "PACKAGE" [--export <bpf|pfc:filename>]\n\
               [--arch arch...] [--config pathspec...]\n\
@@ -1914,7 +1916,7 @@ seccomp_init:
 			      root ? root : "",
 			      unshare_pid, unshare_net, unshare_mount,
 			      unshare_uts, unshare_ipc, unshare_user,
-			      escape_stdout,
+			      close_fds[0], close_fds[1], escape_stdout,
 			      get_groups(),
 			      pev ? pev : "");
 		free(pathname); /* not NULL because noexec is handled above. */
@@ -2085,14 +2087,15 @@ int main(int argc, char **argv)
 		{"uid",		required_argument,	NULL,	'u'},
 		{"gid",		required_argument,	NULL,	'g'},
 		{"add-gid",	required_argument,	NULL,	'G'},
-		{"unshare-pid", no_argument,		NULL,	'P'},
-		{"unshare-net", no_argument,		NULL,	'N'},
-		{"unshare-mount", no_argument,		NULL,	'M'},
-		{"unshare-uts", no_argument,		NULL,	'T'},
-		{"unshare-ipc", no_argument,		NULL,	'I'},
-		{"unshare-user", no_argument,		NULL,	'U'},
-		{"env-var-with-pid", required_argument,	NULL,	'V'},
-		{"escape-stdout", no_argument,		NULL,	'3'},
+		{"unshare-pid",	no_argument,		NULL,	'P'},
+		{"unshare-net",	no_argument,		NULL,	'N'},
+		{"unshare-mount",no_argument,		NULL,	'M'},
+		{"unshare-uts",	no_argument,		NULL,	'T'},
+		{"unshare-ipc",	no_argument,		NULL,	'I'},
+		{"unshare-user",no_argument,		NULL,	'U'},
+		{"env-var-with-pid",required_argument,	NULL,	'V'},
+		{"close-fds",	optional_argument,	NULL,	'F'},
+		{"escape-stdout", no_argument,		NULL,	'O'},
 		{"test",	no_argument,		NULL,	't'},
 		{NULL,		0,		NULL,	0},
 	};
@@ -2101,7 +2104,7 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "a:A:bBc:d:e:C:D:m:E:p:i:n:K:thlvPNMTIU31:2:u:g:G:V:",
+	while ((opt = getopt_long(argc, argv, "a:A:bBc:d:e:C:D:m:E:p:i:n:K:thlvPNMTIUFO1:2:u:g:G:V:",
 				  long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
@@ -2314,6 +2317,69 @@ int main(int argc, char **argv)
 		case 'U':
 			unshare_user = true;
 			break;
+		case 'F':
+			if (!optarg) {
+				close_fds[0] = 3;
+				close_fds[1] = 0;
+			} else if (streq(optarg, ":")) {
+				close_fds[0] = 3;
+				close_fds[1] = 0;
+			} else if (startswith(optarg, ":")) {
+				close_fds[0] = 3;
+				errno = 0;
+				opt = strtoul(optarg, &end, 10);
+				if ((errno && errno != EINVAL) ||
+				    (unsigned long)opt > SYD_PID_MAX)
+				{
+					say_errno("Invalid argument for option "
+						  "--close-fds: `%s'", optarg);
+					usage(stderr, 1);
+				}
+				close_fds[1] = opt;
+			} else {
+				errno = 0;
+				opt = strtoul(optarg, &end, 10);
+				if ((errno && errno != EINVAL) ||
+				    (unsigned long)opt > SYD_PID_MAX)
+				{
+					say_errno("Invalid argument for option "
+						  "--close-fds: `%s'", optarg);
+					usage(stderr, 1);
+				}
+				close_fds[0] = opt;
+				if (end && end[0] == ':') {
+					char *rem = end + 1;
+					errno = 0;
+					opt = strtoul(rem, &end, 10);
+					if ((errno && errno != EINVAL) ||
+					    (unsigned long)opt > SYD_PID_MAX)
+					{
+						say_errno("Invalid argument for option "
+							  "--close-fds: `%s'", optarg);
+						usage(stderr, 1);
+					}
+					close_fds[1] = opt;
+				} else {
+					close_fds[1] = 0;
+				}
+				break;
+			}
+
+			if ((close_fds[0] != 0 && close_fds[0] < 3) ||
+			    (close_fds[1] != 0 && close_fds[1] < 3)) {
+				say_errno("Invalid argument for option "
+					  "--close-fds: `%s'", optarg);
+				usage(stderr, 1);
+			} else if (close_fds[0] > close_fds[1]) {
+				/* XOR swap */
+				close_fds[0] ^= close_fds[1];
+				close_fds[1] ^= close_fds[0];
+				close_fds[0] ^= close_fds[1];
+			}
+			break;
+		case 'O':
+			escape_stdout = true;
+			break;
 		case 'h':
 			usage(stdout, 0);
 		case 'v':
@@ -2356,6 +2422,8 @@ int main(int argc, char **argv)
 		set_gid(65534); /* nobody */
 		set_arg0("sydsh");
 		set_working_directory(xstrdup("tmp"));
+		close_fds[0] = 3;
+		close_fds[1] = 0;
 		unshare_pid = true;
 		unshare_net = true;
 		unshare_mount = true;

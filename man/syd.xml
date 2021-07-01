@@ -42,7 +42,7 @@
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
       <itemizedlist>
-        <listitem><para><command>syd <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..1</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt">--lock</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt" >--chdir &lt;directory|tmp&gt;</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--alias name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="opt">--add-gid group-id</arg> <arg choice="opt">--unshare-pid</arg> <arg choice="opt">--unshare-net</arg> <arg choice="opt">--unshare-mount</arg> <arg choice="opt">--unshare-uts</arg> <arg choice="opt">--unshare-ipc</arg> <arg choice="opt">--unshare-user</arg> <arg choice="opt">env-var-with-pid &lt;varname&gt;</arg> <arg choice="opt">--escape-stdout</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
+        <listitem><para><command>syd <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..1</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt">--lock</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt" >--chdir &lt;directory|tmp&gt;</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--alias name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="opt">--add-gid group-id</arg> <arg choice="opt">--unshare-pid</arg> <arg choice="opt">--unshare-net</arg> <arg choice="opt">--unshare-mount</arg> <arg choice="opt">--unshare-uts</arg> <arg choice="opt">--unshare-ipc</arg> <arg choice="opt">--unshare-user</arg> <arg choice="opt">env-var-with-pid &lt;varname&gt;</arg> <arg choice="opt">--close-fds &lt;begin:end&gt;</arg> <arg choice="opt">--escape-stdout</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
         <listitem><para><command>syd <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg>  <arg choice="req">noexec</arg></command></para></listitem>
         <listitem><para><command>syd --test</command></para></listitem>
       </itemizedlist>
@@ -561,7 +561,79 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-3</option></term>
+        <term><option>-F</option> <varname>begin:end</varname></term>
+        <term><option>--close-fds</option>=<varname>begin:end</varname></term>
+        <listitem>
+          <simpara>
+            Close a range of file descriptors as soon as process forks.
+          </simpara>
+          <simpara>
+            Subsequent calls to this method add additional range.
+            Use <option>--reset_fds</option> to remove all the ranges.
+          </simpara>
+          <simpara>
+          File descriptors that never closed are:
+
+            <itemizedlist>
+              <listitem><para>the stdio file descriptors</para></listitem>
+              <listitem><para>descriptors configured using
+              <emphasis>file_descriptor/file_descriptor_raw</emphasis> methods
+              </para></listitem>
+              <listitem><para>
+              internal file descriptors used for parent child notification by
+              unshare crate itself (they are guaranteed to have CLOEXEC)
+              </para></listitem>
+            </itemizedlist>
+          </simpara>
+
+          <simpara>
+            You should avoid this method if possible and rely on CLOEXEC to
+            do the work. But sometimes it's inevitable:
+
+            <orderedlist>
+              <listitem><para>
+                  If you need to ensure closing descriptors for security reasons
+              </para></listitem>
+              <listitem><para>
+                  If you have some bad library out of your control which doesn't
+                  set CLOEXEC on owned the file descriptors
+              </para></listitem>
+            </orderedlist>
+          </simpara>
+
+          <simpara>
+          Ranges obey the following rules:
+
+          <itemizedlist>
+            <listitem><para>
+            Range like <emphasis>:12</emphasis> is transformed into
+            <emphasis>3:12</emphasis></para></listitem>
+            <listitem><para>
+              Range with undefined upper bound <emphasis>3:</emphasis>
+              is capped at current ulimit for file descriptors
+              <emphasis>at the moment of calling the method</emphasis>
+            </para></listitem>
+            <listitem><para>The full range <emphasis>:</emphasis>
+            is an alias to <emphasis>3:</emphasis></para></listitem>
+            <listitem><para>Multiple overlapping ranges are closed
+            multiple times which is both harmless and useless
+            </para></listitem>
+          </itemizedlist>
+        </simpara>
+
+        <simpara>
+        Panics when can't get rlimit for range without upper bound. Should
+        never happen in practice.
+        </simpara>
+
+        <simpara>
+          Panics when lower range of fd is &lt; 3 (stdio file descriptors)
+        </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-O</option></term>
         <term><option>--escape-stdout</option></term>
         <listitem>
           <simpara>
