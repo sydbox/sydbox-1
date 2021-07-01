@@ -112,6 +112,7 @@ Makefile
 /man/sydbox.ent
 
 # Sydbox-1
+/src/lib.rs
 /src/sydbox
 /src/sydfmt
 /src/sydbox-dump

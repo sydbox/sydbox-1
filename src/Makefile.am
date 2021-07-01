@@ -2,7 +2,8 @@ AM_MAKEFLAGS= --no-print-directory
 BUILT_SOURCES= \
 	       syscall_open_ro.lst \
 	       syscall_open_syd.h \
-	       sydbox_rs.h
+	       sydbox_rs.h \
+	       lib.rs
 CLEANFILES= \
 	    $(BUILT_SOURCES) \
 	    gmon.out \
@@ -12,17 +13,29 @@ CLEANFILES= \
 EXTRA_DIST= syscall_open_syd.h.in syd-syscall-open.py
 noinst_HEADERS=
 
+CARGO_FLAGS= --$(SYDBOX_CARGO_RELEASE_TYPE) --frozen
+
+CARGO_VERBOSE = $(cargo_verbose_$(V))
+cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
+cargo_verbose_0 =
+cargo_verbose_1 = --verbose
+
+check-local:
+	CARGO_TARGET_DIR=sydbox_rs $(CARGO) test $(CARGO_FLAGS)
+clean-local:
+	CARGO_TARGET_DIR=sydbox_rs $(CARGO) clean $(CARGO_FLAGS)
+install-exec-local:
+	CARGO_TARGET_DIR=sydbox_rs $(CARGO) install --path=. --root="$(DESTDIR)/usr" --frozen
+	rm -f $(DESTDIR)/usr/.crates.toml
+	rm -f $(DESTDIR)/usr/.crates2.json
+
+SYDBOX_LIB_STA=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.a
+SYDBOX_LIB_DYN=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.so
 CARGO_BUILD_FLAGS= --lib --target-dir $(builddir)/sydbox_rs
-if SYDBOX_CARGO_RELEASE
-CARGO_BUILD_FLAGS+= --release
+CARGO_BUILD_FLAGS+= $(CARGO_FLAGS)
 CLEANFILES+= \
-	     sydbox_rs/release/libsydbox.a \
-	     sydbox_rs/release/libsydbox.so
-else
-CLEANFILES+= \
-	     sydbox_rs/debug/libsydbox.a \
-	     sydbox_rs/debug/libsydbox.so
-endif
+	     sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.a \
+	     sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.so
 
 noinst_SCRIPTS= \
 		kingbee.py
@@ -36,37 +49,44 @@ SYD_FCNTL_INCLUDES= \
 	$(SYD_INCLUDEDIR)/sys/fcntl.h \
 	$(SYD_INCLUDEDIR)/linux/fcntl.h
 
+OPT_DUMP=
+if SYDBOX_HAVE_DUMP_BUILTIN
+OPT_DUMP+=yes
+else
+OPT_DUMP+=no
+endif
+
+lib.rs: lib.rs.in
+	$(AM_V_GEN)
+	$(AM_V_at)$(SED) \
+		-e "s:@SYD_PACKAGE@:$(PACKAGE):g" \
+		-e "s:@SYD_VERSION@:$(VERSION):g" \
+		-e "s:@SYD_GITVERSION@:$(GITVERSION):g" \
+		-e "s:@DUMP_BUILTIN@:$(OPT_DUMP):g" \
+		$< > $@
+
 sydbox_rs.h: lib.rs
 	$(CBINDGEN) -lc -d $< -o $@
 
-.PHONY: libsydbox
-libsydbox: libsydbox-@LIBSYD_PC_SLOT@.so
+SYDBOX_RUST_SRCS=
+if ENABLE_STATIC
+SYDBOX_RUST_SRCS+= sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.a
+sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.a: lib.rs
+	mkdir -m700 -p $(builddir)/sydbox_rs
+	$(CARGO) build $(CARGO_BUILD_FLAGS)
+else
+SYDBOX_RUST_SRCS+= sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.so
+sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.so: lib.rs
+	mkdir -m700 -p $(builddir)/sydbox_rs
+	$(CARGO) build $(CARGO_BUILD_FLAGS)
+SYDBOX_RUST_SRCS+= .libs/libsydbox.so
+.libs/libsydbox.so: sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.so
+	cp -p $< $@
+endif
 
-if SYDBOX_CARGO_RELEASE
-if ENABLE_STATIC
-sydbox_rs/release/libsydbox.a: lib.rs
-	mkdir -m700 -p $(builddir)/sydbox_rs
-	$(CARGO) build $(CARGO_BUILD_FLAGS)
-else
-sydbox_rs/release/libsydbox.so: lib.rs
-	mkdir -m700 -p $(builddir)/sydbox_rs
-	$(CARGO) build $(CARGO_BUILD_FLAGS)
-libsydbox-@LIBSYD_PC_SLOT@.so: sydbox_rs/release/libsydbox.so
-	cp -p $< $@
-endif
-else
-if ENABLE_STATIC
-sydbox_rs/debug/libsydbox.a: lib.rs
-	mkdir -m700 -p $(builddir)/sydbox_rs
-	$(CARGO) build $(CARGO_BUILD_FLAGS)
-else
-sydbox_rs/debug/libsydbox.so: lib.rs
-	mkdir -m700 -p $(builddir)/sydbox_rs
-	$(CARGO) build $(CARGO_BUILD_FLAGS)
-libsydbox-@LIBSYD_PC_SLOT@.so: sydbox_rs/debug/libsydbox.so
-	cp -p $< $@
-endif
-endif
+all: lib_rs
+.PHONY: lib_rs
+lib_rs: $(SYDBOX_RUST_SRCS)
 
 syscall_open_syd.h: Makefile syscall_open_ro.lst syscall_open_syd.h.in
 	$(PYTHON) ./syd-syscall-open.py < syscall_open_ro.lst > $@ ||\
@@ -111,7 +131,7 @@ AM_CPPFLAGS= $(CODE_COVERAGE_CPPFLAGS)
 AM_LFLAGS = -v
 AM_YFLAGS = -d
 
-bin_PROGRAMS= syd syd-format
+bin_PROGRAMS= lib_rs syd syd-format
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
 noinst_HEADERS+= \
@@ -233,18 +253,12 @@ syd_LDADD= \
 	      @SYDBOX_LIBTOOL_FLAGS@ \
 	      $(libseccomp_LIBS) \
 	      $(CODE_COVERAGE_LIBS)
-if SYDBOX_CARGO_RELEASE
+if ENABLE_STATIC
+syd_LDADD+= $(SYDBOX_RUST_LIB_STA)
+endif
 syd_LDADD+= \
-	    -L$(top_builddir) \
-	    -lsydbox-@LIBSYD_PC_SLOT@.so
-if ENABLE_STATIC
-syd_LDADD+= sydbox_rs/release/libsydbox.a
-endif
-else
-if ENABLE_STATIC
-syd_LDADD+= sydbox_rs/debug/libsydbox.a
-endif
-endif
+	    -L$(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE) \
+	    -lsydbox
 
 if WANT_DEBUG
 syd_LDADD+= $(libunwind_LIBS)

@@ -1,0 +1,49 @@
+//
+// SydB☮x: SydB☮x' Rust API
+// sydbox.rs: Main entry point
+//
+// Copyright (c) 2021 Ali Polatel <alip@exherbo.org>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#[no_mangle]
+pub extern "C" fn syd_about() {
+    let sv = scmp_version::new();
+
+    eprintln!(
+        "[0;1;31;91m{}-{}{}[0m",
+        "@SYD_PACKAGE@", "@SYD_VERSION@", "@SYD_GITVERSION@"
+    );
+    eprintln!("[0;1;31;91mUsing libseccomp v{}.{}.{}[0m",
+        sv.major, sv.minor, sv.micro);
+    eprint!("[0;1;31;91mOptions: ");
+    eprint!("dump:{}", "@DUMP_BUILTIN@");
+    eprint!("seccomp:yes");
+    eprint!(" ipv6:yes");
+    eprintln!(" netlink:yes[0m");
+    eprintln!("[0;1;32;91mCopyright © 2010, 2011, 2012, 2013, 2014, 2015, 2018, 2020, 2021[0m");
+    eprintln!("[0;1;34;91mAlï P☮latel <alïp@exherb☮.☮rg>[0m");
+    eprintln!("SPDX-License-Identifier: [0;1;31;91mGPL-2.0-only[0m");
+}
+
+#[doc = "This structure represents a seccomp version"]
+#[repr(C)]
+pub struct scmp_version {
+    major: u8,
+    minor: u8,
+    micro: u8,
+}
+
+impl scmp_version {
+    pub fn new() -> Self {
+        unsafe {
+            let version = seccomp_version();
+            scmp_version { major: (*version).major, minor: (*version).minor,
+                micro: (*version).micro }
+        }
+    }
+}
+
+extern "C" {
+    fn seccomp_version() -> *mut scmp_version;
+}

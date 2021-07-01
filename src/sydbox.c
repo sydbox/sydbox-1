@@ -106,23 +106,6 @@ static inline pid_t process_find_exec(pid_t pid);
 static inline syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 					  bool genuine);
 
-static void about(void)
-{
-	rust_function();
-	printf(PACKAGE"-"VERSION GITVERSION);
-
-	printf("\nOptions:");
-#if SYDBOX_HAVE_DUMP_BUILTIN
-	printf(" dump:yes");
-#else
-	printf(" dump:no");
-#endif
-	printf(" seccomp:yes");
-	printf(" ipv6:yes");
-	printf(" netlink:yes");
-	fputc('\n', stdout);
-}
-
 SYD_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
@@ -2263,7 +2246,7 @@ int main(int argc, char **argv)
 		case 'h':
 			usage(stdout, 0);
 		case 'v':
-			about();
+			syd_about();
 			return 0;
 		default:
 			usage(stderr, 1);
