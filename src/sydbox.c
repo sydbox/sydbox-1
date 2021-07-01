@@ -1276,12 +1276,14 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 			parent->clone_flags &= ~SYD_IN_CLONE;
 	} else {
 		parent = process_lookup(sydbox->execve_pid);
-		BUG_ON(parent);
+		if (!parent)
+			goto parent_done;
 		unsigned int save_new_clone_flags = parent->new_clone_flags;
 		parent->new_clone_flags = 0;
 		current = clone_process(parent, pid, genuine);
 		parent->new_clone_flags = save_new_clone_flags;
 	}
+parent_done:
 	sysx_chdir(current);
 
 #if 0
