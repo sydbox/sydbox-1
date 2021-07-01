@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-extern crate unshare;
 extern crate libc;
+extern crate unshare;
 
 use unshare::*;
 
@@ -23,7 +23,7 @@ use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
 
 #[allow(unused_imports)]
-use std::io::{stderr, Write, Read};
+use std::io::{stderr, Read, Write};
 #[allow(unused_imports)]
 use std::process::exit;
 //use std::path::PathBuf;
@@ -40,8 +40,10 @@ pub extern "C" fn syd_about() {
         "[0;1;31;91m{}-{}{}[0m",
         "@SYD_PACKAGE@", "@SYD_VERSION@", "@SYD_GITVERSION@"
     );
-    eprintln!("[0;1;31;91mUsing libseccomp v{}.{}.{}[0m",
-        sv.major, sv.minor, sv.micro);
+    eprintln!(
+        "[0;1;31;91mUsing libseccomp v{}.{}.{}[0m",
+        sv.major, sv.minor, sv.micro
+    );
     eprint!("[0;1;31;91mOptions: ");
     eprint!("dump:{}", "@DUMP_BUILTIN@");
     eprint!("seccomp:yes");
@@ -55,24 +57,27 @@ pub extern "C" fn syd_about() {
 #[must_use]
 #[no_mangle]
 #[doc = "Execute a process under various restrictions and options."]
-pub extern "C" fn syd_execv(command: *const c_char, args: *mut *mut c_char,
-                            alias: *const c_char,
-                            workdir: *const c_char,
-                            verbose: bool,
-                            uid: u32,
-                            gid: u32,
-                            chroot: *const c_char,
-                            unshare_pid: bool,
-                            unshare_net: bool,
-                            unshare_mount: bool,
-                            unshare_uts: bool,
-                            unshare_ipc: bool,
-                            unshare_user: bool,
-                            escape_stdout: bool,
-                            supplementary_gids: *const u32,
-                            pid_env_var: *const c_char) -> i32 {
+pub extern "C" fn syd_execv(
+    command: *const c_char,
+    args: *mut *mut c_char,
+    alias: *const c_char,
+    workdir: *const c_char,
+    verbose: bool,
+    uid: u32,
+    gid: u32,
+    chroot: *const c_char,
+    unshare_pid: bool,
+    unshare_net: bool,
+    unshare_mount: bool,
+    unshare_uts: bool,
+    unshare_ipc: bool,
+    unshare_user: bool,
+    escape_stdout: bool,
+    supplementary_gids: *const u32,
+    pid_env_var: *const c_char,
+) -> i32 {
     let mut argv = Vec::<&str>::new();
-    for arg in unsafe {args.as_ref()}.iter() {
+    for arg in unsafe { args.as_ref() }.iter() {
         let slice = unsafe { CStr::from_ptr(**arg) };
         let osstr = OsStr::from_bytes(slice.to_bytes());
         match osstr.to_str() {
@@ -92,7 +97,7 @@ pub extern "C" fn syd_execv(command: *const c_char, args: *mut *mut c_char,
             if !s.is_empty() {
                 cmd.arg0(s);
             }
-        },
+        }
         None => {}
     };
 
@@ -103,7 +108,7 @@ pub extern "C" fn syd_execv(command: *const c_char, args: *mut *mut c_char,
             if !s.is_empty() {
                 cmd.current_dir(s);
             }
-        },
+        }
         None => {}
     };
 
@@ -115,10 +120,12 @@ pub extern "C" fn syd_execv(command: *const c_char, args: *mut *mut c_char,
     }
 
     let mut gids = Vec::<gid_t>::new();
-    for arg in unsafe {supplementary_gids.as_ref()}.iter() {
+    for arg in unsafe { supplementary_gids.as_ref() }.iter() {
         gids.push(**arg);
     }
-    if gids.len() > 0 { cmd.groups(gids); }
+    if gids.len() > 0 {
+        cmd.groups(gids);
+    }
 
     slice = unsafe { CStr::from_ptr(chroot) };
     osstr = OsStr::from_bytes(slice.to_bytes());
@@ -127,17 +134,29 @@ pub extern "C" fn syd_execv(command: *const c_char, args: *mut *mut c_char,
             if !s.is_empty() {
                 cmd.chroot_dir(s);
             }
-        },
+        }
         None => {}
     };
 
     let mut namespaces = Vec::<Namespace>::new();
-    if unshare_pid { namespaces.push(Namespace::Pid); }
-    if unshare_net { namespaces.push(Namespace::Net); }
-    if unshare_mount { namespaces.push(Namespace::Mount); }
-    if unshare_uts { namespaces.push(Namespace::Uts); }
-    if unshare_ipc { namespaces.push(Namespace::Ipc); }
-    if unshare_user { namespaces.push(Namespace::User); }
+    if unshare_pid {
+        namespaces.push(Namespace::Pid);
+    }
+    if unshare_net {
+        namespaces.push(Namespace::Net);
+    }
+    if unshare_mount {
+        namespaces.push(Namespace::Mount);
+    }
+    if unshare_uts {
+        namespaces.push(Namespace::Uts);
+    }
+    if unshare_ipc {
+        namespaces.push(Namespace::Ipc);
+    }
+    if unshare_user {
+        namespaces.push(Namespace::User);
+    }
     cmd.unshare(&namespaces);
     cmd.close_fds(..);
 
@@ -147,14 +166,11 @@ pub extern "C" fn syd_execv(command: *const c_char, args: *mut *mut c_char,
 
     slice = unsafe { CStr::from_ptr(pid_env_var) };
     osstr = OsStr::from_bytes(slice.to_bytes());
-    match osstr.to_str() {
-        Some(s) => {
-            if !s.is_empty() {
-                cmd.env_var_with_pid(s);
-            }
-        },
-        None => {}
-    };
+    if let Some(s) = osstr.to_str() {
+        if !s.is_empty() {
+            cmd.env_var_with_pid(s);
+        }
+    }
 
     if verbose {
         eprintln!("[0;1;31;91mSydb☮x C☮mmand: {:?}[0m", cmd);
@@ -175,8 +191,7 @@ pub extern "C" fn syd_execv(command: *const c_char, args: *mut *mut c_char,
     if escape_stdout {
         let mut buf = Vec::new();
         child.stdout.take().unwrap().read_to_end(&mut buf).unwrap();
-        eprintln!("[0;1;31;91m{:?}[0m",
-            String::from_utf8_lossy(&buf[..]));
+        eprintln!("[0;1;31;91m{:?}[0m", String::from_utf8_lossy(&buf[..]));
     }
     let res = child.wait().unwrap();
     if verbose {
@@ -198,8 +213,11 @@ impl Default for scmp_version {
     fn default() -> Self {
         unsafe {
             let version = seccomp_version();
-            Self { major: (*version).major, minor: (*version).minor,
-                micro: (*version).micro }
+            Self {
+                major: (*version).major,
+                minor: (*version).minor,
+                micro: (*version).micro,
+            }
         }
     }
 }
@@ -209,4 +227,7 @@ extern "C" {
 }
 
 #[allow(dead_code)]
-fn main() { syd_about(); std::process::exit(0); }
+fn main() {
+    syd_about();
+    std::process::exit(0);
+}

@@ -2352,8 +2352,8 @@ int main(int argc, char **argv)
 	if (optind == argc) {
 		config_parse_spec(DATADIR "/" PACKAGE
 				  "/default.syd-" STRINGIFY(SYDBOX_API_VERSION));
-		set_uid(getuid());
-		set_gid(getgid());
+		set_uid(65534); /* nobody */
+		set_gid(65534); /* nobody */
 		set_arg0("sydsh");
 		set_working_directory(xstrdup("tmp"));
 		unshare_pid = true;

@@ -81,9 +81,9 @@ $(SYDBOX_RUST_LIB).%: jobs lib.rs
 	$(AM_V_GEN)
 	$(AM_V_at)$(CARGO) build -j $(JOB_COUNT) $(CARGO_BUILD_FLAGS)
 if !ENABLE_STATIC
-.libs/libsydbox.so: $(SYDBOX_RUST_LIB_DYN)
+.libs/libsydbox.so: $(SYDBOX_RUST_LIB_STA)
 	$(AM_V_GEN)
-	$(AM_V_at)cp -fp $< $@
+	$(AM_V_at)cp -fp $(SYDBOX_RUST_LIB_DYN) $@
 endif
 
 syscall_open_syd.h: Makefile syscall_open_ro.lst syscall_open_syd.h.in
