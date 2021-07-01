@@ -348,7 +348,12 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 	/* Step 1: resolve file descriptor for `at' suffixed functions */
 	badfd = false;
 	if (info->at_func) {
-		r = path_prefix(current, info->arg_index - 1, &prefix);
+		uint8_t fd_index;
+		if (info->arg_index == SYSCALL_ARG_MAX)
+			fd_index = 0;
+		else
+			fd_index = info->arg_index - 1;
+		r = path_prefix(current, fd_index, &prefix);
 		if (r == -ESRCH) {
 			return -ESRCH;
 		} else if (r == -EBADF) {
@@ -366,7 +371,7 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 
 	/* Step 2: read path */
 	if (info->arg_index == SYSCALL_ARG_MAX) {
-		/* e.g: fchdir */
+		/* e.g: fchdir, getdents, getdents64 */
 		path = NULL;
 	} else if ((r = path_decode(current, info->arg_index, &path)) < 0) {
 		/*
@@ -415,7 +420,7 @@ resolve_path:
 	dump(DUMP_SYSENT, current);
 
 	/* Step 5: Check for access by prefix */
-	if (info->prefix && !startswith(path, info->prefix))
+	if (info->prefix && !startswith(abspath, info->prefix))
 		goto deny;
 
 	/* Step 6: Check for access */
@@ -451,7 +456,7 @@ check_access:
 		bool cwd_ok = streq(p, P_CWD(current));
 		free(p);
 		if (!cwd_ok) {
-			say("cwd mismatch, retrying box resolve path!");
+			//say("cwd mismatch, retrying box resolve path!");
 			free(abspath);
 			goto resolve_path;
 		}

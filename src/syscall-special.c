@@ -136,6 +136,22 @@ int sysx_chdir(syd_process_t *current)
 	return 0;
 }
 
+int sys_getdents(syd_process_t *current)
+{
+	syscall_info_t info;
+
+	if (sandbox_off_write(current))
+		return 0;
+
+	init_sysinfo(&info);
+	info.at_func = true;
+	info.arg_index = SYSCALL_ARG_MAX;
+	info.deny_errno = ENOENT;
+	info.prefix = get_working_directory();
+
+	return box_check_path(current, &info);
+}
+
 static int do_execve(syd_process_t *current, bool at_func)
 {
 	int r, flags = 0;

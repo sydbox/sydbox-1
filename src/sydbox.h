@@ -1299,6 +1299,7 @@ int sys_creat(syd_process_t *current);
 int sys_close(syd_process_t *current);
 int sys_chdir(syd_process_t *current);
 int sys_fchdir(syd_process_t *current);
+int sys_getdents(syd_process_t *current);
 int sys_mkdir(syd_process_t *current);
 int sys_mkdirat(syd_process_t *current);
 int sys_mknod(syd_process_t *current);

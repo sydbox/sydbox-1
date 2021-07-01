@@ -176,13 +176,26 @@ static const sysentry_t syscall_entries[] = {
 		.name = "chdir",
 		.no = SCMP_SYS(chdir),
 		.notify = sys_chdir,
-		.sandbox_exec = true,
+		.sandbox_read = true,
 	},
 	{
 		.name = "fchdir",
 		.no = SCMP_SYS(fchdir),
 		.notify = sys_fchdir,
-		.sandbox_exec = true,
+		.sandbox_read = true,
+	},
+
+	{
+		.name = "getdents",
+		.no = SCMP_SYS(getdents),
+		.notify = sys_getdents,
+		.sandbox_read = true,
+	},
+	{
+		.name = "getdents64",
+		.no = SCMP_SYS(getdents64),
+		.notify = sys_getdents,
+		.sandbox_read = true,
 	},
 
 	{
@@ -1009,6 +1022,7 @@ int sysnotify(syd_process_t *current)
 
 	assert(current);
 
+	/* TODO: Make this a binary search! */
 	entry = NULL;
 	for (unsigned i = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		if (!strcmp(current->sysname, syscall_entries[i].name)) {

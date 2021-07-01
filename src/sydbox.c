@@ -510,6 +510,11 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 		current->clone_flags = SIGCHLD;
 	}
 
+	/* Disable this for now till we're sure it's done right.
+	 * There're a few cases where it is racy and/or segfault.
+	 */
+	share_thread = true;
+
 	int r;
 	int pfd_cwd = -1;
 	char *cwd;
@@ -1619,10 +1624,12 @@ pid_validate:
 		if (current) {
 			proc_validate_or_deny(current, notify_respond);
 			if (current) {
+#if 0
 				current->sysnum = sydbox->request->data.nr;
 				current->sysname = name;
 				for (unsigned short idx = 0; idx < 6; idx++)
 					current->args[idx] = sydbox->request->data.args[idx];
+#endif
 				if (current->update_cwd) {
 					r = sysx_chdir(current);
 					if (r < 0)
