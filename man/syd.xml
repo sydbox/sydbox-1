@@ -42,7 +42,7 @@
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
       <itemizedlist>
-        <listitem><para><command>syd <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..3</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt">--lock</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt" >--chdir &lt;directory|tmp&gt;</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--startas name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
+        <listitem><para><command>syd <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..1</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt">--lock</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt" >--chdir &lt;directory|tmp&gt;</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--alias name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="opt">--add-gid group-id</arg> <arg choice="opt">--unshare-pid</arg> <arg choice="opt">--unshare-net</arg> <arg choice="opt">--unshare-mount</arg> <arg choice="opt">--unshare-uts</arg> <arg choice="opt">--unshare-ipc</arg> <arg choice="opt">--unshare-user</arg> <arg choice="opt">env-var-with-pid &lt;varname&gt;</arg> <arg choice="opt">--escape-stdout</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
         <listitem><para><command>syd <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg>  <arg choice="req">noexec</arg></command></para></listitem>
         <listitem><para><command>syd --test</command></para></listitem>
       </itemizedlist>
@@ -232,8 +232,8 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-M</option> <varname>0..3</varname></term>
-        <term><option>--memaccess</option>=<varname>0..3</varname></term>
+        <term><option>-p</option> <varname>0..1</varname></term>
+        <term><option>--memaccess</option>=<varname>0..1</varname></term>
         <listitem>
           <simpara>
             Mode on using cross memory attach or <constant>/proc/pid/mem</constant>.
@@ -257,33 +257,8 @@
                   </simpara>
                 </listitem>
               </varlistentry>
-              <varlistentry>
-                <term>2</term>
-                <listitem>
-                  <simpara>
-                    Use cross memory attach if available, use /proc otherwise,
-                    open file once, do not reopen the file each call.
-                  </simpara>
-                </listitem>
-              </varlistentry>
-              <varlistentry>
-                <term>3</term>
-                <listitem>
-                  <simpara>
-                    Use /proc/pid/mem unconditionally, open file once,
-                    do not reopen the file each call.
-                  </simpara>
-                </listitem>
-              </varlistentry>
             </variablelist>
           </simpara>
-          <warning>
-            <para>
-              Modes 2 and 3 may run into too many processes errors.
-              Use another mode or adapt the sysctl <varname>fs.nr_open</varname>
-              as necessary if this is the case.
-            </para>
-          </warning>
         </listitem>
       </varlistentry>
 
@@ -476,10 +451,10 @@
 
       <varlistentry>
         <term><option>-A</option> <varname>name</varname></term>
-        <term><option>--startas</option>=<varname>name</varname></term>
+        <term><option>--alias</option>=<varname>name</varname></term>
         <listitem>
           <simpara>
-            Change the process name of the program to name.  This just changes
+            Change the process name of the program to name. This just changes
             the first argument passed to the program.
           </simpara>
         </listitem>
@@ -496,7 +471,7 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-U</option> <varname>user-id</varname></term>
+        <term><option>-u</option> <varname>user-id</varname></term>
         <term><option>--uid</option>=<varname>user-id</varname></term>
         <listitem>
           <simpara>
@@ -506,11 +481,102 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-G</option> <varname>group-id</varname></term>
+        <term><option>-g</option> <varname>group-id</varname></term>
         <term><option>--gid</option>=<varname>group-id</varname></term>
         <listitem>
           <simpara>
             Change group to the group with the given <emphasis>group id</emphasis>.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-G</option> <varname>group-id</varname></term>
+        <term><option>--add-gid</option>=<varname>group-id</varname></term>
+        <listitem>
+          <simpara>
+            Add supplementary <emphasis>group id</emphasis>.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-P</option></term>
+        <term><option>--unshare-pid</option></term>
+        <listitem>
+          <simpara>
+            Unshare pid namespace.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-N</option></term>
+        <term><option>--unshare-net</option></term>
+        <listitem>
+          <simpara>
+            Unshare net namespace.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-M</option></term>
+        <term><option>--unshare-mount</option></term>
+        <listitem>
+          <simpara>
+            Unshare mount namespace.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-T</option></term>
+        <term><option>--unshare-uts</option></term>
+        <listitem>
+          <simpara>
+            Unshare uts namespace.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-I</option></term>
+        <term><option>--unshare-ipc</option></term>
+        <listitem>
+          <simpara>
+            Unshare ipc namespace.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-U</option></term>
+        <term><option>--unshare-user</option></term>
+        <listitem>
+          <simpara>
+            Unshare user namespace.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-3</option></term>
+        <term><option>--escape-stdout</option></term>
+        <listitem>
+          <simpara>
+            Read data written by the utility to stdout and print it back
+            as a quoted string with binary data escaped.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-V</option> <varname>varname</varname></term>
+        <term><option>--env-var-with-pid</option>=<varname>varname</varname></term>
+        <listitem>
+          <simpara>
+            Add environment variable with pid.
           </simpara>
         </listitem>
       </varlistentry>
@@ -1584,7 +1650,7 @@
             </para>
             <note>
               <para>
-                This option is functionally identical to the <option>-M</option> command line switch.
+                This option is functionally identical to the <option>-p</option> command line switch.
               </para>
             </note>
           </listitem>

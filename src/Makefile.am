@@ -10,7 +10,7 @@ CLEANFILES= \
 	    *.gcda \
 	    *.gcno \
 	    *.gcov
-EXTRA_DIST= syscall_open_syd.h.in syd-syscall-open.py
+EXTRA_DIST= syscall_open_syd.h.in syd-syscall-open.py sydbox_rs.h
 noinst_HEADERS=
 
 CARGO_FLAGS= --$(SYDBOX_CARGO_RELEASE_TYPE) --frozen
@@ -58,17 +58,21 @@ endif
 
 lib.rs: lib.rs.in
 	$(AM_V_GEN)
+	$(AM_V_at)chmod +w $@
 	$(AM_V_at)$(SED) \
 		-e "s:@SYD_PACKAGE@:$(PACKAGE):g" \
 		-e "s:@SYD_VERSION@:$(VERSION):g" \
 		-e "s:@SYD_GITVERSION@:$(GITVERSION):g" \
 		-e "s:@DUMP_BUILTIN@:$(OPT_DUMP):g" \
 		$< > $@
+	$(AM_V_at)chmod -w $@
 
+if HAVE_CBINDGEN
 # TODO -Z parse-only is nightly only, when it's not
 #  add it to RUSTC below.
-sydbox_rs.h: lib.rs
-	$(CBINDGEN) -lc -d $< -o $@ || $(RUSTC) $<
+sydbox_rs.h: lib.rs $(top_builddir)/cbindgen.toml
+	$(CBINDGEN) --config $(top_builddir)/cbindgen.toml lib.rs -o $@ || $(RUSTC) lib.rs
+endif
 
 SYDBOX_RUST_SRCS=
 if ENABLE_STATIC

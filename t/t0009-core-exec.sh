@@ -34,7 +34,7 @@ for ce_mem_access in 0 1; do
     r=0 &&
     while :; do
         sydbox \
-            -M '${ce_mem_access}' \
+            -p '${ce_mem_access}' \
             "'${threads_execve}'" > "$OUT" || r=1 &&
         test $r = 1 && break ||
         test -s "$SHOEBOX" &&

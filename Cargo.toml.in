@@ -50,6 +50,7 @@ unshare = "0.7.0"
 
 [build-dependencies]
 built = {version = "0.4.4", features=["git2", "chrono"]}
+cbindgen = "0.19.0"
 
 [dev-dependencies]
 hyperfine = "1.11.0"

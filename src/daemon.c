@@ -23,12 +23,16 @@ static const char *redirect_stderr;
 
 static uid_t uid;
 static gid_t gid;
+#define GID_ADD_MAX 32
+static size_t gid_add_index;
+static gid_t gid_add[GID_ADD_MAX];
 static int nice_inc;
 static int ionicec = -1, ioniced = 0;
 static mode_t file_mode_creation_mask;
 static const char *root_directory;
 static const char *working_directory;
-static const char *startas;
+static char *pid_env_var;
+static const char *arg0;
 
 bool get_background(void) { return background; }
 const char *get_redirect_stdout(void) { return redirect_stdout; }
@@ -36,33 +40,48 @@ const char *get_redirect_stderr(void) { return redirect_stderr; }
 uid_t get_uid(void) { return uid ; }
 gid_t get_gid(void) { return gid ; }
 int get_nice(void) { return nice_inc; }
-const char *get_startas(void) { return startas; }
+const char *get_arg0(void) { return arg0; }
 const char *get_root_directory(void) { return root_directory; }
 const char *get_working_directory(void) { return working_directory; }
+const char *get_pid_env_var(void) { return pid_env_var; };
 mode_t get_umask(void) { return file_mode_creation_mask; }
+const gid_t *get_groups(void) { return gid_add; };
 
 void set_background(bool bg) { background = bg; }
 void set_redirect_stdout(const char *log) { redirect_stdout = log; }
 void set_redirect_stderr(const char *log) { redirect_stderr = log; }
 void set_uid(uid_t new_uid) { uid = new_uid; }
 void set_gid(gid_t new_gid) { gid = new_gid; }
+void set_gid_add(gid_t new_gid) {
+	if (gid_add_index >= GID_ADD_MAX)
+		return;
+	gid_add[gid_add_index++] = new_gid;
+}
 void set_nice(int new_nice) { nice_inc = new_nice; }
-void set_startas(const char *new_startas) { startas = new_startas; }
-void set_root_directory(const char *cwd) { root_directory = cwd; }
-void set_working_directory(char *cwd) {
-	if (streq(cwd, "tmp")) {
+void set_arg0(const char *new_arg0) { arg0 = new_arg0; }
+void set_root_directory(const char *root) { root_directory = root; }
+void set_working_directory(char *wd) {
+	if (streq(wd, "tmp")) {
 		char *tmpl, *linkpath;
 		xasprintf(&tmpl, "/tmp/syd-%u-%u-%u-XXXXXX",
 			  SYDBOX_API_VERSION, getuid(), getpid());
-		free(cwd);
-		cwd = xstrdup(mkdtemp(tmpl));
-		xasprintf(&linkpath, "%s/sydbox", cwd);
+		free(wd);
+		wd = xstrdup(mkdtemp(tmpl));
+		xasprintf(&linkpath, "%s/sydbox", wd);
 		symlink("/dev/sydbox", linkpath);
 		free(linkpath);
 		free(tmpl);
 	}
-	working_directory = cwd;
+	working_directory = wd;
 }
+
+void set_pid_env_var(const char *var)
+{
+	if (pid_env_var)
+		free(pid_env_var);
+	pid_env_var = xstrdup(var);
+}
+
 void set_umask(mode_t mode) { file_mode_creation_mask = mode; }
 
 void set_ionice(int c, int d)

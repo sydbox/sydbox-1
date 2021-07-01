@@ -20,6 +20,7 @@ EXTRA_DIST= \
 
 PANDORA_EXTRA_DIST=\
 		   build.rs \
+		   cbindgen.toml \
 		   Cargo.toml.in \
 		   Cargo.lock \
 		   src/pandora.rs \

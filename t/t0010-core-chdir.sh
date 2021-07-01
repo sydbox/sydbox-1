@@ -16,7 +16,7 @@ for magic_mem_access in 0 1; do
         cdir="${pdir}/$(unique_dir)" &&
         mkdir "$cdir" &&
         syd \
-            -M '${magic_mem_access}' \
+            -p '${magic_mem_access}' \
             -m core/sandbox/write:deny \
             -m core/violation/raise_safe:0 \
             syd-mkdir-p "$cdir"
@@ -28,7 +28,7 @@ for magic_mem_access in 0 1; do
         cdir="${pdir}/$(unique_dir)" &&
         mkdir "$cdir" &&
         test_must_violate syd \
-            -M '${magic_mem_access}' \
+            -p '${magic_mem_access}' \
             -m core/sandbox/write:deny \
             -m core/violation/raise_safe:1 \
             syd-mkdir-p "$cdir"
@@ -40,7 +40,7 @@ for magic_mem_access in 0 1; do
         cdir="${pdir}/$(unique_dir)" &&
         rm -fr "$cdir" &&
         test_expect_code 1 syd \
-            -M '${magic_mem_access}' \
+            -p '${magic_mem_access}' \
             -m core/sandbox/write:deny \
             -m core/violation/raise_safe:0 \
             syd-mkdir-p "$cdir"
@@ -52,7 +52,7 @@ for magic_mem_access in 0 1; do
         cdir="${pdir}/$(unique_dir)" &&
         rm -fr "$cdir" &&
         syd \
-            -M '${magic_mem_access}' \
+            -p '${magic_mem_access}' \
             -m core/sandbox/write:deny \
             -m allowlist/write+"$HOMER"/"${cdir}" \
             -m core/violation/raise_safe:0 \
@@ -65,7 +65,7 @@ for magic_mem_access in 0 1; do
         cdir="${pdir}/$(unique_dir)" &&
         mkdir "$cdir" &&
         syd \
-            -M '${magic_mem_access}' \
+            -p '${magic_mem_access}' \
             -m core/sandbox/write:deny \
             -m core/violation/raise_safe:0 \
             syd-mkdir-p "$cdir"
@@ -77,7 +77,7 @@ for magic_mem_access in 0 1; do
         cdir="${pdir}/$(unique_dir)" &&
         mkdir "$cdir" &&
         test_must_violate syd \
-            -M '${magic_mem_access}' \
+            -p '${magic_mem_access}' \
             -m core/sandbox/write:deny \
             -m core/violation/raise_safe:1 \
             syd-mkdir-p "$cdir"
@@ -89,7 +89,7 @@ for magic_mem_access in 0 1; do
         cdir="${pdir}/$(unique_dir)" &&
         rm -fr "$cdir" &&
         test_expect_code 1 syd \
-            -M '${magic_mem_access}' \
+            -p '${magic_mem_access}' \
             -m core/sandbox/write:deny \
             -m core/violation/raise_safe:0 \
             syd-mkdir-p "$cdir"
@@ -101,7 +101,7 @@ for magic_mem_access in 0 1; do
         cdir="${pdir}/$(unique_dir)" &&
         rm -fr "$cdir" &&
         syd \
-            -M '${magic_mem_access}' \
+            -p '${magic_mem_access}' \
             -m core/sandbox/write:deny \
             -m allowlist/write+"$HOMER"/"${cdir}" \
             -m core/violation/raise_safe:0 \

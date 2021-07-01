@@ -94,6 +94,10 @@ static sigset_t empty_set, blocked_set;
 static bool child_block_interrupt_signals;
 struct termios old_tio, new_tio;
 
+bool unshare_pid, unshare_net, unshare_mount;
+bool unshare_uts, unshare_ipc, unshare_user;
+bool escape_stdout;
+
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
 
@@ -112,14 +116,18 @@ static void usage(FILE *outfp, int code)
 	fprintf(outfp, "\
 "PACKAGE"-"VERSION GITVERSION" -- seccomp based application sandbox\n\
 usage: "PACKAGE" [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
-              [--export <bpf|pfc:filename>] [--memaccess 0..3]\n\
+              [--export <bpf|pfc:filename>] [--memaccess 0..1]\n\
               [--arch arch...] [--config pathspec...] [--magic magic...]\n\
               [--lock] [--chroot directory] [--chdir directory]\n\
               [--env var...] [--env var=val...]\n\
               [--ionice class:data] [--nice level]\n\
               [--background] [--stdout logfile] [--stderr logfile]\n\
-              [--startas name] [--umask mode]\n\
-              [--uid user-id] [--gid group-id] {command [arg...]}\n\
+              [--alias name] [--umask mode]\n\
+              [--uid user-id] [--gid group-id] [--add-gid group-id]\n\
+              [--unshare-pid] [--unshare-net] [--unshare-mount]\n\
+              [--unshare-uts] [--unshare-ipc] [--unshare-user]\n\
+              [--escape-stdout] [--env-var-with-pid <varname>]\n\
+              {command [arg...]}\n\
        "PACKAGE" [--export <bpf|pfc:filename>]\n\
               [--arch arch...] [--config pathspec...]\n\
               [--magic command...] {noexec}\n\
@@ -1288,27 +1296,6 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 		    current->pid, (void *)current->addr);
 		say("doing a vm read/write sanity check on addr:%p...",
 		    (void *)current->addr);
-		/* 16 bytes including the terminating NUL byte.
-		* syd- is 4 bytes.
-		* comm is max 7 bytes.
-		* hash is 5..9 bytes.
-		*/
-		char comm[16], comm_rem[16];
-		syd_proc_comm(sydbox->pfd, current->comm, SYDBOX_PROC_MAX);
-		size_t len = strlen(current->comm);
-		size_t clen = len;
-		strlcpy(comm , current->comm, clen + 1);
-		strlcat(comm + clen++, "☮", sizeof("☮"));
-		char *proc_exec;
-		xasprintf(&proc_exec, "/proc/%u/exe", current->pid);
-		if ((r = path_to_hex(proc_exec)) < 0) {
-			errno = -r;
-			say_errno("can't calculate checksum of file "
-				  "`%s'", proc_exec);
-		} else {
-			strlcat(comm + clen, sydbox->hash, 16);
-		}
-		comm[15] = '\0';
 		syd_write_vm_data(current, current->addr, comm, 16);
 		syd_read_vm_data(current, current->addr, comm_rem, 16);
 		if (streq(comm, comm_rem)) {
@@ -1775,11 +1762,19 @@ out:
 	return r;
 }
 
-static pid_t startup_child(char **argv)
+static syd_process_t *startup_child(char **argv)
 {
 	int r, pfd[2];
 	char *pathname = NULL;
 	pid_t pid = 0;
+	syd_process_t *current;
+
+	current = new_process_or_kill(pid);
+	init_process_data(current, NULL, false);
+	/* Happy birthday, child.
+	 * Let's validate your PID manually.
+	 */
+	sydbox->pid_valid = PID_INIT_VALID;
 
 	bool noexec = streq(argv[0], SYDBOX_NOEXEC_NAME);
 	if (!noexec) {
@@ -1792,7 +1787,7 @@ static pid_t startup_child(char **argv)
 	seccomp_setup();
 
 	/* All ready, initialise dump */
-	dump(DUMP_INIT, argv[0], pathname, get_startas(), arch_argv);
+	dump(DUMP_INIT, argv[0], pathname, get_arg0(), arch_argv);
 	/* We may free the elements of arch_argv now,
 	 * they are no longer required. */
 	for (size_t i = 0; arch_argv[i] != NULL; i++)
@@ -1818,28 +1813,69 @@ static pid_t startup_child(char **argv)
 		sydbox->in_child = true;
 		sydbox->seccomp_fd = pfd[1];
 
+		pid = sydbox->execve_pid;
+		current->pid = pid;
+		proc_validate(pid);
+		strlcpy(current->comm, sydbox->program_invocation_name,
+			SYDBOX_PROC_MAX);
+		syd_proc_cmdline(sydbox->pfd, current->prog, LINE_MAX-1);
+		current->prog[LINE_MAX-1] = '\0';
+		/* 16 bytes including the terminating NUL byte.
+		* syd- is 4 bytes.
+		* comm is max 7 bytes.
+		* hash is 5..9 bytes.
+		*/
+		char comm[16];
+		syd_proc_comm(sydbox->pfd, current->comm, SYDBOX_PROC_MAX);
+		size_t len = strlen(current->comm);
+		size_t clen = len;
+		strlcpy(comm , current->comm, clen + 1);
+		strlcat(comm + clen++, "☮", sizeof("☮"));
+		char *proc_exec;
+		xasprintf(&proc_exec, "/proc/%u/exe", current->pid);
+		if ((r = path_to_hex(proc_exec)) < 0) {
+			errno = -r;
+			say_errno("can't calculate checksum of file "
+				  "`%s'", proc_exec);
+		} else {
+			strlcat(comm + clen, sydbox->hash, 16);
+		}
+		comm[15] = '\0';
+		set_arg0(comm);
+
 		if (change_umask() < 0)
 			say_errno("change_umask");
 		if (change_nice() < 0)
 			say_errno("change_nice");
 		if (change_ionice() < 0)
 			say_errno("change_ionice");
-		if (change_root_directory() < 0)
-			die_errno("change_root_directory");
-		if (change_working_directory() < 0)
-			die_errno("change_working_directory");
-		if (change_group() < 0) {
-			say_errno("change_group");
-			say("continuing...");
-		}
-		if (change_user() < 0) {
-			say_errno("change_user");
-			say("continuing...");
-		}
 		if (change_background() < 0)
 			die_errno("change_background");
 		cleanup_for_child();
 
+		if (!child_block_interrupt_signals)
+			goto seccomp_init;
+		ignore_signals();
+		new_tio = old_tio;
+		new_tio.c_cc[VINTR]    = 25; /* Ctrl-c */
+		new_tio.c_cc[VQUIT]    = 3; /* Ctrl-\ */
+		new_tio.c_cc[VERASE]   = 0; /* del */
+		new_tio.c_cc[VKILL]    = 3; /* @ */
+		new_tio.c_cc[VEOF]     = 25/*4*/; /* Ctrl-d */
+		new_tio.c_cc[VTIME]    = 0; /* inter-character timer unused */
+		new_tio.c_cc[VMIN]     = 1; /* blocking read until 1 character arrives */
+		new_tio.c_cc[VSWTC]    = 0; /* '\0' */
+		new_tio.c_cc[VSTART]   = 3; /* Ctrl-q */
+		new_tio.c_cc[VSTOP]    = 3; /* Ctrl-s */
+		new_tio.c_cc[VSUSP]    = 3; /* Ctrl-z */
+		new_tio.c_cc[VEOL]     = 0; /* '\0' */
+		new_tio.c_cc[VREPRINT] = 0; /* Ctrl-r */
+		new_tio.c_cc[VDISCARD] = 0; /* Ctrl-u */
+		new_tio.c_cc[VWERASE]  = 0; /* Ctrl-w */
+		new_tio.c_cc[VLNEXT]   = 0; /* Ctrl-v */
+		new_tio.c_cc[VEOL2]    = 0; /* '\0' */
+		tcsetattr(0, TCSANOW, &new_tio);
+seccomp_init:
 		if ((r = sysinit_seccomp()) < 0) {
 			errno = -r;
 			if (errno == ENOTTY || errno == ENOENT)
@@ -1852,35 +1888,25 @@ static pid_t startup_child(char **argv)
 			_exit(getenv(SYDBOX_NOEXEC_ENV) ?
 				atoi(getenv(SYDBOX_NOEXEC_ENV)) :
 				0);
-		if (get_startas())
-			argv[0] = (char *)get_startas();
-		if (child_block_interrupt_signals) {
-			ignore_signals();
-			new_tio = old_tio;
-			new_tio.c_cc[VINTR]    = 25; /* Ctrl-c */
-			new_tio.c_cc[VQUIT]    = 3; /* Ctrl-\ */
-			new_tio.c_cc[VERASE]   = 0; /* del */
-			new_tio.c_cc[VKILL]    = 3; /* @ */
-			new_tio.c_cc[VEOF]     = 25/*4*/; /* Ctrl-d */
-			new_tio.c_cc[VTIME]    = 0; /* inter-character timer unused */
-			new_tio.c_cc[VMIN]     = 1; /* blocking read until 1 character arrives */
-			new_tio.c_cc[VSWTC]    = 0; /* '\0' */
-			new_tio.c_cc[VSTART]   = 3; /* Ctrl-q */
-			new_tio.c_cc[VSTOP]    = 3; /* Ctrl-s */
-			new_tio.c_cc[VSUSP]    = 3; /* Ctrl-z */
-			new_tio.c_cc[VEOL]     = 0; /* '\0' */
-			new_tio.c_cc[VREPRINT] = 0; /* Ctrl-r */
-			new_tio.c_cc[VDISCARD] = 0; /* Ctrl-u */
-			new_tio.c_cc[VWERASE]  = 0; /* Ctrl-w */
-			new_tio.c_cc[VLNEXT]   = 0; /* Ctrl-v */
-			new_tio.c_cc[VEOL2]    = 0; /* '\0' */
-			tcsetattr(0, TCSANOW, &new_tio);
-		}
-		execv(pathname, argv);
-		fprintf(stderr, PACKAGE": execv path:\"%s\" failed (errno:%d %s)\n",
-			pathname, errno, strerror(errno));
+		bool verbose = false;
+#if SYDBOX_HAVE_DUMP_BUILTIN
+		verbose = dump_get_fd() >= 0;
+#endif
+		const char *arg0 = get_arg0();
+		const char *wd = get_working_directory();
+		const char *root = get_root_directory();
+		const char *pev = get_pid_env_var();
+		r = syd_execv(pathname, argv, arg0 ? arg0 : "",
+			      wd ? wd : "", verbose,
+			      get_uid(), get_gid(),
+			      root ? root : "",
+			      unshare_pid, unshare_net, unshare_mount,
+			      unshare_uts, unshare_ipc, unshare_user,
+			      escape_stdout,
+			      get_groups(),
+			      pev ? pev : "");
 		free(pathname); /* not NULL because noexec is handled above. */
-		_exit(EXIT_FAILURE);
+		_exit(r);
 	}
 	seccomp_release(sydbox->ctx);
 
@@ -1897,7 +1923,7 @@ static pid_t startup_child(char **argv)
 
 	sydbox->seccomp_fd = pfd[0];
 	if (!use_notify())
-		return pid;
+		return current;
 
 	int fd;
 	if ((r = parent_read_int(&fd)) < 0) {
@@ -1919,7 +1945,7 @@ static pid_t startup_child(char **argv)
 
 	sydbox->notify_fd = fd;
 
-	return pid;
+	return current;
 }
 
 void cleanup_for_child(void)
@@ -2036,16 +2062,25 @@ int main(int argc, char **argv)
 		{"export",	required_argument,	NULL,	'e'},
 		{"chdir",	required_argument,	NULL,	'D'},
 		{"chroot",	required_argument,	NULL,	'C'},
-		{"memaccess",	required_argument,	NULL,	'M'},
+		{"memaccess",	required_argument,	NULL,	'p'},
 		{"background",	no_argument,		NULL,	'B'},
 		{"stdout",	required_argument,	NULL,	'1'},
 		{"stderr",	required_argument,	NULL,	'2'},
-		{"startas",	required_argument,	NULL,	'A'},
-		{"ionice",	required_argument,	NULL,	'I'},
-		{"nice",	required_argument,	NULL,	'N'},
+		{"alias",	required_argument,	NULL,	'A'},
+		{"ionice",	required_argument,	NULL,	'i'},
+		{"nice",	required_argument,	NULL,	'n'},
 		{"umask",	required_argument,	NULL,	'K'},
-		{"uid",		required_argument,	NULL,	'U'},
-		{"gid",		required_argument,	NULL,	'G'},
+		{"uid",		required_argument,	NULL,	'u'},
+		{"gid",		required_argument,	NULL,	'g'},
+		{"add-gid",	required_argument,	NULL,	'G'},
+		{"unshare-pid", no_argument,		NULL,	'P'},
+		{"unshare-net", no_argument,		NULL,	'N'},
+		{"unshare-mount", no_argument,		NULL,	'M'},
+		{"unshare-uts", no_argument,		NULL,	'T'},
+		{"unshare-ipc", no_argument,		NULL,	'I'},
+		{"unshare-user", no_argument,		NULL,	'U'},
+		{"env-var-with-pid", required_argument,	NULL,	'V'},
+		{"escape-stdout", no_argument,		NULL,	'3'},
 		{"test",	no_argument,		NULL,	't'},
 		{NULL,		0,		NULL,	0},
 	};
@@ -2054,7 +2089,7 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "a:A:bBc:d:e:C:D:m:E:M:I:N:K:thlv1:2:U:G:",
+	while ((opt = getopt_long(argc, argv, "a:A:bBc:d:e:C:D:m:E:p:i:n:K:thlvPNMTIU31:2:u:g:G:V:",
 				  long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
@@ -2135,7 +2170,7 @@ int main(int argc, char **argv)
 				    optarg, magic_strerror(r));
 			break;
 		case 'A':
-			set_startas(xstrdup(optarg));
+			set_arg0(xstrdup(optarg));
 			break;
 		case 'B':
 			set_background(true);
@@ -2152,30 +2187,36 @@ int main(int argc, char **argv)
 		case 'D':
 			set_working_directory(xstrdup(optarg));
 			break;
-		case 'I':
+		case 'i':
 			c = strchr(optarg, ':');
 			if (!c)
 				set_ionice(atoi(optarg), 0);
 			else
 				set_ionice(atoi(optarg), atoi(c + 1));
 			break;
-		case 'N':
+		case 'n':
 			set_nice(atoi(optarg));
 			break;
 		case 'K':
 			set_umask(atoi(optarg));
 			break;
-		case 'U':
+		case 'u':
 			set_uid(atoi(optarg));
 			break;
-		case 'G':
+		case 'g':
 			set_gid(atoi(optarg));
+			break;
+		case 'G':
+			set_gid_add(atoi(optarg));
+			break;
+		case 'V':
+			set_pid_env_var(optarg);
 			break;
 		case 'E':
 			if (putenv(optarg))
 				die_errno("putenv");
 			break;
-		case 'M':
+		case 'p':
 			errno = 0;
 			opt = strtoul(optarg, &end, 10);
 			if ((errno && errno != EINVAL) ||
@@ -2243,6 +2284,24 @@ int main(int argc, char **argv)
 				say("[>] SydBox is supported on this system!");
 			exit(r == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 			break;
+		case 'P':
+			unshare_pid = true;
+			break;
+		case 'N':
+			unshare_net = true;
+			break;
+		case 'M':
+			unshare_mount = true;
+			break;
+		case 'T':
+			unshare_uts = true;
+			break;
+		case 'I':
+			unshare_ipc = true;
+			break;
+		case 'U':
+			unshare_user = true;
+			break;
 		case 'h':
 			usage(stdout, 0);
 		case 'v':
@@ -2283,8 +2342,14 @@ int main(int argc, char **argv)
 				  "/default.syd-" STRINGIFY(SYDBOX_API_VERSION));
 		set_uid(getuid());
 		set_gid(getgid());
-		set_startas("sydsh");
+		set_arg0("sydsh");
 		set_working_directory(xstrdup("tmp"));
+		unshare_pid = true;
+		unshare_net = true;
+		unshare_mount = true;
+		unshare_uts = true;
+		unshare_ipc = true;
+		unshare_user = true;
 		my_argv = sydsh_argv;
 		sydbox->program_invocation_name = xstrdup("sydsh");
 		child_block_interrupt_signals = true;
@@ -2332,19 +2397,8 @@ int main(int argc, char **argv)
 	if (child_block_interrupt_signals)
 		tcgetattr(0, &old_tio);
 	if (use_notify()) {
-		pid = startup_child((char **)my_argv);
-		child = new_process_or_kill(pid);
-		init_process_data(child, NULL, false);
-		/* Happy birthday, child.
-		 * Let's validate your PID manually.
-		 */
-		sydbox->pid_valid = PID_INIT_VALID;
-		proc_validate(pid);
-		strlcpy(child->comm, sydbox->program_invocation_name,
-			SYDBOX_PROC_MAX);
-		syd_proc_cmdline(sydbox->pfd, child->prog, LINE_MAX-1);
-		child->prog[LINE_MAX-1] = '\0';
-
+		child = startup_child((char **)my_argv);
+		pid = child->pid;
 		/* Notify the user about the startup. */
 		dump(DUMP_STARTUP, pid);
 		/* Block signals,
@@ -2364,7 +2418,8 @@ int main(int argc, char **argv)
 			exit(exit_code);
 		}
 	} else {
-		pid = startup_child((char **)my_argv);
+		child = startup_child((char **)my_argv);
+		pid = child->pid;
 	}
 	for (;;) {
 		errno = 0;

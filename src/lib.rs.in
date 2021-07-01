@@ -3,9 +3,35 @@
 // sydbox.rs: Main entry point
 //
 // Copyright (c) 2021 Ali Polatel <alip@exherbo.org>
+// Based in part upon unshare/examples/runcmd.rs which is
+//   Copyright (c) 2015-2016 The unshare Developers
+//   Released under the terms of the MIT License.
 //
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-2.0-only
 
+#![allow(non_upper_case_globals)]
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+
+extern crate unshare;
+extern crate libc;
+
+use unshare::*;
+
+use std::ffi::CStr;
+use std::ffi::OsStr;
+use std::os::unix::ffi::OsStrExt;
+
+#[allow(unused_imports)]
+use std::io::{stderr, Write, Read};
+#[allow(unused_imports)]
+use std::process::exit;
+//use std::path::PathBuf;
+
+//use unshare::Namespace;
+use libc::{c_char, gid_t};
+
+#[doc = "Print SydB☮x version and build details to standard error."]
 #[no_mangle]
 pub extern "C" fn syd_about() {
     let sv: scmp_version = Default::default();
@@ -26,12 +52,147 @@ pub extern "C" fn syd_about() {
     eprintln!("SPDX-License-Identifier: [0;1;31;91mGPL-2.0-only[0m");
 }
 
+#[must_use]
+#[no_mangle]
+#[doc = "Execute a process under various restrictions and options."]
+pub extern "C" fn syd_execv(command: *const c_char, args: *mut *mut c_char,
+                            alias: *const c_char,
+                            workdir: *const c_char,
+                            verbose: bool,
+                            uid: u32,
+                            gid: u32,
+                            chroot: *const c_char,
+                            unshare_pid: bool,
+                            unshare_net: bool,
+                            unshare_mount: bool,
+                            unshare_uts: bool,
+                            unshare_ipc: bool,
+                            unshare_user: bool,
+                            escape_stdout: bool,
+                            groups: *const u32,
+                            pid_env_var: *const c_char) -> i32 {
+    let mut argv = Vec::<&str>::new();
+    for arg in unsafe {args.as_ref()}.iter() {
+        let slice = unsafe { CStr::from_ptr(**arg) };
+        let osstr = OsStr::from_bytes(slice.to_bytes());
+        match osstr.to_str() {
+            Some(s) => argv.push(s),
+            None => {}
+        }
+    }
+    let mut slice = unsafe { CStr::from_ptr(command) };
+    let mut osstr = OsStr::from_bytes(slice.to_bytes());
+    let mut cmd = unshare::Command::new(osstr);
+    cmd.args(&argv);
+
+    slice = unsafe { CStr::from_ptr(alias) };
+    osstr = OsStr::from_bytes(slice.to_bytes());
+    match osstr.to_str() {
+        Some(s) => {
+            if !s.is_empty() {
+                cmd.arg0(s);
+            }
+        },
+        None => {}
+    };
+
+    slice = unsafe { CStr::from_ptr(workdir) };
+    osstr = OsStr::from_bytes(slice.to_bytes());
+    match osstr.to_str() {
+        Some(s) => {
+            if !s.is_empty() {
+                cmd.current_dir(s);
+            }
+        },
+        None => {}
+    };
+
+    if uid != 0 {
+        cmd.uid(uid);
+    }
+    if gid != 0 {
+        cmd.gid(gid);
+    }
+
+    slice = unsafe { CStr::from_ptr(chroot) };
+    osstr = OsStr::from_bytes(slice.to_bytes());
+    match osstr.to_str() {
+        Some(s) => {
+            if !s.is_empty() {
+                cmd.chroot_dir(s);
+            }
+        },
+        None => {}
+    };
+
+    let mut namespaces = Vec::<Namespace>::new();
+    if unshare_pid { namespaces.push(Namespace::Pid); }
+    if unshare_net { namespaces.push(Namespace::Net); }
+    if unshare_mount { namespaces.push(Namespace::Mount); }
+    if unshare_uts { namespaces.push(Namespace::Uts); }
+    if unshare_ipc { namespaces.push(Namespace::Ipc); }
+    if unshare_user { namespaces.push(Namespace::User); }
+    cmd.unshare(&namespaces);
+    cmd.close_fds(..);
+
+    let mut groupv = Vec::<gid_t>::new();
+    for arg in unsafe {groups.as_ref()}.iter() {
+        groupv.push(**arg);
+    }
+    if groupv.len() > 0 { cmd.groups(groupv); }
+
+    if escape_stdout {
+        cmd.stdout(unshare::Stdio::piped());
+    }
+
+    slice = unsafe { CStr::from_ptr(pid_env_var) };
+    osstr = OsStr::from_bytes(slice.to_bytes());
+    match osstr.to_str() {
+        Some(s) => {
+            if !s.is_empty() {
+                cmd.env_var_with_pid(s);
+            }
+        },
+        None => {}
+    };
+
+    if verbose {
+        eprintln!("[0;1;31;91mSydb☮x C☮mmand: {:?}[0m", cmd);
+    }
+
+    let mut child = match cmd.spawn() {
+        Ok(child) => child,
+        Err(e) => {
+            eprintln!("[0;1;31;91mSydb☮x C☮mmand Error: {}[0m", e);
+            return 127;
+        }
+    };
+
+    if verbose {
+        eprintln!("[0;1;31;91mSydb☮x Child pid: {}[0m", child.id());
+    }
+
+    if escape_stdout {
+        let mut buf = Vec::new();
+        child.stdout.take().unwrap().read_to_end(&mut buf).unwrap();
+        eprintln!("[0;1;31;91m{:?}[0m",
+            String::from_utf8_lossy(&buf[..]));
+    }
+    let res = child.wait().unwrap();
+    if verbose {
+        eprintln!("[0;1;31;91mSydb☮x [pid {}] {}[0m", child.id(), res);
+    }
+
+    0
+}
+
 #[doc = "This structure represents a seccomp version"]
 #[repr(C)]
+/// cbindgen:ignore
 pub struct scmp_version {
-    major: u8,
-    minor: u8,
-    micro: u8,
+    pub major: u8,
+    pub minor: u8,
+    pub micro: u8,
 }
 
 impl Default for scmp_version {
@@ -45,6 +206,7 @@ impl Default for scmp_version {
 }
 
 extern "C" {
+    /// cbindgen:ignore
     fn seccomp_version() -> *const scmp_version;
 }
 
