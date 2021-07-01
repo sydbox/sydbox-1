@@ -29,8 +29,9 @@ install-exec-local:
 	rm -f $(DESTDIR)/usr/.crates.toml
 	rm -f $(DESTDIR)/usr/.crates2.json
 
-SYDBOX_RUST_LIB_STA=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.a
-SYDBOX_RUST_LIB_DYN=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.so
+SYDBOX_RUST_LIB=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox
+SYDBOX_RUST_LIB_STA=$(SYDBOX_RUST_LIB).a
+SYDBOX_RUST_LIB_DYN=$(SYDBOX_RUST_LIB).so
 CARGO_BUILD_FLAGS= --lib --target-dir $(builddir)/sydbox_rs
 CARGO_BUILD_FLAGS+= $(CARGO_FLAGS)
 CLEANFILES+= \
@@ -75,14 +76,11 @@ sydbox_rs.h: lib.rs $(top_builddir)/cbindgen.toml
 	$(CBINDGEN) --config $(top_builddir)/cbindgen.toml lib.rs -o $@ || $(RUSTC) lib.rs
 endif
 
-$(SYDBOX_RUST_LIB_STA): jobs lib.rs
+$(SYDBOX_RUST_LIB).%: jobs lib.rs
 	@mkdir -m700 -p $(builddir)/sydbox_rs
 	$(AM_V_GEN)
 	$(AM_V_at)$(CARGO) build -j $(JOB_COUNT) $(CARGO_BUILD_FLAGS)
 if !ENABLE_STATIC
-$(SYDBOX_RUST_LIB_DYN): $(SYDBOX_RUST_LIB_STA)
-	$(AM_V_GEN)
-	$(AM_V_at)true
 .libs/libsydbox.so: $(SYDBOX_RUST_LIB_DYN)
 	$(AM_V_GEN)
 	$(AM_V_at)cp -fp $< $@

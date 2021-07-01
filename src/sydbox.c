@@ -655,9 +655,9 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 		 * execve.
 		 */
 		process_remove(p);
+	} else if (!p->zombie || p->pid != 0) {
+		free(p); /* good bye, good bye, good bye. */
 	}
-
-	free(p); /* good bye, good bye, good bye. */
 }
 
 /* Drop leader, switch to the thread, reusing leader's tid */
