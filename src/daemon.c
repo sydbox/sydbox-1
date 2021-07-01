@@ -33,6 +33,8 @@ static const char *root_directory;
 static const char *working_directory;
 static char *pid_env_var;
 static const char *arg0;
+static char *pivot_new_root;
+static char *pivot_put_old;
 
 bool get_background(void) { return background; }
 const char *get_redirect_stdout(void) { return redirect_stdout; }
@@ -43,9 +45,17 @@ int get_nice(void) { return nice_inc; }
 const char *get_arg0(void) { return arg0; }
 const char *get_root_directory(void) { return root_directory; }
 const char *get_working_directory(void) { return working_directory; }
-const char *get_pid_env_var(void) { return pid_env_var; };
+const char *get_pid_env_var(void) { return pid_env_var; }
 mode_t get_umask(void) { return file_mode_creation_mask; }
-const gid_t *get_groups(void) { return gid_add; };
+const gid_t *get_groups(void) { return gid_add; }
+void get_pivot_root(char **new_root, char **put_old)
+{
+	assert(new_root);
+	assert(put_old);
+
+	*new_root = pivot_new_root;
+	*put_old = pivot_put_old;
+}
 
 void set_background(bool bg) { background = bg; }
 void set_redirect_stdout(const char *log) { redirect_stdout = log; }
@@ -121,6 +131,21 @@ int set_groupname(const char *name)
 	return -errno;
 #endif
 	return 0;
+}
+
+void set_pivot_root(const char *new_root, const char *put_old)
+{
+	if (pivot_new_root)
+		free(pivot_new_root);
+	pivot_new_root = NULL;
+	if (pivot_put_old)
+		free(pivot_put_old);
+	pivot_put_old = NULL;
+
+	if (new_root)
+		pivot_new_root = xstrdup(new_root);
+	if (put_old)
+		pivot_put_old = xstrdup(put_old);
 }
 
 int change_umask(void)

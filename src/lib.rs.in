@@ -61,6 +61,8 @@ pub extern "C" fn syd_execv(
     uid: u32,
     gid: u32,
     chroot: *const c_char,
+    new_root: *const c_char,
+    put_old: *const c_char,
     unshare_pid: bool,
     unshare_net: bool,
     unshare_mount: bool,
@@ -126,14 +128,23 @@ pub extern "C" fn syd_execv(
 
     slice = unsafe { CStr::from_ptr(chroot) };
     osstr = OsStr::from_bytes(slice.to_bytes());
-    match osstr.to_str() {
-        Some(s) => {
-            if !s.is_empty() {
-                cmd.chroot_dir(s);
+    if let Some(s) = osstr.to_str() {
+        if !s.is_empty() {
+            cmd.chroot_dir(s);
+        }
+    }
+
+    slice = unsafe { CStr::from_ptr(new_root) };
+    osstr = OsStr::from_bytes(slice.to_bytes());
+    if let Some(s0) = osstr.to_str() {
+        slice = unsafe { CStr::from_ptr(put_old) };
+        osstr = OsStr::from_bytes(slice.to_bytes());
+        if let Some(s1) = osstr.to_str() {
+            if !s0.is_empty() && !s1.is_empty() {
+                cmd.pivot_root(s0, s1, true);
             }
         }
-        None => {}
-    };
+    }
 
     let mut namespaces = Vec::<Namespace>::new();
     if unshare_pid {

@@ -119,8 +119,8 @@ static void usage(FILE *outfp, int code)
 usage: "PACKAGE" [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
               [--export <bpf|pfc:filename>] [--memaccess 0..1]\n\
               [--arch arch...] [--config pathspec...] [--magic magic...]\n\
-              [--lock] [--chroot directory] [--chdir directory]\n\
-              [--env var...] [--env var=val...]\n\
+              [--lock] [--chroot directory] [--pivot-root new-root:put-old]\n\
+              [--chdir directory] [--env var...] [--env var=val...]\n\
               [--ionice class:data] [--nice level]\n\
               [--background] [--stdout logfile] [--stderr logfile]\n\
               [--alias name] [--umask mode]\n\
@@ -1910,10 +1910,14 @@ seccomp_init:
 		const char *wd = get_working_directory();
 		const char *root = get_root_directory();
 		const char *pev = get_pid_env_var();
+		const char *new_root, *put_old;
+		get_pivot_root(&new_root, &put_old);
 		r = syd_execv(pathname, argv, arg0 ? arg0 : "",
 			      wd ? wd : "", verbose,
 			      get_uid(), get_gid(),
 			      root ? root : "",
+			      new_root ? new_root : "",
+			      put_old ? put_old : "",
 			      unshare_pid, unshare_net, unshare_mount,
 			      unshare_uts, unshare_ipc, unshare_user,
 			      close_fds[0], close_fds[1], escape_stdout,
@@ -2076,6 +2080,7 @@ int main(int argc, char **argv)
 		{"export",	required_argument,	NULL,	'e'},
 		{"chdir",	required_argument,	NULL,	'D'},
 		{"chroot",	required_argument,	NULL,	'C'},
+		{"pivot-root",	required_argument,	NULL,	'R'},
 		{"memaccess",	required_argument,	NULL,	'p'},
 		{"background",	no_argument,		NULL,	'B'},
 		{"stdout",	required_argument,	NULL,	'1'},
@@ -2104,7 +2109,7 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "a:A:bBc:d:e:C:D:m:E:p:i:n:K:thlvPNMTIUFO1:2:u:g:G:V:",
+	while ((opt = getopt_long(argc, argv, "a:A:bBc:d:e:C:D:m:E:p:i:n:K:thlvPNMTIUFO1:2:u:g:G:R:V:",
 				  long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
@@ -2201,6 +2206,16 @@ int main(int argc, char **argv)
 			break;
 		case 'D':
 			set_working_directory(xstrdup(optarg));
+			break;
+		case 'R':
+			c = strchr(optarg, ':');
+			if (!c) {
+				say_errno("Invalid argument for option "
+					  "--pivot-root `%s'", optarg);
+				usage(stderr, 1);
+			}
+			*c = '\0';
+			set_pivot_root(optarg, c + 1);
 			break;
 		case 'i':
 			c = strchr(optarg, ':');

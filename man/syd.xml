@@ -42,7 +42,7 @@
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
       <itemizedlist>
-        <listitem><para><command>syd <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..1</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt">--lock</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt" >--chdir &lt;directory|tmp&gt;</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--alias name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="opt">--add-gid group-id</arg> <arg choice="opt">--unshare-pid</arg> <arg choice="opt">--unshare-net</arg> <arg choice="opt">--unshare-mount</arg> <arg choice="opt">--unshare-uts</arg> <arg choice="opt">--unshare-ipc</arg> <arg choice="opt">--unshare-user</arg> <arg choice="opt">env-var-with-pid &lt;varname&gt;</arg> <arg choice="opt">--close-fds &lt;begin:end&gt;</arg> <arg choice="opt">--escape-stdout</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
+        <listitem><para><command>syd <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..1</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt">--lock</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt">--pivot-root &lt;new-root:put-old&gt;</arg> <arg choice="opt" >--chdir &lt;directory|tmp&gt;</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--alias name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="opt">--add-gid group-id</arg> <arg choice="opt">--unshare-pid</arg> <arg choice="opt">--unshare-net</arg> <arg choice="opt">--unshare-mount</arg> <arg choice="opt">--unshare-uts</arg> <arg choice="opt">--unshare-ipc</arg> <arg choice="opt">--unshare-user</arg> <arg choice="opt">env-var-with-pid &lt;varname&gt;</arg> <arg choice="opt">--close-fds &lt;begin:end&gt;</arg> <arg choice="opt">--escape-stdout</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
         <listitem><para><command>syd <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg>  <arg choice="req">noexec</arg></command></para></listitem>
         <listitem><para><command>syd --test</command></para></listitem>
       </itemizedlist>
@@ -339,6 +339,59 @@
           <simpara>
             Chroot to this directory before starting the daemon.
           </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-C</option> <varname>directory</varname></term>
+        <term><option>--chroot</option>=<varname>directory</varname></term>
+        <listitem>
+          <simpara>
+            Chroot to this directory before starting the daemon.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-R</option> <varname>new-root:put-old</varname></term>
+        <term><option>--pivot-root</option>=<varname>new-root:put-old</varname></term>
+        <listitem>
+          <simpara>
+            Moves the root of the file system to the directory
+            <emphasis>put_old</emphasis> and makes
+            <emphasis>new_root</emphasis> the new root file system.
+            Also it's optionally unmount <emphasis>new_root</emphasis>
+            mount point after moving root (but it must exist anyway).
+          </simpara>
+
+          <simpara>
+            The documentation says that <emphasis>put_old</emphasis> must
+            be underneath the <emphasis>new_root</emphasis>. Currently we
+            have a restriction that both must be absolute and
+            <emphasis>new_root</emphasis> be prefix of
+            <emphasis>put_old</emphasis>, but we may lift it
+            later.
+          </simpara>
+
+          <warning><simpara>
+          If you don't unshare the mount namespace you will get
+          moved filesystem root for
+          <emphasis>all processes running in that namespace</emphasis>
+          including parent (currently running) process itself. If you don't
+          run equivalent to <command>mount --make-private</command> for
+          the old root filesystem and set <command>unmount</command> to true,
+          you may get unmounted filesystem for running processes too.
+          </simpara></warning>
+
+          <simpara>See
+          <function>pivot</function><manvolnum>2</manvolnum> for further details.
+          </simpara>
+
+          <note><simpara>Note that if both chroot dir and pivot_root specified.
+          The chroot dir is applied after pivot root.</simpara></note>
+
+          <note><simpara>Panics if either path is not absolute or new_root
+          is not a prefix of put_old.</simpara></note>
         </listitem>
       </varlistentry>
 

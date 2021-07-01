@@ -23,6 +23,7 @@ const char *get_root_directory(void);
 const char *get_working_directory(void);
 const char *get_pid_env_var(void);
 mode_t get_umask(void);
+void get_pivot_root(char **new_root, char **put_old);
 
 void set_background(bool bg);
 void set_redirect_stdout(const char *log);
@@ -39,6 +40,7 @@ void set_umask(mode_t mode);
 void set_ionice(int c, int d);
 int set_username(const char *name);
 int set_groupname(const char *name);
+void set_pivot_root(const char *new_root, const char *put_old);
 
 int change_umask(void);
 int change_user(void);
