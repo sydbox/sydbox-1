@@ -354,44 +354,6 @@ struct sandbox {
 };
 typedef struct sandbox sandbox_t;
 
-struct syd_process_shared_clone_thread {
-	/* Per-process sandbox */
-	sandbox_t *box;
-
-	/* Execve process ID */
-	pid_t execve_pid;
-
-	/* Reference count */
-	unsigned refcnt;
-};
-
-/* Shared items when CLONE_FS is set. */
-struct syd_process_shared_clone_fs {
-	/* Current working directory */
-	char *cwd;
-
-	/* Reference count */
-	unsigned refcnt;
-};
-
-/* Shared items when CLONE_FILES is set. */
-struct syd_process_shared_clone_files {
-	/*
-	 * Inode socket address mapping for bind allowlist
-	 */
-	struct sc_map_64v sockmap;
-
-	/* Reference count */
-	unsigned refcnt;
-};
-
-/* Per-thread shared data */
-struct syd_process_shared {
-	struct syd_process_shared_clone_thread *clone_thread;
-	struct syd_process_shared_clone_fs *clone_fs;
-	struct syd_process_shared_clone_files *clone_files;
-};
-
 /* process information */
 struct syd_process {
 	/*
@@ -433,6 +395,9 @@ struct syd_process {
 	/* Thread group ID */
 	pid_t tgid;
 
+	/* Execve process ID */
+	pid_t execve_pid;
+
 	/*
 	 * memfd & pidfd have three states:
 	 * -1: Init. Waiting to be initialised.
@@ -470,9 +435,6 @@ struct syd_process {
 	/* String representation of arguments, used by dump. */
 	char *repr[6];
 
-	/* Per-thread shared data */
-	struct syd_process_shared shm;
-
 	/* Last system call name */
 	char *sysname;
 
@@ -488,58 +450,23 @@ struct syd_process {
 
 	/* The command line of the binary which executed the process. */
 	char prog[LINE_MAX];
+
+	/* Current working directory */
+	char *cwd;
+
+	/* Per-process sandbox */
+	sandbox_t *box;
+
+	/*
+	 * Inode socket address mapping for bind allowlist
+	 */
+	struct sc_map_64v sockmap;
 };
 typedef struct syd_process syd_process_t;
 
-#define P_BOX(p) ((p)->shm.clone_thread->box)
-#define P_EXECVE_PID(p) ((p)->shm.clone_thread->execve_pid)
-#define P_CLONE_THREAD_REFCNT(p) ((p)->shm.clone_thread->refcnt)
-#define P_CLONE_THREAD_RETAIN(p) ((p)->shm.clone_thread->refcnt++)
-#define P_CLONE_THREAD_RELEASE(p) \
-	do { \
-		if ((p)->shm.clone_thread != NULL) { \
-			(p)->shm.clone_thread->refcnt--; \
-			if ((p)->shm.clone_thread->refcnt == 0) { \
-				if ((p)->shm.clone_thread->box) { \
-					free_sandbox((p)->shm.clone_thread->box); \
-				} \
-				free((p)->shm.clone_thread); \
-				(p)->shm.clone_thread = NULL; \
-			} \
-		} \
-	} while (0)
-
-#define P_CWD(p) ((p)->shm.clone_fs->cwd)
-#define P_CLONE_FS_REFCNT(p) ((p)->shm.clone_fs->refcnt)
-#define P_CLONE_FS_RETAIN(p) ((p)->shm.clone_fs->refcnt++)
-#define P_CLONE_FS_RELEASE(p) \
-	do { \
-		if ((p)->shm.clone_fs != NULL) { \
-			(p)->shm.clone_fs->refcnt--; \
-			if ((p)->shm.clone_fs->refcnt == 0) { \
-				if ((p)->shm.clone_fs->cwd) { \
-					free((p)->shm.clone_fs->cwd); \
-				} \
-				free((p)->shm.clone_fs); \
-				(p)->shm.clone_fs = NULL; \
-			} \
-		} \
-	} while (0)
-
-#define P_SOCKMAP(p) ((p)->shm.clone_files->sockmap)
-#define P_CLONE_FILES_REFCNT(p) ((p)->shm.clone_files->refcnt)
-#define P_CLONE_FILES_RETAIN(p) ((p)->shm.clone_files->refcnt++)
-#define P_CLONE_FILES_RELEASE(p) \
-	do { \
-		if ((p)->shm.clone_files != NULL) { \
-			(p)->shm.clone_files->refcnt--; \
-			if ((p)->shm.clone_files->refcnt == 0) { \
-				sockmap_destroy(&(p)->shm.clone_files->sockmap); \
-				free((p)->shm.clone_files); \
-				(p)->shm.clone_files = NULL; \
-			} \
-		} \
-	} while (0)
+#define P_BOX(p) ((p)->box)
+#define P_CWD(p) ((p)->cwd)
+#define P_SOCKMAP(p) ((p)->sockmap)
 
 struct filter {
 	enum syd_action action:3;
@@ -699,6 +626,16 @@ struct sysentry {
 
 	/* Seccomp Notify callback */
 	sysfunc_t notify;
+
+	/* Seccomp Emulate callback:
+	 * if this callback is available and if we're allowing
+	 * the system call, we call this emulate callback
+	 * and let the system call be emulated and denied
+	 * afterwards rather than allowed with
+	 * SECCOMP_USER_NOTIF_FLAG_CONTINUE which is
+	 * inherently insecure.
+	 */
+	sysfunc_t emulate;
 
 	/* Apply a simple seccomp filter (bpf-only, no ptrace) */
 	sysfilter_t filter;
@@ -863,15 +800,21 @@ static inline syd_process_t *process_lookup(pid_t pid)
 
 /*************************************/
 /* Security Functions */
-static inline void sydbox_syscall_deny(void)
+static inline bool sydbox_syscall_flag_cont(void)
 {
-	sydbox->response->error = -EPERM;
+	if (sydbox->response->flags & SECCOMP_USER_NOTIF_FLAG_CONTINUE)
+		return true;
+	return false;
+}
+static inline void sydbox_syscall_deny(int err_no)
+{
+	sydbox->response->error = -err_no;
 	sydbox->response->flags = 0;
 }
 
 static inline void sydbox_syscall_allow(void)
 {
-	sydbox_syscall_deny();
+	sydbox_syscall_deny(EPERM);
 	sydbox->response->error = 0;
 	sydbox->response->flags |= SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 }
@@ -1286,6 +1229,7 @@ int sys_access(syd_process_t *current);
 int sys_faccessat(syd_process_t *current);
 int sys_faccessat2(syd_process_t *current);
 
+int emu_chmod(syd_process_t *current);
 int sys_chmod(syd_process_t *current);
 int sys_fchmodat(syd_process_t *current);
 int sys_chown(syd_process_t *current);

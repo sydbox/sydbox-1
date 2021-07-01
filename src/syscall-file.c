@@ -26,6 +26,7 @@
 #endif
 #include "pink.h"
 #include "bsd-compat.h"
+#include "errno2name.h"
 #include "sockmap.h"
 
 #if defined(HAVE_LINUX_OPENAT2_H) && defined(HAVE_STRUCT_OPEN_HOW)
@@ -415,6 +416,23 @@ int sys_chmod(syd_process_t *current)
 	init_sysinfo(&info);
 
 	return box_check_path(current, &info);
+}
+
+int emu_chmod(syd_process_t *current)
+{
+	int r;
+
+	if (!current->abspath)
+		return 0;
+
+	errno = 0;
+	r = chmod(current->abspath, current->args[1]);
+	say("emulated chmod(`%s',%ld), denying with %d<%s>",
+	    current->abspath, current->args[1],
+	    errno, errno2name(errno));
+	sydbox_syscall_deny(errno);
+
+	return r;
 }
 
 int sys_fchmodat(syd_process_t *current)

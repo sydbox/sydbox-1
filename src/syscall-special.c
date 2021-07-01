@@ -147,7 +147,9 @@ int sys_getdents(syd_process_t *current)
 	info.at_func = true;
 	info.arg_index = SYSCALL_ARG_MAX;
 	info.deny_errno = ENOENT;
-	info.prefix = get_working_directory();
+	// This is too much, e.g: shell can't open
+	// /etc/bash/bashrc.d.
+	// info.prefix = get_working_directory();
 
 	return box_check_path(current, &info);
 }

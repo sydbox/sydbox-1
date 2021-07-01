@@ -337,32 +337,14 @@ static int seccomp_setup(void)
 	return 0;
 }
 
-static void new_shared_memory_clone_thread(struct syd_process *p)
-{
-	int r;
-
-	p->shm.clone_thread = xmalloc(sizeof(struct syd_process_shared_clone_thread));
-	p->shm.clone_thread->refcnt = 1;
-	p->shm.clone_thread->execve_pid = 0;
-	if ((r = new_sandbox(&p->shm.clone_thread->box)) < 0) {
-		free(p->shm.clone_thread);
-		errno = -r;
-		die_errno("new_sandbox");
-	}
-}
-
 static void new_shared_memory_clone_fs(struct syd_process *p)
 {
-	p->shm.clone_fs = xmalloc(sizeof(struct syd_process_shared_clone_fs));
-	p->shm.clone_fs->refcnt = 1;
-	p->shm.clone_fs->cwd = NULL;
+	p->cwd = NULL;
 }
 
 static void new_shared_memory_clone_files(struct syd_process *p)
 {
-	p->shm.clone_files = xmalloc(sizeof(struct syd_process_shared_clone_files));
-	p->shm.clone_files->refcnt = 1;
-	if (!sc_map_init_64v(&p->shm.clone_files->sockmap,
+	if (!sc_map_init_64v(&p->sockmap,
 			     SYDBOX_SOCKMAP_CAP,
 			     SYDBOX_MAP_LOAD_FAC)) {
 		errno = -ENOMEM;
@@ -373,7 +355,6 @@ static void new_shared_memory_clone_files(struct syd_process *p)
 
 static void new_shared_memory(struct syd_process *p)
 {
-	new_shared_memory_clone_thread(p);
 	new_shared_memory_clone_fs(p);
 	new_shared_memory_clone_files(p);
 }
@@ -394,6 +375,8 @@ static syd_process_t *new_thread(pid_t pid)
 	}
 	thread->ppid = SYD_PPID_NONE;
 	thread->tgid = SYD_TGID_NONE;
+	thread->abspath = NULL;
+	thread->execve_pid = SYD_PPID_NONE;
 
 	thread->comm[0] = '?';
 	thread->comm[1] = '\0';
@@ -408,6 +391,7 @@ static syd_process_t *new_thread(pid_t pid)
 
 static syd_process_t *new_process(pid_t pid)
 {
+	int r;
 	syd_process_t *process;
 
 	process = new_thread(pid);
@@ -415,6 +399,10 @@ static syd_process_t *new_process(pid_t pid)
 		return NULL;
 	process->tgid = process->pid;
 	new_shared_memory(process);
+	if ((r = new_sandbox(&process->box)) < 0) {
+		errno = -r;
+		die_errno("new_sandbox");
+	}
 
 	return process;
 }
@@ -473,8 +461,6 @@ void reset_process(syd_process_t *p)
 static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 				bool genuine)
 {
-	bool share_thread, share_fs, share_files;
-
 	/*
 	 * Link together for memory sharing, as necessary
 	 * Note: thread in this context is any process which shares memory.
@@ -488,29 +474,38 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 	 * advantage of such cases and decrease memory usage.
 	 */
 
-	share_thread = share_fs = share_files = false;
 	if (parent && genuine) { /* Sharing data needs a genuine parent, check
 			  parent_process. */
-		if (parent->new_clone_flags & SYD_CLONE_THREAD)
-			share_thread = true;
-		if (parent->new_clone_flags & SYD_CLONE_FS)
-			share_fs = true;
-		if (parent->new_clone_flags & SYD_CLONE_FILES)
-			share_files = true;
 		current->clone_flags = parent->new_clone_flags;
 	} else {
 		current->clone_flags = SIGCHLD;
 	}
 
-	/* Disable this for now till we're sure it's done right.
-	 * There're a few cases where it is racy and/or segfault.
-	 */
-	share_thread = true;
-
 	int r;
 	int pfd_cwd = -1;
 	char *cwd;
 
+	if (!P_BOX(current))
+		new_sandbox(&P_BOX(current));
+	if (parent)
+		current->execve_pid = parent->execve_pid;
+	if (parent && P_BOX(parent)->magic_lock == LOCK_SET) {
+		copy_sandbox(P_BOX(current), P_BOX(parent));
+	} else {
+		copy_sandbox(P_BOX(current), box_current(NULL));
+	}
+
+	new_shared_memory_clone_files(current);
+	new_shared_memory_clone_fs(current);
+	if (!genuine) { /* Child with a non-genuine parent has a
+			 completely separate set of shared memory
+			 pointers, as the last step we want to
+			 read cwd from /proc */
+		pfd_cwd = syd_proc_cwd_open(current->pid);
+		goto proc_getcwd;
+	}
+
+	P_CWD(current) = NULL;
 	if (current->pid == sydbox->execve_pid) {
 		/* Oh, I know this person, we're in the same directory. */
 		P_CWD(current) = xgetcwd();
@@ -531,37 +526,7 @@ proc_getcwd:
 		if (pfd_cwd >= 0)
 			close(pfd_cwd);
 		return;
-	}
-
-	if (share_thread || P_BOX(parent)->magic_lock == LOCK_SET) {
-		current->shm.clone_thread = parent->shm.clone_thread;
-		P_CLONE_THREAD_RETAIN(current);
 	} else {
-		new_shared_memory_clone_thread(current);
-		copy_sandbox(P_BOX(current), box_current(NULL));
-	}
-	if (share_thread)
-		P_EXECVE_PID(current) = P_EXECVE_PID(parent);
-
-	if (share_files) {
-		current->shm.clone_files = parent->shm.clone_files;
-		P_CLONE_FILES_RETAIN(current);
-	} else {
-		new_shared_memory_clone_files(current);
-	}
-
-	if (share_fs) {
-		current->shm.clone_fs = parent->shm.clone_fs;
-		P_CLONE_FS_RETAIN(current);
-	} else {
-		new_shared_memory_clone_fs(current);
-		if (!genuine) { /* Child with a non-genuine parent has a
-				 completely separate set of shared memory
-				 pointers, as the last step we want to
-				 read cwd from /proc */
-			pfd_cwd = syd_proc_cwd_open(current->pid);
-			goto proc_getcwd;
-		}
 		P_CWD(current) = xstrdup(P_CWD(parent));
 	}
 }
@@ -634,9 +599,17 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 	pid = p->pid;
 	dump(DUMP_THREAD_FREE, pid);
 
+	if (p->cwd) {
+		free(p->cwd);
+		p->cwd = NULL;
+	}
 	if (p->abspath) {
 		free(p->abspath);
 		p->abspath = NULL;
+	}
+	if (sc_map_size_64v(&p->sockmap)) {
+		sc_map_clear_64v(&p->sockmap);
+		sc_map_term_64v(&p->sockmap);
 	}
 
 	for (unsigned short i = 0; i < 6; i++) {
@@ -682,10 +655,6 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 		process_remove(p);
 	}
 
-	/* Release shared memory */
-	P_CLONE_THREAD_RELEASE(p);
-	P_CLONE_FS_RELEASE(p);
-	P_CLONE_FILES_RELEASE(p);
 	free(p); /* good bye, good bye, good bye. */
 }
 
@@ -715,7 +684,6 @@ static void tweak_execve_thread(syd_process_t *leader,
 static void switch_execve_leader(pid_t leader_pid, syd_process_t *execve_thread)
 {
 	bool update_cwd = false;
-	bool clone_thread = false;
 	bool clone_fs = false;
 
 	dump(DUMP_EXEC_MT, execve_thread->pid, leader_pid,
@@ -726,14 +694,7 @@ static void switch_execve_leader(pid_t leader_pid, syd_process_t *execve_thread)
 		goto out;
 	process_remove(leader);
 
-	if (leader->shm.clone_thread && execve_thread->shm.clone_thread &&
-	    execve_thread->shm.clone_thread != leader->shm.clone_thread)
-		clone_thread = true;
-	else if (leader->shm.clone_fs && execve_thread->shm.clone_fs &&
-		 execve_thread->shm.clone_fs != leader->shm.clone_fs)
-		clone_fs = true;
-
-	if (clone_fs && !P_CWD(execve_thread) && P_CWD(leader))
+	if (!P_CWD(execve_thread) && P_CWD(leader))
 		P_CWD(execve_thread) = strdup(P_CWD(leader));
 	else
 		update_cwd = true;
@@ -744,8 +705,6 @@ static void switch_execve_leader(pid_t leader_pid, syd_process_t *execve_thread)
 	bury_process(leader, false);
 
 out:
-	if (!clone_thread)
-		new_shared_memory_clone_thread(execve_thread);
 	if (!clone_fs)
 		new_shared_memory_clone_fs(execve_thread);
 	if (update_cwd)
@@ -879,8 +838,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	else
 		fprintf(stderr, "\t%sParent ID: ? (Orphan)%s\n", CN, CE);
 	fprintf(stderr, "\t%sThread Group ID: %u%s\n", CN, tgid > 0 ? tgid : 0, CE);
-	if (current->shm.clone_fs)
-		fprintf(stderr, "\t%sCwd: `%s'%s\n", CN, P_CWD(current), CE);
+	fprintf(stderr, "\t%sCwd: `%s'%s\n", CN, P_CWD(current), CE);
 	fprintf(stderr, "\t%sSyscall: {no:%lu arch:%d name:%s}%s\n", CN,
 			current->sysnum, arch, current->sysname, CE);
 #if 0
@@ -920,9 +878,6 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 			info.nice, info.num_threads,
 			CE);
 	}
-
-	if (!current->shm.clone_thread || !current->shm.clone_thread->box)
-		return;
 
 	fprintf(stderr, "\t%sSandbox: {exec:%s read:%s write:%s sock:%s}%s\n",
 		CN,
@@ -1436,15 +1391,13 @@ static int event_exec(syd_process_t *current)
 
 	assert(current);
 
-	if (current->shm.clone_thread &&
-	    P_BOX(current)->magic_lock == LOCK_PENDING) {
+	if (P_BOX(current)->magic_lock == LOCK_PENDING) {
 		/* magic commands are locked */
 		P_BOX(current)->magic_lock = LOCK_SET;
 	}
 
 	current->flags |= SYD_IN_EXECVE;
-	if (current->shm.clone_thread)
-		P_EXECVE_PID(current) = current->pid;
+	current->execve_pid = current->pid;
 
 	if (!current->abspath) /* nothing left to do */
 		return 0;
@@ -1535,7 +1488,7 @@ notify_receive:
 		memset(sydbox->response, 0, sizeof(struct seccomp_notif_resp));
 		sydbox->response->id = sydbox->request->id;
 		sydbox->response->val = 0;
-		sydbox_syscall_deny();
+		sydbox_syscall_deny(EPERM);
 		if (sydbox->request->id == 0 && sydbox->request->pid == 0) {
 			say("warning: seccomp request with neither id nor pid! "
 			    "Denying...");
@@ -1632,8 +1585,8 @@ notify_receive:
 				parent = process_lookup(leader_pid);
 				current = process_init(pid, parent, true);
 			}
-			if (current && current->shm.clone_thread)
-				execve_pid = P_EXECVE_PID(current);
+			if (current)
+				execve_pid = current->execve_pid;
 			else
 				execve_pid = pid;
 			if (execve_pid == 0 && pid != leader_pid)
@@ -1741,12 +1694,12 @@ pid_validate:
 				}
 				if (pid == execve_pid) {
 					if (current)
-						P_EXECVE_PID(current) = 0;
+						current->execve_pid = 0;
 				} else {
 					current = process_lookup(pid);
 					switch_execve_leader(execve_pid,
 							     current);
-					P_EXECVE_PID(current) = 0;
+					current->execve_pid = 0;
 					/* reap zombies after notify respond
 					reap_my_zombies = true; */
 				}

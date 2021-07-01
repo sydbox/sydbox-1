@@ -49,95 +49,26 @@ static int rule_add_open_wr(uint32_t action, int sysnum, int open_flag);
 	(rule_add_open_wr(SCMP_ACT_NOTIFY, (sysnum), (open_flag)))
 
 /*
- * 1. Order matters! Put more hot system calls above.
+ * 1. The elements must be sorted alphabetically by name.
+ *    This table is binary searched.
  * 2. ".filter" is for simple seccomp-only rules. If a system call entry has a
  *    ".filter" member, ".enter" and ".exit" members are *only* used as a
  *    ptrace() based fallback if sydbox->config.use_seccomp is false.
  */
 static const sysentry_t syscall_entries[] = {
 	{
-		.name = "mmap",
-		.no = SCMP_SYS(mmap),
-		.filter = filter_mmap,
+		.name = "accept",
+		.no = SCMP_SYS(accept),
+		.notify = sys_accept,
+		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 	{
-		.name = "mprotect",
-		.no = SCMP_SYS(mprotect),
-		.filter = filter_mprotect,
-	},
-	{
-		.name = "mmap2",
-		.no = SCMP_SYS(mmap2),
-		.filter = filter_mmap2,
-	},
-
-	{
-		.name = "open",
-		.no = SCMP_SYS(open),
-		.notify = sys_open,
-		.open_flag = 1,
-		.sandbox_read = true,
-		.sandbox_write = true,
-	},
-	{
-		.name = "openat",
-		.no = SCMP_SYS(openat),
-		.notify = sys_openat,
-		.open_flag = 2,
-		.sandbox_read = true,
-		.sandbox_write = true,
-	},
-#ifdef __SNR_openat2
-	{
-		.name = "openat2",
-		.no = SCMP_SYS(openat2),
-		.notify = sys_openat2,
-		.sandbox_read = true,
-		.sandbox_write = true,
-	},
-#endif
-
-	{
-		.name = "stat",
-		.no = SCMP_SYS(stat),
-		.notify = sys_stat,
-		.magic_lock_off = true,
-	},
-	{
-		.name = "lstat",
-		.no = SCMP_SYS(lstat),
-		.notify = sys_stat,
-		.magic_lock_off = true,
-	},
-	{
-		.name = "statx",
-		.no = SCMP_SYS(statx),
-		.notify = sys_statx,
-		.magic_lock_off = true,
-	},
-	{
-		.name = "stat64",
-		.no = SCMP_SYS(stat64),
-		.notify = sys_stat,
-		.magic_lock_off = true,
-	},
-	{
-		.name = "lstat64",
-		.no = SCMP_SYS(lstat64),
-		.notify = sys_stat,
-		.magic_lock_off = true,
-	},
-	{
-		.name = "newfstatat",
-		.no = SCMP_SYS(newfstatat),
-		.notify = sys_fstatat,
-		.magic_lock_off = true,
-	},
-
-	{
-		.name = "ioctl",
-		.no = SCMP_SYS(ioctl),
-		.filter = filter_ioctl,
+		.name = "accept4",
+		.no = SCMP_SYS(accept4),
+		.notify = sys_accept,
+		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 
 	{
@@ -149,6 +80,70 @@ static const sysentry_t syscall_entries[] = {
 		.sandbox_exec = true,
 		.access_mode = 1,
 	},
+	{
+		.name = "bind",
+		.no = SCMP_SYS(bind),
+		.filter = filter_bind,
+		.notify = sys_bind,
+		.sandbox_network = true,
+		.rule_rewrite = true,
+	},
+	{
+		.name = "chdir",
+		.no = SCMP_SYS(chdir),
+		.notify = sys_chdir,
+		.sandbox_read = true,
+	},
+
+	{
+		.name = "chmod",
+		.no = SCMP_SYS(chmod),
+		.notify = sys_chmod,
+		.emulate = emu_chmod,
+		.sandbox_write = true,
+	},
+	{
+		.name = "chown",
+		.no = SCMP_SYS(chown),
+		.notify = sys_chown,
+		.sandbox_write = true,
+	},
+	{
+		.name = "chown32",
+		.no = SCMP_SYS(chown32),
+		.notify = sys_chown,
+		.sandbox_write = true,
+	},
+
+	{
+		.name = "connect",
+		.no = SCMP_SYS(connect),
+		.filter = filter_connect,
+		.notify = sys_connect,
+		.sandbox_network = true,
+		.rule_rewrite = true,
+	},
+
+	{
+		.name = "creat",
+		.no = SCMP_SYS(creat),
+		.notify = sys_creat,
+		.sandbox_write = true,
+	},
+
+	{
+		.name = "execve",
+		.no = SCMP_SYS(execve),
+		.notify = sys_execve,
+		.sandbox_exec = true,
+	},
+	{
+		.name = "execveat",
+		.no = SCMP_SYS(execveat),
+		.notify = sys_execveat,
+		.sandbox_exec = true,
+	},
+
 	{
 		.name = "faccessat",
 		.no = SCMP_SYS(faccessat),
@@ -171,18 +166,29 @@ static const sysentry_t syscall_entries[] = {
 		.sandbox_exec = true,
 		.access_mode = 2,
 	},
-
-	{
-		.name = "chdir",
-		.no = SCMP_SYS(chdir),
-		.notify = sys_chdir,
-		.sandbox_read = true,
-	},
 	{
 		.name = "fchdir",
 		.no = SCMP_SYS(fchdir),
 		.notify = sys_fchdir,
 		.sandbox_read = true,
+	},
+	{
+		.name = "fchmodat",
+		.no = SCMP_SYS(fchmodat),
+		.notify = sys_fchmodat,
+		.sandbox_write = true,
+	},
+	{
+		.name = "fchownat",
+		.no = SCMP_SYS(fchownat),
+		.notify = sys_fchownat,
+		.sandbox_write = true,
+	},
+	{
+		.name = "futimesat",
+		.no = SCMP_SYS(futimesat),
+		.notify = sys_futimesat,
+		.sandbox_write = true,
 	},
 
 	{
@@ -199,50 +205,19 @@ static const sysentry_t syscall_entries[] = {
 	},
 
 	{
-		.name = "execve",
-		.no = SCMP_SYS(execve),
-		.notify = sys_execve,
-		.sandbox_exec = true,
-	},
-	{
-		.name = "execveat",
-		.no = SCMP_SYS(execveat),
-		.notify = sys_execveat,
-		.sandbox_exec = true,
+		.name = "getsockname",
+		.no = SCMP_SYS(getsockname),
+		.notify = sys_getsockname,
+		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 
 	{
-		.name = "creat",
-		.no = SCMP_SYS(creat),
-		.notify = sys_creat,
-		.sandbox_write = true,
+		.name = "ioctl",
+		.no = SCMP_SYS(ioctl),
+		.filter = filter_ioctl,
 	},
 
-	{
-		.name = "chmod",
-		.no = SCMP_SYS(chmod),
-		.notify = sys_chmod,
-		.sandbox_write = true,
-	},
-	{
-		.name = "fchmodat",
-		.no = SCMP_SYS(fchmodat),
-		.notify = sys_fchmodat,
-		.sandbox_write = true,
-	},
-
-	{
-		.name = "chown",
-		.no = SCMP_SYS(chown),
-		.notify = sys_chown,
-		.sandbox_write = true,
-	},
-	{
-		.name = "chown32",
-		.no = SCMP_SYS(chown32),
-		.notify = sys_chown,
-		.sandbox_write = true,
-	},
 	{
 		.name = "lchown",
 		.no = SCMP_SYS(lchown),
@@ -255,11 +230,66 @@ static const sysentry_t syscall_entries[] = {
 		.notify = sys_lchown,
 		.sandbox_write = true,
 	},
+
 	{
-		.name = "fchownat",
-		.no = SCMP_SYS(fchownat),
-		.notify = sys_fchownat,
+		.name = "link",
+		.no = SCMP_SYS(link),
+		.notify = sys_link,
 		.sandbox_write = true,
+	},
+	{
+		.name = "linkat",
+		.no = SCMP_SYS(linkat),
+		.notify = sys_linkat,
+		.sandbox_write = true,
+	},
+
+	{
+		.name = "listen",
+		.no = SCMP_SYS(listen),
+		.notify = sys_listen,
+		.sandbox_network = true,
+		.rule_rewrite = true,
+	},
+
+	{
+		.name = "listxattr",
+		.no = SCMP_SYS(listxattr),
+		.notify = sys_listxattr,
+		.sandbox_read = true,
+	},
+	{
+		.name = "llistxattr",
+		.no = SCMP_SYS(llistxattr),
+		.notify = sys_llistxattr,
+		.sandbox_read = true,
+	},
+
+	{
+		.name = "lremovexattr",
+		.no = SCMP_SYS(lremovexattr),
+		.notify = sys_lremovexattr,
+		.sandbox_write = true,
+	},
+
+	{
+		.name = "lsetxattr",
+		.no = SCMP_SYS(lsetxattr),
+		.notify = sys_lsetxattr,
+		.sandbox_write = true,
+	},
+
+	{
+		.name = "lstat",
+		.no = SCMP_SYS(lstat),
+		.notify = sys_stat,
+		.magic_lock_off = true,
+	},
+	{
+		.name = "lstat64",
+		.no = SCMP_SYS(lstat64),
+		.notify = sys_stat,
+		.magic_lock_off = true,
 	},
 
 	{
@@ -289,73 +319,75 @@ static const sysentry_t syscall_entries[] = {
 	},
 
 	{
-		.name = "rmdir",
-		.no = SCMP_SYS(rmdir),
-		.notify = sys_rmdir,
+		.name = "mmap",
+		.no = SCMP_SYS(mmap),
+		.filter = filter_mmap,
+	},
+	{
+		.name = "mmap2",
+		.no = SCMP_SYS(mmap2),
+		.filter = filter_mmap2,
+	},
+
+	{
+		.name = "mount",
+		.no = SCMP_SYS(mount),
+		.notify = sys_mount,
 		.sandbox_write = true,
 	},
 
 	{
-		.name = "truncate",
-		.no = SCMP_SYS(truncate),
-		.notify = sys_truncate,
-		.sandbox_write = true,
-	},
-	{
-		.name = "truncate64",
-		.no = SCMP_SYS(truncate64),
-		.notify = sys_truncate,
-		.sandbox_write = true,
+		.name = "mprotect",
+		.no = SCMP_SYS(mprotect),
+		.filter = filter_mprotect,
 	},
 
 	{
-		.name = "utime",
-		.no = SCMP_SYS(utime),
-		.notify = sys_utime,
-		.sandbox_write = true,
-	},
-	{
-		.name = "utimes",
-		.no = SCMP_SYS(utimes),
-		.notify = sys_utimes,
-		.sandbox_write = true,
-	},
-	{
-		.name = "utimensat",
-		.no = SCMP_SYS(utimensat),
-		.notify = sys_utimensat,
-		.sandbox_write = true,
-	},
-	{
-		.name = "futimesat",
-		.no = SCMP_SYS(futimesat),
-		.notify = sys_futimesat,
-		.sandbox_write = true,
+		.name = "newfstatat",
+		.no = SCMP_SYS(newfstatat),
+		.notify = sys_fstatat,
+		.magic_lock_off = true,
 	},
 
 	{
-		.name = "unlink",
-		.no = SCMP_SYS(unlink),
-		.notify = sys_unlink,
+		.name = "open",
+		.no = SCMP_SYS(open),
+		.notify = sys_open,
+		.open_flag = 1,
+		.sandbox_read = true,
 		.sandbox_write = true,
 	},
 	{
-		.name = "unlinkat",
-		.no = SCMP_SYS(unlinkat),
-		.notify = sys_unlinkat,
+		.name = "openat",
+		.no = SCMP_SYS(openat),
+		.notify = sys_openat,
+		.open_flag = 2,
+		.sandbox_read = true,
 		.sandbox_write = true,
+	},
+#ifdef __SNR_openat2
+	{
+		.name = "openat2",
+		.no = SCMP_SYS(openat2),
+		.notify = sys_openat2,
+		.sandbox_read = true,
+		.sandbox_write = true,
+	},
+#endif
+
+	{
+		.name = "recvmsg",
+		.no = SCMP_SYS(recvmsg),
+		.filter = filter_recvmsg,
+		.notify = sys_recvmsg,
+		.sandbox_network = true,
+		.rule_rewrite = true,
 	},
 
 	{
-		.name = "link",
-		.no = SCMP_SYS(link),
-		.notify = sys_link,
-		.sandbox_write = true,
-	},
-	{
-		.name = "linkat",
-		.no = SCMP_SYS(linkat),
-		.notify = sys_linkat,
+		.name = "removexattr",
+		.no = SCMP_SYS(removexattr),
+		.notify = sys_removexattr,
 		.sandbox_write = true,
 	},
 
@@ -379,6 +411,64 @@ static const sysentry_t syscall_entries[] = {
 	},
 
 	{
+		.name = "rmdir",
+		.no = SCMP_SYS(rmdir),
+		.notify = sys_rmdir,
+		.sandbox_write = true,
+	},
+
+	{
+		.name = "sendmsg",
+		.no = SCMP_SYS(sendmsg),
+		.filter = filter_sendmsg,
+		.notify = sys_sendmsg,
+		.sandbox_network = true,
+		.rule_rewrite = true,
+	},
+	{
+		.name = "sendto",
+		.no = SCMP_SYS(sendto),
+		.filter = filter_sendto,
+		.notify = sys_sendto,
+		.sandbox_network = true,
+		.rule_rewrite = true,
+	},
+
+	{
+		.name = "setxattr",
+		.no = SCMP_SYS(setxattr),
+		.notify = sys_setxattr,
+		.sandbox_write = true,
+	},
+
+	{
+		.name = "socketcall",
+		.no = SCMP_SYS(socketcall),
+		.notify = sys_socketcall,
+		.sandbox_network = true,
+		.rule_rewrite = true,
+	},
+
+	{
+		.name = "stat",
+		.no = SCMP_SYS(stat),
+		.notify = sys_stat,
+		.magic_lock_off = true,
+	},
+	{
+		.name = "stat64",
+		.no = SCMP_SYS(stat64),
+		.notify = sys_stat,
+		.magic_lock_off = true,
+	},
+	{
+		.name = "statx",
+		.no = SCMP_SYS(statx),
+		.notify = sys_statx,
+		.magic_lock_off = true,
+	},
+
+	{
 		.name = "symlink",
 		.no = SCMP_SYS(symlink),
 		.notify = sys_symlink,
@@ -392,124 +482,18 @@ static const sysentry_t syscall_entries[] = {
 	},
 
 	{
-		.name = "socketcall",
-		.no = SCMP_SYS(socketcall),
-		.notify = sys_socketcall,
-		.sandbox_network = true,
-		.rule_rewrite = true,
-	},
-	{
-		.name = "bind",
-		.no = SCMP_SYS(bind),
-		.filter = filter_bind,
-		.notify = sys_bind,
-		.sandbox_network = true,
-		.rule_rewrite = true,
-	},
-	{
-		.name = "connect",
-		.no = SCMP_SYS(connect),
-		.filter = filter_connect,
-		.notify = sys_connect,
-		.sandbox_network = true,
-		.rule_rewrite = true,
-	},
-	{
-		.name = "sendto",
-		.no = SCMP_SYS(sendto),
-		.filter = filter_sendto,
-		.notify = sys_sendto,
-		.sandbox_network = true,
-		.rule_rewrite = true,
-	},
-	{
-		.name = "listen",
-		.no = SCMP_SYS(listen),
-		.notify = sys_listen,
-		.sandbox_network = true,
-		.rule_rewrite = true,
-	},
-	{
-		.name = "accept",
-		.no = SCMP_SYS(accept),
-		.notify = sys_accept,
-		.sandbox_network = true,
-		.rule_rewrite = true,
-	},
-	{
-		.name = "accept4",
-		.no = SCMP_SYS(accept4),
-		.notify = sys_accept,
-		.sandbox_network = true,
-		.rule_rewrite = true,
-	},
-	{
-		.name = "getsockname",
-		.no = SCMP_SYS(getsockname),
-		.notify = sys_getsockname,
-		.sandbox_network = true,
-		.rule_rewrite = true,
-	},
-	{
-		.name = "sendmsg",
-		.no = SCMP_SYS(sendmsg),
-		.filter = filter_sendmsg,
-		.notify = sys_sendmsg,
-		.sandbox_network = true,
-		.rule_rewrite = true,
-	},
-	{
-		.name = "recvmsg",
-		.no = SCMP_SYS(recvmsg),
-		.filter = filter_recvmsg,
-		.notify = sys_recvmsg,
-		.sandbox_network = true,
-		.rule_rewrite = true,
-	},
-
-	{
-		.name = "listxattr",
-		.no = SCMP_SYS(listxattr),
-		.notify = sys_listxattr,
-		.sandbox_read = true,
-	},
-	{
-		.name = "llistxattr",
-		.no = SCMP_SYS(llistxattr),
-		.notify = sys_llistxattr,
-		.sandbox_read = true,
-	},
-	{
-		.name = "setxattr",
-		.no = SCMP_SYS(setxattr),
-		.notify = sys_setxattr,
+		.name = "truncate",
+		.no = SCMP_SYS(truncate),
+		.notify = sys_truncate,
 		.sandbox_write = true,
 	},
 	{
-		.name = "lsetxattr",
-		.no = SCMP_SYS(lsetxattr),
-		.notify = sys_lsetxattr,
-		.sandbox_write = true,
-	},
-	{
-		.name = "removexattr",
-		.no = SCMP_SYS(removexattr),
-		.notify = sys_removexattr,
-		.sandbox_write = true,
-	},
-	{
-		.name = "lremovexattr",
-		.no = SCMP_SYS(lremovexattr),
-		.notify = sys_lremovexattr,
+		.name = "truncate64",
+		.no = SCMP_SYS(truncate64),
+		.notify = sys_truncate,
 		.sandbox_write = true,
 	},
 
-	{
-		.name = "mount",
-		.no = SCMP_SYS(mount),
-		.notify = sys_mount,
-		.sandbox_write = true,
-	},
 	{
 		.name = "umount",
 		.no = SCMP_SYS(umount),
@@ -522,12 +506,45 @@ static const sysentry_t syscall_entries[] = {
 		.notify = sys_umount2,
 		.sandbox_write = true,
 	},
+
 	{
 		.name = "uname",
 		.no = SCMP_SYS(uname),
 		.filter = filter_uname,
 		.notify = sys_uname,
 		.sandbox_opt = magic_query_restrict_sysinfo,
+	},
+
+	{
+		.name = "unlink",
+		.no = SCMP_SYS(unlink),
+		.notify = sys_unlink,
+		.sandbox_write = true,
+	},
+	{
+		.name = "unlinkat",
+		.no = SCMP_SYS(unlinkat),
+		.notify = sys_unlinkat,
+		.sandbox_write = true,
+	},
+
+	{
+		.name = "utime",
+		.no = SCMP_SYS(utime),
+		.notify = sys_utime,
+		.sandbox_write = true,
+	},
+	{
+		.name = "utimensat",
+		.no = SCMP_SYS(utimensat),
+		.notify = sys_utimensat,
+		.sandbox_write = true,
+	},
+	{
+		.name = "utimes",
+		.no = SCMP_SYS(utimes),
+		.notify = sys_utimes,
+		.sandbox_write = true,
 	},
 };
 
@@ -1015,27 +1032,35 @@ int sysinit_seccomp(void)
 	return 0;
 }
 
+static int
+comp_sysentry(const void *e1, const void *e2)
+{
+	sysentry_t *entry1 = (sysentry_t *)e1;
+	sysentry_t *entry2 = (sysentry_t *)e2;
+	return strcmp(entry1->name, entry2->name);
+}
+
 int sysnotify(syd_process_t *current)
 {
 	int r;
-	const sysentry_t *entry;
 
 	assert(current);
 
-	/* TODO: Make this a binary search! */
-	entry = NULL;
-	for (unsigned i = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		if (!strcmp(current->sysname, syscall_entries[i].name)) {
-			entry = &syscall_entries[i];
-			break;
-		}
+	sysentry_t key, *entry;
+	key.name = current->sysname;
+	entry = bsearch(&key, syscall_entries, ELEMENTSOF(syscall_entries),
+			sizeof(sysentry_t), comp_sysentry);
+	if (!entry) {
+		say("unknown system call: %s", key.name);
+		return 0; /* Unknown system call */
 	}
-	if (!entry)
-		return 0;
+
 	r = 0;
 	current->retval = 0;
 	if (entry->notify)
 		r = entry->notify(current);
+	if (sydbox_syscall_flag_cont() && entry->emulate)
+	    r = entry->emulate(current);
 
 	return r;
 }

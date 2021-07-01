@@ -413,6 +413,9 @@ resolve_path:
 		goto out;
 	}
 
+	if (abspath)
+		current->abspath = abspath;
+
 	/* Step 4: Record absolute path for dump. */
 	if (current->repr[info->arg_index])
 		free(current->repr[info->arg_index]);
@@ -510,11 +513,11 @@ out:
 	if (r == 0) {
 		if (info->ret_abspath)
 			*info->ret_abspath = abspath;
-		else if (abspath && !info->cache_abspath)
-			free(abspath);
+		/* else if (abspath && !info->cache_abspath)
+			free(abspath); */
 	} else {
-		if (abspath && !info->cache_abspath)
-			free(abspath);
+		/* if (abspath && !info->cache_abspath)
+			free(abspath); */
 		if (info->ret_abspath)
 			*info->ret_abspath = NULL;
 	}
@@ -587,6 +590,11 @@ int box_check_socket(syd_process_t *current, syscall_info_t *info)
 				violation(current, "%s()", current->sysname);
 			goto out;
 		}
+		if (abspath) {
+			if (current->abspath)
+				free(current->abspath);
+			current->abspath = abspath;
+		}
 
 		if (box_check_access(info->access_mode, acl_sockmatch_saun,
 				     access_lists, 2, abspath)) {
@@ -607,19 +615,22 @@ int box_check_socket(syd_process_t *current, syscall_info_t *info)
 
 	if (current->repr[info->arg_index])
 		free(current->repr[info->arg_index]);
-	current->repr[info->arg_index] = box_name_violation_sock(current, info, psa, abspath);
+	current->repr[info->arg_index] = box_name_violation_sock(current, info,
+								 psa, abspath);
 	dump(DUMP_SYSENT, current);
 
 	r = deny(current, info->deny_errno);
 
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */
-		if (acl_match_saun(ACL_ACTION_NONE, info->access_filter, abspath, NULL)) {
+		if (acl_match_saun(ACL_ACTION_NONE, info->access_filter,
+				   abspath, NULL)) {
 			/* access violation filtered */
 			goto out;
 		}
 	} else {
-		if (acl_match_sock(ACL_ACTION_NONE, info->access_filter, psa, NULL)) {
+		if (acl_match_sock(ACL_ACTION_NONE, info->access_filter,
+				   psa, NULL)) {
 			/* access violation filtered */
 			goto out;
 		}
@@ -633,8 +644,8 @@ out:
 		/* Access granted. */
 		if (info->ret_abspath)
 			*info->ret_abspath = abspath;
-		else if (abspath && !info->cache_abspath)
-			free(abspath);
+		/*else if (abspath && !info->cache_abspath)
+			free(abspath); */
 
 		if (info->ret_addr)
 			*info->ret_addr = psa;
@@ -642,8 +653,8 @@ out:
 			free(psa);
 	} else {
 		free(psa);
-		if (abspath && !info->cache_abspath)
-			free(abspath);
+		/*if (abspath && !info->cache_abspath)
+			free(abspath); */
 		if (info->ret_abspath)
 			*info->ret_abspath = NULL;
 		if (info->ret_addr)
