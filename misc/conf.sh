@@ -8,5 +8,5 @@ cd "$root"
 exec "$root"/./configure --prefix=/usr --sysconfdir=/etc \
     --disable-code-coverage \
     --enable-maintainer-mode \
-    --enable-static \
+    --disable-static \
     --disable-dependency-tracking

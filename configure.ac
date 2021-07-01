@@ -170,7 +170,11 @@ SYDBOX_STATIC_CFLAGS=
 if test x"$enable_static" = x"yes"; then
 	SYDBOX_LIBTOOL_FLAGS="-all-static"
 	SYDBOX_STATIC_CFLAGS="-static"
+	SYDBOX_RUST_LIBTYPE="staticlib"
+else
+	SYDBOX_RUST_LIBTYPE="cdylib"
 fi
+AC_SUBST([SYDBOX_RUST_LIBTYPE])
 AC_SUBST([SYDBOX_LIBTOOL_FLAGS])
 AC_SUBST([SYDBOX_STATIC_CFLAGS])
 AM_CONDITIONAL([ENABLE_STATIC], test x"$enable_static" = x"yes")
@@ -724,12 +728,16 @@ if test x"$WANT_DEBUG" = x"yes"; then
 	PKG_CHECK_MODULES([libunwind], [libunwind >= $LIBUNWIND_REQUIRED],,
 			  AC_MSG_ERROR([sydbox requires libunwind-$LIBUNWIND_REQUIRED or newer for --enable-debug]))
 	SYDBOX_DEBUG=1
+	SYDBOX_CARGO_RELEASE_TYPE=debug
 else
 	SYDBOX_DEBUG=0
+	SYDBOX_CARGO_RELEASE_TYPE=release
 fi
 AM_CONDITIONAL([WANT_DEBUG], test x"$WANT_DEBUG" = x"yes")
 AC_DEFINE_UNQUOTED([SYDBOX_DEBUG], [$SYDBOX_DEBUG], ['Enable debug support (requires: libunwind)'])
 AC_SUBST([SYDBOX_DEBUG])
+AM_CONDITIONAL([SYDBOX_CARGO_RELEASE],
+	       test x"$SYDBOX_CARGO_RELEASE_TYPE" = x"release")
 
 dnl check for process_vm_readv and process_vm_writev
 STRUCT_IOVEC_WARN=0
@@ -821,6 +829,16 @@ dnl check for xsltproc
 AC_PATH_PROG([XSLTPROC], [xsltproc])
 AM_CONDITIONAL([HAVE_XSLTPROC], test x"$XSLTPROC" != x"")
 
+dnl check for Rust tools
+AC_PATH_PROG([CARGO], [cargo])
+AC_PATH_PROG([CBINDGEN], [cbindgen])
+if test x"$CARGO" = x""; then
+	AC_MSG_ERROR([cargo is required to build SydBox])
+fi
+if test x"$CBINDGEN" = x""; then
+	AC_MSG_ERROR([cbindgen is required to build SydBox])
+fi
+
 dnl installed tests
 AC_MSG_CHECKING([whether tests should be installed])
 AC_ARG_ENABLE([installed-tests],
@@ -854,6 +872,7 @@ AC_SUBST_FILE([GENERATED_FILE])
 dnl output
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_CONFIG_FILES([Makefile
+		 Cargo.toml
 		 src/Makefile
 		 syd/Makefile
 		 data/Makefile

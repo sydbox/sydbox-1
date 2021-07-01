@@ -24,6 +24,10 @@ include = [
 	"/LICENSE",
 	"/TODO",
 ]
+[lib]
+name = "sydbox"
+crate-type = ["@SYDBOX_RUST_LIBTYPE@"]
+path = "src/lib.rs"
 
 [[bin]]
 name = "pandora"

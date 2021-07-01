@@ -108,6 +108,7 @@ static inline syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 
 static void about(void)
 {
+	rust_function();
 	printf(PACKAGE"-"VERSION GITVERSION);
 
 	printf("\nOptions:");
