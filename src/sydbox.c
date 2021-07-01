@@ -1071,7 +1071,7 @@ static int sig_child(void)
 	pid_t pid = interruptid;
 
 	syd_process_t *p = process_lookup(pid);
-	if (process_is_zombie(p->pid)) {
+	if (p && process_is_zombie(p->pid)) {
 		bury_process(p, true);
 		return ECHILD;
 	}
