@@ -125,23 +125,29 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         }
     });
 
-    child.cfg.gid.as_ref().map(|&gid| {
-        if libc::setgid(gid) != 0 {
-            fail(Err::SetUser, epipe);
-        }
-    });
+    if child.cfg.gid.is_some() {
+        child.cfg.gid.as_ref().map(|&gid| {
+            if libc::setgid(gid) != 0 {
+                fail(Err::SetUser, epipe);
+            }
+        });
+    }
 
-    child.cfg.supplementary_gids.as_ref().map(|groups| {
-        if libc::setgroups(groups.len() as size_t, groups.as_ptr()) != 0 {
-            fail(Err::SetUser, epipe);
-        }
-    });
+    if child.cfg.supplementary_gids.is_some() {
+        child.cfg.supplementary_gids.as_ref().map(|groups| {
+            if libc::setgroups(groups.len() as size_t, groups.as_ptr()) != 0 {
+                fail(Err::SetUser, epipe);
+            }
+        });
+    }
 
-    child.cfg.uid.as_ref().map(|&uid| {
-        if libc::setuid(uid) != 0 {
-            fail(Err::SetUser, epipe);
-        }
-    });
+    if child.cfg.uid.is_some() {
+        child.cfg.uid.as_ref().map(|&uid| {
+            if libc::setuid(uid) != 0 {
+                fail(Err::SetUser, epipe);
+            }
+        });
+    }
 
     child.keep_caps.as_ref().map(|caps| {
         let header = ffi::CapsHeader {
