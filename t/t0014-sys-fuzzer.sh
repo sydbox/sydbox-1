@@ -88,7 +88,7 @@ for syscall_name in \
         truncate64 tuxcall ugetrlimit ulimit umask uname unlink unlinkat \
         userfaultfd ustat utime utimensat utimensat_time64 utimes vfork vhangup \
         vmsplice wait4 waitid waitpid write writev; do
-    test_expect_success TRINITY \
+    test_expect_success EXPENSIVE,TRINITY \
         "fuzzing $syscall_name does not generate any failures [memory_access:0]" '
     syd \
         -M '0' \
