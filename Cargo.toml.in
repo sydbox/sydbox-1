@@ -26,7 +26,7 @@ include = [
 ]
 [lib]
 name = "sydbox"
-crate-type = ["@RUST_LIBTYPE@"]
+crate-type = [@RUST_LIBTYPES@]
 path = "src/lib.rs"
 
 [[bin]]
@@ -45,8 +45,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tempfile = "3.2.0"
 # The low-level interface for linux namespaces (containers)
-# TODO: integrate.
-unshare = "0.7.0"
+unshare = { git = "https://git.sr.ht/~alip/unshare", branch = "syd" }
 
 [build-dependencies]
 built = {version = "0.4.4", features=["git2", "chrono"]}

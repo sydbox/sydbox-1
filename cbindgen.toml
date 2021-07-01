@@ -13,7 +13,7 @@ language = "c"
 include_guard = "SYD_GUARD_RS_H"
 pragma_once = true
 include_version = true
-sys_includes = ["stdlib", "seccomp"]
+sys_includes = ["stdlib.h", "seccomp.h", "unistd.h"]
 includes = ["syd/compiler.h"]
 #after_includes = "#define scmp_version rs_scmp_version"
 

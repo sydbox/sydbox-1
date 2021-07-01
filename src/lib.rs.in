@@ -69,7 +69,7 @@ pub extern "C" fn syd_execv(command: *const c_char, args: *mut *mut c_char,
                             unshare_ipc: bool,
                             unshare_user: bool,
                             escape_stdout: bool,
-                            groups: *const u32,
+                            supplementary_gids: *const u32,
                             pid_env_var: *const c_char) -> i32 {
     let mut argv = Vec::<&str>::new();
     for arg in unsafe {args.as_ref()}.iter() {
@@ -114,6 +114,12 @@ pub extern "C" fn syd_execv(command: *const c_char, args: *mut *mut c_char,
         cmd.gid(gid);
     }
 
+    let mut gids = Vec::<gid_t>::new();
+    for arg in unsafe {supplementary_gids.as_ref()}.iter() {
+        gids.push(**arg);
+    }
+    if gids.len() > 0 { cmd.groups(gids); }
+
     slice = unsafe { CStr::from_ptr(chroot) };
     osstr = OsStr::from_bytes(slice.to_bytes());
     match osstr.to_str() {
@@ -134,12 +140,6 @@ pub extern "C" fn syd_execv(command: *const c_char, args: *mut *mut c_char,
     if unshare_user { namespaces.push(Namespace::User); }
     cmd.unshare(&namespaces);
     cmd.close_fds(..);
-
-    let mut groupv = Vec::<gid_t>::new();
-    for arg in unsafe {groups.as_ref()}.iter() {
-        groupv.push(**arg);
-    }
-    if groupv.len() > 0 { cmd.groups(groupv); }
 
     if escape_stdout {
         cmd.stdout(unshare::Stdio::piped());
@@ -188,7 +188,6 @@ pub extern "C" fn syd_execv(command: *const c_char, args: *mut *mut c_char,
 
 #[doc = "This structure represents a seccomp version"]
 #[repr(C)]
-/// cbindgen:ignore
 pub struct scmp_version {
     pub major: u8,
     pub minor: u8,
@@ -206,7 +205,6 @@ impl Default for scmp_version {
 }
 
 extern "C" {
-    /// cbindgen:ignore
     fn seccomp_version() -> *const scmp_version;
 }
 

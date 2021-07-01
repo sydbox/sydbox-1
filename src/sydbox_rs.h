@@ -54,7 +54,7 @@ int32_t syd_execv(const char *command,
                   bool unshare_ipc,
                   bool unshare_user,
                   bool escape_stdout,
-                  const uint32_t *groups,
+                  const uint32_t *supplementary_gids,
                   const char *pid_env_var);
 
 #endif /* SYD_GUARD_RS_H */

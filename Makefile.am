@@ -2,7 +2,7 @@ AM_MAKEFLAGS= --no-print-directory
 ACLOCAL_AMFLAGS= -I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS= dist-bzip2 no-dist-gzip std-options subdir-objects foreign
 
-CLEANFILES= *~
+CLEANFILES= *~ Cargo.toml
 MAINTAINERCLEANFILES= \
 		      Makefile.in \
 		      configure \
@@ -31,7 +31,7 @@ BUILT_SOURCES= Cargo.toml
 Cargo.toml: Cargo.toml.in
 	$(AM_V_GEN)
 	$(AM_V_at)$(SED) \
-		-e "s:@RUST_LIBTYPE@:$(SYDBOX_RUST_LIBTYPE):g" \
+		-e 's:@RUST_LIBTYPES@:$(SYDBOX_RUST_LIBTYPES):g' \
 		$< > $@
 
 dist_doc_DATA= \
@@ -47,7 +47,7 @@ DISTCHECK_CONFIGURE_FLAGS= \
 			   --enable-seccomp \
 			   --enable-debug
 
-BUILT_SOURCES = .version
+BUILT_SOURCES = .version Cargo.toml
 EXTRA_DIST+= \
 	     .version \
 	     ChangeLog \

@@ -1239,7 +1239,8 @@ static inline syd_process_t *process_find_clone(pid_t child_pid, pid_t ppid,
 	}
 
 	node = process_lookup(sydbox->execve_pid);
-	node->new_clone_flags = 0;
+	if (node)
+		node->new_clone_flags = 0;
 	return node;
 }
 
@@ -1770,7 +1771,6 @@ static syd_process_t *startup_child(char **argv)
 	syd_process_t *current;
 
 	current = new_process_or_kill(pid);
-	init_process_data(current, NULL, false);
 	/* Happy birthday, child.
 	 * Let's validate your PID manually.
 	 */
@@ -1816,6 +1816,7 @@ static syd_process_t *startup_child(char **argv)
 		pid = sydbox->execve_pid;
 		current->pid = pid;
 		proc_validate(pid);
+		init_process_data(current, NULL, false); /* calls proc_cwd */
 		strlcpy(current->comm, sydbox->program_invocation_name,
 			SYDBOX_PROC_MAX);
 		syd_proc_cmdline(sydbox->pfd, current->prog, LINE_MAX-1);

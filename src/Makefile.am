@@ -13,12 +13,12 @@ CLEANFILES= \
 EXTRA_DIST= syscall_open_syd.h.in syd-syscall-open.py sydbox_rs.h
 noinst_HEADERS=
 
-CARGO_FLAGS= --$(SYDBOX_CARGO_RELEASE_TYPE) --frozen
 
 CARGO_VERBOSE = $(cargo_verbose_$(V))
 cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
 cargo_verbose_0 =
 cargo_verbose_1 = --verbose
+CARGO_FLAGS= --$(SYDBOX_CARGO_RELEASE_TYPE) --frozen $(CARGO_VERBOSE)
 
 check-local:
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) test $(CARGO_FLAGS)
@@ -29,13 +29,14 @@ install-exec-local:
 	rm -f $(DESTDIR)/usr/.crates.toml
 	rm -f $(DESTDIR)/usr/.crates2.json
 
-SYDBOX_LIB_STA=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.a
-SYDBOX_LIB_DYN=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.so
+SYDBOX_RUST_LIB_STA=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.a
+SYDBOX_RUST_LIB_DYN=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.so
 CARGO_BUILD_FLAGS= --lib --target-dir $(builddir)/sydbox_rs
 CARGO_BUILD_FLAGS+= $(CARGO_FLAGS)
 CLEANFILES+= \
-	     sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.a \
-	     sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.so
+	     $(SYDBOX_RUST_LIB_DYN) \
+	     $(SYDBOX_RUST_LIB_STA) \
+	     sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/deps
 
 noinst_SCRIPTS= \
 		kingbee.py
@@ -58,14 +59,14 @@ endif
 
 lib.rs: lib.rs.in
 	$(AM_V_GEN)
-	$(AM_V_at)chmod +w $@
+	$(AM_V_at)chmod -f +w $@ || true
 	$(AM_V_at)$(SED) \
 		-e "s:@SYD_PACKAGE@:$(PACKAGE):g" \
 		-e "s:@SYD_VERSION@:$(VERSION):g" \
 		-e "s:@SYD_GITVERSION@:$(GITVERSION):g" \
 		-e "s:@DUMP_BUILTIN@:$(OPT_DUMP):g" \
 		$< > $@
-	$(AM_V_at)chmod -w $@
+	$(AM_V_at)chmod -f -w $@ || true
 
 if HAVE_CBINDGEN
 # TODO -Z parse-only is nightly only, when it's not
@@ -74,25 +75,18 @@ sydbox_rs.h: lib.rs $(top_builddir)/cbindgen.toml
 	$(CBINDGEN) --config $(top_builddir)/cbindgen.toml lib.rs -o $@ || $(RUSTC) lib.rs
 endif
 
-SYDBOX_RUST_SRCS=
-if ENABLE_STATIC
-SYDBOX_RUST_SRCS+= sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.a
-sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.a: lib.rs
-	mkdir -m700 -p $(builddir)/sydbox_rs
-	$(CARGO) build $(CARGO_BUILD_FLAGS)
-else
-SYDBOX_RUST_SRCS+= sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.so
-sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.so: lib.rs
-	mkdir -m700 -p $(builddir)/sydbox_rs
-	$(CARGO) build $(CARGO_BUILD_FLAGS)
-SYDBOX_RUST_SRCS+= .libs/libsydbox.so
-.libs/libsydbox.so: sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox.so
-	cp -p $< $@
+$(SYDBOX_RUST_LIB_STA): jobs lib.rs
+	@mkdir -m700 -p $(builddir)/sydbox_rs
+	$(AM_V_GEN)
+	$(AM_V_at)$(CARGO) build -j $(JOB_COUNT) $(CARGO_BUILD_FLAGS)
+if !ENABLE_STATIC
+$(SYDBOX_RUST_LIB_DYN): $(SYDBOX_RUST_LIB_STA)
+	$(AM_V_GEN)
+	$(AM_V_at)true
+.libs/libsydbox.so: $(SYDBOX_RUST_LIB_DYN)
+	$(AM_V_GEN)
+	$(AM_V_at)cp -fp $< $@
 endif
-
-all: lib_rs
-.PHONY: lib_rs
-lib_rs: $(SYDBOX_RUST_SRCS)
 
 syscall_open_syd.h: Makefile syscall_open_ro.lst syscall_open_syd.h.in
 	$(PYTHON) ./syd-syscall-open.py < syscall_open_ro.lst > $@ ||\
@@ -137,10 +131,11 @@ AM_CPPFLAGS= $(CODE_COVERAGE_CPPFLAGS)
 AM_LFLAGS = -v
 AM_YFLAGS = -d
 
-bin_PROGRAMS= lib_rs syd syd-format
+bin_PROGRAMS= syd syd-format
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
 noinst_HEADERS+= \
+		 lib.rs \
 		 acl-queue.h \
 		 arch.h \
 		 asyd.h \
@@ -169,6 +164,7 @@ noinst_HEADERS+= \
 		 sha1dc_ubc_check.h \
 		 sha1dc_syd.h \
 		 syd_seccomp_arch_default.c \
+		 sydbox_rs.h \
 		 sockmatch.h \
 		 sockmap.h \
 		 util.h \
@@ -259,9 +255,7 @@ syd_LDADD= \
 	      @SYDBOX_LIBTOOL_FLAGS@ \
 	      $(libseccomp_LIBS) \
 	      $(CODE_COVERAGE_LIBS)
-if ENABLE_STATIC
 syd_LDADD+= $(SYDBOX_RUST_LIB_STA)
-endif
 syd_LDADD+= \
 	    -L$(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE) \
 	    -lsydbox
@@ -314,6 +308,27 @@ syd_dump_CPPFLAGS+= $(DUMP_PREPROCESSOR_FLAGS)
 syd_dump_LDADD+= $(syd_LDADD) $(DUMP_LINKER_ADD)
 syd_dump_LDFLAGS+= $(DUMP_LINKER_FLAGS)
 endif
+
+###
+# Determine make -j job count to pass to cargo.
+# See: https://blog.jgc.org/2015/03/gnu-make-insanity-finding-value-of-j.html
+.DEFAULT_GOAL: all
+.PHONY: all
+all: jobs $(bin_PROGRAMS) $(syd_PROGRAMS)
+
+.PHONY: jobs
+jobs: | parallel; @echo >&2 "[0;1;31;91msydb☮x: Make is running $(JOB_COUNT) jobs.[0m"
+
+.PHONY: parallel
+parallel: .parallel ; @$(eval JOB_COUNT := $(shell sort -n $< | tail -n 1))
+.parallel: FORCE ; @$(MAKE) --no-print-directory par 2>/dev/null >$@ || true
+FORCE:
+
+to_n = $(words $2) $(if $(filter-out $1,$(words x $2)),$(call to_n,$1,x $2))
+
+PAR_COUNT :=
+par: $(addprefix par-,$(call to_n,32))
+par-%: ; @$(eval PAR_COUNT += x)@echo $(words $(PAR_COUNT)) && sleep 1 && false
 
 # Convenience for users, more ugliness for meself...
 # PATH=${syddir} cave resolve ...
