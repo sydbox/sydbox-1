@@ -256,9 +256,6 @@ syd_LDADD= \
 	      $(libseccomp_LIBS) \
 	      $(CODE_COVERAGE_LIBS)
 syd_LDADD+= $(SYDBOX_RUST_LIB_STA)
-syd_LDADD+= \
-	    -L$(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE) \
-	    -lsydbox
 
 if WANT_DEBUG
 syd_LDADD+= $(libunwind_LIBS)

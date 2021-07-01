@@ -1266,7 +1266,7 @@ static inline pid_t process_find_exec(pid_t exec_pid)
 static syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 				   bool genuine)
 {
-	if (pid == parent->pid)
+	if (parent && pid == parent->pid)
 		return process_lookup(pid);
 
 	syd_process_t *current;
