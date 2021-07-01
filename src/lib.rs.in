@@ -8,7 +8,7 @@
 
 #[no_mangle]
 pub extern "C" fn syd_about() {
-    let sv = scmp_version::new();
+    let sv: scmp_version = Default::default();
 
     eprintln!(
         "[0;1;31;91m{}-{}{}[0m",
@@ -34,16 +34,19 @@ pub struct scmp_version {
     micro: u8,
 }
 
-impl scmp_version {
-    pub fn new() -> Self {
+impl Default for scmp_version {
+    fn default() -> Self {
         unsafe {
             let version = seccomp_version();
-            scmp_version { major: (*version).major, minor: (*version).minor,
+            Self { major: (*version).major, minor: (*version).minor,
                 micro: (*version).micro }
         }
     }
 }
 
 extern "C" {
-    fn seccomp_version() -> *scmp_version;
+    fn seccomp_version() -> *const scmp_version;
 }
+
+#[allow(dead_code)]
+fn main() { syd_about(); std::process::exit(0); }

@@ -833,11 +833,15 @@ AM_CONDITIONAL([HAVE_XSLTPROC], test x"$XSLTPROC" != x"")
 dnl check for Rust tools
 AC_PATH_PROG([CARGO], [cargo])
 AC_PATH_PROG([CBINDGEN], [cbindgen])
+AC_PATH_PROG([RUSTC], [rustc])
 if test x"$CARGO" = x""; then
 	AC_MSG_ERROR([cargo is required to build SydBox])
 fi
 if test x"$CBINDGEN" = x""; then
 	AC_MSG_ERROR([cbindgen is required to build SydBox])
+fi
+if test x"$RUSTC" = x""; then
+	AC_MSG_ERROR([rustc is required to build SydBox])
 fi
 
 dnl installed tests

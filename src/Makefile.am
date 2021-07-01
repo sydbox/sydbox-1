@@ -65,8 +65,10 @@ lib.rs: lib.rs.in
 		-e "s:@DUMP_BUILTIN@:$(OPT_DUMP):g" \
 		$< > $@
 
+# TODO -Z parse-only is nightly only, when it's not
+#  add it to RUSTC below.
 sydbox_rs.h: lib.rs
-	$(CBINDGEN) -lc -d $< -o $@
+	$(CBINDGEN) -lc -d $< -o $@ || $(RUSTC) $<
 
 SYDBOX_RUST_SRCS=
 if ENABLE_STATIC
