@@ -13,7 +13,9 @@
 void *palloc(pid_t pid, size_t size)
 {
 	return (void *)psyscall(pid, __NR_mmap, 0, size,
-				PROT_READ, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+				PROT_READ|PROT_WRITE,
+				MAP_PRIVATE|MAP_ANONYMOUS,
+				-1, 0);
 }
 
 int pprctl(pid_t pid, int option, unsigned long arg2, unsigned long arg3,

@@ -26,6 +26,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
@@ -1332,6 +1333,53 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 	}
 	sysx_chdir(current);
 
+#if 0
+#if ENABLE_PSYSCALL
+	int r;
+
+	/* Allocate remote memory. */
+	if ((r = syd_rmem_alloc(current)) < 0) {
+		errno = -r;
+		say_errno("syd_rmem_alloc");
+	} else {
+		say("process:%d has addr:%p allocated.",
+		    current->pid, (void *)current->addr);
+		say("doing a vm read/write sanity check on addr:%p...",
+		    (void *)current->addr);
+		/* 16 bytes including the terminating NUL byte.
+		* syd- is 4 bytes.
+		* comm is max 7 bytes.
+		* hash is 5..9 bytes.
+		*/
+		char comm[16], comm_rem[16];
+		syd_proc_comm(sydbox->pfd, current->comm, SYDBOX_PROC_MAX);
+		size_t len = strlen(current->comm);
+		size_t clen = len;
+		strlcpy(comm , current->comm, clen + 1);
+		strlcat(comm + clen++, "☮", sizeof("☮"));
+		char *proc_exec;
+		xasprintf(&proc_exec, "/proc/%u/exe", current->pid);
+		if ((r = path_to_hex(proc_exec)) < 0) {
+			errno = -r;
+			say_errno("can't calculate checksum of file "
+				  "`%s'", proc_exec);
+		} else {
+			strlcat(comm + clen, sydbox->hash, 16);
+		}
+		comm[15] = '\0';
+		syd_write_vm_data(current, current->addr, comm, 16);
+		syd_read_vm_data(current, current->addr, comm_rem, 16);
+		if (streq(comm, comm_rem)) {
+			say("vm read/write check succeded: "
+			    "`%s' = `%s'", comm, comm_rem);
+		} else {
+			say("vm read/write check failed: "
+			    "`%s' != `%s'", comm, comm_rem);
+		}
+	}
+#endif
+#endif
+
 	return current;
 }
 
@@ -1446,6 +1494,9 @@ static int notify_loop()
 		/* Let the user-space tracing begin. */
 		bool jump = false, reap_my_zombies = false;
 		char *name = NULL;
+#if ENABLE_PSYSCALL
+		bool set_process_name = false;
+#endif
 		pid_t execve_pid = 0;
 		syd_process_t *parent;
 
@@ -1685,8 +1736,12 @@ pid_validate:
 				}
 			}
 			if (execve_pid) {
-				if (current)
+				if (current) {
 					event_exec(current);
+#if ENABLE_PSYSCALL
+					set_process_name = true;
+#endif
+				}
 				if (pid == execve_pid) {
 					if (current)
 						P_EXECVE_PID(current) = 0;
@@ -1748,6 +1803,19 @@ out:
 		if (reap_my_zombies) {
 			reap_my_zombies = false;
 			reap_zombies();
+		}
+		if (set_process_name) {
+			set_process_name = false;
+
+#if 0
+#if ENABLE_PSYSCALL
+		if (pprctl(current->pid, PR_SET_NAME, (unsigned long)comm,
+			   0, 0, 0) < 0)
+			say_errno("pprctl");
+		else
+			say("pprctl: comm:%s", comm);
+#endif
+#endif
 		}
 		if (jump) {
 			jump = false;
