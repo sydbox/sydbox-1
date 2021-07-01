@@ -96,8 +96,9 @@ struct termios old_tio, new_tio;
 
 bool unshare_pid, unshare_net, unshare_mount;
 bool unshare_uts, unshare_ipc, unshare_user;
-bool escape_stdout;
+bool escape_stdout, reset_fds, allow_daemonize;
 uint32_t close_fds[2];
+int32_t parent_death_signal;
 
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
@@ -122,12 +123,14 @@ usage: "PACKAGE" [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
               [--lock] [--chroot directory] [--pivot-root new-root:put-old]\n\
               [--chdir directory] [--env var...] [--env var=val...]\n\
               [--ionice class:data] [--nice level]\n\
-              [--background] [--stdout logfile] [--stderr logfile]\n\
+              [--allow-daemonize] [--background]\n\
+              [--set-parent-death-signal signal]\n\
+              [--stdout logfile] [--stderr logfile]\n\
               [--alias name] [--umask mode]\n\
               [--uid user-id] [--gid group-id] [--add-gid group-id]\n\
               [--unshare-pid] [--unshare-net] [--unshare-mount]\n\
               [--unshare-uts] [--unshare-ipc] [--unshare-user]\n\
-              [--close-fds <begin:end>] [--escape-stdout]\n\
+              [--close-fds <begin:end>] [--reset-fds] [--escape-stdout]\n\
               [--env-var-with-pid <varname>]\n\
               {command [arg...]}\n\
        "PACKAGE" [--export <bpf|pfc:filename>]\n\
@@ -1910,7 +1913,7 @@ seccomp_init:
 		const char *wd = get_working_directory();
 		const char *root = get_root_directory();
 		const char *pev = get_pid_env_var();
-		const char *new_root, *put_old;
+		char *new_root, *put_old;
 		get_pivot_root(&new_root, &put_old);
 		r = syd_execv(pathname, argv, arg0 ? arg0 : "",
 			      wd ? wd : "", verbose,
@@ -1920,7 +1923,9 @@ seccomp_init:
 			      put_old ? put_old : "",
 			      unshare_pid, unshare_net, unshare_mount,
 			      unshare_uts, unshare_ipc, unshare_user,
-			      close_fds[0], close_fds[1], escape_stdout,
+			      close_fds[0], close_fds[1], reset_fds,
+			      escape_stdout, allow_daemonize,
+			      parent_death_signal,
 			      get_groups(),
 			      pev ? pev : "");
 		free(pathname); /* not NULL because noexec is handled above. */
@@ -2082,7 +2087,10 @@ int main(int argc, char **argv)
 		{"chroot",	required_argument,	NULL,	'C'},
 		{"pivot-root",	required_argument,	NULL,	'R'},
 		{"memaccess",	required_argument,	NULL,	'p'},
-		{"background",	no_argument,		NULL,	'B'},
+		{"allow-daemonize", no_argument,	NULL,	'+'},
+		{"background",	no_argument,		NULL,	'&'},
+		{"set-parent-death-signal",
+			required_argument,		NULL,	'!'},
 		{"stdout",	required_argument,	NULL,	'1'},
 		{"stderr",	required_argument,	NULL,	'2'},
 		{"alias",	required_argument,	NULL,	'A'},
@@ -2100,6 +2108,7 @@ int main(int argc, char **argv)
 		{"unshare-user",no_argument,		NULL,	'U'},
 		{"env-var-with-pid",required_argument,	NULL,	'V'},
 		{"close-fds",	optional_argument,	NULL,	'F'},
+		{"reset-fds",	no_argument,		NULL,	'X'},
 		{"escape-stdout", no_argument,		NULL,	'O'},
 		{"test",	no_argument,		NULL,	't'},
 		{NULL,		0,		NULL,	0},
@@ -2109,7 +2118,7 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "a:A:bBc:d:e:C:D:m:E:p:i:n:K:thlvPNMTIUFO1:2:u:g:G:R:V:",
+	while ((opt = getopt_long(argc, argv, "a:A:bc:d:e:C:D:m:E:p:i:n:K:thlvPNMTIUFOX&+1:2:u:g:G:R:V:",
 				  long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
@@ -2192,8 +2201,22 @@ int main(int argc, char **argv)
 		case 'A':
 			set_arg0(xstrdup(optarg));
 			break;
-		case 'B':
+		case '&':
 			set_background(true);
+			allow_daemonize = true;
+			break;
+		case '!':
+			errno = 0;
+			opt = strtoul(optarg, &end, 10);
+			if ((errno && errno != EINVAL) ||
+			    (unsigned long)opt > SYD_PID_MAX)
+			{
+				say_errno("Invalid argument for option "
+					  "--set-parent-death-signal: `%s'",
+					  optarg);
+				usage(stderr, 1);
+			}
+			parent_death_signal = opt;
 			break;
 		case '1':
 			set_redirect_stdout(xstrdup(optarg));
@@ -2391,6 +2414,12 @@ int main(int argc, char **argv)
 				close_fds[1] ^= close_fds[0];
 				close_fds[0] ^= close_fds[1];
 			}
+			break;
+		case 'X':
+			reset_fds = true;
+			break;
+		case '+':
+			allow_daemonize = true;
 			break;
 		case 'O':
 			escape_stdout = true;

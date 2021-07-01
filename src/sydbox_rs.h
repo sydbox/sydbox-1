@@ -57,7 +57,10 @@ int32_t syd_execv(const char *command,
                   bool unshare_user,
                   int32_t close_fds_beg,
                   int32_t close_fds_end,
+                  bool reset_fds,
                   bool escape_stdout,
+                  bool allow_daemonize,
+                  int32_t parent_death_signal,
                   const uint32_t *supplementary_gids,
                   const char *pid_env_var);
 

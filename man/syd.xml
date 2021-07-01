@@ -42,8 +42,8 @@
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
       <itemizedlist>
-        <listitem><para><command>syd <arg choice="opt">-hvb</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump &lt;fd|path|tmp&gt;</arg> <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" >--memaccess 0..1</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg> <arg choice="opt">--lock</arg> <arg choice="opt" >--chroot directory</arg> <arg choice="opt">--pivot-root &lt;new-root:put-old&gt;</arg> <arg choice="opt" >--chdir &lt;directory|tmp&gt;</arg> <arg choice="opt" rep="repeat">--env var</arg> <arg choice="opt" rep="repeat">--env var=val</arg> <arg choice="opt">--ionice class:data</arg> <arg choice="opt">--nice level</arg> <arg choice="opt">--background</arg> <arg choice="opt">--stdout logfile</arg> <arg choice="opt">--stderr logfile</arg> <arg choice="opt">--alias name</arg> <arg choice="opt">--umask mode</arg> <arg choice="opt">--uid user-id</arg> <arg choice="opt">--gid group-id</arg> <arg choice="opt">--add-gid group-id</arg> <arg choice="opt">--unshare-pid</arg> <arg choice="opt">--unshare-net</arg> <arg choice="opt">--unshare-mount</arg> <arg choice="opt">--unshare-uts</arg> <arg choice="opt">--unshare-ipc</arg> <arg choice="opt">--unshare-user</arg> <arg choice="opt">env-var-with-pid &lt;varname&gt;</arg> <arg choice="opt">--close-fds &lt;begin:end&gt;</arg> <arg choice="opt">--escape-stdout</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command></para></listitem>
-        <listitem><para><command>syd <arg choice="opt" >--export &lt;bpf|pfc:filename&gt;</arg> <arg choice="opt" rep="repeat">--arch arch</arg> <arg choice="opt" rep="repeat">--config pathspec</arg> <arg choice="opt" rep="repeat">--magic command</arg>  <arg choice="req">noexec</arg></command></para></listitem>
+        <listitem><para><command>syd <arg choice="opt">-hv</arg> <arg choice="opt">--bpf-only</arg> <arg choice="opt">--dry-run</arg> <arg choice="opt">--dump <varname>fd|path|tmp</varname></arg> <arg choice="opt" >--export <varname>bpf|pfc:filename</varname></arg> <arg choice="opt" >--memaccess <varname>0..1</varname></arg> <arg choice="opt" rep="repeat">--arch <varname>arch</varname></arg> <arg choice="opt" rep="repeat">--config <varname>pathspec</varname></arg> <arg choice="opt" rep="repeat">--magic <varname>command</varname></arg> <arg choice="opt">--lock</arg> <arg choice="opt" >--chroot <varname>directory</varname></arg> <arg choice="opt">--pivot-root <varname>new-root:put-old</varname></arg> <arg choice="opt" >--chdir <varname>directory|tmp</varname></arg> <arg choice="opt" rep="repeat">--env <varname>var</varname></arg> <arg choice="opt" rep="repeat">--env <varname>var=val</varname></arg> <arg choice="opt">--ionice <varname>class:data</varname></arg> <arg choice="opt">--nice <varname>level</varname></arg> <arg choice="opt">--allow-daemonize</arg> <arg choice="opt">--background</arg> <arg choice="opt">--set-parent-death-signal <varname>signal</varname></arg> <arg choice="opt">--stdout <varname>logfile</varname></arg> <arg choice="opt">--stderr <varname>logfile</varname></arg> <arg choice="opt">--alias <varname>name</varname></arg> <arg choice="opt">--umask <varname>mode</varname></arg> <arg choice="opt">--uid <varname>user-id</varname></arg> <arg choice="opt">--gid <varname>group-id</varname></arg> <arg choice="opt">--add-gid <varname>group-id</varname></arg> <arg choice="opt">--unshare-pid</arg> <arg choice="opt">--unshare-net</arg> <arg choice="opt">--unshare-mount</arg> <arg choice="opt">--unshare-uts</arg> <arg choice="opt">--unshare-ipc</arg> <arg choice="opt">--unshare-user</arg> <arg choice="opt">env-var-with-pid <varname>env-var</varname></arg> <arg choice="opt">--close-fds <varname>begin:end</varname></arg> <arg choice="opt">--reset-fds</arg> <arg choice="opt">--escape-stdout</arg> <arg choice="req">command <varname><arg choice="opt" rep="repeat">arg</arg></varname></arg></command></para></listitem>
+        <listitem><para><command>syd <arg choice="opt" >--export <varname>bpf|pfc:filename</varname></arg> <arg choice="opt" rep="repeat">--arch <varname>arch</varname></arg> <arg choice="opt" rep="repeat">--config <varname>pathspec</varname></arg> <arg choice="opt" rep="repeat">--magic <varname>command</varname></arg>  <arg choice="req">noexec</arg></command></para></listitem>
         <listitem><para><command>syd --test</command></para></listitem>
       </itemizedlist>
     </cmdsynopsis>
@@ -381,11 +381,9 @@
           run equivalent to <command>mount --make-private</command> for
           the old root filesystem and set <command>unmount</command> to true,
           you may get unmounted filesystem for running processes too.
+          See <function>pivot</function><manvolnum>2</manvolnum> for further
+          details.
           </simpara></warning>
-
-          <simpara>See
-          <function>pivot</function><manvolnum>2</manvolnum> for further details.
-          </simpara>
 
           <note><simpara>Note that if both chroot dir and pivot_root specified.
           The chroot dir is applied after pivot root.</simpara></note>
@@ -467,11 +465,73 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-B</option></term>
+        <term><option>-+</option></term>
+        <term><option>--allow-daemonize</option></term>
+        <listitem>
+          <simpara>
+            Allow child process to daemonize. By default we run equivalent of
+            <emphasis>--set_parent_death_signal=9</emphasis>, where
+            <emphasis>9</emphasis> stands for <emphasis>SIGKILL</emphasis>.
+            See the <emphasis>--set-parent-death-signal</emphasis>
+            for better explanation.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-!</option> <varname>signal</varname></term>
+        <term><option>--set-parent-death-signal</option>=<varname>signal</varname></term>
+        <listitem>
+          <simpara>
+          Set a signal that is sent to a process when it's parent is dead.
+          This is by default set to <emphasis>9</emphasis> which stands
+          for <emphasis>SIGKILL</emphasis>. And you should keep it that way
+          unless you know what you are doing.
+          </simpara>
+
+          <simpara>
+          Particularly you should consider the following choices:
+
+          <orderedlist>
+            <listitem><para>Instead of setting <emphasis>PDEATHSIG</emphasis>
+            to some other signal, send signal yourself and wait until child
+            gracefully finishes.</para></listitem>
+
+            <listitem><para>Instead of daemonizing use
+            <emphasis>systemd</emphasis>/<emphasis>upstart</emphasis>/whatever
+            system init script to run your service.</para></listitem>
+          </orderedlist>
+          </simpara>
+
+          <simpara>
+          Another issue with this option is that it works only with immediate
+          child. To better control all descendant processes you may need the
+          following:
+
+          <orderedlist>
+          <listitem><para>The <emphasis>prctl(PR_SET_CHILD_SUBREAPER..)</emphasis>
+          in parent which allows to "catch" descendant processes.</para></listitem>
+          <listitem><para>The pid namespaces</para></listitem>
+          </orderedlist>
+          </simpara>
+
+          <simpara>
+            The former is out of scope of SydBox. The latter works by
+            <option>--unshare-pid</option>, but you may need to
+            setup mount points and other important things (which are out
+            of scope too). To reset this behavior use
+            <option>--allow-daemonize</option>.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-&amp;</option></term>
         <term><option>--background</option></term>
         <listitem>
           <simpara>
-            Force the program into the background.
+            Force the program into the background, implied
+            <option>--allow-daemonize</option>.
           </simpara>
         </listitem>
       </varlistentry>
@@ -686,6 +746,22 @@
       </varlistentry>
 
       <varlistentry>
+        <term><option>-X</option></term>
+        <term><option>--reset-fds</option></term>
+        <listitem>
+          <simpara>
+            Reset file descriptor including stdio to the initial state.
+            Initial state is inherit all the stdio and do nothing to other fds.
+          </simpara>
+
+          <note><simpara>
+            If both <option>--close-fds</option> and <option>--reset-fds</option>,
+            reset fds is applied first.
+          </simpara></note>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
         <term><option>-O</option></term>
         <term><option>--escape-stdout</option></term>
         <listitem>
@@ -697,8 +773,8 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-V</option> <varname>varname</varname></term>
-        <term><option>--env-var-with-pid</option>=<varname>varname</varname></term>
+        <term><option>-V</option> <varname>env-var</varname></term>
+        <term><option>--env-var-with-pid</option>=<varname>env-var</varname></term>
         <listitem>
           <simpara>
             Add environment variable with pid.
