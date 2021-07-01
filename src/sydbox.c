@@ -604,6 +604,7 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 		p->cwd = NULL;
 	}
 	/*
+	 * We delegate this to reset_process.
 	if (p->abspath) {
 		free(p->abspath);
 		p->abspath = NULL;
