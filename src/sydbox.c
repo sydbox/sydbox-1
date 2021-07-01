@@ -505,12 +505,18 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 		return;
 	} else if (!parent) {
 		copy_sandbox(P_BOX(current), box_current(NULL));
+		int fd;
 proc_getcwd:
-		if ((r = syd_proc_cwd(pfd_cwd < 0 ? sydbox->pfd_cwd : pfd_cwd,
-				      sydbox->config.use_toolong_hack,
-				  &cwd)) < 0) {
+		fd = pfd_cwd < 0 ? sydbox->pfd_cwd : pfd_cwd;
+		if (fd < 0) {
+			if ((fd = syd_proc_cwd_open(current->pid)) >= 0)
+				sydbox->pfd_cwd = fd;
+		}
+		if (fd >= 0 && (r = syd_proc_cwd(fd,
+						 sydbox->config.use_toolong_hack,
+						 &cwd)) < 0) {
 			errno = -r;
-			say_errno("proc_cwd");
+			say_errno("proc_cwd(%d)", fd);
 			P_CWD(current) = strdup("/");
 		} else {
 			P_CWD(current) = cwd;
@@ -589,12 +595,13 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 	p->zombie = true;
 
 	pid = p->pid;
-	dump(DUMP_THREAD_FREE, pid);
+	if (pid)
+		dump(DUMP_THREAD_FREE, pid);
 
-	if (p->cwd) {
+	if (pid > 0 && p->cwd)
 		free(p->cwd);
-		p->cwd = NULL;
-	}
+	p->cwd = NULL;
+
 	/*
 	 * We delegate this to reset_process.
 	if (p->abspath) {
@@ -619,7 +626,7 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 		procdrop(&sydbox->config.proc_pid_auto, pid);
 
 
-	if (p->pid == sydbox->execve_pid ||
+	if ((p->pid > 0 && p->pid == sydbox->execve_pid) ||
 	    (p->flags & (SYD_IN_EXECVE|SYD_IN_CLONE))) {
 		/*
 		 * 1. keep the default sandbox available.

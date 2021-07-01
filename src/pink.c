@@ -62,7 +62,7 @@ typedef struct msghdr struct_msghdr;
 #endif
 
 #define SYD_RETURN_IF_DEAD(_p) do { \
-	if ((_p)->pidfd < 0) { \
+	if ((_p)->pid <= 0 || (_p)->pidfd < 0) { \
 		return -ESRCH; \
 	} \
 } while (0)
