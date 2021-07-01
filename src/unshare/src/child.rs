@@ -5,12 +5,10 @@ use std::os::unix::ffi::OsStrExt;
 use std::os::unix::io::RawFd;
 use std::ptr;
 
-use libc;
 use libc::{c_ulong, c_void, gid_t, sigset_t, size_t};
 use libc::{kill, signal};
 use libc::{FD_CLOEXEC, F_DUPFD_CLOEXEC, F_GETFD, F_SETFD, MNT_DETACH};
 use libc::{SIG_DFL, SIG_SETMASK};
-use nix;
 use nix::sched::CloneFlags;
 
 use crate::error::ErrorCode as Err;
@@ -32,7 +30,7 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
     let mut epipe = child.error_pipe;
 
     if child.cfg.death_sig.is_some() {
-        child.cfg.death_sig.as_ref().map(|&sig| {
+        if let Some(&sig) = child.cfg.death_sig.as_ref() {
             eprintln!(
                 "[0;1;31;91msydb☮x: Setting parent-death signal to `{}'.[0m",
                 sig
@@ -40,41 +38,45 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
             if libc::prctl(ffi::PR_SET_PDEATHSIG, sig as c_ulong, 0, 0, 0) != 0 {
                 fail(Err::ParentDeathSignal, epipe);
             }
-        });
+        }
     }
 
     // Now we must wait until parent set some environment for us. It's mostly
     // for uid_map/gid_map. But also used for attaching debugger and maybe
     // other things
-    let mut wbuf = [0u8];
+    let wbuf = [0u8];
     loop {
         // TODO(tailhook) put some timeout on this pipe?
-        let rc = libc::read(child.wakeup_pipe, (&mut wbuf).as_ptr() as *mut c_void, 1);
-        if rc == 0 {
-            // Parent already dead presumably before we had a chance to
-            // set PDEATHSIG, so just send signal ourself in that case
-            if let Some(sig) = child.cfg.death_sig {
-                kill(libc::getpid(), sig as i32);
-                libc::_exit(127);
-            } else {
-                // In case we wanted to daemonize, just continue
-                //
-                // TODO(tailhook) not sure it's best thing to do. Maybe parent
-                // failed to setup uid/gid map for us. Do we want to check
-                // specific options? Or should we just always die?
+        let rc = libc::read(child.wakeup_pipe, (&wbuf).as_ptr() as *mut c_void, 1);
+        match rc {
+            0 => {
+                // Parent already dead presumably before we had a chance to
+                // set PDEATHSIG, so just send signal ourself in that case
+                if let Some(sig) = child.cfg.death_sig {
+                    kill(libc::getpid(), sig as i32);
+                    libc::_exit(127);
+                } else {
+                    // In case we wanted to daemonize, just continue
+                    //
+                    // TODO(tailhook) not sure it's best thing to do. Maybe parent
+                    // failed to setup uid/gid map for us. Do we want to check
+                    // specific options? Or should we just always die?
+                    break;
+                }
+            }
+            i if i < 0 => {
+                let errno = nix::errno::errno();
+                if errno == libc::EINTR as i32 || errno == libc::EAGAIN as i32 {
+                    continue;
+                } else {
+                    fail(Err::PipeError, errno);
+                }
+            }
+            _ => {
+                // Do we need to check that exactly one byte is received?
                 break;
             }
-        } else if rc < 0 {
-            let errno = nix::errno::errno();
-            if errno == libc::EINTR as i32 || errno == libc::EAGAIN as i32 {
-                continue;
-            } else {
-                fail(Err::PipeError, errno);
-            }
-        } else {
-            // Do we need to check that exactly one byte is received?
-            break;
-        }
+        };
     }
 
     // Move error pipe file descriptors in case they clobber stdio
@@ -124,112 +126,91 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         for &(index, offset) in child.pid_env_vars {
             let slice = CStr::from_ptr(child.environ[index]);
             let osstr = OsStr::from_bytes(slice.to_bytes());
-            match osstr.to_str() {
-                Some(environ) => {
-                    eprintln!(
-                        "[0;1;31;91msydb☮x: Add environment variable `{}' with pid.[0m",
-                        environ
-                    );
-                }
-                None => {}
-            };
+            if let Some(environ) = osstr.to_str() {
+                eprintln!(
+                    "[0;1;31;91msydb☮x: Add environment variable `{}' with pid.[0m",
+                    environ
+                );
+            }
 
             // we know that there are at least MAX_PID_LEN+1 bytes in buffer
             child.environ[index]
-                .offset(offset as isize)
+                .add(offset)
                 .copy_from(data.as_ptr() as *const libc::c_char, data.len());
         }
     }
 
     if child.pivot.is_some() {
-        child.pivot.as_ref().map(|piv| {
+        if let Some(piv) = child.pivot.as_ref() {
             let mut osstr = OsStr::from_bytes(piv.new_root.to_bytes());
-            match osstr.to_str() {
-                Some(new_root) => {
-                    osstr = OsStr::from_bytes(piv.put_old.to_bytes());
-                    match osstr.to_str() {
-                        Some(put_old) => {
-                            eprintln!("[0;1;31;91msydb☮x: Moving the root of the file system to the directory `{}' and making `{}' the new root file system.[0m", put_old, new_root);
-                        },
-                        None => {},
-                    };
-                },
-                None => {}
-            };
+            if let Some(new_root) = osstr.to_str() {
+                if let Some(put_old) = osstr.to_str() {
+                    eprintln!("[0;1;31;91msydb☮x: Moving the root of the file system to the directory `{}' and making `{}' the new root file system.[0m", put_old, new_root);
+                }
+            }
 
             if ffi::pivot_root(piv.new_root.as_ptr(), piv.put_old.as_ptr()) != 0 {
                 fail(Err::ChangeRoot, epipe);
             }
 
             osstr = OsStr::from_bytes(piv.workdir.to_bytes());
-            match osstr.to_str() {
-                Some(workdir) => {
-                    eprintln!("[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
-                        workdir);
-                },
-                None => {},
-            };
+            if let Some(workdir) = osstr.to_str() {
+                eprintln!(
+                    "[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
+                    workdir
+                );
+            }
 
             if libc::chdir(piv.workdir.as_ptr()) != 0 {
                 fail(Err::ChangeRoot, epipe);
             }
-            if piv.unmount_old_root {
-                if libc::umount2(piv.old_inside.as_ptr(), MNT_DETACH) != 0 {
-                    fail(Err::ChangeRoot, epipe);
-                }
+            if piv.unmount_old_root && libc::umount2(piv.old_inside.as_ptr(), MNT_DETACH) != 0 {
+                fail(Err::ChangeRoot, epipe);
             }
-        });
+        }
     }
 
     if child.chroot.is_some() {
-        child.chroot.as_ref().map(|chroot| {
-            let slice = unsafe { CStr::from_ptr(chroot.root.as_ptr()) };
+        if let Some(chroot) = child.chroot.as_ref() {
+            let slice = CStr::from_ptr(chroot.root.as_ptr());
             let osstr = OsStr::from_bytes(slice.to_bytes());
-            match osstr.to_str() {
-                Some(root) => {
-                    eprintln!(
-                        "[0;1;31;91msydb☮x: Changing root directory to `{}'.[0m",
-                        root
-                    );
-                }
-                None => {}
-            };
+            if let Some(root) = osstr.to_str() {
+                eprintln!(
+                    "[0;1;31;91msydb☮x: Changing root directory to `{}'.[0m",
+                    root
+                );
+            }
             if libc::chroot(chroot.root.as_ptr()) != 0 {
                 fail(Err::ChangeRoot, epipe);
             }
-        });
+        }
     }
     if child.chroot.is_some() {
-        child.chroot.as_ref().map(|chroot| {
-            let slice = unsafe { CStr::from_ptr(chroot.workdir.as_ptr()) };
+        if let Some(chroot) = child.chroot.as_ref() {
+            let slice = CStr::from_ptr(chroot.workdir.as_ptr());
             let osstr = OsStr::from_bytes(slice.to_bytes());
-            match osstr.to_str() {
-                Some(workdir) => {
-                    eprintln!(
-                        "[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
-                        workdir
-                    );
-                }
-                None => {}
+            if let Some(workdir) = osstr.to_str() {
+                eprintln!(
+                    "[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
+                    workdir
+                );
             }
             if libc::chdir(chroot.workdir.as_ptr()) != 0 {
                 fail(Err::ChangeRoot, epipe);
             }
-        });
+        }
     }
 
-    if child.keep_caps.is_some() {
-        child.keep_caps.as_ref().map(|_| {
-            eprintln!("[0;1;31;91msydb☮x: Setting the \"keep capabilities\" flag.[0m");
-            // Don't use securebits because on older systems it doesn't work
-            if libc::prctl(libc::PR_SET_KEEPCAPS, 1, 0, 0, 0) != 0 {
-                fail(Err::CapSet, epipe);
-            }
-        });
+    if child.keep_caps.is_some() && child.keep_caps.as_ref().is_some() {
+        eprintln!("[0;1;31;91msydb☮x: Setting the \"keep capabilities\" flag.[0m");
+        // Don't use securebits because on older systems it doesn't work
+        if libc::prctl(libc::PR_SET_KEEPCAPS, 1, 0, 0, 0) != 0 {
+            fail(Err::CapSet, epipe);
+        }
     }
 
     if child.cfg.gid.is_some() {
-        child.cfg.gid.as_ref().map(|&gid| {
+        if let Some(&gid) = child.cfg.gid.as_ref() {
             let egid = libc::getegid();
             if gid != egid {
                 eprintln!(
@@ -240,18 +221,18 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
                     fail(Err::SetUser, epipe);
                 }
             }
-        });
+        }
     }
 
     if child.cfg.supplementary_gids.is_some() {
-        child.cfg.supplementary_gids.as_ref().map(|groups| {
+        if let Some(groups) = child.cfg.supplementary_gids.as_ref() {
             let my_gid = libc::getgid();
             let gids: Vec<gid_t> = groups
                 .iter()
                 .filter(|x| **x != 0 && **x != my_gid)
-                .map(|x| *x)
+                .copied()
                 .collect();
-            if gids.len() > 0 {
+            if !gids.is_empty() {
                 let gstr: Vec<String> = gids.iter().map(|x| x.to_string()).collect();
                 eprintln!(
                     "[0;1;31;91msydb☮x: Adding supplementary gids `{}'.[0m",
@@ -261,11 +242,11 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
                     fail(Err::SetUser, epipe);
                 }
             }
-        });
+        }
     }
 
     if child.cfg.uid.is_some() {
-        child.cfg.uid.as_ref().map(|&uid| {
+        if let Some(&uid) = child.cfg.uid.as_ref() {
             let euid = libc::geteuid();
             if uid != euid {
                 eprintln!(
@@ -276,10 +257,10 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
                     fail(Err::SetUser, epipe);
                 }
             }
-        });
+        }
     }
 
-    child.keep_caps.as_ref().map(|caps| {
+    if let Some(caps) = child.keep_caps.as_ref() {
         let header = ffi::CapsHeader {
             version: ffi::CAPS_V3,
             pid: 0,
@@ -304,24 +285,21 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
                 }
             }
         }
-    });
+    }
 
     if child.cfg.work_dir.is_some() {
         let osstr = OsStr::from_bytes(child.cfg.work_dir.as_ref().unwrap().to_bytes());
-        match osstr.to_str() {
-            Some(workdir) => {
-                eprintln!(
-                    "[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
-                    workdir
-                );
-            }
-            None => {}
-        };
-        child.cfg.work_dir.as_ref().map(|dir| {
+        if let Some(workdir) = osstr.to_str() {
+            eprintln!(
+                "[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
+                workdir
+            );
+        }
+        if let Some(dir) = child.cfg.work_dir.as_ref() {
             if libc::chdir(dir.as_ptr()) != 0 {
                 fail(Err::Chdir, epipe);
             }
-        });
+        }
     }
 
     for &(dest_fd, src_fd) in child.fds {
@@ -330,10 +308,8 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
             if flags < 0 || libc::fcntl(src_fd, F_SETFD, flags & !FD_CLOEXEC) < 0 {
                 fail(Err::StdioError, epipe);
             }
-        } else {
-            if libc::dup2(src_fd, dest_fd) < 0 {
-                fail(Err::StdioError, epipe);
-            }
+        } else if libc::dup2(src_fd, dest_fd) < 0 {
+            fail(Err::StdioError, epipe);
         }
     }
 
@@ -381,7 +357,7 @@ unsafe fn fail_errno(code: Err, errno: i32, output: RawFd) -> ! {
         (errno >> 24) as u8,
         (errno >> 16) as u8,
         (errno >> 8) as u8,
-        (errno >> 0) as u8,
+        errno as u8,
         // TODO(tailhook) rustc adds a special sentinel at the end of error
         // code. Do we really need it? Assuming our pipes are always cloexec'd.
     ];
@@ -391,11 +367,11 @@ unsafe fn fail_errno(code: Err, errno: i32, output: RawFd) -> ! {
     libc::_exit(127);
 }
 
-fn format_pid_fixed<'a>(buf: &'a mut [u8], pid: libc::pid_t) -> &'a [u8] {
+fn format_pid_fixed(buf: &mut [u8], pid: libc::pid_t) -> &[u8] {
     buf[buf.len() - 1] = 0;
     if pid == 0 {
         buf[buf.len() - 2] = b'0';
-        return &buf[buf.len() - 2..];
+        &buf[buf.len() - 2..]
     } else {
         let mut tmp = pid;
         // can't use stdlib function because that can allocate
@@ -407,7 +383,7 @@ fn format_pid_fixed<'a>(buf: &'a mut [u8], pid: libc::pid_t) -> &'a [u8] {
             }
         }
         unreachable!("can't format pid");
-    };
+    }
 }
 /// We don't use functions from nix here because they may allocate memory
 /// which we can't to this this module.

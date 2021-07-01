@@ -10,7 +10,6 @@ use std::path::{Path, PathBuf};
 use std::ptr;
 
 use libc::{c_char, close};
-use nix;
 use nix::errno::Errno::EINTR;
 use nix::fcntl::OFlag;
 use nix::fcntl::{fcntl, open, FcntlArg};
@@ -53,13 +52,13 @@ pub struct ChildInfo<'a> {
     pub pre_exec: &'a Option<Box<dyn Fn() -> Result<(), io::Error>>>,
 }
 
-fn raw_with_null(arr: &Vec<CString>) -> Vec<*const c_char> {
+fn raw_with_null(arr: &[CString]) -> Vec<*const c_char> {
     let mut vec = Vec::with_capacity(arr.len() + 1);
     for i in arr {
         vec.push(i.as_ptr());
     }
     vec.push(ptr::null());
-    return vec;
+    vec
 }
 
 fn raw_with_null_mut(arr: &mut Vec<Vec<u8>>) -> Vec<*mut c_char> {
@@ -68,7 +67,7 @@ fn raw_with_null_mut(arr: &mut Vec<Vec<u8>>) -> Vec<*mut c_char> {
         vec.push(i.as_mut_ptr() as *mut c_char);
     }
     vec.push(ptr::null_mut());
-    return vec;
+    vec
 }
 
 fn relative_to<A: AsRef<Path>, B: AsRef<Path>>(dir: A, rel: B, absolute: bool) -> Option<PathBuf> {
@@ -102,21 +101,21 @@ fn prepare_descriptors(
     let mut guards = Vec::new();
     for (&dest_fd, fdkind) in fds.iter() {
         let mut fd = match fdkind {
-            &Fd::ReadPipe => {
+            Fd::ReadPipe => {
                 let (rd, wr) = Pipe::new()?.split();
                 let fd = rd.into_fd();
                 guards.push(Closing::new(fd));
                 outer.insert(dest_fd, PipeHolder::Writer(wr));
                 fd
             }
-            &Fd::WritePipe => {
+            Fd::WritePipe => {
                 let (rd, wr) = Pipe::new()?.split();
                 let fd = wr.into_fd();
                 guards.push(Closing::new(fd));
                 outer.insert(dest_fd, PipeHolder::Reader(rd));
                 fd
             }
-            &Fd::ReadNull => {
+            Fd::ReadNull => {
                 // Need to keep fd with cloexec, until we are in child
                 let fd = result(
                     Err::CreatePipe,
@@ -129,7 +128,7 @@ fn prepare_descriptors(
                 guards.push(Closing::new(fd));
                 fd
             }
-            &Fd::WriteNull => {
+            Fd::WriteNull => {
                 // Need to keep fd with cloexec, until we are in child
                 let fd = result(
                     Err::CreatePipe,
@@ -142,8 +141,8 @@ fn prepare_descriptors(
                 guards.push(Closing::new(fd));
                 fd
             }
-            &Fd::Inherit => dest_fd,
-            &Fd::Fd(ref x) => x.as_raw_fd(),
+            Fd::Inherit => dest_fd,
+            Fd::Fd(ref x) => x.as_raw_fd(),
         };
         // The descriptor must not clobber the descriptors that are passed to
         // a child
@@ -217,7 +216,7 @@ impl Command {
                 workdir: current_dir()
                     .ok()
                     .and_then(|cur| relative_to(cur, new, true))
-                    .unwrap_or(PathBuf::from("/"))
+                    .unwrap_or_else(|| PathBuf::from("/"))
                     .to_cstring(),
                 unmount_old_root: unmnt,
             });
@@ -233,7 +232,7 @@ impl Command {
                 workdir: current_dir()
                     .ok()
                     .and_then(|cur| relative_to(cur, wrk_rel, true))
-                    .unwrap_or(PathBuf::from("/"))
+                    .unwrap_or_else(|| PathBuf::from("/"))
                     .to_cstring(),
             }
         });
@@ -248,7 +247,7 @@ impl Command {
         // hash map involves closure which crashes in the child in unoptimized
         // build
         let fds = int_fds.iter().map(|(&x, &y)| (x, y)).collect::<Vec<_>>();
-        let close_fds = self.close_fds.iter().cloned().collect::<Vec<_>>();
+        let close_fds = self.close_fds.to_vec();
         let setns_ns = self
             .config
             .setns_namespaces
@@ -290,10 +289,9 @@ impl Command {
 
         if let Err(e) = self.after_start(pid, wakeup.unwrap(), errpipe) {
             kill(pid, SIGKILL).ok();
-            loop {
-                match waitpid(pid, None) {
-                    Err(nix::Error::Sys(EINTR)) => continue,
-                    _ => break,
+            while let Err(error) = waitpid(pid, None) {
+                if error != nix::Error::Sys(EINTR) {
+                    break;
                 }
             }
             return Err(e);

@@ -2,8 +2,6 @@ use crate::status::ExitStatus;
 use std::fmt;
 use std::io;
 
-use nix;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorCode {
     CreatePipe = 1,
@@ -99,26 +97,26 @@ impl Error {
     pub fn raw_os_error(&self) -> Option<i32> {
         use self::Error::*;
         match self {
-            &UnknownError => None,
-            &NixError => None,
-            &CreatePipe(x) => Some(x),
-            &Fork(x) => Some(x),
-            &Exec(x) => Some(x),
-            &Chdir(x) => Some(x),
-            &ParentDeathSignal(x) => Some(x),
-            &PipeError(x) => Some(x),
-            &WaitError(x) => Some(x),
-            &StdioError(x) => Some(x),
-            &SetUser(x) => Some(x),
-            &ChangeRoot(x) => Some(x),
-            &SetIdMap(x) => Some(x),
-            &AuxCommandExited(..) => None,
-            &AuxCommandKilled(..) => None,
-            &SetPGid(x) => Some(x),
-            &SetNs(x) => Some(x),
-            &CapSet(x) => Some(x),
-            &BeforeUnfreeze(..) => None,
-            &PreExec(x) => Some(x),
+            UnknownError => None,
+            NixError => None,
+            CreatePipe(x) => Some(*x),
+            Fork(x) => Some(*x),
+            Exec(x) => Some(*x),
+            Chdir(x) => Some(*x),
+            ParentDeathSignal(x) => Some(*x),
+            PipeError(x) => Some(*x),
+            WaitError(x) => Some(*x),
+            StdioError(x) => Some(*x),
+            SetUser(x) => Some(*x),
+            ChangeRoot(x) => Some(*x),
+            SetIdMap(x) => Some(*x),
+            AuxCommandExited(..) => None,
+            AuxCommandKilled(..) => None,
+            SetPGid(x) => Some(*x),
+            SetNs(x) => Some(*x),
+            CapSet(x) => Some(*x),
+            BeforeUnfreeze(..) => None,
+            PreExec(x) => Some(*x),
         }
     }
 }
@@ -127,26 +125,26 @@ impl Error {
     fn title(&self) -> &'static str {
         use self::Error::*;
         match self {
-            &UnknownError => "unexpected value received via signal pipe",
-            &NixError => "some unknown nix error",
-            &CreatePipe(_) => "can't create pipe",
-            &Fork(_) => "error when forking",
-            &Exec(_) => "error when executing",
-            &Chdir(_) => "error when setting working directory",
-            &ParentDeathSignal(_) => "error when death signal",
-            &PipeError(_) => "error in signalling pipe",
-            &WaitError(_) => "error in waiting for child",
-            &StdioError(_) => "error setting up stdio for child",
-            &SetUser(_) => "error setting user or groups",
-            &ChangeRoot(_) => "error changing root directory",
-            &SetIdMap(_) => "error setting uid/gid mappings",
-            &AuxCommandExited(_) => "aux command exited with non-zero code",
-            &AuxCommandKilled(_) => "aux command was killed by signal",
-            &SetPGid(_) => "error when calling setpgid",
-            &SetNs(_) => "error when calling setns",
-            &CapSet(_) => "error when setting capabilities",
-            &BeforeUnfreeze(_) => "error in before_unfreeze callback",
-            &PreExec(_) => "error in pre_exec callback",
+            UnknownError => "unexpected value received via signal pipe",
+            NixError => "some unknown nix error",
+            CreatePipe(_) => "can't create pipe",
+            Fork(_) => "error when forking",
+            Exec(_) => "error when executing",
+            Chdir(_) => "error when setting working directory",
+            ParentDeathSignal(_) => "error when death signal",
+            PipeError(_) => "error in signalling pipe",
+            WaitError(_) => "error in waiting for child",
+            StdioError(_) => "error setting up stdio for child",
+            SetUser(_) => "error setting user or groups",
+            ChangeRoot(_) => "error changing root directory",
+            SetIdMap(_) => "error setting uid/gid mappings",
+            AuxCommandExited(_) => "aux command exited with non-zero code",
+            AuxCommandKilled(_) => "aux command was killed by signal",
+            SetPGid(_) => "error when calling setpgid",
+            SetNs(_) => "error when calling setns",
+            CapSet(_) => "error when setting capabilities",
+            BeforeUnfreeze(_) => "error in before_unfreeze callback",
+            PreExec(_) => "error in pre_exec callback",
         }
     }
 }

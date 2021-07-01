@@ -2,7 +2,6 @@ use std::io;
 use std::mem;
 use std::os::unix::io::RawFd;
 
-use libc;
 use libc::{c_void, size_t};
 use nix::fcntl::OFlag;
 use nix::unistd::pipe2;
@@ -56,7 +55,7 @@ impl PipeReader {
     pub fn into_fd(self) -> RawFd {
         let PipeReader(fd) = self;
         mem::forget(self);
-        return fd;
+        fd
     }
 }
 
@@ -66,7 +65,7 @@ impl PipeWriter {
     pub fn into_fd(self) -> RawFd {
         let PipeWriter(fd) = self;
         mem::forget(self);
-        return fd;
+        fd
     }
 }
 

@@ -39,6 +39,8 @@ pub enum Capability {
     CAP_WAKE_ALARM = 35,
     CAP_BLOCK_SUSPEND = 36,
     CAP_AUDIT_READ = 37,
+    /*
     #[doc(hidden)]
     __NonExhaustive,
+    */
 }

@@ -21,15 +21,15 @@ impl ExitStatus {
     /// Returns exit code if the process has exited normally
     pub fn code(&self) -> Option<i32> {
         match self {
-            &ExitStatus::Exited(e) => Some(e as i32),
-            &ExitStatus::Signaled(_, _) => None,
+            ExitStatus::Exited(e) => Some(*e as i32),
+            ExitStatus::Signaled(_, _) => None,
         }
     }
     /// Returns signal number if he process was killed by signal
     pub fn signal(&self) -> Option<i32> {
         match self {
-            &ExitStatus::Exited(_) => None,
-            &ExitStatus::Signaled(sig, _) => Some(sig as i32),
+            ExitStatus::Exited(_) => None,
+            ExitStatus::Signaled(sig, _) => Some(*sig as i32),
         }
     }
 }
@@ -38,15 +38,15 @@ impl fmt::Display for ExitStatus {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         use self::ExitStatus::*;
         match self {
-            &Exited(c) => write!(fmt, "exited with code {}", c),
-            &Signaled(sig, false) => {
-                write!(fmt, "killed by signal {:?}[{}]", sig, sig as i32)
+            Exited(c) => write!(fmt, "exited with code {}", c),
+            Signaled(sig, false) => {
+                write!(fmt, "killed by signal {:?}[{}]", sig, *sig as i32)
             }
-            &Signaled(sig, true) => {
+            Signaled(sig, true) => {
                 write!(
                     fmt,
                     "killed by signal {:?}[{}] (core dumped)",
-                    sig, sig as i32
+                    sig, *sig as i32
                 )
             }
         }

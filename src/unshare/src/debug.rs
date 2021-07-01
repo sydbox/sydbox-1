@@ -112,10 +112,8 @@ impl<'a> fmt::Display for Printer<'a> {
                     }
                     write!(fmt, "}}")?;
                 }
-            } else {
-                if let Some(ref env) = cmd.environ {
-                    write!(fmt, "; environ[{}]", env.len())?;
-                }
+            } else if let Some(ref env) = cmd.environ {
+                write!(fmt, "; environ[{}]", env.len())?;
             }
             if let Some(ref dir) = cmd.chroot_dir {
                 write!(fmt, "; chroot={:?}", dir)?;

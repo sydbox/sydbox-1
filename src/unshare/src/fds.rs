@@ -104,24 +104,24 @@ impl Command {
 
 impl Into<AnyRange> for Range<RawFd> {
     fn into(self) -> AnyRange {
-        return AnyRange::Range(self.start, self.end);
+        AnyRange::Range(self.start, self.end)
     }
 }
 
 impl Into<AnyRange> for RangeTo<RawFd> {
     fn into(self) -> AnyRange {
-        return AnyRange::Range(3, self.end);
+        AnyRange::Range(3, self.end)
     }
 }
 
 impl Into<AnyRange> for RangeFrom<RawFd> {
     fn into(self) -> AnyRange {
-        return AnyRange::RangeFrom(self.start);
+        AnyRange::RangeFrom(self.start)
     }
 }
 
 impl Into<AnyRange> for RangeFull {
     fn into(self) -> AnyRange {
-        return AnyRange::RangeFrom(3);
+        AnyRange::RangeFrom(3)
     }
 }
