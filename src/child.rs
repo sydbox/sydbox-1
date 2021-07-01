@@ -1,3 +1,6 @@
+use std::ffi::CStr;
+use std::ffi::OsStr;
+use std::os::unix::ffi::OsStrExt;
 use std::os::unix::io::RawFd;
 use std::mem;
 use std::ptr;
@@ -109,14 +112,38 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         }
     });
 
-    child.chroot.as_ref().map(|chroot| {
-        if libc::chroot(chroot.root.as_ptr()) != 0 {
-            fail(Err::ChangeRoot, epipe);
-        }
-        if libc::chdir(chroot.workdir.as_ptr()) != 0 {
-            fail(Err::ChangeRoot, epipe);
-        }
-    });
+    if child.chroot.is_some() {
+        child.chroot.as_ref().map(|chroot| {
+            let slice = unsafe { CStr::from_ptr(chroot.root.as_ptr()) };
+            let osstr = OsStr::from_bytes(slice.to_bytes());
+            match osstr.to_str() {
+                Some(root) => {
+                    eprintln!("[0;1;31;91msydb☮x: Changing root to: {}[0m",
+                        root);
+                },
+                None => {}
+            };
+            if libc::chroot(chroot.root.as_ptr()) != 0 {
+                fail(Err::ChangeRoot, epipe);
+            }
+        });
+    }
+    if child.chroot.is_some() {
+        child.chroot.as_ref().map(|chroot| {
+            let slice = unsafe { CStr::from_ptr(chroot.workdir.as_ptr()) };
+            let osstr = OsStr::from_bytes(slice.to_bytes());
+            match osstr.to_str() {
+                Some(workdir) => {
+                    eprintln!("[0;1;31;91msydb☮x: Changing working directory to: {}[0m",
+                        workdir);
+                },
+                None => {}
+            }
+            if libc::chdir(chroot.workdir.as_ptr()) != 0 {
+                fail(Err::ChangeRoot, epipe);
+            }
+        });
+    }
 
     child.keep_caps.as_ref().map(|_| {
         // Don't use securebits because on older systems it doesn't work
@@ -127,6 +154,7 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.cfg.gid.is_some() {
         child.cfg.gid.as_ref().map(|&gid| {
+            eprintln!("[0;1;31;91msydb☮x: Changing gid to: {}[0m", gid);
             if libc::setgid(gid) != 0 {
                 fail(Err::SetUser, epipe);
             }
@@ -135,6 +163,9 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.cfg.supplementary_gids.is_some() {
         child.cfg.supplementary_gids.as_ref().map(|groups| {
+            let gstr: Vec<String> = groups.into_iter().map(|x| x.to_string()).collect();
+            eprintln!("[0;1;31;91msydb☮x: Adding supplementary gids: {}[0m",
+                gstr.join(", "));
             if libc::setgroups(groups.len() as size_t, groups.as_ptr()) != 0 {
                 fail(Err::SetUser, epipe);
             }
@@ -143,6 +174,7 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.cfg.uid.is_some() {
         child.cfg.uid.as_ref().map(|&uid| {
+            eprintln!("[0;1;31;91msydb☮x: Changing uid to: {}[0m", uid);
             if libc::setuid(uid) != 0 {
                 fail(Err::SetUser, epipe);
             }
