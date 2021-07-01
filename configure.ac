@@ -873,7 +873,6 @@ AC_SUBST_FILE([GENERATED_FILE])
 dnl output
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_CONFIG_FILES([Makefile
-		 Cargo.toml
 		 src/Makefile
 		 syd/Makefile
 		 data/Makefile

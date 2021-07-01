@@ -45,5 +45,5 @@ impl scmp_version {
 }
 
 extern "C" {
-    fn seccomp_version() -> *mut scmp_version;
+    fn seccomp_version() -> *scmp_version;
 }

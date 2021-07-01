@@ -20,10 +20,18 @@ EXTRA_DIST= \
 
 PANDORA_EXTRA_DIST=\
 		   build.rs \
-		   Cargo.toml \
+		   Cargo.toml.in \
 		   Cargo.lock \
-		   src/pandora.rs
+		   src/pandora.rs \
+		   src/lib.rs
 EXTRA_DIST+= $(PANDORA_EXTRA_DIST)
+
+BUILT_SOURCES= Cargo.toml
+Cargo.toml: Cargo.toml.in
+	$(AM_V_GEN)
+	$(AM_V_at)$(SED) \
+		-e "s:@RUST_LIBTYPE@:$(SYDBOX_RUST_LIBTYPE):g" \
+		$< > $@
 
 dist_doc_DATA= \
 	       BUGS \
