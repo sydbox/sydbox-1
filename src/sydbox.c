@@ -1284,6 +1284,8 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 		parent->new_clone_flags = save_new_clone_flags;
 	}
 parent_done:
+	current->pid = pid;
+	proc_validate(pid);
 	sysx_chdir(current);
 
 #if 0
@@ -2402,6 +2404,9 @@ int main(int argc, char **argv)
 	if (use_notify()) {
 		child = startup_child((char **)my_argv);
 		pid = child->pid;
+		sydbox->execve_pid = pid;
+		proc_validate(pid);
+		init_process_data(child, NULL, false); /* calls proc_cwd */
 		/* Notify the user about the startup. */
 		dump(DUMP_STARTUP, pid);
 		/* Block signals,
