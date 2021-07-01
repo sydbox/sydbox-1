@@ -7,7 +7,7 @@ use std::ptr;
 
 use libc;
 use nix;
-use libc::{c_void, c_ulong, sigset_t, size_t};
+use libc::{c_void, c_ulong, gid_t, sigset_t, size_t};
 use libc::{kill, signal};
 use libc::{F_GETFD, F_SETFD, F_DUPFD_CLOEXEC, FD_CLOEXEC, MNT_DETACH};
 use libc::{SIG_DFL, SIG_SETMASK};
@@ -228,11 +228,21 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.cfg.supplementary_gids.is_some() {
         child.cfg.supplementary_gids.as_ref().map(|groups| {
-            let gstr: Vec<String> = groups.into_iter().map(|x| x.to_string()).collect();
-            eprintln!("[0;1;31;91msydb☮x: Adding supplementary gids `{}'.[0m",
-                gstr.join(", "));
-            if libc::setgroups(groups.len() as size_t, groups.as_ptr()) != 0 {
-                fail(Err::SetUser, epipe);
+            let gids: Vec<gid_t> = groups
+                .iter()
+                .filter(|x| **x == 0)
+                .map(|x| *x)
+                .collect();
+            if gids.len() > 0 {
+                let gstr: Vec<String> = gids
+                    .iter()
+                    .map(|x| x.to_string())
+                    .collect();
+                eprintln!("[0;1;31;91msydb☮x: Adding supplementary gids `{}'.[0m",
+                    gstr.join(","));
+                if libc::setgroups(groups.len() as size_t, gids.as_ptr()) != 0 {
+                    fail(Err::SetUser, epipe);
+                }
             }
         });
     }
