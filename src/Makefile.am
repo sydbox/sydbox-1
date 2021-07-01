@@ -94,8 +94,8 @@ noinst_HEADERS+= \
 		 sc_map.h \
 		 sc_map_syd.h \
 		 serializer.h \
-		 sha1dc/sha1.h \
-		 sha1dc/ubc_check.h \
+		 sha1dc_sha1.h \
+		 sha1dc_ubc_check.h \
 		 sha1dc_syd.h \
 		 syd_seccomp_arch_default.c \
 		 sockmatch.h \
@@ -120,8 +120,8 @@ syd_SOURCES= \
 		 procmatch.c \
 		 sc_map.c \
 		 serializer.c \
-		 sha1dc/sha1.c \
-		 sha1dc/ubc_check.c \
+		 sha1dc_sha1.c \
+		 sha1dc_ubc_check.c \
 		 sha1dc_syd.c \
 		 sockmatch.c \
 		 acl-queue.c \

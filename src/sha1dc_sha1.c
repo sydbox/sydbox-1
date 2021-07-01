@@ -23,8 +23,8 @@
 #define SHA1DC_INIT_SAFE_HASH_DEFAULT 1
 #endif
 
-#include "sha1.h"
-#include "ubc_check.h"
+#include "sha1dc_sha1.h"
+#include "sha1dc_ubc_check.h"
 
 #if (defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || \
      defined(i386) || defined(__i386) || defined(__i386__) || defined(__i486__)  || \
