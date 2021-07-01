@@ -1028,7 +1028,6 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 [[package]]
 name = "unshare"
 version = "0.7.0"
-source = "git+https://git.sr.ht/~alip/unshare?branch=syd#b81f1c29d0b71cb8d92bc81ba0eb30baf637b085"
 dependencies = [
  "libc",
  "nix",

@@ -45,7 +45,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tempfile = "3.2.0"
 # The low-level interface for linux namespaces (containers)
-unshare = { git = "https://git.sr.ht/~alip/unshare", branch = "syd" }
+unshare = { path = "src/unshare" }
 
 [build-dependencies]
 built = {version = "0.4.4", features=["git2", "chrono"]}
