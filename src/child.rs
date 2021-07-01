@@ -11,6 +11,7 @@ use libc::{c_void, c_ulong, sigset_t, size_t};
 use libc::{kill, signal};
 use libc::{F_GETFD, F_SETFD, F_DUPFD_CLOEXEC, FD_CLOEXEC, MNT_DETACH};
 use libc::{SIG_DFL, SIG_SETMASK};
+use nix::sched::CloneFlags;
 
 use crate::run::{ChildInfo, MAX_PID_LEN};
 use crate::error::ErrorCode as Err;
@@ -30,11 +31,15 @@ use crate::error::ErrorCode as Err;
 pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
     let mut epipe = child.error_pipe;
 
-    child.cfg.death_sig.as_ref().map(|&sig| {
-        if libc::prctl(ffi::PR_SET_PDEATHSIG, sig as c_ulong, 0, 0, 0) != 0 {
-            fail(Err::ParentDeathSignal, epipe);
-        }
-    });
+    if child.cfg.death_sig.is_some() {
+        child.cfg.death_sig.as_ref().map(|&sig| {
+            eprintln!("[0;1;31;91msydb☮x: Setting parent-death signal to `{}'.[0m",
+                sig);
+            if libc::prctl(ffi::PR_SET_PDEATHSIG, sig as c_ulong, 0, 0, 0) != 0 {
+                fail(Err::ParentDeathSignal, epipe);
+            }
+        });
+    }
 
     // Now we must wait until parent set some environment for us. It's mostly
     // for uid_map/gid_map. But also used for attaching debugger and maybe
@@ -83,6 +88,28 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
     }
 
     for &(nstype, fd) in child.setns_namespaces {
+        match nstype {
+        CloneFlags::CLONE_NEWPID => {
+            eprintln!("[0;1;31;91msydb☮x: Unsharing pid namespace.[0m");
+        },
+        CloneFlags::CLONE_NEWNET => {
+            eprintln!("[0;1;31;91msydb☮x: Unsharing net namespace.[0m");
+        }
+        CloneFlags::CLONE_NEWNS => {
+            eprintln!("[0;1;31;91msydb☮x: Unsharing mount namespace.[0m");
+        }
+        CloneFlags::CLONE_NEWUTS => {
+            eprintln!("[0;1;31;91msydb☮x: Unsharing uts namespace.[0m");
+        }
+        CloneFlags::CLONE_NEWIPC => {
+            eprintln!("[0;1;31;91msydb☮x: Unsharing ipc namespace.[0m");
+        }
+        CloneFlags::CLONE_NEWUSER => {
+            eprintln!("[0;1;31;91msydb☮x: Unsharing user namespace.[0m");
+        },
+        _ => {
+            eprintln!("[0;1;31;91msydb☮x: Setting unknown clone flag `{:?}'.[0m", nstype);
+        }};
         if libc::setns(fd, nstype.bits()) != 0 {
             fail(Err::SetNs, epipe);
         }
@@ -92,25 +119,60 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         let mut buf = [0u8; MAX_PID_LEN+1];
         let data = format_pid_fixed(&mut buf, libc::getpid());
         for &(index, offset) in child.pid_env_vars {
+            let slice = CStr::from_ptr(child.environ[index]);
+            let osstr = OsStr::from_bytes(slice.to_bytes());
+            match osstr.to_str() {
+                Some(environ) => {
+                    eprintln!("[0;1;31;91msydb☮x: Add environment variable `{}' with pid.[0m", environ);
+                },
+                None => {}
+            };
+
             // we know that there are at least MAX_PID_LEN+1 bytes in buffer
             child.environ[index].offset(offset as isize)
                 .copy_from(data.as_ptr() as *const libc::c_char, data.len());
         }
     }
 
-    child.pivot.as_ref().map(|piv| {
-        if ffi::pivot_root(piv.new_root.as_ptr(), piv.put_old.as_ptr()) != 0 {
-            fail(Err::ChangeRoot, epipe);
-        }
-        if libc::chdir(piv.workdir.as_ptr()) != 0 {
-            fail(Err::ChangeRoot, epipe);
-        }
-        if piv.unmount_old_root {
-            if libc::umount2(piv.old_inside.as_ptr(), MNT_DETACH) != 0 {
+    if child.pivot.is_some() {
+        child.pivot.as_ref().map(|piv| {
+            let mut osstr = OsStr::from_bytes(piv.new_root.to_bytes());
+            match osstr.to_str() {
+                Some(new_root) => {
+                    osstr = OsStr::from_bytes(piv.put_old.to_bytes());
+                    match osstr.to_str() {
+                        Some(put_old) => {
+                            eprintln!("[0;1;31;91msydb☮x: Moving the root of the file system to the directory `{}' and making `{}' the new root file system.[0m", put_old, new_root);
+                        },
+                        None => {},
+                    };
+                },
+                None => {}
+            };
+
+            if ffi::pivot_root(piv.new_root.as_ptr(), piv.put_old.as_ptr()) != 0 {
                 fail(Err::ChangeRoot, epipe);
             }
-        }
-    });
+
+            osstr = OsStr::from_bytes(piv.workdir.to_bytes());
+            match osstr.to_str() {
+                Some(workdir) => {
+                    eprintln!("[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
+                        workdir);
+                },
+                None => {},
+            };
+
+            if libc::chdir(piv.workdir.as_ptr()) != 0 {
+                fail(Err::ChangeRoot, epipe);
+            }
+            if piv.unmount_old_root {
+                if libc::umount2(piv.old_inside.as_ptr(), MNT_DETACH) != 0 {
+                    fail(Err::ChangeRoot, epipe);
+                }
+            }
+        });
+    }
 
     if child.chroot.is_some() {
         child.chroot.as_ref().map(|chroot| {
@@ -118,7 +180,7 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
             let osstr = OsStr::from_bytes(slice.to_bytes());
             match osstr.to_str() {
                 Some(root) => {
-                    eprintln!("[0;1;31;91msydb☮x: Changing root to: {}[0m",
+                    eprintln!("[0;1;31;91msydb☮x: Changing root directory to `{}'.[0m",
                         root);
                 },
                 None => {}
@@ -134,7 +196,7 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
             let osstr = OsStr::from_bytes(slice.to_bytes());
             match osstr.to_str() {
                 Some(workdir) => {
-                    eprintln!("[0;1;31;91msydb☮x: Changing working directory to: {}[0m",
+                    eprintln!("[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
                         workdir);
                 },
                 None => {}
@@ -145,16 +207,19 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         });
     }
 
-    child.keep_caps.as_ref().map(|_| {
-        // Don't use securebits because on older systems it doesn't work
-        if libc::prctl(libc::PR_SET_KEEPCAPS, 1, 0, 0, 0) != 0 {
-            fail(Err::CapSet, epipe);
-        }
-    });
+    if child.keep_caps.is_some() {
+        child.keep_caps.as_ref().map(|_| {
+            eprintln!("[0;1;31;91msydb☮x: Setting the \"keep capabilities\" flag.[0m");
+            // Don't use securebits because on older systems it doesn't work
+            if libc::prctl(libc::PR_SET_KEEPCAPS, 1, 0, 0, 0) != 0 {
+                fail(Err::CapSet, epipe);
+            }
+        });
+    }
 
     if child.cfg.gid.is_some() {
         child.cfg.gid.as_ref().map(|&gid| {
-            eprintln!("[0;1;31;91msydb☮x: Changing gid to: {}[0m", gid);
+            eprintln!("[0;1;31;91msydb☮x: Changing gid to `{}'.[0m", gid);
             if libc::setgid(gid) != 0 {
                 fail(Err::SetUser, epipe);
             }
@@ -164,7 +229,7 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
     if child.cfg.supplementary_gids.is_some() {
         child.cfg.supplementary_gids.as_ref().map(|groups| {
             let gstr: Vec<String> = groups.into_iter().map(|x| x.to_string()).collect();
-            eprintln!("[0;1;31;91msydb☮x: Adding supplementary gids: {}[0m",
+            eprintln!("[0;1;31;91msydb☮x: Adding supplementary gids `{}'.[0m",
                 gstr.join(", "));
             if libc::setgroups(groups.len() as size_t, groups.as_ptr()) != 0 {
                 fail(Err::SetUser, epipe);
@@ -174,7 +239,7 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.cfg.uid.is_some() {
         child.cfg.uid.as_ref().map(|&uid| {
-            eprintln!("[0;1;31;91msydb☮x: Changing uid to: {}[0m", uid);
+            eprintln!("[0;1;31;91msydb☮x: Changing uid to `{}'.[0m", uid);
             if libc::setuid(uid) != 0 {
                 fail(Err::SetUser, epipe);
             }
@@ -211,11 +276,21 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         }
     });
 
-    child.cfg.work_dir.as_ref().map(|dir| {
-        if libc::chdir(dir.as_ptr()) != 0 {
-            fail(Err::Chdir, epipe);
-        }
-    });
+    if child.cfg.work_dir.is_some() {
+        let osstr = OsStr::from_bytes(child.cfg.work_dir.as_ref().unwrap().to_bytes());
+        match osstr.to_str() {
+            Some(workdir) => {
+                eprintln!("[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
+                    workdir);
+            },
+            None => {}
+        };
+        child.cfg.work_dir.as_ref().map(|dir| {
+            if libc::chdir(dir.as_ptr()) != 0 {
+                fail(Err::Chdir, epipe);
+            }
+        });
+    }
 
 
     for &(dest_fd, src_fd) in child.fds {
