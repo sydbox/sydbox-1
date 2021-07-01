@@ -284,7 +284,7 @@ case "${bashrc_term_colours}" in
         ;;
 esac
 
-bashrc_colour_usr=${bashrc_colour_m_orng}
+bashrc_colour_usr=${bashrc_colour_l_pink}
 bashrc_colour_cwd=${bashrc_colour_m_gren}
 bashrc_colour_wrk=${bashrc_colour_m_teal}
 bashrc_colour_rok=${bashrc_colour_d_blue}
@@ -309,7 +309,7 @@ esac
 # {{{ Prompt
 ps_sandbox() {
     if test -e /dev/sydbox; then
-        echo -e "${bashrc_colour_l_pink}>${bashrc_colour_l_pink}syd:☠"
+        echo -e "${bashrc_colour_l_pink}>${bashrc_colour_m_orng}syd:☠"
     else
         echo -e "${bashrc_colour_l_pink}>${bashrc_colour_m_gren}syd:✓"
     fi
