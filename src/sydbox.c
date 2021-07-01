@@ -401,15 +401,6 @@ static syd_process_t *new_thread(pid_t pid)
 
 	process_add(thread);
 
-#if ENABLE_PSYSCALL
-	int r;
-	if ((r = pink_regset_alloc(&thread->regset)) < 0) {
-		errno = -r;
-		say_errno("pink_regset_alloc");
-		thread->regset = NULL;
-	}
-#endif
-
 	dump(DUMP_THREAD_NEW, pid);
 	return thread;
 }
@@ -653,13 +644,6 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 			p->repr[i] = NULL;
 		}
 	}
-
-#if ENABLE_PSYSCALL
-	if (p->regset) {
-		pink_regset_free(p->regset);
-		p->regset = NULL;
-	}
-#endif
 
 	if (sydbox->config.allowlist_per_process_directories &&
 	    !sc_map_freed(&sydbox->config.proc_pid_auto))
@@ -1624,12 +1608,11 @@ pid_validate:
 		if (current) {
 			proc_validate_or_deny(current, notify_respond);
 			if (current) {
-#if 0
 				current->sysnum = sydbox->request->data.nr;
 				current->sysname = name;
 				for (unsigned short idx = 0; idx < 6; idx++)
-					current->args[idx] = sydbox->request->data.args[idx];
-#endif
+					current->args[idx] =
+						sydbox->request->data.args[idx];
 				if (current->update_cwd) {
 					r = sysx_chdir(current);
 					if (r < 0)
@@ -1690,8 +1673,15 @@ pid_validate:
 					/* allow the initial exec */
 					not_exec = true;
 					sydbox->execve_wait = false;
-				} else {
+				} else if (name) {
+					current->sysnum = sydbox->request->data.nr;
+					current->sysname = xstrdup(name);
+					for (unsigned short idx = 0; idx < 6; idx++)
+						current->args[idx] =
+							sydbox->request->data.args[idx];
 					event_syscall(current);
+					free((char *)current->sysname);
+					current->sysname = NULL;
 				}
 			}
 			if (execve_pid) {

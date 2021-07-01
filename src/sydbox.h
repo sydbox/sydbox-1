@@ -459,7 +459,6 @@ struct syd_process {
 #ifdef ENABLE_PSYSCALL
 	long addr; /* Read-only allocated address in child's address space. */
 	bool addr_arg[6];
-	struct pink_regset *regset;
 #endif
 
 	/* Denied system call will return this value */
@@ -475,7 +474,7 @@ struct syd_process {
 	struct syd_process_shared shm;
 
 	/* Last system call name */
-	const char *sysname;
+	char *sysname;
 
 	/* Resolved path argument for specially treated system calls like execve() */
 	char *abspath;

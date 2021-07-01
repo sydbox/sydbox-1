@@ -17,4 +17,8 @@ long psyscall(pid_t pid, long number, ...);
 /* Allocate memory from the given processes address space */
 void *palloc(pid_t pid, size_t size);
 
+/* Remote prctl */
+int pprctl(pid_t pid, int option, unsigned long arg2, unsigned long arg3,
+	   unsigned long arg4, unsigned long arg5);
+
 #endif

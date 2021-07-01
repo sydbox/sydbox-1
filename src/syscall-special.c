@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sched.h>
+#include <sys/prctl.h>
 #include "daemon.h"
 #include "pink.h"
 #include "path.h"
@@ -260,15 +261,13 @@ static int do_execve(syd_process_t *current, bool at_func)
 		 * core/trace/program_checksum by setting it to
 		 * 2 or higher.
 		 */
+		syd_proc_comm(sydbox->pfd, current->comm,
+			      SYDBOX_PROC_MAX - 1);
+		current->comm[SYDBOX_PROC_MAX-1] = '\0';
 		if (magic_query_trace_program_checksum(NULL) > 1) {
-			syd_proc_comm(sydbox->pfd, current->comm,
-				      SYDBOX_PROC_MAX - 1);
-			current->comm[SYDBOX_PROC_MAX-1] = '\0';
-
 			syd_proc_cmdline(sydbox->pfd, current->prog,
 					 LINE_MAX-1);
 			current->prog[LINE_MAX-1] = '\0';
-
 			if ((r = path_to_hex(abspath)) < 0) {
 				errno = -r;
 				say_errno("can't calculate checksum of file "
@@ -278,6 +277,26 @@ static int do_execve(syd_process_t *current, bool at_func)
 					SYD_SHA1_HEXSZ);
 			}
 		}
+
+#if ENABLE_PSYSCALL
+		/* 16 bytes including the terminating NUL byte.
+		 * syd- is 4 bytes.
+		 * comm is max 7 bytes.
+		 * hash is 5..9 bytes.
+		 */
+		char comm[16];
+		size_t len = strlen(current->comm);
+		strlcat(comm, "syd-", sizeof("syd-"));
+		strlcpy(comm, current->comm, len + 1);
+		if (len > 7)
+			comm[11] = '\0';
+		strlcpy(comm, "-", sizeof("-"));
+		strlcpy(comm, current->hash, 15 - (sizeof("syd-") + len + 1));
+		comm[15] = '\0';
+		if (pprctl(current->pid, PR_SET_NAME, (unsigned long)comm,
+			   0, 0, 0) < 0)
+			say_errno("pprctl");
+#endif
 	}
 
 	if (current->repr[0]) {

@@ -668,19 +668,11 @@ int syd_rmem_write(syd_process_t *current)
 #if !ENABLE_PSYSCALL
 	return -ENOSYS;
 #else
-	int r;
-	bool write = false;
 	for (uint8_t i = 0; i < 6; i++) {
-		if (current->addr_arg[i])
-			write = true;
+		if (current->addr_arg[i]) {
+			/*write = true*/;
+		}
 		current->addr_arg[i] = false;
-	}
-	if (!write)
-		return 0;
-
-	if ((r = pink_regset_fill(current->pid, current->regset)) < 0) {
-		say_errno("pink_regset_fill");
-		return -r;
 	}
 #if 0
 #if ENABLE_PSYSCALL

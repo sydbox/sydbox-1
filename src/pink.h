@@ -27,10 +27,6 @@
 #include <seccomp.h>
 
 #if ENABLE_PSYSCALL
-# include <pinktrace/compiler.h>
-# include <pinktrace/regset.h>
-# include <pinktrace/trace.h>
-# include <pinktrace/write.h>
 # include "psyscall_syd.h"
 #endif
 
