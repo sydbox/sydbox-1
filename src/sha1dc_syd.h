@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include "sha1dc/sha1.h"
+#include "sha1dc_sha1.h"
 #define syd_SHA1DCInit	SHA1DCInit
 
 void syd_SHA1DCFinal(unsigned char [20], SHA1_CTX *);
