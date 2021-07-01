@@ -219,18 +219,21 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.cfg.gid.is_some() {
         child.cfg.gid.as_ref().map(|&gid| {
-            eprintln!("[0;1;31;91msydb☮x: Changing gid to `{}'.[0m", gid);
-            if libc::setgid(gid) != 0 {
-                fail(Err::SetUser, epipe);
+            if gid != libc::getgid() {
+                eprintln!("[0;1;31;91msydb☮x: Changing gid to `{}'.[0m", gid);
+                if libc::setgid(gid) != 0 {
+                    fail(Err::SetUser, epipe);
+                }
             }
         });
     }
 
     if child.cfg.supplementary_gids.is_some() {
         child.cfg.supplementary_gids.as_ref().map(|groups| {
+            let my_gid = libc::getgid();
             let gids: Vec<gid_t> = groups
                 .iter()
-                .filter(|x| **x == 0)
+                .filter(|x| **x != 0 && **x != my_gid)
                 .map(|x| *x)
                 .collect();
             if gids.len() > 0 {
@@ -249,9 +252,11 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.cfg.uid.is_some() {
         child.cfg.uid.as_ref().map(|&uid| {
-            eprintln!("[0;1;31;91msydb☮x: Changing uid to `{}'.[0m", uid);
-            if libc::setuid(uid) != 0 {
-                fail(Err::SetUser, epipe);
+            if uid != libc::getuid() {
+                eprintln!("[0;1;31;91msydb☮x: Changing uid to `{}'.[0m", uid);
+                if libc::setuid(uid) != 0 {
+                    fail(Err::SetUser, epipe);
+                }
             }
         });
     }
