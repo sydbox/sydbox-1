@@ -251,8 +251,6 @@ static int do_execve(syd_process_t *current, bool at_func)
 	 * and kill or resume the process as necessary.
 	 */
 	if (abspath) {
-		if (current->abspath)
-			free(current->abspath);
 		current->abspath = abspath;
 
 		/*
