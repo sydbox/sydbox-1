@@ -1,7 +1,8 @@
 AM_MAKEFLAGS= --no-print-directory
 BUILT_SOURCES= \
 	       syscall_open_ro.lst \
-	       syscall_open_syd.h
+	       syscall_open_syd.h \
+	       sydbox_rs.h
 CLEANFILES= \
 	    $(BUILT_SOURCES) \
 	    gmon.out \
@@ -10,6 +11,18 @@ CLEANFILES= \
 	    *.gcov
 EXTRA_DIST= syscall_open_syd.h.in syd-syscall-open.py
 noinst_HEADERS=
+
+CARGO_BUILD_FLAGS= --lib --target-dir $(builddir)/sydbox_rs
+if SYDBOX_CARGO_RELEASE
+CARGO_BUILD_FLAGS+= --release
+CLEANFILES+= \
+	     sydbox_rs/release/libsydbox.a \
+	     sydbox_rs/release/libsydbox.so
+else
+CLEANFILES+= \
+	     sydbox_rs/debug/libsydbox.a \
+	     sydbox_rs/debug/libsydbox.so
+endif
 
 noinst_SCRIPTS= \
 		kingbee.py
@@ -22,6 +35,38 @@ SYD_FCNTL_INCLUDES= \
 	$(SYD_INCLUDEDIR)/bits/fcntl.h \
 	$(SYD_INCLUDEDIR)/sys/fcntl.h \
 	$(SYD_INCLUDEDIR)/linux/fcntl.h
+
+sydbox_rs.h: lib.rs
+	$(CBINDGEN) -lc -d $< -o $@
+
+.PHONY: libsydbox
+libsydbox: libsydbox-@LIBSYD_PC_SLOT@.so
+
+if SYDBOX_CARGO_RELEASE
+if ENABLE_STATIC
+sydbox_rs/release/libsydbox.a: lib.rs
+	mkdir -m700 -p $(builddir)/sydbox_rs
+	$(CARGO) build $(CARGO_BUILD_FLAGS)
+else
+sydbox_rs/release/libsydbox.so: lib.rs
+	mkdir -m700 -p $(builddir)/sydbox_rs
+	$(CARGO) build $(CARGO_BUILD_FLAGS)
+libsydbox-@LIBSYD_PC_SLOT@.so: sydbox_rs/release/libsydbox.so
+	cp -p $< $@
+endif
+else
+if ENABLE_STATIC
+sydbox_rs/debug/libsydbox.a: lib.rs
+	mkdir -m700 -p $(builddir)/sydbox_rs
+	$(CARGO) build $(CARGO_BUILD_FLAGS)
+else
+sydbox_rs/debug/libsydbox.so: lib.rs
+	mkdir -m700 -p $(builddir)/sydbox_rs
+	$(CARGO) build $(CARGO_BUILD_FLAGS)
+libsydbox-@LIBSYD_PC_SLOT@.so: sydbox_rs/debug/libsydbox.so
+	cp -p $< $@
+endif
+endif
 
 syscall_open_syd.h: Makefile syscall_open_ro.lst syscall_open_syd.h.in
 	$(PYTHON) ./syd-syscall-open.py < syscall_open_ro.lst > $@ ||\
@@ -179,7 +224,8 @@ noinst_HEADERS+= psyscall_syd.h
 syd_SOURCES+= psyscall.c psyscall_syd.c
 endif
 
-syd_LDFLAGS= -lsyd_@LIBSYD_PC_SLOT@ $(CODE_COVERAGE_LDFLAGS)
+syd_LDFLAGS= -pthread -lpthread -ldl \
+	     $(CODE_COVERAGE_LDFLAGS)
 syd_LDADD= \
 	      $(top_builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la \
 	      -L$(top_builddir)/syd/.libs \
@@ -187,6 +233,19 @@ syd_LDADD= \
 	      @SYDBOX_LIBTOOL_FLAGS@ \
 	      $(libseccomp_LIBS) \
 	      $(CODE_COVERAGE_LIBS)
+if SYDBOX_CARGO_RELEASE
+syd_LDADD+= \
+	    -L$(top_builddir) \
+	    -lsydbox-@LIBSYD_PC_SLOT@.so
+if ENABLE_STATIC
+syd_LDADD+= sydbox_rs/release/libsydbox.a
+endif
+else
+if ENABLE_STATIC
+syd_LDADD+= sydbox_rs/debug/libsydbox.a
+endif
+endif
+
 if WANT_DEBUG
 syd_LDADD+= $(libunwind_LIBS)
 endif

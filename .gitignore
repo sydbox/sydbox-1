@@ -83,6 +83,9 @@ GTAGS
 /missing
 /stamp-h1
 
+# Cargo
+/Cargo.toml
+
 Makefile.in
 Makefile
 
