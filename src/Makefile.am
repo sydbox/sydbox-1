@@ -3,8 +3,13 @@ CLEANFILES= \
 	    gmon.out \
 	    *.gcda \
 	    *.gcno \
-	    *.gcov
-EXTRA_DIST= syscall_open_syd.h.in syd-syscall-open.py sydbox_rs.h
+	    *.gcov \
+	    Cargo.toml
+EXTRA_DIST= \
+	    syscall_open_syd.h.in \
+	    syd-syscall-open.py \
+	    sydbox_rs.h \
+	    Cargo.toml.in
 noinst_HEADERS=
 
 
@@ -18,14 +23,24 @@ else
 CARGO_FLAGS= $(CARGO_VERBOSE)
 endif
 
+Cargo.toml: Cargo.toml.in
+	$(AM_V_GEN)
+	$(AM_V_at)$(SED) \
+		-e 's:@SYDBOX_VERSION@:$(VERSION):g' \
+		-e 's:@RUST_LIBTYPES@:$(SYDBOX_RUST_LIBTYPES):g' \
+		$< > $@
+
 check-local:
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) test $(CARGO_FLAGS)
 clean-local:
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) clean
 install-exec-local:
+	$(AM_V_GEN)
+	$(AM_V_at)cp -fp $(top_builddir)/Cargo.toml .
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) install --path=. --root="$(DESTDIR)/usr"
 	rm -f $(DESTDIR)/usr/.crates.toml
 	rm -f $(DESTDIR)/usr/.crates2.json
+	rm -f Cargo.toml
 
 SYDBOX_RUST_LIB=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox
 SYDBOX_RUST_LIB_STA=$(SYDBOX_RUST_LIB).a
@@ -170,6 +185,7 @@ syd_HEADERS= \
 		 sydbox.h
 syd_SOURCES= \
 		 $(SYDBOX_RUST_LIB_STA) \
+		 Cargo.toml \
 		 lib.rs \
 		 sydbox_rs.h \
 		 syscall_open_syd.h \
@@ -313,6 +329,7 @@ BUILT_SOURCES= \
 	syscall_open_syd.h \
 	sydbox_rs.h \
 	lib.rs \
+	Cargo.toml \
 	$(SYDBOX_RUST_LIB_STA)
 syd-syscall.$(OBJEXT): $(BUILT_SOURCES)
 syd-dump.$(OBJEXT): $(BUILT_SOURCES)

@@ -1,0 +1,41 @@
+[package]
+name = "sydbox"
+version = "@SYDBOX_VERSION@"
+authors = ["Alï Polatel <alip@exherbo.org>"]
+edition = "2018"
+license = "GPL-2.0-only"
+
+[lib]
+name = "sydbox"
+crate-type = [@RUST_LIBTYPES@]
+path = "lib.rs"
+
+[dependencies]
+libc = "0.2"
+nix = "0.20"
+# Native Rust crate for managing control groups on Linux
+# TODO: integrate.
+cgroups-rs = "0.2.6"
+# The low-level interface for linux namespaces (containers)
+unshare = { path = "unshare" }
+
+[build-dependencies]
+built = {version = "0.4.4", features=["git2", "chrono"]}
+cbindgen = "0.19.0"
+
+[dev-dependencies]
+hyperfine = "1.11.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+# Includes debug information in release builds. Necessary for profiling. Does not
+# slow down the executable.
+debug = true
+
+# The default optimization level is 3 for release mode builds.
+# 0 means disable optimization and is the default for debug mode buids.
+# (Setting opt-level=1 for debug builds is a good way of speeding them up a bit.)
+# "s" means optimize for size, "z" reduces size even more.
+opt-level = 3
