@@ -314,6 +314,7 @@ BUILT_SOURCES= \
 	lib.rs \
 	$(SYDBOX_RUST_LIB_STA)
 syd-syscall.$(OBJEXT): $(BUILT_SOURCES)
+syd-dump.$(OBJEXT): $(BUILT_SOURCES)
 
 ###
 # Determine make -j job count to pass to cargo.
