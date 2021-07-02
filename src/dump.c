@@ -351,6 +351,7 @@ void dump(enum dump what, ...)
 		dump_format(argv0, path, runas, arch);
 		dump_cycle();
 		va_end(ap);
+		setenv("SYDBOX_DUMP", "☮", 1);
 		return;
 	}
 

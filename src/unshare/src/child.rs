@@ -1,7 +1,7 @@
-use std::ffi::CStr;
-use std::ffi::OsStr;
+//use std::ffi::CStr;
+//use std::ffi::OsStr;
+//use std::os::unix::ffi::OsStrExt;
 use std::mem;
-use std::os::unix::ffi::OsStrExt;
 use std::os::unix::io::RawFd;
 use std::ptr;
 
@@ -31,10 +31,7 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.cfg.death_sig.is_some() {
         if let Some(&sig) = child.cfg.death_sig.as_ref() {
-            eprintln!(
-                "[0;1;31;91msydb☮x: Setting parent-death signal to `{}'.[0m",
-                sig
-            );
+            // say!("Setting parent-death signal to `{}'.", sig);
             if libc::prctl(ffi::PR_SET_PDEATHSIG, sig as c_ulong, 0, 0, 0) != 0 {
                 fail(Err::ParentDeathSignal, epipe);
             }
@@ -91,28 +88,25 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
     for &(nstype, fd) in child.setns_namespaces {
         match nstype {
             CloneFlags::CLONE_NEWPID => {
-                eprintln!("[0;1;31;91msydb☮x: Unsharing pid namespace.[0m");
+                // say!("Unsharing pid namespace.");
             }
             CloneFlags::CLONE_NEWNET => {
-                eprintln!("[0;1;31;91msydb☮x: Unsharing net namespace.[0m");
+                // say!("Unsharing net namespace.");
             }
             CloneFlags::CLONE_NEWNS => {
-                eprintln!("[0;1;31;91msydb☮x: Unsharing mount namespace.[0m");
+                // say!("Unsharing mount namespace.");
             }
             CloneFlags::CLONE_NEWUTS => {
-                eprintln!("[0;1;31;91msydb☮x: Unsharing uts namespace.[0m");
+                // say!("Unsharing uts namespace.");
             }
             CloneFlags::CLONE_NEWIPC => {
-                eprintln!("[0;1;31;91msydb☮x: Unsharing ipc namespace.[0m");
+                // say!("Unsharing ipc namespace.");
             }
             CloneFlags::CLONE_NEWUSER => {
-                eprintln!("[0;1;31;91msydb☮x: Unsharing user namespace.[0m");
+                // say!("Unsharing user namespace.");
             }
             _ => {
-                eprintln!(
-                    "[0;1;31;91msydb☮x: Setting unknown clone flag `{:?}'.[0m",
-                    nstype
-                );
+                // say!("Setting unknown clone flag `{:?}'.", nstype);
             }
         };
         if libc::setns(fd, nstype.bits()) != 0 {
@@ -124,14 +118,13 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         let mut buf = [0u8; MAX_PID_LEN + 1];
         let data = format_pid_fixed(&mut buf, libc::getpid());
         for &(index, offset) in child.pid_env_vars {
+            /*
             let slice = CStr::from_ptr(child.environ[index]);
             let osstr = OsStr::from_bytes(slice.to_bytes());
             if let Some(environ) = osstr.to_str() {
-                eprintln!(
-                    "[0;1;31;91msydb☮x: Add environment variable `{}' with pid.[0m",
-                    environ
-                );
+                say!("Add environment variable `{}' with pid.", environ);
             }
+            */
 
             // we know that there are at least MAX_PID_LEN+1 bytes in buffer
             child.environ[index]
@@ -142,24 +135,25 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.pivot.is_some() {
         if let Some(piv) = child.pivot.as_ref() {
+            /*
             let mut osstr = OsStr::from_bytes(piv.new_root.to_bytes());
             if let Some(new_root) = osstr.to_str() {
                 if let Some(put_old) = osstr.to_str() {
-                    eprintln!("[0;1;31;91msydb☮x: Moving the root of the file system to the directory `{}' and making `{}' the new root file system.[0m", put_old, new_root);
+                    say!("Moving the root of the file system to the directory `{}' and making `{}' the new root file system.", put_old, new_root);
                 }
             }
+            */
 
             if ffi::pivot_root(piv.new_root.as_ptr(), piv.put_old.as_ptr()) != 0 {
                 fail(Err::ChangeRoot, epipe);
             }
 
+            /*
             osstr = OsStr::from_bytes(piv.workdir.to_bytes());
             if let Some(workdir) = osstr.to_str() {
-                eprintln!(
-                    "[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
-                    workdir
-                );
+                say!("Changing working directory to `{}'.", workdir);
             }
+            */
 
             if libc::chdir(piv.workdir.as_ptr()) != 0 {
                 fail(Err::ChangeRoot, epipe);
@@ -172,14 +166,13 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     if child.chroot.is_some() {
         if let Some(chroot) = child.chroot.as_ref() {
+            /*
             let slice = CStr::from_ptr(chroot.root.as_ptr());
             let osstr = OsStr::from_bytes(slice.to_bytes());
             if let Some(root) = osstr.to_str() {
-                eprintln!(
-                    "[0;1;31;91msydb☮x: Changing root directory to `{}'.[0m",
-                    root
-                );
+                say!("Changing root directory to `{}'.", root);
             }
+            */
             if libc::chroot(chroot.root.as_ptr()) != 0 {
                 fail(Err::ChangeRoot, epipe);
             }
@@ -187,14 +180,13 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
     }
     if child.chroot.is_some() {
         if let Some(chroot) = child.chroot.as_ref() {
+            /*
             let slice = CStr::from_ptr(chroot.workdir.as_ptr());
             let osstr = OsStr::from_bytes(slice.to_bytes());
             if let Some(workdir) = osstr.to_str() {
-                eprintln!(
-                    "[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
-                    workdir
-                );
+                say!("Changing working directory to `{}'.", workdir);
             }
+            */
             if libc::chdir(chroot.workdir.as_ptr()) != 0 {
                 fail(Err::ChangeRoot, epipe);
             }
@@ -202,7 +194,7 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
     }
 
     if child.keep_caps.is_some() && child.keep_caps.as_ref().is_some() {
-        eprintln!("[0;1;31;91msydb☮x: Setting the \"keep capabilities\" flag.[0m");
+        // say!("Setting the \"keep capabilities\" flag.");
         // Don't use securebits because on older systems it doesn't work
         if libc::prctl(libc::PR_SET_KEEPCAPS, 1, 0, 0, 0) != 0 {
             fail(Err::CapSet, epipe);
@@ -213,10 +205,7 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         if let Some(&gid) = child.cfg.gid.as_ref() {
             let egid = libc::getegid();
             if gid != egid {
-                eprintln!(
-                    "[0;1;31;91msydb☮x: Changing gid from `{}' to `{}'.[0m",
-                    egid, gid
-                );
+                // say!("Changing gid from `{}' to `{}'.", egid, gid);
                 if libc::setgid(gid) != 0 {
                     fail(Err::SetUser, epipe);
                 }
@@ -233,11 +222,8 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
                 .copied()
                 .collect();
             if !gids.is_empty() {
-                let gstr: Vec<String> = gids.iter().map(|x| x.to_string()).collect();
-                eprintln!(
-                    "[0;1;31;91msydb☮x: Adding supplementary gids `{}'.[0m",
-                    gstr.join(",")
-                );
+                //let gstr: Vec<String> = gids.iter().map(|x| x.to_string()).collect();
+                //say!("Adding supplementary group identities `{}'.", gstr.join(","));
                 if libc::setgroups(groups.len() as size_t, gids.as_ptr()) != 0 {
                     fail(Err::SetUser, epipe);
                 }
@@ -249,10 +235,7 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         if let Some(&uid) = child.cfg.uid.as_ref() {
             let euid = libc::geteuid();
             if uid != euid {
-                eprintln!(
-                    "[0;1;31;91msydb☮x: Changing uid from `{}' to `{}'.[0m",
-                    euid, uid
-                );
+                // say!("Changing uid from `{}' to `{}'.", euid, uid);
                 if libc::setuid(uid) != 0 {
                     fail(Err::SetUser, epipe);
                 }
@@ -288,13 +271,12 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
     }
 
     if child.cfg.work_dir.is_some() {
+        /*
         let osstr = OsStr::from_bytes(child.cfg.work_dir.as_ref().unwrap().to_bytes());
         if let Some(workdir) = osstr.to_str() {
-            eprintln!(
-                "[0;1;31;91msydb☮x: Changing working directory to `{}'.[0m",
-                workdir
-            );
+            say!("Changing working directory to `{}'.", workdir);
         }
+        */
         if let Some(dir) = child.cfg.work_dir.as_ref() {
             if libc::chdir(dir.as_ptr()) != 0 {
                 fail(Err::Chdir, epipe);
@@ -315,12 +297,9 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
 
     for &(start, end) in child.close_fds {
         if start < end {
+            // say!("Closing file descriptors `{}-{}'.", start, end);
             for fd in start..end {
                 if child.fds.iter().find(|&&(cfd, _)| cfd == fd).is_none() {
-                    eprintln!(
-                        "[0;1;31;91msydb☮x: Closing file descriptor `{}'.[0m",
-                        fd
-                    );
                     // Close may fail with ebadf, and it's okay
                     libc::close(fd);
                 }

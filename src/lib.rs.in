@@ -13,6 +13,10 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
+macro_rules! say { ($s:expr, $($rest:tt)*) => {
+    eprintln!(concat!("[0;1;31;91msydb☮x: ", $s, "[0m"), $($rest)*) }; ($s:expr) => {
+        eprintln!(concat!("[0;1;31;91msydb☮x: ", $s, "[0m")) }; }
+
 extern crate libc;
 extern crate unshare;
 
@@ -254,12 +258,6 @@ pub extern "C" fn syd_execv(
     }
 
     pid.as_raw()
-    /*
-    let res = child.wait().unwrap();
-    if verbose {
-        eprintln!("[0;1;31;91mSydb☮x [pid {}] {}[0m", child.id(), res);
-    }
-    */
 }
 
 #[doc = "This structure represents a seccomp version"]

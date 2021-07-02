@@ -32,6 +32,12 @@ extern crate nix;
 #[cfg(test)]
 extern crate rand;
 
+/*
+macro_rules! say { ($s:expr, $($rest:tt)*) => {
+    eprintln!(concat!("[0;1;31;91msydb☮x: ", $s, "[0m"), $($rest)*) }; ($s:expr) => {
+        eprintln!(concat!("[0;1;31;91msydb☮x: ", $s, "[0m")) }; }
+*/
+
 mod callbacks;
 mod caps;
 mod child;
