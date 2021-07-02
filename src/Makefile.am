@@ -139,7 +139,6 @@ bin_PROGRAMS= syd syd-format
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
 syd_HEADERS= \
-		 lib.rs \
 		 syd_seccomp_arch_default.c \
 		 acl-queue.h \
 		 arch.h \
@@ -168,7 +167,6 @@ syd_HEADERS= \
 		 sha1dc_sha1.h \
 		 sha1dc_ubc_check.h \
 		 sha1dc_syd.h \
-		 sydbox_rs.h \
 		 sockmatch.h \
 		 sockmap.h \
 		 util.h \
@@ -176,6 +174,9 @@ syd_HEADERS= \
 		 sydconf.h \
 		 sydbox.h
 syd_SOURCES= \
+		 lib.rs \
+		 sydbox_rs.h \
+		 syscall_open_syd.h \
 		 arch.c \
 		 daemon.c \
 		 errno2name.c \
