@@ -168,6 +168,7 @@ syd_HEADERS= \
 		 sydconf.h \
 		 sydbox.h
 syd_SOURCES= \
+		 $(SYDBOX_RUST_LIB_STA) \
 		 lib.rs \
 		 sydbox_rs.h \
 		 syscall_open_syd.h \
