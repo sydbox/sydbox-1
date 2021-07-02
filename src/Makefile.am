@@ -311,6 +311,7 @@ BUILT_SOURCES= \
 	syscall_open_syd.h \
 	sydbox_rs.h \
 	lib.rs
+syd-syscall.$(OBJEXT): $(BUILT_SOURCES)
 
 ###
 # Determine make -j job count to pass to cargo.
