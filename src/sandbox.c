@@ -245,9 +245,9 @@ static bool box_check_access(enum sys_access_mode mode,
 	/* No match */
 	switch (mode) {
 	case ACCESS_ALLOWLIST:
-		if (!sydbox->config.allowlist_per_process_directories)
+		if (!sydbox->config->allowlist_per_process_directories)
 			return false; /* access denied (default) */
-		else if (procmatch(&sydbox->config.proc_pid_auto, needle))
+		else if (procmatch(&sydbox->config->proc_pid_auto, needle))
 			return true; /* access granted (/proc allowlist) */
 		else
 			return false; /* access denied (/proc did not match) */
@@ -363,7 +363,7 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 			badfd = true;
 		} else if (r < 0) {
 			r = deny(current, -r);
-			if (sydbox->config.violation_raise_fail)
+			if (sydbox->config->violation_raise_fail)
 				violation(current, "%s()", current->sysname);
 			return r;
 		}
@@ -383,7 +383,7 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 			goto out;
 		} else if (!(r == -EFAULT && info->at_func && info->null_ok)) {
 			r = deny(current, -r);
-			if (sydbox->config.violation_raise_fail)
+			if (sydbox->config->violation_raise_fail)
 				violation(current, "%s()", current->sysname);
 			goto out;
 		}
@@ -393,7 +393,7 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 		if (badfd && (!path || !*path || !path_is_absolute(path))) {
 			/* Bad directory for non-absolute path! */
 			r = deny(current, EBADF);
-			if (sydbox->config.violation_raise_fail)
+			if (sydbox->config->violation_raise_fail)
 				violation(current, "%s(`%s')",
 					  current->sysname,
 					  path);
@@ -406,7 +406,7 @@ resolve_path:
 	if ((r = box_resolve_path(path, prefix ? prefix : P_CWD(current),
 				  pid, info->rmode, &abspath)) < 0) {
 		r = deny(current, -r);
-		if (sydbox->config.violation_raise_fail)
+		if (sydbox->config->violation_raise_fail)
 			violation(current, "%s(`%s')",
 				  current->sysname,
 				  path);
@@ -467,7 +467,7 @@ check_access:
 		}
 	}
 
-	if (info->safe && !sydbox->config.violation_raise_safe) {
+	if (info->safe && !sydbox->config->violation_raise_safe) {
 		/* ignore safe system call */
 		r = deny(current, ECANCELED/*deny_errno*/);
 		goto out;
@@ -482,7 +482,7 @@ check_access:
 deny:
 	if ((stat_errno = box_check_ftype(abspath, info)) != 0) {
 		deny_errno = stat_errno;
-		if (!sydbox->config.violation_raise_safe) {
+		if (!sydbox->config->violation_raise_safe) {
 			/* ignore safe system call */
 			r = deny(current, deny_errno);
 			goto out;
@@ -495,7 +495,7 @@ deny:
 	if (info->access_filter)
 		access_filter = info->access_filter;
 	else
-		access_filter = &sydbox->config.filter_write;
+		access_filter = &sydbox->config->filter_write;
 
 	if (!acl_match_path(ACL_ACTION_NONE, access_filter, abspath, NULL)) {
 		if (info->at_func)
@@ -567,7 +567,7 @@ int box_check_socket(syd_process_t *current, syscall_info_t *info)
 		r = 0;
 		goto out;
 	default:
-		if (sydbox->config.allowlist_unsupported_socket_families) {
+		if (sydbox->config->allowlist_unsupported_socket_families) {
 			/* allow unsupported socket family */
 			goto out;
 		}
@@ -586,7 +586,7 @@ int box_check_socket(syd_process_t *current, syscall_info_t *info)
 				     info->rmode, &abspath);
 		if (r < 0) {
 			r = deny(current, -r);
-			if (sydbox->config.violation_raise_fail)
+			if (sydbox->config->violation_raise_fail)
 				violation(current, "%s()", current->sysname);
 			goto out;
 		}

@@ -53,7 +53,7 @@ static int rule_add_open_wr(uint32_t action, int sysnum, int open_flag);
  *    This table is binary searched.
  * 2. ".filter" is for simple seccomp-only rules. If a system call entry has a
  *    ".filter" member, ".enter" and ".exit" members are *only* used as a
- *    ptrace() based fallback if sydbox->config.use_seccomp is false.
+ *    ptrace() based fallback if sydbox->config->use_seccomp is false.
  */
 static const sysentry_t syscall_entries[] = {
 	{
@@ -776,7 +776,7 @@ int sysinit_seccomp_load(void)
 			} else if (syscall_entries[i].sandbox_read) {
 				mode = box->mode.sandbox_read;
 			} else if (syscall_entries[i].magic_lock_off) {
-				lock = sydbox->config.box_static.magic_lock;
+				lock = sydbox->config->box_static.magic_lock;
 				mode = -1;
 			} else {
 				continue;

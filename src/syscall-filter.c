@@ -1078,7 +1078,7 @@ bool filter_includes(int sysnum)
 		"fork", "vfork",
 	};
 
-	switch (sydbox->config.restrict_general) {
+	switch (sydbox->config->restrict_general) {
 	case 0:
 		filter = NULL;
 		max = 0;
@@ -1114,7 +1114,7 @@ bool filter_includes(int sysnum)
 		}
 	}
 
-	if (sydbox->config.restrict_general < 1)
+	if (sydbox->config->restrict_general < 1)
 		return false;
 
 	for (size_t i = 0; i < max; i++)
@@ -1129,7 +1129,7 @@ static int filter_open_readonly(void)
 	uint32_t action;
 	enum sandbox_mode mode;
 
-	mode = sydbox->config.box_static.mode.sandbox_read;
+	mode = sydbox->config->box_static.mode.sandbox_read;
 	switch (mode) {
 	case SANDBOX_OFF:
 	case SANDBOX_ALLOW:
@@ -1714,7 +1714,7 @@ int filter_general(void)
 					    allow_calls[i], 0);
 	}
 
-	switch (sydbox->config.restrict_general) {
+	switch (sydbox->config->restrict_general) {
 	case 0:
 		break;
 	case 1:
@@ -1809,9 +1809,9 @@ static int filter_mmap_restrict(int sys_mmap)
 
 int filter_mmap(uint32_t arch)
 {
-	if (sydbox->config.restrict_shm_wr)
+	if (sydbox->config->restrict_shm_wr)
 		return filter_mmap_restrict_shared(SCMP_SYS(mmap));
-	else if (sydbox->config.restrict_mmap)
+	else if (sydbox->config->restrict_mmap)
 		return filter_mmap_restrict(SCMP_SYS(mmap));
 	else
 		return 0;
@@ -1819,9 +1819,9 @@ int filter_mmap(uint32_t arch)
 
 int filter_mmap2(uint32_t arch)
 {
-	if (sydbox->config.restrict_shm_wr)
+	if (sydbox->config->restrict_shm_wr)
 		return filter_mmap_restrict_shared(SCMP_SYS(mmap2));
-	else if (sydbox->config.restrict_mmap)
+	else if (sydbox->config->restrict_mmap)
 		return filter_mmap_restrict(SCMP_SYS(mmap2));
 	else
 		return 0;
@@ -1837,7 +1837,7 @@ int filter_mprotect(uint32_t arch)
 		return 0;
 
 	r = 0;
-	if (sydbox->config.restrict_mmap) {
+	if (sydbox->config->restrict_mmap) {
 		syd_rule_add(sydbox->ctx, action,
 			     SCMP_SYS(mprotect), 2,
 			     SCMP_CMP32(2, SCMP_CMP_NE, PROT_READ),
@@ -1931,7 +1931,7 @@ int filter_ioctl(uint32_t arch)
 					    SCMP_SYS(ioctl), 1,
 					    SCMP_CMP64(1, SCMP_CMP_EQ,
 						       request[i]));
-	if (sydbox->config.restrict_ioctl &&
+	if (sydbox->config->restrict_ioctl &&
 	    sydbox->seccomp_action != SCMP_ACT_ERRNO(EPERM))
 		syd_rule_add_return(sydbox->ctx,
 				    SCMP_ACT_ERRNO(EPERM),

@@ -51,13 +51,13 @@ int magic_remove_denylist_exec(const void *val, syd_process_t *current)
 int magic_append_filter_exec(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_NONE, val,
-			      &sydbox->config.filter_exec);
+			      &sydbox->config->filter_exec);
 }
 
 int magic_remove_filter_exec(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_NONE, val,
-			      &sydbox->config.filter_exec);
+			      &sydbox->config->filter_exec);
 }
 
 int magic_append_allowlist_read(const void *val, syd_process_t *current)
@@ -91,13 +91,13 @@ int magic_remove_denylist_read(const void *val, syd_process_t *current)
 int magic_append_filter_read(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_NONE, val,
-			      &sydbox->config.filter_read);
+			      &sydbox->config->filter_read);
 }
 
 int magic_remove_filter_read(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_NONE, val,
-			      &sydbox->config.filter_read);
+			      &sydbox->config->filter_read);
 }
 
 int magic_append_allowlist_write(const void *val, syd_process_t *current)
@@ -131,19 +131,19 @@ int magic_remove_denylist_write(const void *val, syd_process_t *current)
 int magic_append_filter_network(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_NONE, val,
-			      &sydbox->config.filter_network);
+			      &sydbox->config->filter_network);
 }
 
 int magic_append_filter_write(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_NONE, val,
-			      &sydbox->config.filter_write);
+			      &sydbox->config->filter_write);
 }
 
 int magic_remove_filter_write(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_NONE, val,
-			      &sydbox->config.filter_write);
+			      &sydbox->config->filter_write);
 }
 
 int magic_append_allowlist_network_bind(const void *val, syd_process_t *current)
@@ -205,17 +205,17 @@ int magic_remove_denylist_network_connect(const void *val, syd_process_t *curren
 int magic_remove_filter_network(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_NONE, val,
-			      &sydbox->config.filter_network);
+			      &sydbox->config->filter_network);
 }
 
 int magic_append_exec_kill_if_match(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_append_pathmatch, ACL_ACTION_NONE, val,
-			      &sydbox->config.exec_kill_if_match);
+			      &sydbox->config->exec_kill_if_match);
 }
 
 int magic_remove_exec_kill_if_match(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_remove_pathmatch, ACL_ACTION_NONE, val,
-			      &sydbox->config.exec_kill_if_match);
+			      &sydbox->config->exec_kill_if_match);
 }

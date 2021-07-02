@@ -125,7 +125,7 @@ int sysx_chdir(syd_process_t *current)
 		return 0;
 
 	if (syd_proc_cwd(sydbox->pfd_cwd,
-			 sydbox->config.use_toolong_hack,
+			 sydbox->config->use_toolong_hack,
 			 &newcwd) < 0)
 	{
 		/* TODO: dump(DUMP_SYSCALL, current, "chdir", retval, "panic"); */
@@ -172,7 +172,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 #if 0
 # execve is unconditionally hooked for process/thread hierarchy tracking.
 	if (sandbox_off_exec(current) &&
-	    ACLQ_EMPTY(&sydbox->config.exec_kill_if_match))
+	    ACLQ_EMPTY(&sydbox->config->exec_kill_if_match))
 		return 0;
 #endif
 
@@ -189,7 +189,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 			badfd = true;
 		} else if (r < 0) {
 			r = deny(current, -r);
-			if (sydbox->config.violation_raise_fail)
+			if (sydbox->config->violation_raise_fail)
 				violation(current, "%s()", current->sysname);
 			return r;
 		}
@@ -208,7 +208,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 			return r;
 		} else if (!(r == -EFAULT && (flags & AT_EMPTY_PATH))) {
 			r = deny(current, errno);
-			if (sydbox->config.violation_raise_fail)
+			if (sydbox->config->violation_raise_fail)
 				violation(current, "%s()", current->sysname);
 			if (prefix)
 				free(prefix);
@@ -220,7 +220,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 		if (badfd && (!path || !*path || !path_is_absolute(path))) {
 			/* Bad directory for non-absolute path! */
 			r = deny(current, EBADF);
-			if (sydbox->config.violation_raise_fail)
+			if (sydbox->config->violation_raise_fail)
 				violation(current, "%s()", current->sysname);
 			if (prefix)
 				free(prefix);
@@ -242,7 +242,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 	if (r < 0) {
 		/* resolve_path failed, deny */
 		r = deny(current, -r);
-		if (sydbox->config.violation_raise_fail)
+		if (sydbox->config->violation_raise_fail)
 			violation(current, "%s(`%s')", current->sysname, path);
 		if (path)
 			free(path);
@@ -316,7 +316,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 
 	r = deny(current, EACCES);
 
-	if (!acl_match_path(ACL_ACTION_NONE, &sydbox->config.filter_exec, abspath, NULL))
+	if (!acl_match_path(ACL_ACTION_NONE, &sydbox->config->filter_exec, abspath, NULL))
 		violation(current, "%s(`%s')", current->sysname, abspath);
 
 	free(abspath);
@@ -526,16 +526,16 @@ static int do_stat(syd_process_t *current, const char *path,
 			errno = 0;
 
 		enum violation_decision violation_decision;
-		violation_decision = sydbox->config.violation_decision;
+		violation_decision = sydbox->config->violation_decision;
 		if (violation_decision == VIOLATION_NOOP) {
 			/* Special case for dry-run: intervention is OK for magic. */
-			sydbox->config.violation_decision = VIOLATION_DENY;
+			sydbox->config->violation_decision = VIOLATION_DENY;
 			magic_set_sandbox_all("deny", current);
 		}
 
 		r = deny(current, 0);
 		if (violation_decision == VIOLATION_NOOP) {
-			sydbox->config.violation_decision = VIOLATION_NOOP;
+			sydbox->config->violation_decision = VIOLATION_NOOP;
 			magic_set_sandbox_all("dump", current);
 		}
 	}
