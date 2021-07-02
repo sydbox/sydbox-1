@@ -1,9 +1,4 @@
 AM_MAKEFLAGS= --no-print-directory
-BUILT_SOURCES= \
-	       syscall_open_ro.lst \
-	       syscall_open_syd.h \
-	       sydbox_rs.h \
-	       lib.rs
 CLEANFILES= \
 	    $(BUILT_SOURCES) \
 	    gmon.out \
@@ -217,7 +212,11 @@ syd_SOURCES= \
 		 syscall.c \
 		 config.c \
 		 sydbox.c
-syd-pink.$(OBJEXT): $(BUILT_SOURCES)
+syd-pink.$(OBJEXT): \
+	syscall_open_ro.lst \
+	syscall_open_syd.h \
+	sydbox_rs.h \
+	lib.rs
 syd_format_SOURCES= \
 		syd-format.c
 
