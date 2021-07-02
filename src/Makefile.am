@@ -1,6 +1,5 @@
 AM_MAKEFLAGS= --no-print-directory
 CLEANFILES= \
-	    $(BUILT_SOURCES) \
 	    gmon.out \
 	    *.gcda \
 	    *.gcno \
@@ -213,11 +212,6 @@ syd_SOURCES= \
 		 syscall.c \
 		 config.c \
 		 sydbox.c
-syd-pink.$(OBJEXT): \
-	syscall_open_ro.lst \
-	syscall_open_syd.h \
-	sydbox_rs.h \
-	lib.rs
 syd_format_SOURCES= \
 		syd-format.c
 
@@ -311,6 +305,12 @@ syd_dump_CPPFLAGS+= $(DUMP_PREPROCESSOR_FLAGS)
 syd_dump_LDADD+= $(syd_LDADD) $(DUMP_LINKER_ADD)
 syd_dump_LDFLAGS+= $(DUMP_LINKER_FLAGS)
 endif
+
+BUILT_SOURCES= \
+	syscall_open_ro.lst \
+	syscall_open_syd.h \
+	sydbox_rs.h \
+	lib.rs
 
 ###
 # Determine make -j job count to pass to cargo.
