@@ -310,7 +310,8 @@ BUILT_SOURCES= \
 	syscall_open_ro.lst \
 	syscall_open_syd.h \
 	sydbox_rs.h \
-	lib.rs
+	lib.rs \
+	$(SYDBOX_RUST_LIB_STA)
 syd-syscall.$(OBJEXT): $(BUILT_SOURCES)
 
 ###
