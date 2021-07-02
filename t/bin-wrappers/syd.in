@@ -77,12 +77,12 @@ then
 	if test -z "$SYDBOX_DUMP_ENABLED"
 	then
 		eexec "@TOP_BUILDDIR@"/src/syd \
-			-M ${SYDBOX_MEMORY_ACCESS} \
+			-p ${SYDBOX_MEMORY_ACCESS} \
 			-e pfc"${opt_export}" \
 			$SYDBOX_TEST_OPTIONS "$@"
 	else
 		eexec "@TOP_BUILDDIR@"/src/syd-dump \
-			-M ${SYDBOX_MEMORY_ACCESS} \
+			-p ${SYDBOX_MEMORY_ACCESS} \
 			-e pfc"${opt_export}" \
 			$SYDBOX_TEST_OPTIONS "$@"
 	fi
@@ -90,12 +90,12 @@ else
 	if test -z "$SYDBOX_DUMP_ENABLED"
 	then
 		eexec "@BINDIR@"/syd \
-			-M ${SYDBOX_MEMORY_ACCESS} \
+			-p ${SYDBOX_MEMORY_ACCESS} \
 			-e pfc"${opt_export}" \
 			$SYDBOX_TEST_OPTIONS "$@"
 	else
 		eexec "@LIBEXECDIR@"/sydbox/dump/syd-dump \
-			-M ${SYDBOX_MEMORY_ACCESS} \
+			-p ${SYDBOX_MEMORY_ACCESS} \
 			-e pfc"${opt_export}" \
 			$SYDBOX_TEST_OPTIONS "$@"
 	fi

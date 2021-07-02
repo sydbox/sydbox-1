@@ -85,9 +85,9 @@ static uint32_t arch_native;
 static char *arch_argv[SYD_SECCOMP_ARCH_ARGV_SIZ] = { NULL };
 static size_t arch_argv_idx;
 #ifdef HAVE_SIG_ATOMIC_T
-static volatile sig_atomic_t interrupted, interruptid;
+static volatile sig_atomic_t interrupted, interruptid, interruptcode, interruptstat;
 #else
-static volatile int interrupted, interruptid;
+static volatile int interrupted, interruptid, interruptcode, interruptstat;
 #endif
 static sigset_t empty_set, blocked_set;
 
@@ -1025,7 +1025,11 @@ static void reset_signals(void)
 
 static void interrupt(int sig, siginfo_t *siginfo, void *context)
 {
-	interruptid = siginfo->si_pid;
+	if (siginfo) {
+		interruptid = siginfo->si_pid;
+		interruptcode = siginfo->si_code;
+		interruptstat = siginfo->si_status;
+	}
 	interrupted = sig;
 }
 
@@ -1034,10 +1038,18 @@ static int sig_child(void)
 	int status;
 	pid_t pid = interruptid;
 
+	if (pid == sydbox->execve_pid) {
+		if (interruptcode == CLD_EXITED)
+			sydbox->exit_code = WEXITSTATUS(interruptstat);
+		else if (interruptcode == CLD_KILLED ||
+			 interruptcode == CLD_DUMPED)
+			sydbox->exit_code = 128 + WTERMSIG(interruptstat);
+	}
+
 	syd_process_t *p = process_lookup(pid);
 	if (p && process_is_zombie(p->pid)) {
 		bury_process(p, true);
-		return ECHILD;
+		return 0;
 	}
 	// reap_zombies();
 
@@ -1050,7 +1062,7 @@ static int sig_child(void)
 		case EINTR:
 			continue;
 		case ECHILD:
-			return ECHILD;
+			return 0;
 		default:
 			assert_not_reached();
 		}
@@ -1627,6 +1639,10 @@ pid_validate:
 		bool not_exec = true;
 		if (!name) {
 			; /* goto notify_respond; */
+		} else if (startswith(name, "exit")) {
+			sydbox_syscall_allow();
+			if (current && current->pid == sydbox->execve_pid)
+				sydbox->exit_code = current->args[0];
 		} else if (streq(name, "clone")) {
 			sydbox_syscall_allow();
 			not_clone = false;
@@ -1667,6 +1683,9 @@ pid_validate:
 					/* allow the initial exec */
 					not_exec = true;
 					sydbox->execve_wait = false;
+					/* Since we double fork, we can only
+					 * get the process id here. */
+					sydbox->execve_pid = current->pid;
 				} else if (name) {
 					current->sysnum = sydbox->request->data.nr;
 					current->sysname = xstrdup(name);
@@ -1792,6 +1811,8 @@ static syd_process_t *startup_child(char **argv)
 	/* Happy birthday, child.
 	 * Let's validate your PID manually.
 	 */
+	sydbox->execve_pid = pid;
+	sydbox->execve_wait = true;
 	sydbox->pid_valid = PID_INIT_VALID;
 
 	bool noexec = streq(argv[0], SYDBOX_NOEXEC_NAME);
@@ -1919,31 +1940,24 @@ seccomp_init:
 		get_pivot_root(&new_root, &put_old);
 		int argc;
 		for (argc = 0; argv[argc] != NULL; argc++);
-		syd_execv(pathname, argc, (const char *const *)argv,
-			  arg0 ? arg0 : "",
-			  wd ? wd : "", verbose,
-			  get_uid(), get_gid(),
-			  root ? root : "",
-			  new_root ? new_root : "",
-			  put_old ? put_old : "",
-			  unshare_pid, unshare_net, unshare_mount,
-			  unshare_uts, unshare_ipc, unshare_user,
-			  close_fds[0], close_fds[1], reset_fds,
-			  keep_sigmask,
-			  escape_stdout, allow_daemonize,
-			  make_group_leader,
-			  parent_death_signal,
-			  get_groups(),
-			  pev ? pev : "");
+		pid = syd_execv(pathname, argc, (const char *const *)argv,
+				arg0 ? arg0 : "",
+				wd ? wd : "", verbose,
+				get_uid(), get_gid(),
+				root ? root : "",
+				new_root ? new_root : "",
+				put_old ? put_old : "",
+				unshare_pid, unshare_net, unshare_mount,
+				unshare_uts, unshare_ipc, unshare_user,
+				close_fds[0], close_fds[1], reset_fds,
+				keep_sigmask,
+				escape_stdout, allow_daemonize,
+				make_group_leader,
+				parent_death_signal,
+				get_groups(),
+				pev ? pev : "");
 		free(pathname); /* not NULL because noexec is handled above. */
-		int wstatus;
-		wait(&wstatus);
-		if (WIFEXITED(wstatus))
-			_exit(WEXITSTATUS(wstatus));
-		else if (WIFSIGNALED(wstatus))
-			_exit(128 + WTERMSIG(wstatus));
-		else
-			_exit(128);
+		_exit(errno);
 	}
 	seccomp_release(sydbox->ctx);
 
@@ -1955,9 +1969,6 @@ seccomp_init:
 	if (pathname)
 		free(pathname);
 
-	sydbox->execve_pid = pid;
-	sydbox->execve_wait = true;
-
 	sydbox->seccomp_fd = pfd[0];
 	if (!use_notify())
 		return current;
@@ -1965,22 +1976,20 @@ seccomp_init:
 	int fd;
 	if ((r = parent_read_int(&fd)) < 0) {
 		errno = -r;
-		say_errno("failed to load seccomp filters");
+		say_errno("Failed to load seccomp filters");
 		say("Invalid sandbox options given.");
 		exit(-r);
 	}
 
 	int pidfd;
 	if ((pidfd = syd_pidfd_open(pid, 0)) < 0)
-		die_errno("failed to open pidfd for pid:%d", pid);
+		die_errno("Failed to open pidfd for pid:%d", pid);
 	if ((fd = syd_pidfd_getfd(pidfd, fd, 0)) < 0)
-		 die_errno("failed to obtain seccomp user fd");
+		 die_errno("Failed to obtain seccomp user fd");
 	sydbox->notify_fd = fd;
 
 	close(pfd[0]);
 	sydbox->seccomp_fd = -1;
-
-	sydbox->notify_fd = fd;
 
 	return current;
 }
@@ -2524,7 +2533,6 @@ int main(int argc, char **argv)
 
 	/* STARTUP_CHILD must not be called before the signal handlers get
 	   installed below as they are inherited into the spawned process. */
-	int exit_code = 128;
 	int status;
 	pid_t pid;
 	syd_process_t *child;
@@ -2545,15 +2553,7 @@ int main(int argc, char **argv)
 		 * Tracing starts.
 		 * Benediximus.
 		 */
-		exit_code = notify_loop();
-		if (exit_code >= 128) {
-			/*
-			 * Notify loop got a termination signal, and
-			 * delivered it to all processes.
-			 * Nothing left to do.
-			 */
-			exit(exit_code);
-		}
+		notify_loop();
 	} else {
 		child = startup_child((char **)my_argv);
 		pid = child->pid;
@@ -2565,9 +2565,9 @@ int main(int argc, char **argv)
 		case 0:
 			if (pid == sydbox->execve_pid) {
 				if (WIFEXITED(status))
-					exit_code = WEXITSTATUS(status);
+					sydbox->exit_code = WEXITSTATUS(status);
 				else if (WIFSIGNALED(status))
-					exit_code = 128 + WTERMSIG(status);
+					sydbox->exit_code = 128 + WTERMSIG(status);
 			}
 			break;
 		case EINTR:
@@ -2598,7 +2598,7 @@ out:
 		kill_all(SIGLOST, skip_pid);
 	}
 	dump(DUMP_EXIT,
-	     exit_code/* sydbox->violation_exit_code */,
+	     sydbox->exit_code/* sydbox->violation_exit_code */,
 	     process_count(),
 	     process_count_alive());
 	dump(DUMP_ALLOC, 0, NULL);
@@ -2606,15 +2606,15 @@ out:
 	//cleanup_for_sydbox();
 	if (sydbox->violation) {
 		if (sydbox->config.violation_exit_code > 0)
-			exit_code = sydbox->config.violation_exit_code;
-		else if (exit_code < 128 &&
+			sydbox->exit_code = sydbox->config.violation_exit_code;
+		else if (sydbox->exit_code < 128 &&
 			 sydbox->config.violation_exit_code == 0)
-			exit_code = 128 /* + sydbox->exit_code */;
+			sydbox->exit_code = 128 /* + sydbox->exit_code */;
 	}
 	//free(sydbox);
 	if (child_block_interrupt_signals)
 		tcsetattr(0, TCSANOW, &old_tio);
-	return exit_code;
+	return sydbox->exit_code;
 }
 
 /*************** CHECKSUM CALCULATION *****************************************/
