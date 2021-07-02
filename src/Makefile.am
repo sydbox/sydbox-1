@@ -12,9 +12,10 @@ CARGO_VERBOSE = $(cargo_verbose_$(V))
 cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
 cargo_verbose_0 =
 cargo_verbose_1 = --verbose
-CARGO_FLAGS= $(CARGO_VERBOSE)
 if SYDBOX_CARGO_RELEASE
-CARGO_FLAGS= --$(SYDBOX_CARGO_RELEASE_TYPE)
+CARGO_FLAGS= $(CARGO_VERBOSE) --$(SYDBOX_CARGO_RELEASE_TYPE)
+else
+CARGO_FLAGS= $(CARGO_VERBOSE)
 endif
 
 check-local:
