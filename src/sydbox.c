@@ -248,7 +248,7 @@ static int seccomp_setup(void)
 
 	/* initialize Secure Computing */
 	bool using_arch_native = true; /* Loaded by libseccomp by default. */
-	if (sydbox->config->restrict_general > 0)
+	if (sydbox->config.restrict_general > 0)
 		sydbox->seccomp_action = SCMP_ACT_ERRNO(EPERM);
 	else
 		sydbox->seccomp_action = SCMP_ACT_ALLOW;
@@ -519,7 +519,7 @@ proc_getcwd:
 				sydbox->pfd_cwd = fd;
 		}
 		if (fd >= 0 && (r = syd_proc_cwd(fd,
-						 sydbox->config->use_toolong_hack,
+						 sydbox->config.use_toolong_hack,
 						 &cwd)) < 0) {
 			errno = -r;
 			say_errno("proc_cwd(%d)", fd);
@@ -540,9 +540,9 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent,
 {
 	init_shareable_data(current, parent, genuine);
 
-	if (sydbox->config->allowlist_per_process_directories &&
+	if (sydbox->config.allowlist_per_process_directories &&
 	    (!parent || current->pid != parent->pid)) {
-		procadd(&sydbox->config->proc_pid_auto, current->pid);
+		procadd(&sydbox->config.proc_pid_auto, current->pid);
 	}
 }
 
@@ -627,9 +627,9 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 		}
 	}
 
-	if (sydbox->config->allowlist_per_process_directories &&
-	    !sc_map_freed(&sydbox->config->proc_pid_auto))
-		procdrop(&sydbox->config->proc_pid_auto, pid);
+	if (sydbox->config.allowlist_per_process_directories &&
+	    !sc_map_freed(&sydbox->config.proc_pid_auto))
+		procdrop(&sydbox->config.proc_pid_auto, pid);
 
 
 	if ((p->pid > 0 && p->pid == sydbox->execve_pid) ||
@@ -670,8 +670,8 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 static void tweak_execve_thread(syd_process_t *leader,
 				syd_process_t *execve_thread)
 {
-	if (sydbox->config->allowlist_per_process_directories)
-		procdrop(&sydbox->config->proc_pid_auto, execve_thread->pid);
+	if (sydbox->config.allowlist_per_process_directories)
+		procdrop(&sydbox->config.proc_pid_auto, execve_thread->pid);
 	if (execve_thread->abspath) {
 		free(execve_thread->abspath);
 		execve_thread->abspath = NULL;
@@ -1409,7 +1409,7 @@ static int event_exec(syd_process_t *current)
 
 	/* kill_if_match */
 	r = 0;
-	if (acl_match_path(ACL_ACTION_NONE, &sydbox->config->exec_kill_if_match,
+	if (acl_match_path(ACL_ACTION_NONE, &sydbox->config.exec_kill_if_match,
 			   current->abspath, &match)) {
 		say("kill_if_match pattern=`%s' matches execve path=`%s'",
 		    match, current->abspath);
@@ -1683,10 +1683,9 @@ pid_validate:
 					/* allow the initial exec */
 					not_exec = true;
 					sydbox->execve_wait = false;
-					/* Since we double-fork, we can only
-					 * learn about the execve pid now.
-					 */
-					sydbox->execve_pid = pid;
+					/* Since we double fork, we can only
+					 * get the process id here. */
+					sydbox->execve_pid = current->pid;
 				} else if (name) {
 					current->sysnum = sydbox->request->data.nr;
 					current->sysname = xstrdup(name);
@@ -1809,6 +1808,12 @@ static syd_process_t *startup_child(char **argv)
 	syd_process_t *current;
 
 	current = new_process_or_kill(pid);
+	/* Happy birthday, child.
+	 * Let's validate your PID manually.
+	 */
+	sydbox->execve_pid = pid;
+	sydbox->execve_wait = true;
+	sydbox->pid_valid = PID_INIT_VALID;
 
 	bool noexec = streq(argv[0], SYDBOX_NOEXEC_NAME);
 	if (!noexec) {
@@ -1952,26 +1957,7 @@ seccomp_init:
 				get_groups(),
 				pev ? pev : "");
 		free(pathname); /* not NULL because noexec is handled above. */
-
-		for(;;) {
-			int status;
-
-			errno = 0;
-			waitpid(pid, &status, 0);
-			switch (errno) {
-			case 0:
-				if (WIFEXITED(status))
-					_exit(WEXITSTATUS(status));
-				else if (WIFSIGNALED(status))
-					kill(getpid(), WTERMSIG(status));
-				else
-					continue;
-			case EINTR:
-				continue;
-			default:
-				_exit(127);
-			}
-		}
+		_exit(errno);
 	}
 	seccomp_release(sydbox->ctx);
 
@@ -2005,15 +1991,6 @@ seccomp_init:
 	close(pfd[0]);
 	sydbox->seccomp_fd = -1;
 
-	/* Happy birthday, child.
-	 * Let's validate your PID manually.
-	 */
-	current->pid = pid;
-	sydbox->execve_pid = pid;
-	sydbox->status_pid = pid;
-	sydbox->execve_wait = true;
-	sydbox->pid_valid = PID_INIT_VALID;
-
 	return current;
 }
 
@@ -2034,9 +2011,9 @@ void cleanup_for_child(void)
 
 	/* FIXME: Why can't we free these? */
 #if 0
-	if (sc_map_size_64s(&sydbox->config->proc_pid_auto)) {
-		sc_map_clear_64s(&sydbox->config->proc_pid_auto);
-		sc_map_term_64s(&sydbox->config->proc_pid_auto);
+	if (sc_map_size_64s(&sydbox->config.proc_pid_auto)) {
+		sc_map_clear_64s(&sydbox->config.proc_pid_auto);
+		sc_map_term_64s(&sydbox->config.proc_pid_auto);
 	}
 	if (sc_map_size_64v(&sydbox->tree)) {
 		sc_map_clear_64v(&sydbox->tree);
@@ -2044,16 +2021,16 @@ void cleanup_for_child(void)
 	}
 
 	filter_free();
-	// reset_sandbox(&sydbox->config->box_static);
+	// reset_sandbox(&sydbox->config.box_static);
 #endif
 
 	struct acl_node *acl_node;
-	ACLQ_FREE(acl_node, &sydbox->config->exec_kill_if_match, xfree);
+	ACLQ_FREE(acl_node, &sydbox->config.exec_kill_if_match, xfree);
 
-	ACLQ_FREE(acl_node, &sydbox->config->filter_exec, xfree);
-	ACLQ_FREE(acl_node, &sydbox->config->filter_read, xfree);
-	ACLQ_FREE(acl_node, &sydbox->config->filter_write, xfree);
-	ACLQ_FREE(acl_node, &sydbox->config->filter_network, free_sockmatch);
+	ACLQ_FREE(acl_node, &sydbox->config.filter_exec, xfree);
+	ACLQ_FREE(acl_node, &sydbox->config.filter_read, xfree);
+	ACLQ_FREE(acl_node, &sydbox->config.filter_write, xfree);
+	ACLQ_FREE(acl_node, &sydbox->config.filter_network, free_sockmatch);
 }
 
 void cleanup_for_sydbox(void)
@@ -2485,7 +2462,7 @@ int main(int argc, char **argv)
 	if (opt_export_mode != SYDBOX_EXPORT_NUL)
 		sydbox->export_mode = opt_export_mode;
 	if (opt_mem_access < SYDBOX_CONFIG_MEMACCESS_MAX)
-		sydbox->config->mem_access = opt_mem_access;
+		sydbox->config.mem_access = opt_mem_access;
 
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	switch (dump_get_fd()) {
@@ -2494,7 +2471,7 @@ int main(int argc, char **argv)
 		break;
 	case -42:
 	default:
-		sydbox->config->violation_decision = VIOLATION_NOOP;
+		sydbox->config.violation_decision = VIOLATION_NOOP;
 		magic_set_sandbox_all("dump", NULL);
 		break;
 	}
@@ -2537,11 +2514,11 @@ int main(int argc, char **argv)
 	}
 
 	/* Late validations for options */
-	if (!sydbox->config->restrict_general &&
+	if (!sydbox->config.restrict_general &&
 	    /*
-	    !sydbox->config->restrict_ioctl &&
-	    !sydbox->config->restrict_mmap &&
-	    !sydbox->config->restrict_shm_wr &&
+	    !sydbox->config.restrict_ioctl &&
+	    !sydbox->config.restrict_mmap &&
+	    !sydbox->config.restrict_shm_wr &&
 	    */
 	    SANDBOX_OFF_ALL()) {
 		say("All restrict and sandbox options are off.");
@@ -2628,10 +2605,10 @@ out:
 	dump(DUMP_CLOSE);
 	//cleanup_for_sydbox();
 	if (sydbox->violation) {
-		if (sydbox->config->violation_exit_code > 0)
-			sydbox->exit_code = sydbox->config->violation_exit_code;
+		if (sydbox->config.violation_exit_code > 0)
+			sydbox->exit_code = sydbox->config.violation_exit_code;
 		else if (sydbox->exit_code < 128 &&
-			 sydbox->config->violation_exit_code == 0)
+			 sydbox->config.violation_exit_code == 0)
 			sydbox->exit_code = 128 /* + sydbox->exit_code */;
 	}
 	//free(sydbox);

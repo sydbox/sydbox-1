@@ -30,49 +30,46 @@ void config_init(void)
 {
 	assert(sydbox);
 
-	sydbox->config = xcalloc(1, sizeof(config_t));
-
-	sydbox->config->magic_core_allow = true;
-	sydbox->box = &sydbox->config->box_static;
+	sydbox->config.magic_core_allow = true;
 
 	/* set sane defaults for configuration */
-	sydbox->config->prog_hash = 2;
-	sydbox->config->restrict_id = true;
-	sydbox->config->allowlist_per_process_directories = true;
-	sydbox->config->allowlist_successful_bind = true;
-	sydbox->config->allowlist_unsupported_socket_families = true;
-	sydbox->config->violation_decision = VIOLATION_DENY;
-	sydbox->config->violation_exit_code = -1;
-	sydbox->config->box_static.magic_lock = LOCK_UNSET;
+	sydbox->config.prog_hash = 2;
+	sydbox->config.restrict_id = true;
+	sydbox->config.allowlist_per_process_directories = true;
+	sydbox->config.allowlist_successful_bind = true;
+	sydbox->config.allowlist_unsupported_socket_families = true;
+	sydbox->config.violation_decision = VIOLATION_DENY;
+	sydbox->config.violation_exit_code = -1;
+	sydbox->config.box_static.magic_lock = LOCK_UNSET;
 
 	/* initialize default sandbox modes */
-	sydbox->config->box_static.mode.sandbox_write = SANDBOX_BPF;
-	sydbox->config->box_static.mode.sandbox_network = SANDBOX_BPF;
+	sydbox->config.box_static.mode.sandbox_write = SANDBOX_BPF;
+	sydbox->config.box_static.mode.sandbox_network = SANDBOX_BPF;
 
 	/* initialize access control lists */
-	if (!sc_map_init_64s(&sydbox->config->proc_pid_auto,
+	if (!sc_map_init_64s(&sydbox->config.proc_pid_auto,
 			     SYDBOX_PROCMAP_CAP,
 			     SYDBOX_MAP_LOAD_FAC)) {
 		errno = ENOMEM;
 		die_errno("failed to allocate hashmap for /proc/pid auto-allowlist");
 	}
 
-	ACLQ_INIT(&sydbox->config->exec_kill_if_match);
-	ACLQ_INIT(&sydbox->config->filter_exec);
-	ACLQ_INIT(&sydbox->config->filter_read);
-	ACLQ_INIT(&sydbox->config->filter_write);
-	ACLQ_INIT(&sydbox->config->filter_network);
-	ACLQ_INIT(&sydbox->config->acl_network_connect_auto);
-	ACLQ_INIT(&sydbox->config->box_static.acl_exec);
-	ACLQ_INIT(&sydbox->config->box_static.acl_read);
-	ACLQ_INIT(&sydbox->config->box_static.acl_write);
-	ACLQ_INIT(&sydbox->config->box_static.acl_network_bind);
-	ACLQ_INIT(&sydbox->config->box_static.acl_network_connect);
+	ACLQ_INIT(&sydbox->config.exec_kill_if_match);
+	ACLQ_INIT(&sydbox->config.filter_exec);
+	ACLQ_INIT(&sydbox->config.filter_read);
+	ACLQ_INIT(&sydbox->config.filter_write);
+	ACLQ_INIT(&sydbox->config.filter_network);
+	ACLQ_INIT(&sydbox->config.acl_network_connect_auto);
+	ACLQ_INIT(&sydbox->config.box_static.acl_exec);
+	ACLQ_INIT(&sydbox->config.box_static.acl_read);
+	ACLQ_INIT(&sydbox->config.box_static.acl_write);
+	ACLQ_INIT(&sydbox->config.box_static.acl_network_bind);
+	ACLQ_INIT(&sydbox->config.box_static.acl_network_connect);
 }
 
 void config_done(void)
 {
-	sydbox->config->magic_core_allow = true;
+	sydbox->config.magic_core_allow = true;
 }
 
 void config_parse_file(const char *filename)
@@ -112,7 +109,7 @@ fp_open:
 	}
 
 	fclose(fp);
-	sydbox->config->magic_core_allow = true;
+	sydbox->config.magic_core_allow = true;
 }
 
 void config_parse_spec(const char *pathspec)

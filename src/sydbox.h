@@ -586,8 +586,7 @@ struct sydbox {
 
 	uint32_t seccomp_action;
 	pid_t sydbox_pid; /* Process ID of the SydBox process. */
-	pid_t execve_pid; /* Process ID of the process SydBox double-forks. */
-	pid_t status_pid; /* Process ID of the process SydBox executes. */
+	pid_t execve_pid; /* Process ID of the process SydBox executes. */
 	int exit_code;
 
 	/* /proc */
@@ -613,11 +612,8 @@ struct sydbox {
 	syd_SHA_CTX sha1;
 	char hash[SYD_SHA1_HEXSZ];
 
-	/* Global sandbox, pointer to config.box_static. */
-	sandbox_t *box;
-
 	/* Global configuration */
-	config_t *config;
+	config_t config;
 };
 typedef struct sydbox sydbox_t;
 
@@ -738,13 +734,13 @@ extern sydbox_t *sydbox;
 #define bpf_only() ((sydbox) && sydbox->bpf_only)
 
 #define use_cross_memory_attach() \
-		(((sydbox)->config->mem_access == 0) || \
-		 ((sydbox)->config->mem_access == 2))
+		(((sydbox)->config.mem_access == 0) || \
+		 ((sydbox)->config.mem_access == 2))
 
 #define sysdeny(p) ((p)->retval)
 #define hasparent(p) ((p)->ppid >= 0)
 
-#define SANDBOX_OFF(box) (!!(sydbox->config->box_static.mode.sandbox_ ## box == SANDBOX_OFF))
+#define SANDBOX_OFF(box) (!!(sydbox->config.box_static.mode.sandbox_ ## box == SANDBOX_OFF))
 #define SANDBOX_OFF_READ() (SANDBOX_OFF(read))
 #define SANDBOX_OFF_WRITE() (SANDBOX_OFF(write))
 #define SANDBOX_OFF_EXEC() (SANDBOX_OFF(exec))
@@ -992,7 +988,7 @@ int box_check_socket(syd_process_t *current, syscall_info_t *info);
 
 static inline sandbox_t *box_current(syd_process_t *current)
 {
-	return current ? P_BOX(current) : &sydbox->config->box_static;
+	return current ? P_BOX(current) : &sydbox->config.box_static;
 }
 
 static inline void init_sandbox(sandbox_t *box)

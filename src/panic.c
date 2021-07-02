@@ -184,7 +184,7 @@ int violation(syd_process_t *current, const char *fmt, ...)
 		va_end(ap);
 	}
 
-	switch (sydbox->config->violation_decision) {
+	switch (sydbox->config.violation_decision) {
 	case VIOLATION_NOOP:
 	case VIOLATION_DENY:
 		return 0; /* Let the caller handle this */
@@ -202,9 +202,9 @@ int violation(syd_process_t *current, const char *fmt, ...)
 	}
 
 	/* exit */
-	if (sydbox->config->violation_exit_code > 0)
-		exit(sydbox->config->violation_exit_code);
-	else if (sydbox->config->violation_exit_code == 0)
-		exit(128 + sydbox->config->violation_exit_code);
+	if (sydbox->config.violation_exit_code > 0)
+		exit(sydbox->config.violation_exit_code);
+	else if (sydbox->config.violation_exit_code == 0)
+		exit(128 + sydbox->config.violation_exit_code);
 	exit(128);
 }

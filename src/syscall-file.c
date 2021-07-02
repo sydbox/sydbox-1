@@ -55,7 +55,7 @@ static inline void sysinfo_read_access(syd_process_t *current, syscall_info_t *i
 			    ? ACCESS_ALLOWLIST
 			    : ACCESS_DENYLIST;
 	info->access_list = &P_BOX(current)->acl_read;
-	info->access_filter = &sydbox->config->filter_read;
+	info->access_filter = &sydbox->config.filter_read;
 }
 
 static bool check_access_mode(syd_process_t *current, int mode)
@@ -284,7 +284,7 @@ out:
 static inline int restrict_open_flags(syd_process_t *current, unsigned long flags)
 {
 #if 0
-	if (sydbox->config->restrict_fcntl &&
+	if (sydbox->config.restrict_fcntl &&
 	    (flags & (O_ASYNC|O_DIRECT|O_SYNC)))
 		return deny(current, EPERM);
 #endif
@@ -521,7 +521,7 @@ int sys_close(syd_process_t *current)
 	current->args[0] = -1;
 
 	if (sandbox_off_network(current) ||
-	    !sydbox->config->allowlist_successful_bind)
+	    !sydbox->config.allowlist_successful_bind)
 		return 0;
 
 	if ((r = syd_read_argument(current, 0, &fd)) < 0)
@@ -538,7 +538,7 @@ int sysx_close(syd_process_t *current)
 	long retval;
 
 	if (sandbox_off_network(current) ||
-	    !sydbox->config->allowlist_successful_bind ||
+	    !sydbox->config.allowlist_successful_bind ||
 	    current->args[0] < 0)
 		return 0;
 

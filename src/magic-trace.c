@@ -11,37 +11,37 @@ int magic_set_trace_memory_access(const void *val, syd_process_t *current)
 {
 	if (PTR_TO_UINT32(val) > SYDBOX_CONFIG_MEMACCESS_MAX)
 		return MAGIC_RET_INVALID_VALUE;
-	sydbox->config->mem_access = PTR_TO_UINT32(val);
+	sydbox->config.mem_access = PTR_TO_UINT32(val);
 	return MAGIC_RET_OK;
 }
 
 int magic_query_trace_memory_access(syd_process_t *current)
 {
-	return sydbox->config->mem_access;
+	return sydbox->config.mem_access;
 }
 
 int magic_set_trace_program_checksum(const void *val, syd_process_t *current)
 {
 	if (PTR_TO_UINT32(val) > 2)
 		return MAGIC_RET_INVALID_VALUE;
-	sydbox->config->prog_hash = PTR_TO_UINT32(val);
+	sydbox->config.prog_hash = PTR_TO_UINT32(val);
 	return MAGIC_RET_OK;
 }
 
 int magic_query_trace_program_checksum(syd_process_t *current)
 {
-	return sydbox->config->prog_hash;
+	return sydbox->config.prog_hash;
 }
 
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current)
 {
-	sydbox->config->use_toolong_hack = PTR_TO_BOOL(val);
+	sydbox->config.use_toolong_hack = PTR_TO_BOOL(val);
 	return MAGIC_RET_OK;
 }
 
 int magic_query_trace_use_toolong_hack(syd_process_t *current)
 {
-	return sydbox->config->use_toolong_hack;
+	return sydbox->config.use_toolong_hack;
 }
 
 int magic_set_trace_magic_lock(const void *val, syd_process_t *current)
