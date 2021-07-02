@@ -112,7 +112,6 @@ Makefile
 /man/sydbox.ent
 
 # Sydbox-1
-/src/lib.rs
 /src/sydbox
 /src/sydfmt
 /src/sydbox-dump
@@ -127,6 +126,7 @@ Makefile
 /src/syd-dump
 /src/syd-format
 /src/syd-shoebox
+/src/lib.rs
 /t/sydtest
 /t/bin-wrappers/syd
 /t/bin-wrappers/syd-dump

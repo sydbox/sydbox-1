@@ -40,7 +40,8 @@ Execute a process under various restrictions and options.
  */
 SYD_GCC_ATTR((warn_unused_result))
 int32_t syd_execv(const char *command,
-                  char **args,
+                  size_t argc,
+                  const char *const *argv,
                   const char *alias,
                   const char *workdir,
                   bool verbose,
@@ -58,9 +59,11 @@ int32_t syd_execv(const char *command,
                   int32_t close_fds_beg,
                   int32_t close_fds_end,
                   bool reset_fds,
+                  bool keep_sigmask,
                   bool escape_stdout,
                   bool allow_daemonize,
-                  int32_t parent_death_signal,
+                  bool make_group_leader,
+                  const char *parent_death_signal,
                   const uint32_t *supplementary_gids,
                   const char *pid_env_var);
 

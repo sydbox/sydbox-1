@@ -18,12 +18,15 @@ CARGO_VERBOSE = $(cargo_verbose_$(V))
 cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
 cargo_verbose_0 =
 cargo_verbose_1 = --verbose
-CARGO_FLAGS= --$(SYDBOX_CARGO_RELEASE_TYPE) --frozen $(CARGO_VERBOSE)
+CARGO_FLAGS= --frozen $(CARGO_VERBOSE)
+if SYDBOX_CARGO_RELEASE
+CARGO_FLAGS= --$(SYDBOX_CARGO_RELEASE_TYPE)
+endif
 
 check-local:
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) test $(CARGO_FLAGS)
 clean-local:
-	CARGO_TARGET_DIR=sydbox_rs $(CARGO) clean $(CARGO_FLAGS)
+	CARGO_TARGET_DIR=sydbox_rs $(CARGO) clean
 install-exec-local:
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) install --path=. --root="$(DESTDIR)/usr" --frozen
 	rm -f $(DESTDIR)/usr/.crates.toml

@@ -18,13 +18,17 @@ extern crate unshare;
 
 use unshare::*;
 
+use std::convert::TryInto;
 use std::ffi::CStr;
 use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
+use std::slice::from_raw_parts;
+use std::str::FromStr;
+use std::str::Utf8Error;
 
 use std::io::Read;
 
-use libc::{c_char, gid_t};
+use libc::{c_char, gid_t, size_t};
 pub use nix::sys::signal::Signal;
 
 #[doc = "Print SydB☮x version and build details to standard error."]
@@ -55,7 +59,8 @@ pub extern "C" fn syd_about() {
 #[doc = "Execute a process under various restrictions and options."]
 pub extern "C" fn syd_execv(
     command: *const c_char,
-    args: *mut *mut c_char,
+    argc: usize,
+    argv: *const *const c_char,
     alias: *const c_char,
     workdir: *const c_char,
     verbose: bool,
@@ -73,36 +78,36 @@ pub extern "C" fn syd_execv(
     close_fds_beg: i32,
     close_fds_end: i32,
     reset_fds: bool,
+    keep_sigmask: bool,
     escape_stdout: bool,
     allow_daemonize: bool,
-    parent_death_signal: i32,
+    make_group_leader: bool,
+    parent_death_signal: *const c_char,
     supplementary_gids: *const u32,
-    pid_env_var: *const c_char,
+    pid_env_var: *const c_char
 ) -> i32 {
-    let mut argv = Vec::<&str>::new();
-    for arg in unsafe { args.as_ref() }.iter() {
-        let slice = unsafe { CStr::from_ptr(**arg) };
-        let osstr = OsStr::from_bytes(slice.to_bytes());
-        match osstr.to_str() {
-            Some(s) => argv.push(s),
-            None => {}
+    let args = match unsafe { convert_double_pointer_to_vec(argv, argc) } {
+        Ok(vec) => vec,
+        Err(e) => {
+            eprintln!("[0;1;31;91msydb☮x: Invalid UTF-8 given in arguments: {}.[0m", e);
+            return -1;
         }
-    }
+    };
+
     let mut slice = unsafe { CStr::from_ptr(command) };
     let mut osstr = OsStr::from_bytes(slice.to_bytes());
     let mut cmd = unshare::Command::new(osstr);
-    cmd.args(&argv);
+    cmd.args(&args[1..]);
 
-    slice = unsafe { CStr::from_ptr(alias) };
-    osstr = OsStr::from_bytes(slice.to_bytes());
-    match osstr.to_str() {
-        Some(s) => {
+    if !alias.is_null() {
+        slice = unsafe { CStr::from_ptr(alias) };
+        osstr = OsStr::from_bytes(slice.to_bytes());
+        if let Some(s) = osstr.to_str() {
             if !s.is_empty() {
                 cmd.arg0(s);
             }
         }
-        None => {}
-    };
+    }
 
     slice = unsafe { CStr::from_ptr(workdir) };
     osstr = OsStr::from_bytes(slice.to_bytes());
@@ -189,13 +194,33 @@ pub extern "C" fn syd_execv(
         cmd.stdout(unshare::Stdio::piped());
     }
 
-    if parent_death_signal > 0 {
-        cmd.set_parent_death_signal(Signal::from(parent_death_signal));
+    if keep_sigmask {
+        cmd.keep_sigmask();
+    }
+
+    if !parent_death_signal.is_null() {
+        slice = unsafe { CStr::from_ptr(parent_death_signal) };
+        osstr = OsStr::from_bytes(slice.to_bytes());
+        if let Some(s) = osstr.to_str() {
+            if !s.is_empty() {
+                match Signal::from_str(s) {
+                    Ok(signal) => {
+                        cmd.set_parent_death_signal(signal);
+                    },
+                    Err(error) => {
+                        eprintln!(
+                            "[0;1;31;91msydb☮x: Invalid argument to --set-parent-death-signal `{}': {}.[0m", s, error);
+                    },
+                };
+            }
+        }
     }
 
     if allow_daemonize {
         cmd.allow_daemonize();
     }
+
+    cmd.make_group_leader(make_group_leader);
 
     slice = unsafe { CStr::from_ptr(pid_env_var) };
     osstr = OsStr::from_bytes(slice.to_bytes());
@@ -217,8 +242,9 @@ pub extern "C" fn syd_execv(
         }
     };
 
+    let pid = nix::unistd::Pid::from_raw(child.id().try_into().unwrap());
     if verbose {
-        eprintln!("[0;1;31;91mSydb☮x Child pid: {}[0m", child.id());
+        eprintln!("[0;1;31;91mSydb☮x Child pid: {}[0m", pid);
     }
 
     if escape_stdout {
@@ -226,12 +252,14 @@ pub extern "C" fn syd_execv(
         child.stdout.take().unwrap().read_to_end(&mut buf).unwrap();
         eprintln!("[0;1;31;91m{:?}[0m", String::from_utf8_lossy(&buf[..]));
     }
+
+    pid.as_raw()
+    /*
     let res = child.wait().unwrap();
     if verbose {
         eprintln!("[0;1;31;91mSydb☮x [pid {}] {}[0m", child.id(), res);
     }
-
-    0
+    */
 }
 
 #[doc = "This structure represents a seccomp version"]
@@ -257,6 +285,16 @@ impl Default for scmp_version {
 
 extern "C" {
     fn seccomp_version() -> *const scmp_version;
+}
+
+unsafe fn convert_double_pointer_to_vec(
+    data: *const *const c_char,
+    len: size_t,
+) -> Result<Vec<String>, Utf8Error> {
+    from_raw_parts(data, len)
+        .iter()
+        .map(|arg| CStr::from_ptr(*arg).to_str().map(ToString::to_string))
+        .collect()
 }
 
 #[allow(dead_code)]

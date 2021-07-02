@@ -94,11 +94,12 @@ static sigset_t empty_set, blocked_set;
 static bool child_block_interrupt_signals;
 struct termios old_tio, new_tio;
 
-bool unshare_pid, unshare_net, unshare_mount;
-bool unshare_uts, unshare_ipc, unshare_user;
-bool escape_stdout, reset_fds, allow_daemonize;
-uint32_t close_fds[2];
-int32_t parent_death_signal;
+static bool unshare_pid, unshare_net, unshare_mount;
+static bool unshare_uts, unshare_ipc, unshare_user;
+static bool escape_stdout, reset_fds, allow_daemonize;
+static bool make_group_leader, keep_sigmask;
+static uint32_t close_fds[2];
+static char *parent_death_signal;
 
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
@@ -562,10 +563,10 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid, bool genuine)
 	 * Careful here, the process may still be a thread although new
 	 * clone flags is missing CLONE_THREAD
 	 */
-	if (p->pid == sydbox->execve_pid) {
+	if (p && p->pid == sydbox->execve_pid) {
 		child->ppid = sydbox->sydbox_pid;
 		child->tgid = child->pid;
-	} else if (genuine && (p->new_clone_flags & SYD_CLONE_THREAD)) {
+	} else if (genuine && p && (p->new_clone_flags & SYD_CLONE_THREAD)) {
 		child->ppid = p->ppid;
 		child->tgid = p->tgid;
 	} else if (pfd >= 0 &&
@@ -582,7 +583,7 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid, bool genuine)
 		process_add(child);
 	}
 
-	if (genuine) {
+	if (p && genuine) {
 		/* clone OK: p->pid <-> cpid */
 		p->new_clone_flags = 0;
 		p->flags &= ~SYD_IN_CLONE;
@@ -1288,14 +1289,15 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 			parent->clone_flags &= ~SYD_IN_CLONE;
 	} else {
 		parent = process_lookup(sydbox->execve_pid);
-		if (!parent)
-			goto parent_done;
-		unsigned int save_new_clone_flags = parent->new_clone_flags;
-		parent->new_clone_flags = 0;
+		unsigned int save_new_clone_flags = 0;
+		if (parent) {
+			save_new_clone_flags = parent->new_clone_flags;
+			parent->new_clone_flags = 0;
+		}
 		current = clone_process(parent, pid, genuine);
-		parent->new_clone_flags = save_new_clone_flags;
+		if (parent)
+			parent->new_clone_flags = save_new_clone_flags;
 	}
-parent_done:
 	current->pid = pid;
 	proc_validate(pid);
 	sysx_chdir(current);
@@ -1915,21 +1917,33 @@ seccomp_init:
 		const char *pev = get_pid_env_var();
 		char *new_root, *put_old;
 		get_pivot_root(&new_root, &put_old);
-		r = syd_execv(pathname, argv, arg0 ? arg0 : "",
-			      wd ? wd : "", verbose,
-			      get_uid(), get_gid(),
-			      root ? root : "",
-			      new_root ? new_root : "",
-			      put_old ? put_old : "",
-			      unshare_pid, unshare_net, unshare_mount,
-			      unshare_uts, unshare_ipc, unshare_user,
-			      close_fds[0], close_fds[1], reset_fds,
-			      escape_stdout, allow_daemonize,
-			      parent_death_signal,
-			      get_groups(),
-			      pev ? pev : "");
+		int argc;
+		for (argc = 0; argv[argc] != NULL; argc++);
+		syd_execv(pathname, argc, (const char *const *)argv,
+			  arg0 ? arg0 : "",
+			  wd ? wd : "", verbose,
+			  get_uid(), get_gid(),
+			  root ? root : "",
+			  new_root ? new_root : "",
+			  put_old ? put_old : "",
+			  unshare_pid, unshare_net, unshare_mount,
+			  unshare_uts, unshare_ipc, unshare_user,
+			  close_fds[0], close_fds[1], reset_fds,
+			  keep_sigmask,
+			  escape_stdout, allow_daemonize,
+			  make_group_leader,
+			  parent_death_signal,
+			  get_groups(),
+			  pev ? pev : "");
 		free(pathname); /* not NULL because noexec is handled above. */
-		_exit(r);
+		int wstatus;
+		wait(&wstatus);
+		if (WIFEXITED(wstatus))
+			_exit(WEXITSTATUS(wstatus));
+		else if (WIFSIGNALED(wstatus))
+			_exit(128 + WTERMSIG(wstatus));
+		else
+			_exit(128);
 	}
 	seccomp_release(sydbox->ctx);
 
@@ -2109,6 +2123,7 @@ int main(int argc, char **argv)
 		{"env-var-with-pid",required_argument,	NULL,	'V'},
 		{"close-fds",	optional_argument,	NULL,	'F'},
 		{"reset-fds",	no_argument,		NULL,	'X'},
+		{"keep-sigmask", no_argument,		NULL,	'S'},
 		{"escape-stdout", no_argument,		NULL,	'O'},
 		{"test",	no_argument,		NULL,	't'},
 		{NULL,		0,		NULL,	0},
@@ -2118,7 +2133,7 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "a:A:bc:d:e:C:D:m:E:p:i:n:K:thlvPNMTIUFOX&+1:2:u:g:G:R:V:",
+	while ((opt = getopt_long(argc, argv, "a:A:bc:d:e:C:D:m:E:p:i:n:K:thlvPNMTIUFOXS&+1:2:u:g:G:R:V:",
 				  long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
@@ -2206,17 +2221,9 @@ int main(int argc, char **argv)
 			allow_daemonize = true;
 			break;
 		case '!':
-			errno = 0;
-			opt = strtoul(optarg, &end, 10);
-			if ((errno && errno != EINVAL) ||
-			    (unsigned long)opt > SYD_PID_MAX)
-			{
-				say_errno("Invalid argument for option "
-					  "--set-parent-death-signal: `%s'",
-					  optarg);
-				usage(stderr, 1);
-			}
-			parent_death_signal = opt;
+			if (parent_death_signal)
+				free(parent_death_signal);
+			parent_death_signal = xstrdup(optarg);
 			break;
 		case '1':
 			set_redirect_stdout(xstrdup(optarg));
@@ -2414,6 +2421,9 @@ int main(int argc, char **argv)
 				close_fds[1] ^= close_fds[0];
 				close_fds[0] ^= close_fds[1];
 			}
+			break;
+		case 'S':
+			keep_sigmask = true;
 			break;
 		case 'X':
 			reset_fds = true;

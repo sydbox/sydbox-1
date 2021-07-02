@@ -317,6 +317,10 @@ pub unsafe fn child_after_clone(child: &ChildInfo) -> ! {
         if start < end {
             for fd in start..end {
                 if child.fds.iter().find(|&&(cfd, _)| cfd == fd).is_none() {
+                    eprintln!(
+                        "[0;1;31;91msydb☮x: Closing file descriptor `{}'.[0m",
+                        fd
+                    );
                     // Close may fail with ebadf, and it's okay
                     libc::close(fd);
                 }

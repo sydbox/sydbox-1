@@ -470,8 +470,7 @@
         <listitem>
           <simpara>
             Allow child process to daemonize. By default we run equivalent of
-            <emphasis>--set_parent_death_signal=9</emphasis>, where
-            <emphasis>9</emphasis> stands for <emphasis>SIGKILL</emphasis>.
+            <emphasis>--set-parent-death-signal=SIGKILL</emphasis>.
             See the <emphasis>--set-parent-death-signal</emphasis>
             for better explanation.
           </simpara>
@@ -484,9 +483,8 @@
         <listitem>
           <simpara>
           Set a signal that is sent to a process when it's parent is dead.
-          This is by default set to <emphasis>9</emphasis> which stands
-          for <emphasis>SIGKILL</emphasis>. And you should keep it that way
-          unless you know what you are doing.
+          This is by default set to <emphasis>SIGKILL</emphasis>. And you
+          should keep it that way unless you know what you are doing.
           </simpara>
 
           <simpara>
