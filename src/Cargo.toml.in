@@ -4,6 +4,7 @@ version = "@SYDBOX_VERSION@"
 authors = ["Alï Polatel <alip@exherbo.org>"]
 edition = "2018"
 license = "GPL-2.0-only"
+build = "build.rs"
 
 [lib]
 name = "sydbox"
