@@ -77,6 +77,9 @@ if HAVE_CBINDGEN
 #  add it to RUSTC below.
 sydbox_rs.h: lib.rs $(top_builddir)/cbindgen.toml
 	$(CBINDGEN) --config $(top_builddir)/cbindgen.toml lib.rs -o $@ || $(RUSTC) lib.rs
+else
+sydbox_rs.h:
+	@true
 endif
 
 $(SYDBOX_RUST_LIB).%: jobs lib.rs
