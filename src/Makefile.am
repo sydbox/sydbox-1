@@ -138,8 +138,9 @@ AM_YFLAGS = -d
 bin_PROGRAMS= syd syd-format
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
-noinst_HEADERS+= \
+syd_HEADERS= \
 		 lib.rs \
+		 syd_seccomp_arch_default.c \
 		 acl-queue.h \
 		 arch.h \
 		 asyd.h \
@@ -167,7 +168,6 @@ noinst_HEADERS+= \
 		 sha1dc_sha1.h \
 		 sha1dc_ubc_check.h \
 		 sha1dc_syd.h \
-		 syd_seccomp_arch_default.c \
 		 sydbox_rs.h \
 		 sockmatch.h \
 		 sockmap.h \
