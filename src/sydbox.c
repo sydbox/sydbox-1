@@ -1038,7 +1038,7 @@ static int sig_child(void)
 	int status;
 	pid_t pid = interruptid;
 
-	if (pid == sydbox->execve_pid) {
+	if (pid == sydbox->status_pid) {
 		if (interruptcode == CLD_EXITED)
 			sydbox->exit_code = WEXITSTATUS(interruptstat);
 		else if (interruptcode == CLD_KILLED ||
@@ -1957,7 +1957,25 @@ seccomp_init:
 				get_groups(),
 				pev ? pev : "");
 		free(pathname); /* not NULL because noexec is handled above. */
-		_exit(errno);
+               for(;;) {
+                       int status;
+
+                       errno = 0;
+                       waitpid(pid, &status, 0);
+                       switch (errno) {
+                       case 0:
+                               if (WIFEXITED(status))
+                                       _exit(WEXITSTATUS(status));
+                               else if (WIFSIGNALED(status))
+                                       kill(getpid(), WTERMSIG(status));
+                               else
+                                       continue;
+                       case EINTR:
+                               continue;
+                       default:
+                               _exit(127);
+                       }
+               }
 	}
 	seccomp_release(sydbox->ctx);
 
@@ -1990,6 +2008,10 @@ seccomp_init:
 
 	close(pfd[0]);
 	sydbox->seccomp_fd = -1;
+
+	current->pid = pid;
+	sydbox->execve_pid = pid;
+	sydbox->status_pid = pid;
 
 	return current;
 }
@@ -2563,7 +2585,7 @@ int main(int argc, char **argv)
 		pid = waitpid(-1, &status, __WALL);
 		switch (errno) {
 		case 0:
-			if (pid == sydbox->execve_pid) {
+			if (pid == sydbox->status_pid) {
 				if (WIFEXITED(status))
 					sydbox->exit_code = WEXITSTATUS(status);
 				else if (WIFSIGNALED(status))

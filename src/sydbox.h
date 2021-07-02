@@ -336,15 +336,15 @@ enum sydbox_export_mode {
 };
 
 struct sandbox_mode_struct {
-	enum sandbox_mode sandbox_exec:2;
-	enum sandbox_mode sandbox_read:2;
-	enum sandbox_mode sandbox_write:2;
-	enum sandbox_mode sandbox_network:2;
+	enum sandbox_mode sandbox_exec;
+	enum sandbox_mode sandbox_read;
+	enum sandbox_mode sandbox_write;
+	enum sandbox_mode sandbox_network;
 };
 
 struct sandbox {
 	struct sandbox_mode_struct mode;
-	enum lock_state magic_lock:2;
+	enum lock_state magic_lock;
 
 	aclq_t acl_exec;
 	aclq_t acl_read;
@@ -361,28 +361,28 @@ struct syd_process {
 	 * SECURITY:
 	 * No process ID based actions if valid is false!
 	 */
-	bool valid:1;
+	bool valid;
 
 	/*
 	 * Process exited but we're keepin the entry
 	 * for bookkeeping of the sandbox.
 	 */
-	bool zombie:1;
+	bool zombie;
 
 	/* Update current working directory, next step */
-	bool update_cwd:1;
+	bool update_cwd;
 
 	/* SYD_* flags */
-	unsigned int flags:7;
+	unsigned int flags;
 
 #define SYD_CLONE_THREAD	00001
 #define SYD_CLONE_FS		00002
 #define SYD_CLONE_FILES		00004
 	/* clone(2) flags used to spawn *this* thread */
-	unsigned int clone_flags:12;
+	unsigned int clone_flags;
 
 	/* Last clone(2) flags (used to spawn a *new* thread) */
-	unsigned int new_clone_flags:12;
+	unsigned int new_clone_flags;
 
 	/* Process/Thread ID */
 	pid_t pid;
@@ -470,7 +470,7 @@ typedef struct syd_process syd_process_t;
 #define P_SOCKMAP(p) ((p)->sockmap)
 
 struct filter {
-	enum syd_action action:3;
+	enum syd_action action;
 
 	int fd; /* seccomp notify fd */
 
@@ -488,26 +488,26 @@ struct filter {
 
 struct config {
 	/* magic access to core.*  */
-	bool magic_core_allow:1;
+	bool magic_core_allow;
 
-	bool allowlist_per_process_directories:1;
-	bool allowlist_successful_bind:1;
-	bool allowlist_unsupported_socket_families:1;
+	bool allowlist_per_process_directories;
+	bool allowlist_successful_bind;
+	bool allowlist_unsupported_socket_families;
 
 	/* restrict knobs are not inherited, they're global config */
-	bool restrict_id:1;
-	bool restrict_sysinfo:1;
-	bool restrict_ioctl:1;
-	bool restrict_mmap:1;
-	bool restrict_shm_wr:1;
+	bool restrict_id;
+	bool restrict_sysinfo;
+	bool restrict_ioctl;
+	bool restrict_mmap;
+	bool restrict_shm_wr;
 	uint8_t restrict_general;
 
 	/* same for these, not inherited: global */
-	bool use_seize:1;
-	bool use_toolong_hack:1;
+	bool use_seize;
+	bool use_toolong_hack;
 #define SYDBOX_CONFIG_MEMACCESS_MAX 2
-	uint8_t mem_access:1;
-	uint8_t prog_hash:2; /* 0: disabled, 1: initial execve, 2: all execves */
+	uint8_t mem_access;
+	uint8_t prog_hash; /* 0: disabled, 1: initial execve, 2: all execves */
 
 	/* Per-process sandboxing data */
 	sandbox_t box_static;
@@ -517,8 +517,8 @@ struct config {
 	 ***/
 	enum violation_decision violation_decision;
 	int violation_exit_code;
-	bool violation_raise_fail:1;
-	bool violation_raise_safe:1;
+	bool violation_raise_fail;
+	bool violation_raise_safe;
 
 	aclq_t exec_kill_if_match;
 
@@ -534,12 +534,12 @@ typedef struct config config_t;
 
 struct sydbox {
 	/* This is true if an access violation has occured, false otherwise. */
-	bool violation:1;
+	bool violation;
 
-	bool execve_wait:1;
-	bool permissive:1;
-	bool bpf_only:1;
-	bool in_child:1;
+	bool execve_wait;
+	bool permissive;
+	bool bpf_only;
+	bool in_child;
 
 	/*
 	 * File descriptors used by SydBox:
@@ -587,6 +587,7 @@ struct sydbox {
 	uint32_t seccomp_action;
 	pid_t sydbox_pid; /* Process ID of the SydBox process. */
 	pid_t execve_pid; /* Process ID of the process SydBox executes. */
+	pid_t status_pid;
 	int exit_code;
 
 	/* /proc */
@@ -657,12 +658,12 @@ struct sysentry {
 	/*
 	 * The sandbox group of the given system call.
 	 */
-	bool sandbox_read:1;
-	bool sandbox_write:1;
-	bool sandbox_exec:1;
-	bool sandbox_network:1;
-	bool magic_lock_off:1; /* used for magic stat() */
-	bool rule_rewrite:1; /* used for socketcall(), bind(), connect() et al. */
+	bool sandbox_read;
+	bool sandbox_write;
+	bool sandbox_exec;
+	bool sandbox_network;
+	bool magic_lock_off; /* used for magic stat() */
+	bool rule_rewrite; /* used for socketcall(), bind(), connect() et al. */
 
 	/* Sandboxing depends on the return value of the given function. */
 	int (*sandbox_opt)(syd_process_t *current);
