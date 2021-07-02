@@ -172,6 +172,7 @@ syd_SOURCES= \
 		 lib.rs \
 		 sydbox_rs.h \
 		 syscall_open_syd.h \
+		 syscall_open_ro.lst \
 		 arch.c \
 		 daemon.c \
 		 errno2name.c \
