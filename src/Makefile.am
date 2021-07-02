@@ -217,6 +217,7 @@ syd_SOURCES= \
 		 syscall.c \
 		 config.c \
 		 sydbox.c
+sydbox.$(OBJEXT): $(BUILT_SOURCES)
 syd_format_SOURCES= \
 		syd-format.c
 
