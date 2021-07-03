@@ -139,13 +139,13 @@ usage: "PACKAGE" [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
               [--magic command...] {noexec}\n\
        "PACKAGE" --test\n\
 \n\
-Hey you, out there beyond the wall,\n\
-Breaking bottles in the hall,\n\
-Can you help me?\n\
+Hey y☮u, ☮ut there bey☮nd the wall,\n\
+Breaking b☮ttles in the hall,\n\
+Can y☮u help me?\n\
 \n\
-Read the "PACKAGE"(1) manual page for more information.\n\
-Send bug reports to \"" PACKAGE_BUGREPORT "\"\n\
-Attaching poems encourages consideration tremendously.\n");
+Read the "PACKAGE"(1) manual page f☮r m☮re inf☮rmati☮n.\n\
+Send bug rep☮rts t☮ \"" PACKAGE_BUGREPORT "\"\n\
+Attaching p☮ems enc☮urages c☮nsiderati☮n tremend☮usly.\n");
 	exit(code);
 }
 
