@@ -1,17 +1,20 @@
 AM_MAKEFLAGS= --no-print-directory
+BUILT_SOURCES= \
+	syscall_open_ro.lst \
+	syscall_open_syd.h \
+	lib.rs \
+	Cargo.toml
 CLEANFILES= \
 	    gmon.out \
 	    *.gcda \
 	    *.gcno \
 	    *.gcov \
-	    Cargo.toml
+	    $(BUILT_SOURCES)
 EXTRA_DIST= \
 	    syscall_open_syd.h.in \
 	    syd-syscall-open.py \
-	    sydbox_rs.h \
 	    Cargo.toml.in
 noinst_HEADERS=
-
 
 CARGO_VERBOSE = $(cargo_verbose_$(V))
 cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
@@ -35,18 +38,16 @@ check-local:
 clean-local:
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) clean
 install-exec-local:
-	$(AM_V_GEN)
-	$(AM_V_at)cp -fp $(top_builddir)/Cargo.toml .
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) install --path=. --root="$(DESTDIR)/usr"
 	rm -f $(DESTDIR)/usr/.crates.toml
 	rm -f $(DESTDIR)/usr/.crates2.json
-	rm -f Cargo.toml
 
 SYDBOX_RUST_LIB=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox
 SYDBOX_RUST_LIB_STA=$(SYDBOX_RUST_LIB).a
 SYDBOX_RUST_LIB_DYN=$(SYDBOX_RUST_LIB).so
 CARGO_BUILD_FLAGS= --lib --target-dir $(builddir)/sydbox_rs
 CARGO_BUILD_FLAGS+= $(CARGO_FLAGS)
+BUILT_SOURCES+= $(SYDBOX_RUST_LIB_STA)
 CLEANFILES+= \
 	     $(SYDBOX_RUST_LIB_DYN) \
 	     $(SYDBOX_RUST_LIB_STA) \
@@ -82,18 +83,20 @@ lib.rs: lib.rs.in
 		$< > $@
 	$(AM_V_at)chmod -f -w $@ || true
 
+if MAINTAINER_MODE
 if HAVE_CBINDGEN
+BUILT_SOURCES+= sydbox_rs.h
+CLEANFILES+= sydbox_rs.h
 # TODO -Z parse-only is nightly only, when it's not
 #  add it to RUSTC below.
-sydbox_rs.h: lib.rs $(top_builddir)/cbindgen.toml
-	$(CBINDGEN) --config $(top_builddir)/cbindgen.toml lib.rs -o $@ || $(RUSTC) lib.rs
-else
-sydbox_rs.h:
-	@true
+sydbox_rs.h: $(srcdir)/lib.rs $(srcdir)/cbindgen.toml
+	$(CBINDGEN) --config $(srcdir)/cbindgen.toml $(srcdir)/lib.rs -o $@ ||\
+		$(RUSTC) $(srcdir)/lib.rs
+endif
 endif
 
 $(SYDBOX_RUST_LIB).%: jobs lib.rs
-	@mkdir -m700 -p $(builddir)/sydbox_rs
+	@mkdir -m700 -p $(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)
 	$(AM_V_GEN)
 	$(AM_V_at)$(CARGO) build -j $(JOB_COUNT) $(CARGO_BUILD_FLAGS)
 if !ENABLE_STATIC
@@ -324,13 +327,6 @@ syd_dump_LDADD+= $(syd_LDADD) $(DUMP_LINKER_ADD)
 syd_dump_LDFLAGS+= $(DUMP_LINKER_FLAGS)
 endif
 
-BUILT_SOURCES= \
-	syscall_open_ro.lst \
-	syscall_open_syd.h \
-	sydbox_rs.h \
-	lib.rs \
-	Cargo.toml \
-	$(SYDBOX_RUST_LIB_STA)
 syd-syscall.$(OBJEXT): $(BUILT_SOURCES)
 syd-dump.$(OBJEXT): $(BUILT_SOURCES)
 

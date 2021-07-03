@@ -16,22 +16,18 @@ default-run = "pandora"
 include = [
 	"**/*.rs",
 	"Cargo.toml",
-	"data/*.syd-2",
-	"data/sydbox.bashrc",
-	"logo/sydbox160.png",
-	"/ChangeLog",
-	"/README",
-	"/LICENSE",
-	"/TODO",
+	"../data/*.syd-2",
+	"../data/sydbox.bashrc",
+	"../logo/sydbox160.png",
+	"../ChangeLog",
+	"../README",
+	"../LICENSE",
+	"../TODO",
 ]
-[lib]
-name = "sydbox"
-crate-type = [@RUST_LIBTYPES@]
-path = "src/lib.rs"
 
 [[bin]]
 name = "pandora"
-path = "src/pandora.rs"
+path = "main.rs"
 
 [dependencies]
 libc = "0.2"

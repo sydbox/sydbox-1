@@ -204,14 +204,14 @@ linux*)
 	0.*|1.*|2.*|3.*|4.*|5.0.*|5.1.*|5.2.*|5.3.*|5.4.*|5.5.*)
 		KERNEL_VERSION_WARN=1
 		AC_MSG_RESULT([NO!])
-		AC_MSG_WARN([Linux kernel version $kernel_version is not supported by sydbox])
+		AC_MSG_WARN([Linux kernel version $kernel_version is not supported by SydB☮x])
 		;;
 	5.6.*)
 		KERNEL_VERSION_WARN=1
 		kernel_minor_version=`echo $kernel_version | cut -d'.' -f3`
 		if test "$kernel_minor_version" -lt 0; then
 			AC_MSG_RESULT([NO!])
-			AC_MSG_WARN([Linux kernel version $kernel_version is not supported by sydbox])
+			AC_MSG_WARN([Linux kernel version $kernel_version is not supported by SydB☮x])
 		fi
 		AC_MSG_RESULT([$kernel_version])
 		;;
@@ -222,7 +222,7 @@ linux*)
 	;;
 *)
 	AC_MSG_RESULT([NO!])
-	AC_MSG_ERROR([Operating system $host_os is not supported by sydbox])
+	AC_MSG_ERROR([Operating system $host_os is not supported by SydB☮x])
 	;;
 esac
 
@@ -486,16 +486,16 @@ AC_CHECK_SIZEOF([off_t])
 AC_CHECK_SIZEOF([off64_t])
 
 dnl check for sydbox headers
-AC_CHECK_HEADER([limits.h],      [], AC_MSG_ERROR([I need limits.h]))
-AC_CHECK_HEADER([signal.h],      [], AC_MSG_ERROR([I need signal.h]))
-AC_CHECK_HEADER([sys/utsname.h], [], AC_MSG_ERROR([I need sys/utsname.h]))
-AC_CHECK_HEADER([sys/socket.h],  [], AC_MSG_ERROR([I need sys/socket.h]))
-AC_CHECK_HEADER([ctype.h],       [], AC_MSG_ERROR([I need ctype.h]))
-AC_CHECK_HEADER([arpa/inet.h],   [], AC_MSG_ERROR([I need arpa/inet.h]))
-AC_CHECK_HEADER([netdb.h],       [], AC_MSG_ERROR([I need netdb.h]))
-AC_CHECK_HEADER([sched.h],       [], AC_MSG_ERROR([I need sched.h]))
-AC_CHECK_HEADER([asm/unistd.h],  [], AC_MSG_ERROR([I need asm/unistd.h]))
-AC_CHECK_HEADER([termios.h],  [], AC_MSG_ERROR([I need termios.h]))
+AC_CHECK_HEADER([limits.h],      [], AC_MSG_ERROR([SydB☮x requires the header limits.h]))
+AC_CHECK_HEADER([signal.h],      [], AC_MSG_ERROR([SydB☮x requires the header signal.h]))
+AC_CHECK_HEADER([sys/utsname.h], [], AC_MSG_ERROR([SydB☮x requires the header sys/utsname.h]))
+AC_CHECK_HEADER([sys/socket.h],  [], AC_MSG_ERROR([SydB☮x requires the header sys/socket.h]))
+AC_CHECK_HEADER([ctype.h],       [], AC_MSG_ERROR([SydB☮x requires the header ctype.h]))
+AC_CHECK_HEADER([arpa/inet.h],   [], AC_MSG_ERROR([SydB☮x requires the header arpa/inet.h]))
+AC_CHECK_HEADER([netdb.h],       [], AC_MSG_ERROR([SydB☮x requires the header netdb.h]))
+AC_CHECK_HEADER([sched.h],       [], AC_MSG_ERROR([SydB☮x requires the header sched.h]))
+AC_CHECK_HEADER([asm/unistd.h],  [], AC_MSG_ERROR([SydB☮x requires the header asm/unistd.h]))
+AC_CHECK_HEADER([termios.h],  [], AC_MSG_ERROR([SydB☮x requires the header termios.h]))
 
 dnl check for everything (for tests)
 AC_FUNC_ALLOCA
@@ -563,7 +563,9 @@ AC_TYPE_MODE_T
 AC_TYPE_SIZE_T
 AC_CHECK_DECLS_ONCE([environ])
 AC_CHECK_TYPES([ptrdiff_t])
-AC_CHECK_TYPES([sig_atomic_t], [], AC_MSG_ERROR([I need sigatomic_t]), [#include <signal.h>])
+AC_CHECK_TYPES([sig_atomic_t], [],
+	       AC_MSG_ERROR([SydB☮x requires the type sigatomic_t]),
+	       [#include <signal.h>])
 AC_CHECK_TYPES([sighandler_t, sig_t, __sighandler_t],,,[#include <signal.h>])
 AC_MSG_CHECKING([struct open_how])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <linux/openat2.h>]],
@@ -689,8 +691,8 @@ AM_CONDITIONAL([WANT_PSYSCALL], test x"$enable_psyscall" = x"1")
 dnl check for libseccomp
 dnl we check without pkg-config because a pkg-config file is not always available.
 LIBSECCOMP_REQUIRED=2.4.3
-AC_ARG_VAR([libseccomp][_CFLAGS], [C compiler flags for $1, overriding sydbox configure])dnl
-AC_ARG_VAR([libseccomp][_LIBS], [linker flags for $1, overriding sydbox configure])dnl
+AC_ARG_VAR([libseccomp][_CFLAGS], [C compiler flags for $1, overriding SydB☮x configure])dnl
+AC_ARG_VAR([libseccomp][_LIBS], [linker flags for $1, overriding SydB☮x configure])dnl
 libseccomp_CFLAGS=
 libseccomp_LIBS="-lseccomp"
 save_LIBS="$LIBS"
@@ -705,7 +707,7 @@ const struct scmp_version *v = seccomp_version();
 exit(v->major > 2 || (v->major == 2 && v->minor >= 4) ? 0 : 1);
 ]])],
 [AC_MSG_RESULT([yes])
-],[AC_MSG_ERROR([sydbox requires libseccomp-$LIBSECCOMP_REQUIRED or newer])
+],[AC_MSG_ERROR([SydB☮x requires libseccomp-$LIBSECCOMP_REQUIRED or newer])
 ],[SYD_ARCH_CROSS_COMPILE_WARN=yes])
 LIBS="$save_LIBS"
 
@@ -726,7 +728,7 @@ AC_ARG_ENABLE([debug],
 AC_MSG_RESULT([$WANT_DEBUG])
 if test x"$WANT_DEBUG" = x"yes"; then
 	PKG_CHECK_MODULES([libunwind], [libunwind >= $LIBUNWIND_REQUIRED],,
-			  AC_MSG_ERROR([sydbox requires libunwind-$LIBUNWIND_REQUIRED or newer for --enable-debug]))
+			  AC_MSG_ERROR([SydB☮x requires libunwind-$LIBUNWIND_REQUIRED or newer for --enable-debug]))
 	SYDBOX_DEBUG=1
 	SYDBOX_CARGO_RELEASE_TYPE=debug
 else
@@ -770,12 +772,14 @@ AC_CHECK_DECL([__NR_process_vm_writev],
 
 if test x"$STRUCT_IOVEC_WARN" = x"0" -a x"$PROCESS_VM_WARN" = x"0"
 then
-	AC_MSG_WARN(["Neither struct iovec, nor process_vm_{read,write}v found, using /proc/pid/mem"])
+	AC_MSG_WARN(["Neither struct iovec, nor process_vm_{read,write}v found, using /proc/pid/mem..."])
 	SYDBOX_DEF_PROC_MEM=1
 else
 	SYDBOX_DEF_PROC_MEM=0
 fi
-AC_DEFINE_UNQUOTED([SYDBOX_DEF_PROC_MEM], [$SYDBOX_DEF_PROC_MEM], [Default to reading /proc/pid/mem])
+AC_DEFINE_UNQUOTED([SYDBOX_DEF_PROC_MEM],
+		   [$SYDBOX_DEF_PROC_MEM],
+		   [Default to reading /proc/pid/mem])
 
 dnl check for pidfd_open and pidfd_getfd.
 m4_define([include_pidfd_headers], [
@@ -803,7 +807,7 @@ AC_CHECK_DECL([__NR_pidfd_send_signal], [],
 AC_MSG_CHECKING([for dump])
 AC_ARG_ENABLE([dump],
 	AS_HELP_STRING([--disable-dump],
-		       [Avoid linking event dumper into sydbox binary, required for sydbox -d option]),
+		       [Avoid linking event dumper into the SydB☮x binary, required for SydB☮x -d/--dump option]),
 	[WANT_DUMP_BUILTIN="$withval"],
 	[WANT_DUMP_BUILTIN=yes])
 if test x"$WANT_DUMP_BUILTIN" = x"yes"; then
@@ -823,7 +827,7 @@ AC_SUBST([SYD_INCLUDEDIR])
 AC_ARG_VAR([PYTHON], [path to the Python interpreter])
 AM_PATH_PYTHON([2.3.0])
 if test x"$PYTHON" = x ; then
-	AC_MSG_ERROR([Python-2.3 or later is required to build SydBox, use PYTHON environment variable])
+	AC_MSG_ERROR([Python-2.3 or later is required to build SydB☮x, use the PYTHON environment variable to specify a specific Python version])
 fi
 
 dnl check for xsltproc
@@ -836,10 +840,10 @@ AC_PATH_PROG([CBINDGEN], [cbindgen])
 AC_PATH_PROG([RUSTC], [rustc])
 AM_CONDITIONAL([HAVE_CBINDGEN], test x"$CBINDGEN" != x"")
 if test x"$CARGO" = x""; then
-	AC_MSG_ERROR([cargo is required to build SydBox])
+	AC_MSG_ERROR([cargo is required to build Sydb☮x])
 fi
 if test x"$RUSTC" = x""; then
-	AC_MSG_ERROR([rustc is required to build SydBox])
+	AC_MSG_ERROR([rustc is required to build Sydb☮x])
 fi
 
 dnl installed tests
@@ -875,6 +879,7 @@ AC_SUBST_FILE([GENERATED_FILE])
 dnl output
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_CONFIG_FILES([Makefile
+		 pandora/Makefile
 		 src/Makefile
 		 syd/Makefile
 		 data/Makefile
@@ -913,11 +918,11 @@ echo "- parisc64: ${SYD_SECCOMP_PARISC64_OK:-?}"
 echo "- riscv64: ${SYD_SECCOMP_RISCV64_OK:-?}"
 
 if test x"$SYD_ARCH_CROSS_COMPILE_WARN" = x"yes"; then
-	AC_MSG_WARN([SydBox does not support cross-compiling for added architectures yet.])
+	AC_MSG_WARN([SydB☮x does not support cross-compiling for added architectures yet.])
 	AC_MSG_WARN([This build will only have support for the native architecture of the system.])
-	AC_MSG_WARN([This means you may not use SydBox to sandbox programs])
+	AC_MSG_WARN([This means you may not use SydB☮x to sandbox programs])
 	AC_MSG_WARN([running under a non-native architecture.])
-	AC_MSG_WARN([These programs will be killed by SydBox' seccomp filter immediately.])
+	AC_MSG_WARN([These programs will be killed by SydB☮x' seccomp filter immediately.])
 	AC_MSG_WARN([To support cross-compiling, someone should])
 	AC_MSG_WARN([move the SYD_ARCH_* defines out of the file])
 	AC_MSG_WARN([m4/syd-secomp-arch-define.m4 and add a configuration option])
@@ -927,7 +932,7 @@ fi
 
 PIDFD_WARN=0
 if test x"$SYDBOX_DEF_PROC_MEM" = x"1"; then
-	AC_MSG_WARN([SydBox won't use cross memory attach and will read from /proc/pid/mem.])
+	AC_MSG_WARN([SydB☮x won't use cross memory attach and will read from /proc/pid/mem.])
 fi
 if test x"$PIDFD_OPEN_WARN" = x"1"; then
 	AC_MSG_WARN([__NR_pidfd_open not declared! Setting pidfd_open to 434.])
@@ -947,7 +952,7 @@ if test x"$PROCESS_VM_WARN" = x"1"; then
 fi
 if test x"$KERNEL_VERSION_WARN" = x"1" -o x"$PIDFD_WARN" = x"1" -o x"$PROCESS_VM_WARN" = x"1"
 then
-	AC_MSG_WARN([SydBox may not work correctly with your kernel version v$KERNEL_VERSION!])
+	AC_MSG_WARN([SydB☮x may not work correctly with your kernel version v$KERNEL_VERSION!])
 	AC_MSG_WARN([Try updating your kernel headers or using a newer Linux kernel version.])
 fi
 

@@ -173,4 +173,5 @@ tests/t[0-9][0-9][0-9]*
 /t/sb/*-0
 
 # Added by cargo
-/target
+/pandora/target
+/src/sydbox_rs

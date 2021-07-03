@@ -2,7 +2,7 @@ AM_MAKEFLAGS= --no-print-directory
 ACLOCAL_AMFLAGS= -I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS= dist-bzip2 no-dist-gzip std-options subdir-objects foreign
 
-CLEANFILES= *~ Cargo.toml
+CLEANFILES= *~
 MAINTAINERCLEANFILES= \
 		      Makefile.in \
 		      configure \
@@ -19,20 +19,13 @@ EXTRA_DIST= \
 	    tao/art/art-see-emily-play.txt
 
 PANDORA_EXTRA_DIST=\
-		   build.rs \
-		   cbindgen.toml \
-		   Cargo.toml.in \
-		   Cargo.lock \
-		   src/pandora.rs \
+		   pandora/build.rs \
+		   pandora/Cargo.toml.in \
+		   pandora/Cargo.lock \
+		   pandora/main.rs \
+		   src/cbindgen.toml \
 		   src/lib.rs
 EXTRA_DIST+= $(PANDORA_EXTRA_DIST)
-
-BUILT_SOURCES= Cargo.toml
-Cargo.toml: Cargo.toml.in
-	$(AM_V_GEN)
-	$(AM_V_at)$(SED) \
-		-e 's:@RUST_LIBTYPES@:$(SYDBOX_RUST_LIBTYPES):g' \
-		$< > $@
 
 dist_doc_DATA= \
 	       BUGS \
@@ -47,7 +40,7 @@ DISTCHECK_CONFIGURE_FLAGS= \
 			   --enable-seccomp \
 			   --enable-debug
 
-BUILT_SOURCES = .version Cargo.toml
+BUILT_SOURCES = .version
 EXTRA_DIST+= \
 	     .version \
 	     ChangeLog \
@@ -152,4 +145,4 @@ check-build: all
 check-code-coverage: check-build
 	${MAKE} ${AM_MAKEFLAGS} -C t check-code-coverage
 
-SUBDIRS= syd src data man t .
+SUBDIRS= pandora syd src data man t .
