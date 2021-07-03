@@ -1,4 +1,4 @@
-# Sydbox
+# Sydb☮x
 
 implement basic system call name filters such that:
 	- whitelist/syscall+<regex-for-syscall-name>
@@ -41,7 +41,7 @@ pattern wins.
 - Add a UNIX socket interface to receive runtime configuration.
 - Abstract Paludis sandboxing system call hooks away from the core loop.
 
-# Sydbox (next major)
+# Sydb☮x (next major)
 - Add an intuitive, simple interface to configure basic sandboxing via
 configuration and allow calling internal functions or dynamic SO libraries to
 use for seccomp-bpf and system call entry/exit hooks. The simple cases can be
@@ -147,7 +147,7 @@ Some sample filter rules with this new format:
 	sys/trace+connect:allow:arg_@~"unix:/var/lib/sss/pipes/nss"
 	sys/trace+connect:fault=EPERM:log=2
 
-# Pandora
+# Pand☮ra
 
 - box should learn to drop privileges to a different user and group.
 - box should learn to change to a different directory such as /var/empty.

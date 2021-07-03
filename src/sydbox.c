@@ -644,7 +644,7 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 
 	if (p->pidfd > 0) {
 		/* Under no circumstances we want the process to linger around
-		 * after SydBox exits. This is why we send a SIGLOST signal here
+		 * after SydB☮x exits. This is why we send a SIGLOST signal here
 		 * to the process which is about to be released from the process
 		 * tree. This will be repeated for 3 times every 0.01 seconds.
 		 * If this does not succeed, process is sent a SIGKILL...
@@ -769,7 +769,7 @@ static syd_process_t *parent_process(pid_t pid_task, bool *genuine)
 	 * with a IN_CLONE or IN_EXECVE flag but failed.
 	 * If available, use the tgid or ppid process entry
 	 * even if it is lacking the correct process flag.
-	 * If both are absent, use SydBox's execve pid which
+	 * If both are absent, use SydB☮x's execve pid which
 	 * is guaranteed to be available at all times.
 	 */
 	*genuine = false;
@@ -1839,8 +1839,8 @@ static syd_process_t *startup_child(char **argv)
 		die_errno("can't pipe");
 
 	/*
-	 * Mark SydBox's process id so that the seccomp filtering can
-	 * apply the unconditional restrictions about SydBox process
+	 * Mark SydB☮x's process id so that the seccomp filtering can
+	 * apply the unconditional restrictions about SydB☮x process
 	 * receiving any signal other than SIGCHLD.
 	 */
 	sydbox->sydbox_pid = getpid();
@@ -2372,7 +2372,7 @@ int main(int argc, char **argv)
 				    "mode.");
 			}
 			if (!r)
-				say("[>] SydBox is supported on this system!");
+				say("[>] SydB☮x is supported on this system!");
 			exit(r == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 			break;
 		case 'P':

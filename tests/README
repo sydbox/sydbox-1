@@ -1,7 +1,7 @@
-Sydbox Tests
+Sydb☮x Tests
 ============
 
-This directory holds many test scripts for Sydbox and its tools. The first part
+This directory holds many test scripts for Sydb☮x and its tools. The first part
 of this short document describes how to run the tests and read their output.
 
 When fixing the tools or adding enhancements, you are strongly encouraged to
@@ -87,7 +87,7 @@ appropriately before running "make check".
 	available), for more exhaustive testing.
 
 --valgrind::
-	Execute Sydbox and its helpers with valgrind and exit with status
+	Execute Sydb☮x and its helpers with valgrind and exit with status
 	126 on errors (just like regular tests, this will only stop
 	the test script when running under -i).  Valgrind errors
 	go to stderr, so you might want to pass the -v option, too.
@@ -109,7 +109,7 @@ appropriately before running "make check".
 	can massively speed up the test suite.
 
 FIXME: You can also set the SYDBOX_TEST_INSTALLED environment variable to
-the bindir of an existing Sydbox installation to test that installation.
+the bindir of an existing Sydb☮x installation to test that installation.
 
 Skipping Tests
 --------------

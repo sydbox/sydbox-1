@@ -12,7 +12,7 @@
 
 <refentry id="sydbox" lang="en">
   <refentryinfo>
-    <title>SydBox</title>
+    <title>SydB☮x</title>
     <productname>sydbox</productname>
 
     <authorgroup>
@@ -31,7 +31,7 @@
     </refentrytitle>
     <manvolnum>1</manvolnum>
     <refmiscinfo class="source">sydbox-&SYDBOX_VERSION;</refmiscinfo>
-    <refmiscinfo class="manual">Sydbox-&SYDBOX_VERSION;</refmiscinfo>
+    <refmiscinfo class="manual">Sydb☮x-&SYDBOX_VERSION;</refmiscinfo>
   </refmeta>
 
   <refnamediv>
@@ -73,7 +73,7 @@
         </para>
       <para>
       This makes it very easy for a regular user to use.
-      This is the motto of SydBox:
+      This is the motto of SydB☮x:
       <emphasis>
         bring easy, simple, flexible and powerful security to the Linux user!
       </emphasis>
@@ -194,7 +194,7 @@
           <simpara>
             Use a number to dump to a file descriptor, e.g. 2 for standard error,
             use a string to write the dump to a path, and use <constant>tmp</constant>
-            to write the dump to a temporary file. In the latter case, Sydbox prints
+            to write the dump to a temporary file. In the latter case, Sydb☮x prints
             the path of the temporary file to standard error on start and exit.
           </simpara>
         </listitem>
@@ -221,7 +221,7 @@
             <simpara>
             If you just want to inspect the seccomp filters and not execute a process,
             pass the special string <constant>noexec</constant> as the command, e.g:
-            <command>syd -e pfc:out noexec</command> when SydBox will exit with
+            <command>syd -e pfc:out noexec</command> when SydB☮x will exit with
             either the numeric value of the environment variable
             <varname>SYDBOX_NOEXEC</varname> or <constant>0</constant>
             if the variable is not set. The exit happens after preparing all the
@@ -514,7 +514,7 @@
           </simpara>
 
           <simpara>
-            The former is out of scope of SydBox. The latter works by
+            The former is out of scope of SydB☮x. The latter works by
             <option>--unshare-pid</option>, but you may need to
             setup mount points and other important things (which are out
             of scope too). To reset this behavior use
@@ -839,7 +839,7 @@
     </variablelist>
 
     <para>
-      In addition, there are filters for every sandboxing to prevent Sydbox from reporting an access violation.
+      In addition, there are filters for every sandboxing to prevent Sydb☮x from reporting an access violation.
       Note, access is still denied in such cases.
     </para>
 
@@ -848,10 +848,10 @@
 
       <para>This sandboxing checks certain system calls for filesystem write access. If a system call tries to write,
       modify or change attributes of a path, this attempt is reported and the system call is denied. There are two
-      ways to customize this behaviour. Sydbox may be configured to "allowlist" some path patterns. If the path
+      ways to customize this behaviour. Sydb☮x may be configured to "allowlist" some path patterns. If the path
       argument of the system call which is subject to be modified matches a pattern in the list of allowlisted path
-      patterns, this attempt is not denied. Additionally, Sydbox may be configured to "filter" some path patterns. In
-      this case a match will prevent Sydbox from reporting a warning about the access violation, the system call is
+      patterns, this attempt is not denied. Additionally, Sydb☮x may be configured to "filter" some path patterns. In
+      this case a match will prevent Sydb☮x from reporting a warning about the access violation, the system call is
       still denied though.</para>
 
       <para>List of filtered system calls are:
@@ -988,19 +988,19 @@
     <title>Configuration</title>
 
     <para role="summary">
-      Sydbox is configured through the so-called <emphasis>magic</emphasis> commands.
+      Sydb☮x is configured through the so-called <emphasis>magic</emphasis> commands.
       There are three ways to supply magic commands:
     </para>
 
     <itemizedlist>
       <listitem>
         <para>
-          Sydbox may be configured using a configuration file. The path to the configuration file is
+          Sydb☮x may be configured using a configuration file. The path to the configuration file is
           speficied using the <option>-c</option> command line switch or the <envar>SYDBOX_CONFIG</envar>
           environment variable. More than one configuration file may be specified this way. However, only the
           <emphasis role="bold">initial</emphasis> configuration file can change the <emphasis>core</emphasis>
           configuration. If path to the configuration file is prefixed with the character '<literal>@</literal>',
-          Sydbox looks for this configuration file under
+          Sydb☮x looks for this configuration file under
           <filename class="directory"><varname>$sharedir</varname>/sydbox/</filename> where <varname>$sharedir</varname>
           is usually <filename class="directory">/usr/share</filename>.  The command line switch has precedence over the
           <envar>SYDBOX_CONFIG</envar> environment variable.
@@ -1008,7 +1008,7 @@
       </listitem>
       <listitem>
         <para>
-          Sydbox may be configured using magic
+          Sydb☮x may be configured using magic
           <citerefentry><refentrytitle>stat</refentrytitle><manvolnum>2</manvolnum></citerefentry> calls during runtime.
           This is achieved by calling <function>stat()</function> system call on the special path
           <filename>/dev/sydbox</filename> followed by the magic command. Note that runtime configuration is only
@@ -1017,7 +1017,7 @@
           <programlisting>
             test -e /dev/sydbox/core/sandbox/read:deny
           </programlisting>
-          which enables read sandboxing for a shell running under Sydbox. It is also possible to
+          which enables read sandboxing for a shell running under Sydb☮x. It is also possible to
           query certain values using the return value of the magic <function>stat</function><manvolnum>2</manvolnum>:
           <programlisting>
             test -e '/dev/sydbox/core/sandbox/read?' &amp;&amp;\
@@ -1032,7 +1032,7 @@
               <citerefentry><refentrytitle>newfstatat</refentrytitle><manvolnum>2</manvolnum></citerefentry>
               system calls instead of
               <citerefentry><refentrytitle>stat</refentrytitle><manvolnum>2</manvolnum></citerefentry> thus
-              Sydbox makes sure to check <function>lstat()</function> and <function>newfstatat()</function>
+              Sydb☮x makes sure to check <function>lstat()</function> and <function>newfstatat()</function>
               system calls for magic commands as well.
             </para>
           </note>
@@ -1061,7 +1061,7 @@
             <para>
               A boolean type may have one of the two values,
               <varname>true</varname> or <varname>false</varname>.
-              To specify boolean values when supplying <emphasis>magic</emphasis> commands to Sydbox, you may also use
+              To specify boolean values when supplying <emphasis>magic</emphasis> commands to Sydb☮x, you may also use
               <varname>true</varname> or <varname>false</varname>.
               In addition you can use the short forms
               <varname>t</varname> or <varname>f</varname>
@@ -1121,7 +1121,7 @@
       <title>Specifying Magic Commands</title>
 
       <para>
-        As mentioned in <xref linkend="configuration"/> Sydbox may be configured using the so-called
+        As mentioned in <xref linkend="configuration"/> Sydb☮x may be configured using the so-called
         <emphasis>magic</emphasis> commands. Format of the magic commands is simple:
         <programlisting>
           ${PREFIX}/section/of/option${OPERATION_CHARACTER}value
@@ -1192,7 +1192,7 @@
       <para role="summary">
         Configuration file format of sydbox is simple. It is just a way to supply many magic commands in a convenient
         way. All empty lines and lines starting with the number sign '<constant>#</constant>' are ignored. All the other
-        lines are treated as if they were supplied to Sydbox via the <option>-m</option> command line switch.
+        lines are treated as if they were supplied to Sydb☮x via the <option>-m</option> command line switch.
       </para>
 
     </refsect2>
@@ -1216,7 +1216,7 @@
       <title>Commands</title>
 
       <para role="summary">
-        Sydbox recognizes the following magic commands:
+        Sydb☮x recognizes the following magic commands:
       </para>
 
       <variablelist>
@@ -1276,10 +1276,10 @@
             <para>default: <varname>0</varname></para>
             <para>
               An integer specifying the level of permitted system calls.
-              Level 0 performs the default restrictions of SydBox where there
+              Level 0 performs the default restrictions of SydB☮x where there
               is a list of system calls which are denylisted and are denied
               unconditionaly with the errno <constant>ECANCELED</constant>.
-              These restrictions are present to improve the security of SydBox
+              These restrictions are present to improve the security of SydB☮x
               and are applied regardless of the restrict level.
             </para>
             <para>
@@ -1518,10 +1518,10 @@
             <para>
               There is a second mode of action with this option: if one the
               options <option>--uid</option>, or <option>--gid</option> is given,
-              SydBox configures the sandbox in such a way that only user or group
+              SydB☮x configures the sandbox in such a way that only user or group
               changes to the given user identity and/or group identity is possible.
-              E.g: run SydBox with <option>--uid $(id -u nginx)</option> so that
-              SydBox will be able to change their user identity to the
+              E.g: run SydB☮x with <option>--uid $(id -u nginx)</option> so that
+              SydB☮x will be able to change their user identity to the
               <emphasis>nginx</emphasis> user. Any other user identity change
               is prohibited.
             </para>
@@ -1889,7 +1889,7 @@
               '<literal>*</literal>' or '<literal>?</literal>' characters in them.
               Possible values are <varname>literal</varname> and <varname>prefix</varname>.
               With <varname>literal</varname> such patterns are matched literally, whereas
-              with <varname>prefix</varname> Sydbox appends <literal>/***</literal> to the
+              with <varname>prefix</varname> Sydb☮x appends <literal>/***</literal> to the
               end of such patterns to make them a prefix match. Implemented mostly to provide
               compatibility with sydbox-0 patterns.
             </para>
@@ -2120,7 +2120,7 @@
   <refsect1 id="pattern-matching">
     <title>Pattern Matching</title>
 
-    <para>Sydbox uses shell-style pattern matching for allowlists and filters. The wildmatching code is borrowed from
+    <para>Sydb☮x uses shell-style pattern matching for allowlists and filters. The wildmatching code is borrowed from
     rsync and behaves like:</para>
 
     <itemizedlist>
@@ -2147,7 +2147,7 @@
     </itemizedlist>
 
     <note>
-      <simpara>Sydbox checks patterns from multiple sources. There is no precedence between different sources,
+      <simpara>Sydb☮x checks patterns from multiple sources. There is no precedence between different sources,
       and the last matching pattern decides the outcome.</simpara>
     </note>
   </refsect1>
@@ -2155,7 +2155,7 @@
   <refsect1 id="address-matching">
     <title>Address Matching</title>
 
-    <para>Sydbox has a simple address scheme to match network addresses. The addresses can be in the following
+    <para>Sydb☮x has a simple address scheme to match network addresses. The addresses can be in the following
     forms:</para>
 
     <variablelist>
@@ -2245,7 +2245,7 @@
   <refsect1 id="examples">
     <title>Examples</title>
 
-    <para>Below are examples of invocation and configuration of Sydbox.</para>
+    <para>Below are examples of invocation and configuration of Sydb☮x.</para>
 
     <refsect2 id="invocation-examples">
       <title>Invocation Examples</title>
@@ -2331,7 +2331,7 @@
     <title>Signals</title>
 
     <para>
-      Sydbox dumps information about the traced process tree to standard error upon receiving the SIGUSR1 signal.
+      Sydb☮x dumps information about the traced process tree to standard error upon receiving the SIGUSR1 signal.
       Send SIGUSR2 signal for more verbose process information.
     </para>
   </refsect1>
@@ -2366,14 +2366,14 @@
     <title>Security</title>
 
     <para>
-      If you run SydBox with the <option>--bpf</option>, shortly <option>-b</option>,
+      If you run SydB☮x with the <option>--bpf</option>, shortly <option>-b</option>,
       option or if you set al sandboxing modes to exactly one of <constant>bpf</constant>
       and <constant>off</constant> all system call sandboxing happens in kernel-space and
       this approach is secure.
     </para>
 
     <para>
-      However, otherwise SydBox must dereference the pointer arguments which is known to be
+      However, otherwise SydB☮x must dereference the pointer arguments which is known to be
       insecure because it makes <emphasis>TOCTOU</emphasis>, <emphasis>time-of-check time-of-use</emphasis>,
       attacks possible.
     </para>

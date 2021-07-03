@@ -1,6 +1,6 @@
-# Kernel & SydBox
+# Kernel & SydB☮x
 
-| SydBox Version | Kernel Version  | Status | Tester         |
+| SydB☮x Version | Kernel Version  | Status | Tester         |
 |: -------------:|-----------------|--------|----------------|
 | 2.0.1          | 5.12.2          | ✓      | heirecka       |
 | 2.0.1          | 5.11.10         | ✓      | alip           |

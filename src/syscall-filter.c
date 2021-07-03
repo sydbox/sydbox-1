@@ -45,7 +45,7 @@
  * manual page. **/
 static const int deny_list_level0[] = {
 	/*
-	 * SydBox denies these system call unconditionally to
+	 * SydB☮x denies these system call unconditionally to
 	 * restrict potential privilege escalation or to mitigate
 	 * the affects after privilege escalation.
 	 */
@@ -117,7 +117,7 @@ static const int allow_list_level0[] = {
 	/* This system calls are enabled
 	 * unless there's a seccomp filter of
 	 * higher priority such as USER_NOTIFY,
-	 * ERRNO or KILL_PROCESS which SydBox
+	 * ERRNO or KILL_PROCESS which SydB☮x
 	 * applies depending on configuration.
 	 *
 	 * The default fallback here is to
@@ -1241,7 +1241,7 @@ static int filter_general_level_0(void)
 	 *
 	 * This is a defense against possible TOCTOU attacks. The system calls
 	 * process_vm_readv and process_vm_writev are never permitted in
-	 * SydBox. TODO: In addition for user-space sandboxing mode SydBox
+	 * SydB☮x. TODO: In addition for user-space sandboxing mode SydB☮x
 	 * unconditionally disallows access to /proc/$pid/mem for both read
 	 * and write based open calls.
 	 */
@@ -1332,12 +1332,12 @@ static int filter_general_level_0(void)
 		};
 
 		/*
-		 * ++ Restricting signal handling between Sydbox and the
-		 * sandboxed process: SydBox permits only SIGCHLD from the
-		 * initial child. Other signals sent to SydBox's process id
+		 * ++ Restricting signal handling between Sydb☮x and the
+		 * sandboxed process: SydB☮x permits only SIGCHLD from the
+		 * initial child. Other signals sent to SydB☮x's process id
 		 * are denied with ESRCH which denotes the process or
 		 * process group does not exist. This approach renders the
-		 * sandboxing SydBox process safe against any unexpected
+		 * sandboxing SydB☮x process safe against any unexpected
 		 * signals.
 		 */
 		for (size_t i = 0; i < ELEMENTSOF(kill_calls); i++) {
@@ -1412,7 +1412,7 @@ static int filter_general_level_0(void)
 	 * inclusive, ie 0..11, which gives us the first rule:
 	 *
 	 * 1. A user may not change their user identity to any
-	 *    user identity lower than 12 under SydBox unless
+	 *    user identity lower than 12 under SydB☮x unless
 	 *    user specified --uid on the command line.
 	 *
 	 * ++++ /etc/passwd with User ID < 400 @ 2021.06.18 15:38 CEST

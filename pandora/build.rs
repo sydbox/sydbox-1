@@ -1,5 +1,5 @@
 //
-// pandora: Sydbox's Dump Inspector & Profile Writer
+// pandora: Sydb☮x's Dump Inspector & Profile Writer
 // build.rs: Helper file for build-time information
 //
 // Copyright (c) 2021 Ali Polatel <alip@exherbo.org>

@@ -396,11 +396,11 @@ int sys_openat2(syd_process_t *current)
 	 */
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(5,6,0)
 # warning "No support for openat2()"
-# warning "SydBox will deny the system call unconditionally."
-# warning "This won't be an issue unless you run SydBox on a system"
+# warning "SydB☮x will deny the system call unconditionally."
+# warning "This won't be an issue unless you run SydB☮x on a system"
 # warning "running a Linux kernel 5.6 or newer."
 # warning "If this is the case, please update your kernel and kernel headers,"
-# warning "and rebuild SydBox!"
+# warning "and rebuild SydB☮x!"
 #endif
 	return deny(current, ENOTSUP);
 }

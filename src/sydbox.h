@@ -542,7 +542,7 @@ struct sydbox {
 	bool in_child;
 
 	/*
-	 * File descriptors used by SydBox:
+	 * File descriptors used by SydB☮x:
 	 * 1. pidfd: Process ID fd acquired from:
 	 *	pidfd_open(pid)
 	 * 2. pfd: /proc fd acquired from
@@ -585,8 +585,8 @@ struct sydbox {
 	char *export_path;
 
 	uint32_t seccomp_action;
-	pid_t sydbox_pid; /* Process ID of the SydBox process. */
-	pid_t execve_pid; /* Process ID of the process SydBox executes. */
+	pid_t sydbox_pid; /* Process ID of the SydB☮x process. */
+	pid_t execve_pid; /* Process ID of the process SydB☮x executes. */
 	pid_t status_pid;
 	int exit_code;
 

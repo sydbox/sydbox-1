@@ -128,7 +128,7 @@ static void dump_format(const char *argv0, const char *pathname,
 
 	/* Step 3: Calculate the SHA1 checksum of the
 	 * pathname to the command to be executed by
-	 * SydBox. This should be enabled with the
+	 * SydB☮x. This should be enabled with the
 	 * magic command core/trace/program_checksum
 	 * by setting it to 1 or 2.
 	 */
@@ -199,7 +199,7 @@ static void dump_process(pid_t pid)
 		dump_null();
 	}
 
-	/* Query SydBox process record */
+	/* Query SydB☮x process record */
 	p = lookup_process(pid);
 
 	fprintf(fp, ","J(execve_pid));

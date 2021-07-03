@@ -64,8 +64,8 @@ hyperfine \
 
 cat>"$out".txt<<EOF
 Date: $(date -u)
-SydBox: $(sydbox --version | tr '\n' ' ')
-Pandora: $("$pandora" --version)
+SydB☮x: $(sydbox --version | tr '\n' ' ')
+Pand☮ra: $("$pandora" --version)
 HyperFine: $(hyperfine --version)
 Tao:
 $(cat "$tao")

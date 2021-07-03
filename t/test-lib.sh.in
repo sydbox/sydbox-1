@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see http://www.gnu.org/licenses/ .
 
-# SydBox is in testing, cheers!
+# SydB☮x is in testing, cheers!
 IN_SYDBOX_TEST=1
 export IN_SYDBOX_TEST
 
@@ -38,7 +38,7 @@ if type -P nproc >/dev/null 2>&1; then
 	SPAWN_MAX=$(expr "$EXIT_NPROC" '*' 3)
 fi
 
-# SydBox API Version
+# SydB☮x API Version
 API_VERSION=@API_VERSION@
 
 # Install directories
@@ -100,7 +100,7 @@ then
 	"$SYDBOX_BUILD_DIR"/src/syd --version >/dev/null 2>&1
 	if test $? != 0
 	then
-		echo >&2 'error: you do not seem to have built SydBox yet.'
+		echo >&2 'error: you do not seem to have built SydB☮x yet.'
 		exit 1
 	fi
 fi

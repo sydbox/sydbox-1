@@ -26,7 +26,7 @@ foreach my $line ( <STDIN> ) {
 }
 
 my $argv = join(' ', @ARGV);
-say "# Alloc stats for SydBox: $argv";
+say "# Alloc stats for SydB☮x: $argv";
 foreach my $func (sort keys %alloc) {
 	next if ($func eq 'sum');
 	say "$func: $alloc{$func}";

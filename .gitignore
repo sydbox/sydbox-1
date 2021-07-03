@@ -112,7 +112,7 @@ Makefile
 /man/sydfmt.html
 /man/sydbox.ent
 
-# Sydbox-1
+# Sydb☮x-1
 /src/sydbox
 /src/sydfmt
 /src/sydbox-dump
@@ -122,7 +122,7 @@ Makefile
 /t/bin-wrappers/sydbox-dump
 /t/bin-wrappers/sydfmt
 /t/bin-wrappers/shoebox
-# Sydbox-2
+# Sydb☮x-2
 /src/syd
 /src/syd-dump
 /src/syd-format
@@ -133,7 +133,7 @@ Makefile
 /t/bin-wrappers/syd-dump
 /t/bin-wrappers/syd-format
 /t/bin-wrappers/syd-shoebox
-# Sydbox-2
+# Sydb☮x-2
 
 /src/kingbee.d/*
 /src/syscall_open_ro.lst

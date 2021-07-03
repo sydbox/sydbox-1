@@ -84,9 +84,9 @@ AC_SUBST([GITVERSION])
 
 SYDBOX_API_VERSION=sydbox_api_version
 SYDBOX_FNAME_EXT="sydbox_fname_ext"
-AC_DEFINE_UNQUOTED([SYDBOX_API_VERSION], [$SYDBOX_API_VERSION], [Sydbox magic API version])
+AC_DEFINE_UNQUOTED([SYDBOX_API_VERSION], [$SYDBOX_API_VERSION], [Sydb☮x magic API version])
 AC_SUBST([SYDBOX_API_VERSION])
-AC_DEFINE_UNQUOTED([SYDBOX_FNAME_EXT], ["$SYDBOX_FNAME_EXT"], [Sydbox filename extension])
+AC_DEFINE_UNQUOTED([SYDBOX_FNAME_EXT], ["$SYDBOX_FNAME_EXT"], [Sydb☮x filename extension])
 AC_SUBST([SYDBOX_FNAME_EXT])
 
 LIBSYD_PC_VERSION="libsyd_pc_version"
@@ -123,7 +123,7 @@ AX_CHECK_COMPILER_FLAGS([-std=gnu11],
 			[AX_CHECK_COMPILER_FLAGS([-std=c11],
 	 [AX_APPEND_FLAG([std=c11])
 	  SYDBOX_CC=c11],
-	 [AC_MSG_ERROR(["Sydbox requires a C compiler that supports ISO C11!"])])])
+	 [AC_MSG_ERROR(["Sydb☮x requires a C compiler that supports ISO C11!"])])])
 dnl extra CFLAGS
 SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wno-cpp
 -Wunused-label

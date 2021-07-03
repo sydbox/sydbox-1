@@ -2,7 +2,7 @@
 # Copyright 2021 Ali Polatel <alip@exherbo.org>
 # Released under the terms of the GNU General Public License v2
 
-test_description='test fuzzing system calls under SydBox'
+test_description='test fuzzing system calls under SydB☮x'
 . ./test-lib.sh
 
 save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
