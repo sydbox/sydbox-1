@@ -422,6 +422,23 @@ int emu_chmod(syd_process_t *current)
 {
 	int r;
 
+	/* FIXME: Does not work, breaks building sydbox-scm
+	 * under paludis with:
+aclocal -I m4
+cannot unlink file for /var/tmp/paludis/build/sys-apps-sydbox-scm/temp/am4tU2WUuA/warnings: No such file or directory at /usr/share/autoconf/Autom4te/General.pm line 196.
+cannot restore permissions to 0100644 for /var/tmp/paludis/build/sys-apps-sydbox-scm/temp/am4tU2WUuA/warnings: No such file or directory at /usr/share/autoconf/Autom4te/General.pm line 196.
+cannot unlink file for /var/tmp/paludis/build/sys-apps-sydbox-scm/temp/am4tU2WUuA/traces.m4: No such file or directory at /usr/share/autoconf/Autom4te/General.pm line 196.
+cannot restore permissions to 0100644 for /var/tmp/paludis/build/sys-apps-sydbox-scm/temp/am4tU2WUuA/traces.m4: No such file or directory at /usr/share/autoconf/Autom4te/General.pm line 196.
+cannot remove directory for /var/tmp/paludis/build/sys-apps-sydbox-scm/temp//am4tU2WUuA: Directory not empty at /usr/share/autoconf/Autom4te/General.pm line 196.
+aclocal-1.16: error: echo failed with exit status: 1
+ [31;01m*[0m Failed Running aclocal !
+
+!!! ERROR in sys-apps/sydbox-scm::arbor:
+!!! In autotools_run_tool at line 670
+!!! Failed Running aclocal !
+
+	 */
+	return 0;
 	if (!current->abspath)
 		return 0;
 
