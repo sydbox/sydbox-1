@@ -1,5 +1,6 @@
 AM_MAKEFLAGS= --no-print-directory
 
+if WANT_PANDORA
 CARGO_VERBOSE = $(cargo_verbose_$(V))
 cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
 cargo_verbose_0 =
@@ -41,3 +42,4 @@ to_n = $(words $2) $(if $(filter-out $1,$(words x $2)),$(call to_n,$1,x $2))
 PAR_COUNT :=
 par: $(addprefix par-,$(call to_n,32))
 par-%: ; @$(eval PAR_COUNT += x)@echo $(words $(PAR_COUNT)) && sleep 1 && false
+endif # WANT_PANDORA

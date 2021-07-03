@@ -718,7 +718,9 @@ m4_sinclude([m4/syd-seccomp-arch-define.m4])
 dnl AC_MSG_WARN(["Libseccomp arch check unavailable during cross compiling"])
 dnl AC_MSG_WARN(["
 dnl check for debugging support (requires libunwind)
+dnl also sets cargo release type to debug.
 LIBUNWIND_REQUIRED=1.1
+SYDBOX_CARGO_RELEASE_TYPE=release
 
 AC_MSG_CHECKING([for debug support])
 AC_ARG_ENABLE([debug],
@@ -733,7 +735,6 @@ if test x"$WANT_DEBUG" = x"yes"; then
 	SYDBOX_CARGO_RELEASE_TYPE=debug
 else
 	SYDBOX_DEBUG=0
-	SYDBOX_CARGO_RELEASE_TYPE=release
 fi
 AM_CONDITIONAL([WANT_DEBUG], test x"$WANT_DEBUG" = x"yes")
 AC_DEFINE_UNQUOTED([SYDBOX_DEBUG], [$SYDBOX_DEBUG], ['Enable debug support (requires: libunwind)'])
@@ -839,12 +840,52 @@ AC_PATH_PROG([CARGO], [cargo])
 AC_PATH_PROG([CBINDGEN], [cbindgen])
 AC_PATH_PROG([RUSTC], [rustc])
 AM_CONDITIONAL([HAVE_CBINDGEN], test x"$CBINDGEN" != x"")
-if test x"$CARGO" = x""; then
-	AC_MSG_ERROR([cargo is required to build Sydb☮x])
+
+dnl unshare requires Rust and Cargo.
+dnl unshare requires cbindgen too but only in maintainer mode.
+AC_MSG_CHECKING([for unshare support])
+AC_ARG_ENABLE([unshare],
+	      [AS_HELP_STRING([--enable-unshare], [Enable unshare support for process creation with Linux namespaces {containers} using the unshare crate: https://crates.io/crates/unshare (requires: rustc>=2018 and cargo {and cbindgen in --enable-maintainer-mode}.)])],
+	      [WANT_UNSHARE="$enableval"],
+	      [WANT_UNSHARE="no"])
+AC_MSG_RESULT([$WANT_UNSHARE])
+if test x"$WANT_UNSHARE" = x"yes"; then
+	if test x"$RUSTC" = x""; then
+		AC_MSG_ERROR([rustc is required for --enable-unshare])
+	fi
+	if test x"$CARGO" = x""; then
+		AC_MSG_ERROR([cargo is required for --enable-unshare])
+	fi
+	SYDBOX_UNSHARE=1
+else
+	SYDBOX_UNSHARE=0
 fi
-if test x"$RUSTC" = x""; then
-	AC_MSG_ERROR([rustc is required to build Sydb☮x])
+AM_CONDITIONAL([WANT_UNSHARE], test x"$WANT_UNSHARE" = x"yes")
+AC_DEFINE_UNQUOTED([SYDBOX_UNSHARE], [$SYDBOX_UNSHARE], ['Enable unshare support (requires: libunwind)'])
+AC_SUBST([SYDBOX_UNSHARE])
+
+dnl pandora requires Rust and Cargo.
+dnl pandora may also be installed via "cargo install pandora_box"
+AC_MSG_CHECKING([for pandora support])
+AC_ARG_ENABLE([pandora],
+	      [AS_HELP_STRING([--enable-pandora], [Enable pandora support for process profiling to ease writing Sydb☮x sandboxing policies. You may also install with cargo using the pandora_box crate: https://crates.io/crates/pandora_box (requires: rustc>=2018 and cargo).])],
+	      [WANT_PANDORA="$enableval"],
+	      [WANT_PANDORA="no"])
+AC_MSG_RESULT([$WANT_PANDORA])
+if test x"$WANT_PANDORA" = x"yes"; then
+	if test x"$RUSTC" = x""; then
+		AC_MSG_ERROR([rustc is required for --enable-pandora])
+	fi
+	if test x"$CARGO" = x""; then
+		AC_MSG_ERROR([cargo is required for --enable-pandora])
+	fi
+	SYDBOX_PANDORA=1
+else
+	SYDBOX_PANDORA=0
 fi
+AM_CONDITIONAL([WANT_PANDORA], test x"$WANT_PANDORA" = x"yes")
+AC_DEFINE_UNQUOTED([SYDBOX_PANDORA], [$SYDBOX_PANDORA], ['Enable pandora support (requires: rustc>=2018 and cargo)'])
+AC_SUBST([SYDBOX_PANDORA])
 
 dnl installed tests
 AC_MSG_CHECKING([whether tests should be installed])
