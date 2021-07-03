@@ -12,6 +12,8 @@ CLEANFILES= \
 	    $(BUILT_SOURCES)
 EXTRA_DIST= \
 	    syscall_open_syd.h.in \
+	    syscall_open_ro.lst \
+	    syscall_open_syd.h \
 	    syd-syscall-open.py \
 	    Cargo.toml.in
 noinst_HEADERS=
@@ -107,6 +109,7 @@ if !ENABLE_STATIC
 	$(AM_V_at)cp -fp $(SYDBOX_RUST_LIB_DYN) $@
 endif
 
+if MAINTAINER_MODE
 syscall_open_syd.h: Makefile syscall_open_ro.lst syscall_open_syd.h.in
 	$(PYTHON) ./syd-syscall-open.py < syscall_open_ro.lst > $@ ||\
 		rm $@
@@ -121,6 +124,7 @@ syscall_open_ro.lst: Makefile
 	done | $(SORT) -u > "$@" || rm -f "$@"
 	$(AM_V_at)sh -c 'test -s "$@" || echo "Failed to generate read-only open flags"'
 	$(AM_V_at)sh -c 'test -s "$@" || exit 1'
+endif
 
 DEFS+= \
        -DIN_SYD=1 \

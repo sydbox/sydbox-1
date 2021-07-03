@@ -136,8 +136,6 @@ Makefile
 # Sydb☮x-2
 
 /src/kingbee.d/*
-/src/syscall_open_ro.lst
-/src/syscall_open_syd.h
 
 /syd/syd-check
 /syd/check-pause
