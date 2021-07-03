@@ -459,17 +459,17 @@ if test "$arch" = mips; then
 fi
 AC_SUBST(MIPS_ABI)
 
-AC_ARG_ENABLE([arm-oabi],
-	      [AS_HELP_STRING([--enable-arm-oabi],
-			      [enable OABI support on ARM EABI])],
-	      [], [enable_arm_oabi=no])
-case "$enable_arm_oabi" in
-	yes) enable_arm_oabi=1 ;;
-	no) enable_arm_oabi=0 ;;
-	*) AC_MSG_ERROR([bad value $enable_arm_oabi for arm-oabi option]) ;;
-esac
-AC_DEFINE_UNQUOTED([ENABLE_ARM_OABI], [$enable_arm_oabi],
-		   [Define to 1 if you want OABI support on ARM EABI.])
+dnl AC_ARG_ENABLE([arm-oabi],
+dnl 	      [AS_HELP_STRING([--enable-arm-oabi],
+dnl 			      [enable OABI support on ARM EABI])],
+dnl 	      [], [enable_arm_oabi=no])
+dnl case "$enable_arm_oabi" in
+dnl 	yes) enable_arm_oabi=1 ;;
+dnl 	no) enable_arm_oabi=0 ;;
+dnl 	*) AC_MSG_ERROR([bad value $enable_arm_oabi for arm-oabi option]) ;;
+dnl esac
+dnl AC_DEFINE_UNQUOTED([ENABLE_ARM_OABI], [$enable_arm_oabi],
+dnl 		   [Define to 1 if you want OABI support on ARM EABI.])
 dnl done architecture import from strace
 
 dnl check for sizes
