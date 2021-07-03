@@ -37,10 +37,12 @@ check-local:
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) test $(CARGO_FLAGS)
 clean-local:
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) clean
+# We have no packages with binaries or examples for sydbox_rs yet.
 install-exec-local:
-	CARGO_TARGET_DIR=sydbox_rs $(CARGO) install --path=. --root="$(DESTDIR)/usr"
-	rm -f $(DESTDIR)/usr/.crates.toml
-	rm -f $(DESTDIR)/usr/.crates2.json
+	@true
+#	CARGO_TARGET_DIR=sydbox_rs $(CARGO) install --path=. --root="$(DESTDIR)/usr"
+#	rm -f $(DESTDIR)/usr/.crates.toml
+#	rm -f $(DESTDIR)/usr/.crates2.json
 
 SYDBOX_RUST_LIB=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox
 SYDBOX_RUST_LIB_STA=$(SYDBOX_RUST_LIB).a

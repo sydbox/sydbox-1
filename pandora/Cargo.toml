@@ -42,6 +42,7 @@ tempfile = "3.2.0"
 built = {version = "0.4.4", features=["git2", "chrono"]}
 
 [dev-dependencies]
+cargo-audit = "0.15.0"
 hyperfine = "1.11.0"
 
 [profile.release]
