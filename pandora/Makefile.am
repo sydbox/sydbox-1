@@ -15,9 +15,11 @@ check-local:
 clean-local:
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) clean
 install-exec-local:
-	CARGO_TARGET_DIR=sydbox_rs $(CARGO) install --path=. --root="$(DESTDIR)/usr"
-	rm -f $(DESTDIR)/usr/.crates.toml
-	rm -f $(DESTDIR)/usr/.crates2.json
+	CARGO_TARGET_DIR=sydbox_rs $(CARGO) install \
+			 --path=. \
+			 --root="$(DESTDIR)/usr/$(target_triplet)"
+	rm -f $(DESTDIR)/usr/$(target_triplet)/.crates.toml
+	rm -f $(DESTDIR)/usr/$(target_triplet)/.crates2.json
 
 target/$(SYDBOX_CARGO_RELEASE_TYPE)/pandora: jobs main.rs
 	@mkdir -m700 -p $(builddir)/sydbox_rs
