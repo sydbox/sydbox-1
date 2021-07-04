@@ -1,5 +1,5 @@
 /*
- * sydbox/errno2name.c
+ * libsyd/name.c: Stringify constants
  *
  * Copyright (c) 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace/tests/errno2name.c which is:
@@ -12,11 +12,11 @@
 
 #include <stddef.h>
 #include <errno.h>
+#include "syd.h"
 
 #define CASE(x) case x: return #x
 
-const char *
-errno2name(int err_no)
+const char *syd_name_errno(int err_no)
 {
 	switch (err_no) {
 	/* names taken from linux/errnoent.h */

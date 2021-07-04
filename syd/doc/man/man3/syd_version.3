@@ -1,0 +1,87 @@
+.TH "syd_version" 3 "05 July 2021" "alip@exherbo.org" "libsyd Documentation"
+.\" //////////////////////////////////////////////////////////////////////////
+.SH NAME
+.\" //////////////////////////////////////////////////////////////////////////
+syd_version \- Query the libsyd version information
+.\" //////////////////////////////////////////////////////////////////////////
+.SH SYNOPSIS
+.\" //////////////////////////////////////////////////////////////////////////
+.nf
+.B #include <syd.h>
+.sp
+.B struct syd_version {
+.B 	unsigned int major;
+.B 	unsigned int minor;
+.B 	unsigned int micro;
+.B }
+.sp
+.BI "const struct syd_version *syd_version(" void ");"
+.sp
+Link with \fI\-lsyd\fP.
+.fi
+.\" //////////////////////////////////////////////////////////////////////////
+.SH DESCRIPTION
+.\" //////////////////////////////////////////////////////////////////////////
+.P
+The
+.BR syd_version ()
+function returns a pointer to a
+.B syd_version
+struct which contains the version information of the currently loaded
+libsyd library. This function can be used by applications that need to
+verify that they are linked to a specific libsyd version at runtime.
+.P
+The caller should not attempt to free the returned
+.B syd_version
+struct when finished.
+.\" //////////////////////////////////////////////////////////////////////////
+.SH RETURN VALUE
+.\" //////////////////////////////////////////////////////////////////////////
+The
+.BR syd_version ()
+function returns a pointer to a
+.B syd_version
+structure on success, NULL on failure.  The caller should not attempt to free
+the returned structure.
+.\" //////////////////////////////////////////////////////////////////////////
+.SH EXAMPLES
+.\" //////////////////////////////////////////////////////////////////////////
+.nf
+#include <syd.h>
+
+int main(int argc, char *argv[])
+{
+	const struct syd_version *ver;
+
+	ver = syd_version();
+	if (ver == NULL)
+		goto err;
+
+	/* ... */
+
+	return 0;
+
+err:
+	return 1;
+}
+.fi
+.\" //////////////////////////////////////////////////////////////////////////
+.SH NOTES
+.\" //////////////////////////////////////////////////////////////////////////
+.P
+This manual page is mostly based in part upon seccomp_version.3 manual page
+which is written by Paul Moore <paul@paul-moore.com>. Thank you.
+.P
+The sydb☮x project site, with more information and the source code
+repository, can be found at https://sr.ht/~alip/sydbox/. The project
+website with updates on recent releases and developments can be found
+at https://pink.exherbo.org. The sydb☮x manual page may be displayed
+online at https://sydbox.exherbo.org.
+The sydb☮x tool, as well as the libsyd library, is currently under development,
+please report any bugs at the project site or directly to the author.
+.\" //////////////////////////////////////////////////////////////////////////
+.SH AUTHOR
+.\" //////////////////////////////////////////////////////////////////////////
+Ⓐlï P☮latel <alip@exherb☮.☮rg>
+.\" //////////////////////////////////////////////////////////////////////////
+

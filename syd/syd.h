@@ -2,6 +2,8 @@
  * syd.h -- Syd's utility library
  *
  * Copyright (c) 2014, 2015, 2016 Ali Polatel <alip@exherbo.org>
+ * Based in part upon systemd which is:
+ *   Copyright 2010 Lennart Poettering
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
@@ -16,11 +18,14 @@
 # error this implementation needs atomics
 #endif
 
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdarg.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdint.h>
 #include <signal.h>
 #include <dirent.h>
@@ -44,6 +49,30 @@
 Print SydB☮x version and build details to the given FILE.
  */
 int syd_about(FILE *report_fd);
+
+/***
+ * Syd's Simple Debug Logging
+ ***/
+int syd_vsay(const char *fmt, va_list ap)
+	SYD_GCC_ATTR((format (printf, 1, 0)))
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_say(const char *fmt, ...)
+	SYD_GCC_ATTR((format (printf, 1, 2)));
+int syd_say_errno(const char *fmt, ...)
+	SYD_GCC_ATTR((format (printf, 1, 2)));
+bool syd_debug_get(void);
+void syd_debug_set(const bool val);
+int syd_debug_set_fd(const int fd);
+
+/***
+ * libsyd: Stringify constants
+ ***/
+const char *syd_name_errno(int err_no);
+
+/***
+ * libsyd: Interface for Linux namespaces (containers)
+ ***/
+int syd_pivot_root(const char *new_root, const char *put_old, bool unmount);
 
 /*
 Execute a process under various restrictions and options.
@@ -174,5 +203,30 @@ void syd_time_prof(unsigned loop, ...);
 #endif
 #define assert_unreachable	assert(0);
 #endif
+
+/***
+ * Syd's Inlined Functions
+ ***/
+inline int syd_str_startswith(const char *s, const char *prefix,
+			      bool ret_bool)
+{
+	size_t sl, pl;
+
+	if (!s)
+		return -EINVAL;
+	if (!prefix)
+		return -EINVAL;
+
+	sl = strlen(s);
+	pl = strlen(prefix);
+
+	if (pl == 0)
+		return true;
+
+	if (sl < pl)
+		return false;
+
+	return memcmp(s, prefix, pl) == 0;
+}
 
 #endif

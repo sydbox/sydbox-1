@@ -1,6 +1,6 @@
 AM_MAKEFLAGS= --no-print-directory
-CLEANFILES+= \
-	     *~
+CLEANFILES= \
+	    *~
 DEFS+= \
        -DIN_LIBSYD=1 \
        -DGITVERSION=\"$(GITVERSION)\"
@@ -9,13 +9,16 @@ lib_LTLIBRARIES = libsyd_@LIBSYD_PC_SLOT@.la
 
 libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	about.c \
+	debug.c \
+	name.c \
 	strlcat.c \
 	strlcpy.c \
 	file.c \
 	pidfd.c \
 	proc.c \
 	state.c \
-	time.c
+	time.c \
+	unshare.c
 libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= $(libseccomp_CFLAGS)
 libsyd_@LIBSYD_PC_SLOT@_la_LIBS= $(libseccomp_LIBS)
 
