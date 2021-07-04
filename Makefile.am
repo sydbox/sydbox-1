@@ -32,6 +32,7 @@ dist_doc_DATA= \
 	       COPYING \
 	       LICENSE \
 	       LICENSE.psyscall \
+	       LICENSE.sinit \
 	       README \
 	       KERNEL.md \
 	       TODO.md \
