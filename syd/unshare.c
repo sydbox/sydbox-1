@@ -16,7 +16,13 @@
 #include <errno.h>
 #include <seccomp.h>
 #include <unistd.h>
+#include <sys/prctl.h>
 #include <sys/syscall.h>
+
+int syd_set_death_sig(int signal)
+{
+	return prctl(PR_SET_PDEATHSIG, signal, 0, 0, 0) < 0 ? -errno: 0;
+}
 
 int syd_pivot_root(const char *new_root, const char *put_old)
 {

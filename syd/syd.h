@@ -72,6 +72,7 @@ const char *syd_name_errno(int err_no);
 /***
  * libsyd: Interface for Linux namespaces (containers)
  ***/
+int syd_set_death_sig(int signal);
 int syd_pivot_root(const char *new_root, const char *put_old);
 
 /*
