@@ -117,8 +117,8 @@ AC_PROG_EGREP
 AC_PROG_SED
 AC_PROG_AWK
 AC_PATH_PROG([SORT], [sort])
-AC_PROG_YACC
-AM_PROG_LEX
+dnl AC_PROG_YACC
+dnl AM_PROG_LEX
 
 dnl compiler checks
 SYDBOX_CC=
@@ -172,11 +172,19 @@ dnl Build sydbox binary static by default.
 dnl Disable with --disable-static
 SYDBOX_LIBTOOL_FLAGS=""
 SYDBOX_STATIC_CFLAGS=
+AC_ARG_ENABLE([static],
+	      [AS_HELP_STRING([--disable-static],
+			      [Link SydB☮x dynamically, rather than statically.])],
+			      [], [enable_static=yes])
+
 if test x"$enable_static" = x"yes" -a x"$disable_static" != x"yes"; then
 	SYDBOX_LIBTOOL_FLAGS="-all-static"
-	SYDBOX_STATIC_CFLAGS="-static"
+	AC_ENABLE_SHARED(no)
+	AC_ENABLE_STATIC(yes)
 	SYDBOX_RUST_LIBTYPES='"staticlib"'
 else
+	AC_ENABLE_SHARED(yes)
+	AC_ENABLE_STATIC(no)
 	SYDBOX_RUST_LIBTYPES='"staticlib","cdylib"'
 fi
 AC_SUBST([SYDBOX_RUST_LIBTYPES])
@@ -688,6 +696,14 @@ dnl check for pthreads
 AX_PTHREAD([],
 	   [AC_MSG_WARN([POSIX threads library is missing, some tests may not build!])])
 
+dnl Enable experimental flag
+dnl Requires rust.
+AC_ARG_ENABLE([sydbox_rs],
+	      [AS_HELP_STRING([--enable-sydbox_rs],
+			      [Enable SydB☮x Rust API])],
+	      [], [enable_sydbox_rs=yes])
+AM_CONDITIONAL([WANT_SYDBOX_RS], test x"$enable_sydbox_rs" = x"yes")
+
 dnl check for pkg-config
 PKG_PROG_PKG_CONFIG([0.20.0])
 
@@ -968,11 +984,14 @@ AC_CONFIG_FILES([Makefile
 AC_OUTPUT
 
 echo "Build options:"
-echo "- git:$WANT_GIT"
+echo "- static:$ENABLE_STATIC"
 echo "- debug:$WANT_DEBUG"
 echo "- dump:$WANT_DUMP_BUILTIN"
+echo "- git:$WANT_GIT"
 echo "- psyscall:$enable_psyscall"
-echo "- static:$ENABLE_STATIC"
+echo "- pandora:$enable_pandora"
+echo "- sydbox_rs:$enable_sydbox_rs"
+echo "- unshare:$enable_unshare"
 echo "Secure Computing Architecture Support:"
 echo "- x86: ${SYD_SECCOMP_X86_OK:-?}"
 echo "- x86_64: ${SYD_SECCOMP_X86_64_OK:-?}"

@@ -16,4 +16,5 @@
     --disable-dependency-tracking \
     --disable-silent-rules \
     --enable-fast-install \
-    --enable-static
+    --enable-static \
+    --enable-maintainer-mode

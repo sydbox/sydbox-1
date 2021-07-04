@@ -36,28 +36,35 @@ Cargo.toml$(EXEEXT): Cargo.toml.in
 		$< > Cargo.toml
 
 .PHONY: audit
+CARGO_TARGET_DIR=$(top_builddir)/src/sydbox_rs
+export CARGO_TARGET_DIR
 audit:
 	$(MAKE) Cargo.toml
-	CARGO_TARGET_DIR=sydbox_rs $(CARGO) audit
+	$(CARGO) audit
 check-local:
 	$(MAKE) Cargo.toml
-	CARGO_TARGET_DIR=sydbox_rs $(CARGO) test $(CARGO_FLAGS)
+	$(CARGO) test $(CARGO_FLAGS)
 clean-local:
 	$(MAKE) Cargo.toml
-	CARGO_TARGET_DIR=sydbox_rs $(CARGO) clean
-# We have no packages with binaries or examples for sydbox_rs yet.
-install-exec-local:
-	$(MAKE) Cargo.toml
-#	CARGO_TARGET_DIR=sydbox_rs $(CARGO) install --path=. --root="$(DESTDIR)/usr"
-#	rm -f $(DESTDIR)/usr/.crates.toml
-#	rm -f $(DESTDIR)/usr/.crates2.json
+	$(CARGO) clean
+# We have no packages with binaries or examples for $(top_builddir)/src/sydbox_rs/ yet.
+#install-exec-local:
+#	$(MAKE) Cargo.toml
+#	$(CARGO) install --path=. --root="$(DESTDIR)/usr/$(target_triplet)"
+#	rm -f $(DESTDIR)/usr/$(target_triplet)/.crates.toml
+#	rm -f $(DESTDIR)/usr/$(target_triplet)/.crates2.json
 
+#if WANT_SYDBOX_RS
 SYDBOX_RUST_LIB=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox
-SYDBOX_RUST_LIB_STA=$(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/$(SYDBOX_RUST_LIB).a
-SYDBOX_RUST_LIB_DYN=$(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/deps/$(SYDBOX_RUST_LIB).so
+SYDBOX_RUST_LIB_STA=$(SYDBOX_RUST_LIB)_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/lib$(SYDBOX_RUST_LIB).a
+SYDBOX_RUST_LIB_DYN=$(SYDBOX_RUST_LIB)_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/deps/lib$(SYDBOX_RUST_LIB).so
+SYDBOX_RUST_LIBS=\
+		 $(SYDBOX_RUST_LIB_STA)
 CARGO_BUILD_FLAGS= --lib --target-dir $(builddir)/sydbox_rs
 CARGO_BUILD_FLAGS+= $(CARGO_FLAGS)
-BUILT_SOURCES+= $(SYDBOX_RUST_LIB_STA) $(SYDBOX_RUST_LIB_DYN)
+lib_LIBS= $(SYDBOX_RUST_LIB_STA)
+BUILT_SOURCES+= $(SYDBOX_RUST_LIB_STA)
+#endif
 
 noinst_SCRIPTS= \
 		kingbee.py
@@ -101,11 +108,10 @@ sydbox_rs.h: $(srcdir)/lib.rs $(srcdir)/cbindgen.toml
 endif
 endif
 
-$(SYDBOX_RUST_LIB).%: jobs lib.rs
+$(SYDBOX_RUST_LIB_STA): jobs lib.rs
 	@mkdir -m700 -p $(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)
 	$(AM_V_GEN)
 	$(AM_V_at)$(CARGO) build -j $(JOB_COUNT) $(CARGO_BUILD_FLAGS)
-lib_LTLIBRARIES= $(SYDBOX_RUST_LIB_DYN)
 
 if MAINTAINER_MODE
 syscall_open_syd.h: Makefile syscall_open_ro.lst syscall_open_syd.h.in
@@ -156,12 +162,13 @@ AM_CPPFLAGS= $(CODE_COVERAGE_CPPFLAGS)
 AM_LFLAGS = -v
 AM_YFLAGS = -d
 
+syddir=$(bindir)
 bin_PROGRAMS= syd syd-format
 syd_PROGRAMS= Cargo.toml syd
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
-syd_HEADERS= \
-		 syd_seccomp_arch_default.c \
+noinst_INCLUDE_SRCS= syd_seccomp_arch_default.c
+noinst_HEADERS+= \
 		 acl-queue.h \
 		 arch.h \
 		 asyd.h \
@@ -294,7 +301,7 @@ syd_LDADD+= \
 	    -l$(SYDBOX_RUST_LIB_DYN)
 endif
 
-if WANT_EXPERIMENTAL
+if WANT_SYDBOX_RS
 syd_LDADD+= -lsydbox_rs
 endif
 if WANT_GIT
@@ -352,22 +359,20 @@ endif
 
 syd-syscall.$(OBJEXT): $(BUILT_SOURCES)
 syd-dump.$(OBJEXT): $(BUILT_SOURCES)
+noinst_HEADERS+= $(noinst_INCLUDE_SRCS)
 
 ###
 # Determine make -j job count to pass to cargo.
 # See: https://blog.jgc.org/2015/03/gnu-make-insanity-finding-value-of-j.html
 .DEFAULT_GOAL: all
 .PHONY: all
-all: jobs $(lib_LTLIBRARIES) $(bin_PROGRAMS)
+all: jobs $(lib_LIBS) $(bin_PROGRAMS)
 
 .PHONY: jobs
 jobs: | parallel; @echo >&2 "[0;1;31;91msydb☮x: Make is running $(JOB_COUNT) jobs.[0m"
 
 .PHONY: parallel
 parallel: .parallel ; @$(eval JOB_COUNT := $(shell sort -n $< | tail -n 1))
-	if test $(JOB_COUNT) -ge 32; then
-		JOB_COUNT=42
-	fi
 .parallel: FORCE ; @$(MAKE) --no-print-directory par 2>/dev/null >$@ || true
 FORCE:
 
