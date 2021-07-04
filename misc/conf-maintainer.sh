@@ -6,8 +6,8 @@ root=$(git rev-parse --show-toplevel)
 cd "$root"
 ./autogen.sh
 exec "$root"/./configure --prefix=/usr --sysconfdir=/etc \
-    --enable-pandora \
-    --enable-static \
-    --disable-code-coverage \
-    --disable-maintainer-mode \
+    --enable-code-coverage \
+    --enable-maintainer-mode \
+    --disable-static \
+    --disable-pandora \
     --disable-dependency-tracking

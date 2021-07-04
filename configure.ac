@@ -175,7 +175,7 @@ dnl Build sydbox binary static by default.
 dnl Disable with --disable-static
 SYDBOX_LIBTOOL_FLAGS=""
 SYDBOX_STATIC_CFLAGS=
-if test x"$enable_static" = x"yes"; then
+if test x"$enable_static" = x"yes" -a x"$disable_static" != x"yes"; then
 	SYDBOX_LIBTOOL_FLAGS="-all-static"
 	SYDBOX_STATIC_CFLAGS="-static"
 	SYDBOX_RUST_LIBTYPES='"staticlib"'
@@ -185,8 +185,8 @@ fi
 AC_SUBST([SYDBOX_RUST_LIBTYPES])
 AC_SUBST([SYDBOX_LIBTOOL_FLAGS])
 AC_SUBST([SYDBOX_STATIC_CFLAGS])
-AM_CONDITIONAL([ENABLE_STATIC], test x"$enable_static" = x"yes")
-if test x"$enable_static" = x"yes"; then
+AM_CONDITIONAL([ENABLE_STATIC], test x"$enable_static" = x"yes" -a x"$disable_static" != x"yes")
+if test x"$enable_static" = x"yes" -a x"$disable_static" != x"yes"; then
 	ENABLE_STATIC=1
 else
 	ENABLE_STATIC=0
@@ -849,6 +849,17 @@ AC_PATH_PROG([CBINDGEN], [cbindgen])
 AC_PATH_PROG([RUSTC], [rustc])
 AM_CONDITIONAL([HAVE_CBINDGEN], test x"$CBINDGEN" != x"")
 
+dnl libsydbox_rs requires libgit2 if building from Git.
+dnl TODO: This will depend on --enable-unshare.
+LIBGIT2_REQUIRED="1.0.0"
+if test -n "$GITVERSION"; then
+	PKG_CHECK_MODULES([libgit2], [libgit2 >= $LIBGIT2_REQUIRED],,
+			  AC_MSG_ERROR([SydB☮x requires libgit2-$LIBGIT2_REQUIRED or newer to build from Git.]))
+fi
+AM_CONDITIONAL([WANT_GIT], test x"$WANT_GIT" = x"yes")
+AC_DEFINE_UNQUOTED([SYDBOX_GIT], [$SYDBOX_GIT], ['Denotes SydB☮x is built from Git, requires libgit2.'])
+AC_SUBST([SYDBOX_GIT])
+
 dnl unshare requires Rust and Cargo.
 dnl unshare requires cbindgen too but only in maintainer mode.
 AC_MSG_CHECKING([for unshare support])
@@ -941,6 +952,7 @@ AC_CONFIG_FILES([Makefile
 AC_OUTPUT
 
 echo "Build options:"
+echo "- git:$WANT_GIT"
 echo "- debug:$WANT_DEBUG"
 echo "- dump:$WANT_DUMP_BUILTIN"
 echo "- psyscall:$enable_psyscall"

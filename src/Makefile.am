@@ -8,8 +8,7 @@ CLEANFILES= \
 	    gmon.out \
 	    *.gcda \
 	    *.gcno \
-	    *.gcov \
-	    $(BUILT_SOURCES)
+	    *.gcov
 EXTRA_DIST= \
 	    syscall_open_syd.h.in \
 	    syscall_open_ro.lst \
@@ -35,27 +34,29 @@ Cargo.toml: Cargo.toml.in
 		-e 's:@RUST_LIBTYPES@:$(SYDBOX_RUST_LIBTYPES):g' \
 		$< > $@
 
+.PHONY: audit
+audit:
+	$(MAKE) Cargo.toml
+	CARGO_TARGET_DIR=sydbox_rs $(CARGO) audit
 check-local:
+	$(MAKE) Cargo.toml
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) test $(CARGO_FLAGS)
 clean-local:
+	$(MAKE) Cargo.toml
 	CARGO_TARGET_DIR=sydbox_rs $(CARGO) clean
 # We have no packages with binaries or examples for sydbox_rs yet.
 install-exec-local:
-	@true
+	$(MAKE) Cargo.toml
 #	CARGO_TARGET_DIR=sydbox_rs $(CARGO) install --path=. --root="$(DESTDIR)/usr"
 #	rm -f $(DESTDIR)/usr/.crates.toml
 #	rm -f $(DESTDIR)/usr/.crates2.json
 
 SYDBOX_RUST_LIB=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox
-SYDBOX_RUST_LIB_STA=$(SYDBOX_RUST_LIB).a
-SYDBOX_RUST_LIB_DYN=$(SYDBOX_RUST_LIB).so
+SYDBOX_RUST_LIB_STA=$(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/$(SYDBOX_RUST_LIB).a
+SYDBOX_RUST_LIB_DYN=$(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/deps/$(SYDBOX_RUST_LIB).so
 CARGO_BUILD_FLAGS= --lib --target-dir $(builddir)/sydbox_rs
 CARGO_BUILD_FLAGS+= $(CARGO_FLAGS)
-BUILT_SOURCES+= $(SYDBOX_RUST_LIB_STA)
-CLEANFILES+= \
-	     $(SYDBOX_RUST_LIB_DYN) \
-	     $(SYDBOX_RUST_LIB_STA) \
-	     sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/deps
+BUILT_SOURCES+= $(SYDBOX_RUST_LIB_STA) $(SYDBOX_RUST_LIB_DYN)
 
 noinst_SCRIPTS= \
 		kingbee.py
@@ -103,10 +104,9 @@ $(SYDBOX_RUST_LIB).%: jobs lib.rs
 	@mkdir -m700 -p $(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)
 	$(AM_V_GEN)
 	$(AM_V_at)$(CARGO) build -j $(JOB_COUNT) $(CARGO_BUILD_FLAGS)
-if !ENABLE_STATIC
-.libs/libsydbox.so: $(SYDBOX_RUST_LIB_STA)
-	$(AM_V_GEN)
-	$(AM_V_at)cp -fp $(SYDBOX_RUST_LIB_DYN) $@
+if ENABLE_STATIC
+else
+lib_LIBRARIES= $(SYDBOX_RUST_LIB_DYN)
 endif
 
 if MAINTAINER_MODE
@@ -144,6 +144,10 @@ if MAINTAINER_MODE
 AM_CFLAGS+= $(SYDBOX_SAFE_CFLAGS) $(SYDBOX_DEV_CFLAGS)
 endif
 
+if WANT_GIT
+AM_CFLAGS+= $(libgit2_CFLAGS)
+endif
+
 if WANT_DEBUG
 AM_CFLAGS+= $(libunwind_CFLAGS)
 endif
@@ -155,6 +159,7 @@ AM_LFLAGS = -v
 AM_YFLAGS = -d
 
 bin_PROGRAMS= syd syd-format
+syd_PROGRAMS= Cargo.toml syd
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
 syd_HEADERS= \
@@ -284,6 +289,19 @@ syd_LDADD= \
 	      $(CODE_COVERAGE_LIBS)
 syd_LDADD+= $(SYDBOX_RUST_LIB_STA)
 
+if ENABLE_STATIC
+else
+syd_LDADD+= \
+	    -L$(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/deps \
+	    -l$(SYDBOX_RUST_LIB_DYN)
+endif
+
+if WANT_EXPERIMENTAL
+syd_LDADD+= -lsydbox_rs
+endif
+if WANT_GIT
+syd_LDADD+= $(libgit2_LIBS)
+endif
 if WANT_DEBUG
 syd_LDADD+= $(libunwind_LIBS)
 endif
@@ -299,7 +317,7 @@ DUMP_LINKER_ADD=
 DUMP_LINKER_FLAGS=
 
 syddir=$(libexecdir)/$(PACKAGE)/dump
-syd_SCRIPTS= syd-shoebox
+bin_SCRIPTS= syd-shoebox
 syd_dump_PROGRAMS= syd-dump
 
 syd-shoebox: syd-shoebox.in
@@ -341,13 +359,16 @@ syd-dump.$(OBJEXT): $(BUILT_SOURCES)
 # See: https://blog.jgc.org/2015/03/gnu-make-insanity-finding-value-of-j.html
 .DEFAULT_GOAL: all
 .PHONY: all
-all: jobs $(bin_PROGRAMS) $(syd_PROGRAMS)
+all: jobs $(lib_LIBRARIES) $(bin_PROGRAMS)
 
 .PHONY: jobs
 jobs: | parallel; @echo >&2 "[0;1;31;91msydb☮x: Make is running $(JOB_COUNT) jobs.[0m"
 
 .PHONY: parallel
 parallel: .parallel ; @$(eval JOB_COUNT := $(shell sort -n $< | tail -n 1))
+	if test $(JOB_COUNT) -ge 32; then
+		JOB_COUNT=42
+	fi
 .parallel: FORCE ; @$(MAKE) --no-print-directory par 2>/dev/null >$@ || true
 FORCE:
 

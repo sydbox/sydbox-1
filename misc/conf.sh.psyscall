@@ -5,9 +5,12 @@ root=$(git rev-parse --show-toplevel)
 . "$root"/misc/prep-env.sh
 cd "$root"
 ./autogen.sh
+export CC="clang"
+export LD="lld"
 exec "$root"/./configure --prefix=/usr --sysconfdir=/etc \
-    --enable-pandora \
-    --enable-static \
     --disable-code-coverage \
-    --disable-maintainer-mode \
-    --disable-dependency-tracking
+    --enable-maintainer-mode \
+    --disable-dependency-tracking \
+    --disable-static \
+    --disable-pandora \
+    --enable-psyscall
