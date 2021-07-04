@@ -4,7 +4,7 @@
  * file and path utilities
  *
  * Copyright (c) 2015, 2021 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the GNU General Public License v3 (or later)
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #ifndef _GNU_SOURCE

@@ -4,7 +4,7 @@
  * Simple interface to C11 atomic_bool
  *
  * Copyright (c) 2021 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the GNU General Public License v3 (or later)
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #ifdef HAVE_CONFIG_H

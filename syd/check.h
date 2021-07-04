@@ -2,7 +2,7 @@
  * syd/check.h -- Syd's utility library check headers
  *
  * Copyright (c) 2014, 2015, 2021 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the GNU General Public License v3 (or later)
+ * SPDX-License-Identifier: GPL-2.0-only
  */
 
 #ifndef LIBSYD_CHECK_H
