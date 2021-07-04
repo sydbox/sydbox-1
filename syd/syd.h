@@ -20,6 +20,8 @@
 #include <sys/stat.h>
 #include <stdatomic.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdint.h>
 #include <signal.h>
 #include <dirent.h>
 #include <time.h>
@@ -37,6 +39,44 @@
 #define SYD_PROC_CWD_MAX (SYD_PROC_MAX + sizeof("/cwd") + SYD_PID_MAX)
 #define SYD_PROC_TASK_MAX (SYD_PROC_MAX + sizeof("/task") + SYD_PID_MAX)
 #define SYD_PROC_STATUS_LINE_MAX sizeof("Tgid:") + SYD_INT_MAX + 16 /* padding */
+
+/*
+Print SydB☮x version and build details to the given FILE.
+ */
+int syd_about(FILE *report_fd);
+
+/*
+Execute a process under various restrictions and options.
+ */
+SYD_GCC_ATTR((warn_unused_result))
+int32_t syd_execv(const char *command,
+                  size_t argc,
+                  const char *const *argv,
+                  const char *alias,
+                  const char *workdir,
+                  bool _verbose,
+                  uint32_t uid,
+                  uint32_t gid,
+                  const char *chroot,
+                  const char *new_root,
+                  const char *put_old,
+                  bool unshare_pid,
+                  bool unshare_net,
+                  bool unshare_mount,
+                  bool unshare_uts,
+                  bool unshare_ipc,
+                  bool unshare_user,
+                  int32_t close_fds_beg,
+                  int32_t close_fds_end,
+                  bool reset_fds,
+                  bool keep_sigmask,
+                  bool escape_stdout,
+                  bool allow_daemonize,
+                  bool make_group_leader,
+                  const char *parent_death_signal,
+                  const uint32_t *supplementary_gids,
+                  const char *pid_env_var);
+
 /* TODO: Any usage of the constants above in src/ is an indication to move
  * the respective functions to syd/, mostly some leftover /proc stuff and
  * they have already been hardened to validate with seccomp request id

@@ -1,8 +1,12 @@
 AM_MAKEFLAGS= --no-print-directory
+DEFS+= \
+       -DIN_LIBSYD=1 \
+       -DGITVERSION=\"$(GITVERSION)\"
 
 lib_LTLIBRARIES = libsyd_@LIBSYD_PC_SLOT@.la
 
 libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
+	about.c \
 	strlcat.c \
 	strlcpy.c \
 	file.c \
@@ -10,6 +14,8 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	proc.c \
 	state.c \
 	time.c
+libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= $(libseccomp_CFLAGS)
+libsyd_@LIBSYD_PC_SLOT@_la_LIBS= $(libseccomp_LIBS)
 
 libsyd_includedir = $(includedir)/syd-$(LIBSYD_PC_SLOT)/syd
 libsyd_include_HEADERS= syd.h
