@@ -18,9 +18,7 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 
-int syd_pivot_root(const char *new_root,
-		   const char *put_old,
-		   bool unmount)
+int syd_pivot_root(const char *new_root, const char *put_old)
 {
 	if (!new_root || !*new_root)
 		return -EINVAL;

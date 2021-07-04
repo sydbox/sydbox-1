@@ -72,7 +72,7 @@ const char *syd_name_errno(int err_no);
 /***
  * libsyd: Interface for Linux namespaces (containers)
  ***/
-int syd_pivot_root(const char *new_root, const char *put_old, bool unmount);
+int syd_pivot_root(const char *new_root, const char *put_old);
 
 /*
 Execute a process under various restrictions and options.
