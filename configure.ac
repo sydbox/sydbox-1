@@ -12,7 +12,7 @@ dnl   Copyright (c) 2002-2021 The strace developers.
 dnl SPDX-License-Identifier: GPL-2.0-only
 
 dnl Program, version
-AC_PREREQ([2.71])
+AC_PREREQ([2.69])
 
 dnl Homepage
 m4_define([SYDBOX_BUGREPORT], [https://todo.sr.ht/~alip/sydbox])
@@ -518,7 +518,7 @@ dnl/autoupdate:   ISO C90 headers unconditionally.])dnl
 dnl/autoupdate: # Autoupdate added the next two lines to ensure that your configure
 dnl/autoupdate: # script's behavior did not change.  They are probably safe to remove.
 STDC_HEADERS
-AC_CHECK_INCLUDES_DEFAULT
+dnl autoconf[>=2.71] AC_CHECK_INCLUDES_DEFAULT
 AC_PROG_EGREP
 
 AC_HEADER_SYS_WAIT
@@ -883,37 +883,44 @@ AM_CONDITIONAL([HAVE_CBINDGEN], test x"$CBINDGEN" != x"")
 
 dnl libsydbox_rs requires libgit2 if building from Git.
 dnl TODO: This will depend on --enable-unshare.
-LIBGIT2_REQUIRED="1.0.0"
+dnl LIBGIT2_REQUIRED="1.0.0"
+dnl if test -n "$GITVERSION"; then
+dnl dnl	PKG_CHECK_MODULES([libgit2], [libgit2 >= $LIBGIT2_REQUIRED],,
+dnl 			  AC_MSG_ERROR([SydB☮x requires libgit2-$LIBGIT2_REQUIRED or newer to build from Git.]))
+dnl fi
 if test -n "$GITVERSION"; then
-	PKG_CHECK_MODULES([libgit2], [libgit2 >= $LIBGIT2_REQUIRED],,
-			  AC_MSG_ERROR([SydB☮x requires libgit2-$LIBGIT2_REQUIRED or newer to build from Git.]))
+	WANT_GIT=yes
+	SYDBOX_GIT=1
+else
+	WANT_GIT=no
+	SYDBOX_GIT=0
 fi
 AM_CONDITIONAL([WANT_GIT], test x"$WANT_GIT" = x"yes")
-AC_DEFINE_UNQUOTED([SYDBOX_GIT], [$SYDBOX_GIT], ['Denotes SydB☮x is built from Git, requires libgit2.'])
+dnl AC_DEFINE_UNQUOTED([SYDBOX_GIT], [$SYDBOX_GIT], ['Denotes SydB☮x is built from Git, requires libgit2.'])
 AC_SUBST([SYDBOX_GIT])
 
 dnl unshare requires Rust and Cargo.
 dnl unshare requires cbindgen too but only in maintainer mode.
-AC_MSG_CHECKING([for unshare support])
-AC_ARG_ENABLE([unshare],
-	      [AS_HELP_STRING([--enable-unshare], [Enable unshare support for process creation with Linux namespaces {containers} using the unshare crate: https://crates.io/crates/unshare (requires: rustc>=2018 and cargo {and cbindgen in --enable-maintainer-mode}.)])],
-	      [WANT_UNSHARE="$enableval"],
-	      [WANT_UNSHARE="no"])
-AC_MSG_RESULT([$WANT_UNSHARE])
-if test x"$WANT_UNSHARE" = x"yes"; then
-	if test x"$RUSTC" = x""; then
-		AC_MSG_ERROR([rustc is required for --enable-unshare])
-	fi
-	if test x"$CARGO" = x""; then
-		AC_MSG_ERROR([cargo is required for --enable-unshare])
-	fi
-	SYDBOX_UNSHARE=1
-else
-	SYDBOX_UNSHARE=0
-fi
-AM_CONDITIONAL([WANT_UNSHARE], test x"$WANT_UNSHARE" = x"yes")
-AC_DEFINE_UNQUOTED([SYDBOX_UNSHARE], [$SYDBOX_UNSHARE], ['Enable unshare support (requires: libunwind)'])
-AC_SUBST([SYDBOX_UNSHARE])
+dnl AC_MSG_CHECKING([for unshare support])
+dnl AC_ARG_ENABLE([unshare],
+dnl 	      [AS_HELP_STRING([--enable-unshare], [Enable unshare support for process creation with Linux namespaces {containers} using the unshare crate: https://crates.io/crates/unshare (requires: rustc>=2018 and cargo {and cbindgen in --enable-maintainer-mode}.)])],
+dnl 	      [WANT_UNSHARE="$enableval"],
+dnl 	      [WANT_UNSHARE="no"])
+dnl AC_MSG_RESULT([$WANT_UNSHARE])
+dnl if test x"$WANT_UNSHARE" = x"yes"; then
+dnl 	if test x"$RUSTC" = x""; then
+dnl 		AC_MSG_ERROR([rustc is required for --enable-unshare])
+dnl 	fi
+dnl 	if test x"$CARGO" = x""; then
+dnl 		AC_MSG_ERROR([cargo is required for --enable-unshare])
+dnl 	fi
+dnl 	SYDBOX_UNSHARE=1
+dnl else
+dnl 	SYDBOX_UNSHARE=0
+dnl fi
+dnl AM_CONDITIONAL([WANT_UNSHARE], test x"$WANT_UNSHARE" = x"yes")
+dnl AC_DEFINE_UNQUOTED([SYDBOX_UNSHARE], [$SYDBOX_UNSHARE], ['Enable unshare support (requires: libunwind)'])
+dnl AC_SUBST([SYDBOX_UNSHARE])
 
 dnl pandora requires Rust and Cargo.
 dnl pandora may also be installed via "cargo install pandora_box"
