@@ -165,8 +165,45 @@ Some sample filter rules with this new format:
 - generate docs from pandora --help output for docs.rs if it's possible
 - add benchmarks with criterion to benchmark certain box invocations.
 
-# CaitSith
-# Thanks eternaleye!
+# People of Interest
+
+1. https://de.wikipedia.org/wiki/Ludwig_Guttmann
+
+# Crates of Interest
+1. https://briansmith.org/rustdoc/untrusted/ **TODO**
+1. https://crates.io/crates/binfarce **TODO**
+1. https://crates.io/crates/pgp **MUST-HAVE**
+1. https://crates.io/crates/mimalloc **MUST-HAVE**
+1. https://crates.io/crates/nanorand **NICE-TO-HAVE**
+1. https://crates.io/crates/stemjail **NICE-TO-HAVE**
+1. https://docs.rs/crate/binary-security-check/1.2.3 **NICE-TO-HAVE**
+1. https://crates.io/crates/container-pid **NICE-TO-HAVE**
+1. https://crates.io/crates/in-container **NICE-TO-HAVE**
+1. https://crates.io/crates/secstr **NICE-TO-HAVE**
+1. https://crates.io/crates/in-container **RESEARCH**
+1. https://crates.io/crates/cocoon **RTFM**
+1. https://crates.io/crates/cglue **RTFM**
+1. https://crates.io/crates/keyutils **NICE-TO-HAVE** **RTFM**
+1. https://crates.io/crates/shuffling-allocator **RTFM**
+1. https://crates.io/crates/memsec **RTFM**
+1. https://crates.io/crates/shuffling-allocator **FUN**
+1. https://crates.io/crates/cmd_lib **FUN**
+1. https://crates.io/crates/self_encryptor **FUN**
+1. https://docs.rs/crate/binary-security-check/1.2.3 **TODO**
+1. https://crates.io/crates/unicode-security
+1. https://blog.rust-lang.org/inside-rust/2019/10/03/Keeping-secure-with-cargo-audit-0.9.html
+1. https://crates.io/crates/cargo-audit **ADDED**
+1. https://crates.io/crates/smol **TODO**
+1. https://crates.io/crates/zeroize **TODO**
+1. https://crates.io/crates/bincode **TODO**
+
+# Projects of Interest
+
+## LibSodium
+**MUST-HAVE**
+
+## CaitSith
+### Thanks eternaleye!
 
 [21:51:06] <eternaleye> alip: BTW, have you ever heard of CaitSith?
 [21:51:23] <eternaleye> It's a Linux security module that has a somewhat similar style to sydbox, might be fun to take inspiration from

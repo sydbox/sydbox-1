@@ -34,6 +34,7 @@ dist_doc_DATA= \
 	       LICENSE.psyscall \
 	       README \
 	       KERNEL.md \
+	       TODO.md \
 	       man/ptrace-ntpl.txt
 
 DISTCHECK_CONFIGURE_FLAGS= \
