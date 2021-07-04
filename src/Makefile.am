@@ -300,7 +300,7 @@ DUMP_LINKER_FLAGS=
 
 syddir=$(libexecdir)/$(PACKAGE)/dump
 syd_SCRIPTS= syd-shoebox
-syd_PROGRAMS= syd-dump
+syd_dump_PROGRAMS= syd-dump
 
 syd-shoebox: syd-shoebox.in
 	$(AM_V_GEN)

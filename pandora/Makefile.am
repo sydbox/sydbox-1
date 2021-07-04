@@ -11,12 +11,15 @@ else
 CARGO_FLAGS= $(CARGO_VERBOSE)
 endif
 
+.PHONY: audit
+audit:
+	$(CARGO) audit
 check-local:
-	CARGO_TARGET_DIR=sydbox_rs $(CARGO) test $(CARGO_FLAGS)
+	$(CARGO) test $(CARGO_FLAGS)
 clean-local:
-	CARGO_TARGET_DIR=sydbox_rs $(CARGO) clean
+	$(CARGO) clean
 install-exec-local:
-	CARGO_TARGET_DIR=sydbox_rs $(CARGO) install \
+	$(CARGO) install \
 			 --path=. \
 			 --root="$(DESTDIR)/usr/$(target_triplet)"
 	rm -f $(DESTDIR)/usr/$(target_triplet)/.crates.toml

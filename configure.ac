@@ -40,6 +40,14 @@ dnl sydbox-1 has PACKAGE=sydbox
 dnl The tarball names are the same.
 dnl This is to make sure they're parallel-installable.
 dnl Thanks justinkb for the idea.
+sydbox_rsdir="$srcdir/sydbox_rs"
+
+AC_DISABLE_OPTION_CHECKING
+
+m4_include([m4/_colorize_result_prepare.m4])dnl
+m4_include([m4/ac_msg_result.m4])dnl
+m4_include([m4/colorize_result.m4])dnl
+
 AC_INIT([syd], [sydbox_version],
 	[SYDBOX_BUGREPORT],
 	[sydbox],
