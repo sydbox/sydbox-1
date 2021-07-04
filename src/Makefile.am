@@ -27,12 +27,13 @@ else
 CARGO_FLAGS= $(CARGO_VERBOSE)
 endif
 
-Cargo.toml: Cargo.toml.in
+Cargo.toml$(EXEEXT): Cargo.toml.in
 	$(AM_V_GEN)
+	$(AM_V_at)touch Cargo.toml$(EXEEXT)
 	$(AM_V_at)$(SED) \
 		-e 's:@SYDBOX_VERSION@:$(VERSION):g' \
 		-e 's:@RUST_LIBTYPES@:$(SYDBOX_RUST_LIBTYPES):g' \
-		$< > $@
+		$< > Cargo.toml
 
 .PHONY: audit
 audit:
@@ -104,10 +105,7 @@ $(SYDBOX_RUST_LIB).%: jobs lib.rs
 	@mkdir -m700 -p $(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)
 	$(AM_V_GEN)
 	$(AM_V_at)$(CARGO) build -j $(JOB_COUNT) $(CARGO_BUILD_FLAGS)
-if ENABLE_STATIC
-else
-lib_LIBRARIES= $(SYDBOX_RUST_LIB_DYN)
-endif
+lib_LTLIBRARIES= $(SYDBOX_RUST_LIB_DYN)
 
 if MAINTAINER_MODE
 syscall_open_syd.h: Makefile syscall_open_ro.lst syscall_open_syd.h.in
@@ -316,7 +314,8 @@ DUMP_LINKER_LIBRARY_ADD= $(syd_LIBADD)
 DUMP_LINKER_ADD=
 DUMP_LINKER_FLAGS=
 
-syddir=$(libexecdir)/$(PACKAGE)/dump
+syd_dumpdir=$(libexecdir)/$(PACKAGE)/dump
+bin_PROGRAMS+= syd-dump
 bin_SCRIPTS= syd-shoebox
 
 syd-shoebox: syd-shoebox.in
@@ -359,7 +358,7 @@ syd-dump.$(OBJEXT): $(BUILT_SOURCES)
 # See: https://blog.jgc.org/2015/03/gnu-make-insanity-finding-value-of-j.html
 .DEFAULT_GOAL: all
 .PHONY: all
-all: jobs $(lib_LIBRARIES) $(bin_PROGRAMS)
+all: jobs $(lib_LTLIBRARIES) $(bin_PROGRAMS)
 
 .PHONY: jobs
 jobs: | parallel; @echo >&2 "[0;1;31;91msydb☮x: Make is running $(JOB_COUNT) jobs.[0m"
@@ -379,10 +378,10 @@ par: $(addprefix par-,$(call to_n,32))
 par-%: ; @$(eval PAR_COUNT += x)@echo $(words $(PAR_COUNT)) && sleep 1 && false
 
 # Convenience for users, more ugliness for meself...
-# PATH=${syddir} cave resolve ...
-# to use sydbox-dump
+# PATH=${syd_dumpdir} cave resolve ...
+# to use syd-dump
 install-data-hook:
-	cd $(DESTDIR)$(syddir) && \
+	cd $(DESTDIR)$(syd_dumpdir) && \
 		$(LN_S) -f syd-dump syd
 
 SPARSE=sparse
@@ -424,4 +423,4 @@ splint:
 			$(libseccomp_CFLAGS) \
 			$$path; \
 	done 2>&1 |\
-	tee sydbox-splint.log
+	tee syd-splint.log
