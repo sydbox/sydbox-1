@@ -318,7 +318,6 @@ DUMP_LINKER_FLAGS=
 
 syddir=$(libexecdir)/$(PACKAGE)/dump
 bin_SCRIPTS= syd-shoebox
-syd_dump_PROGRAMS= syd-dump
 
 syd-shoebox: syd-shoebox.in
 	$(AM_V_GEN)
@@ -329,6 +328,7 @@ syd-shoebox: syd-shoebox.in
 CLEANFILES+= syd-shoebox
 EXTRA_DIST+= syd-shoebox.in
 
+syd_dump_PROGRAMS= syd-dump
 syd_dump_SOURCES=
 syd_dump_CFLAGS= $(DUMP_COMPILER_FLAGS)
 syd_dump_CPPFLAGS=

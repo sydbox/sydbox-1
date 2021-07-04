@@ -12,7 +12,7 @@ dnl   Copyright (c) 2002-2021 The strace developers.
 dnl SPDX-License-Identifier: GPL-2.0-only
 
 dnl Program, version
-AC_PREREQ(2.59)
+AC_PREREQ([2.71])
 
 dnl Homepage
 m4_define([SYDBOX_BUGREPORT], [https://todo.sr.ht/~alip/sydbox])
@@ -48,17 +48,14 @@ m4_include([m4/_colorize_result_prepare.m4])dnl
 m4_include([m4/ac_msg_result.m4])dnl
 m4_include([m4/colorize_result.m4])dnl
 
-AC_INIT([syd], [sydbox_version],
-	[SYDBOX_BUGREPORT],
-	[sydbox],
-	[SYDBOX_HOMEPAGE])
+AC_INIT([syd],[sydbox_version],[SYDBOX_BUGREPORT],[sydbox],[SYDBOX_HOMEPAGE])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([src/sydbox.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
-AC_GNU_SOURCE
+AC_USE_SYSTEM_EXTENSIONS
 AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip std-options subdir-objects foreign])
@@ -109,7 +106,7 @@ m4_defun([_LT_AC_LANG_F77_CONFIG], [:])
 dnl toolchain checks
 : ${CFLAGS=""}
 AC_USE_SYSTEM_EXTENSIONS
-AC_PROG_LD
+LT_PATH_LD
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -329,10 +326,9 @@ powerpc*)
 	karch=powerpc
 	karch_m32=powerpc
 	AC_DEFINE([POWERPC], 1, [Define for the PowerPC architecture.])
-	AC_TRY_COMPILE(
-[#ifndef __LP64__
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#ifndef __LP64__
 # error 32 bit
-#endif], [], arch=powerpc64, arch=powerpc)
+#endif]], [[]])],[arch=powerpc64],[arch=powerpc])
 	if test "$arch" = "powerpc64"; then
 		# $ac_cv_c_bigendian is defined by AC_C_BIGENDIAN
 		case "$ac_cv_c_bigendian" in
@@ -392,10 +388,9 @@ x86?64*)
 	karch_m32=x86
 	karch_mx32=x86
 	arch_m32=i386
-	AC_TRY_COMPILE(
-[#ifndef __ILP32__
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#ifndef __ILP32__
 # error not x32
-#endif], [], arch=x32, arch=x86_64)
+#endif]], [[]])],[arch=x32],[arch=x86_64])
 	if test "$arch" = "x86_64"; then
 		arch_mx32=x32
 		AC_DEFINE([X86_64], 1, [Define for the 64bit AMD x86-64 architecture.])
@@ -508,7 +503,16 @@ AC_CHECK_HEADER([termios.h],  [], AC_MSG_ERROR([SydB☮x requires the header ter
 dnl check for everything (for tests)
 AC_FUNC_ALLOCA
 AC_HEADER_DIRENT
-AC_HEADER_STDC
+dnl/autoupdate: m4_warn([obsolete],
+dnl/autoupdate: [The preprocessor macro `STDC_HEADERS' is obsolete.
+dnl/autoupdate:   Except in unusual embedded environments, you can safely include all
+dnl/autoupdate:   ISO C90 headers unconditionally.])dnl
+dnl/autoupdate: # Autoupdate added the next two lines to ensure that your configure
+dnl/autoupdate: # script's behavior did not change.  They are probably safe to remove.
+STDC_HEADERS
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(m4_flatten([
 	dirent.h
@@ -628,10 +632,22 @@ AC_CHECK_FUNCS([fchdir])
 
 dnl check for library functions.
 AC_FUNC_CHOWN
-AC_FUNC_FORK
+dnl/autoupdate: AC_FUNC_FORK
 AC_FUNC_LSTAT
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
-AC_TYPE_SIGNAL
+dnl/autoupdate: m4_warn([obsolete],
+dnl/autoupdate: [your code may safely assume C89 semantics that RETSIGTYPE is void.
+dnl/autoupdate: Remove this warning and the `AC_CACHE_CHECK' when you adjust the code.])dnl
+dnl/autoupdate: AC_CACHE_CHECK([return type of signal handlers],[ac_cv_type_signal],[AC_COMPILE_IFELSE(
+dnl/autoupdate: [AC_LANG_PROGRAM([#include <sys/types.h>
+dnl/autoupdate: #include <signal.h>
+dnl/autoupdate: ],
+dnl/autoupdate: 		 [return *(signal (0, 0)) (0) == 1;])],
+dnl/autoupdate: 		   [ac_cv_type_signal=int],
+dnl/autoupdate: 		   [ac_cv_type_signal=void])])
+dnl/autoupdate: AC_DEFINE_UNQUOTED([RETSIGTYPE],[$ac_cv_type_signal],[Define as the return type of signal handlers
+dnl/autoupdate: 		    (`int' or `void').])
+
 AC_FUNC_STAT
 AC_CHECK_FUNCS_ONCE(m4_flatten([
 	clone
