@@ -4,8 +4,11 @@ rm -fr autom4te.cache build-aux
 rm -f config.cache
 test -d build-aux || mkdir build-aux
 
+PWD=
+case "$0" in
+*/*) srcdir=`dirname $0`;;
+*) srcdir="";;
+esac
+
 libtoolize --copy --force
-aclocal -I m4
-autoheader
-autoconf
-automake --add-missing --copy
+exec ${AUTORECONF:-autoreconf} --install --symlink "$@" ${srcdir:+"$srcdir"}
