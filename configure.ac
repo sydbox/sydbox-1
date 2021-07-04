@@ -896,7 +896,7 @@ else
 	SYDBOX_GIT=0
 fi
 AM_CONDITIONAL([WANT_GIT], test x"$WANT_GIT" = x"yes")
-dnl AC_DEFINE_UNQUOTED([SYDBOX_GIT], [$SYDBOX_GIT], ['Denotes SydB☮x is built from Git, requires libgit2.'])
+AC_DEFINE_UNQUOTED([SYDBOX_GIT], [$SYDBOX_GIT], ['Denotes SydB☮x is built from Git'])
 AC_SUBST([SYDBOX_GIT])
 
 dnl unshare requires Rust and Cargo.

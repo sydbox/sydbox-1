@@ -1,4 +1,6 @@
 AM_MAKEFLAGS= --no-print-directory
+CLEANFILES+= \
+	     *~
 DEFS+= \
        -DIN_LIBSYD=1 \
        -DGITVERSION=\"$(GITVERSION)\"
