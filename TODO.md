@@ -3,7 +3,7 @@
 implement basic system call name filters such that:
 	- whitelist/syscall+<regex-for-syscall-name>
 	- blacklist/syscall+<regex-for-syscall-name>
-is possible in config!
+is possible in config.
 
 ## BUILD FAILURES
 # Thanks a lot justinkb
