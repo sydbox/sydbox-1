@@ -86,10 +86,13 @@ int syd_pivot_root(const char *new_root, const char *put_old);
 
 /*
  * Unshare using the given file descriptors.
- * Set file descriptor to -1 to skip unsharing the respective namespace.
  */
-int syd_unshare(int fd_newpid, int fd_newnet, int fd_newns,
-		int fd_newuts, int fd_newipc, int fd_newuser);
+int syd_unshare_pid(int fd);
+int syd_unshare_net(int fd);
+int syd_unshare_ns(int fd);
+int syd_unshare_uts(int fd);
+int syd_unshare_ipc(int fd);
+int syd_unshare_usr(int fd);
 
 #if 0
 /*

@@ -23,34 +23,47 @@
 #include <sys/syscall.h>
 #include <seccomp.h>
 
-int syd_unshare(int fd_newpid, int fd_newnet, int fd_newns,
-		int fd_newuts, int fd_newipc, int fd_newuser)
+static int syd_unshare(int namespace_type,
+		       int fd_closing)
 {
-#define SYD_NS_TYPE_MAX 6
-	uint8_t i;
-	int fd, ns;
-	int ns_type[SYD_NS_TYPE_MAX][2] = {
-		{CLONE_NEWPID, fd_newpid},
-		{CLONE_NEWNET, fd_newnet},
-		{CLONE_NEWNS, fd_newns},
-		{CLONE_NEWUTS, fd_newuts},
-		{CLONE_NEWIPC, fd_newipc},
-		{CLONE_NEWUSER, fd_newuser},
-	};
-
-	for (i = 0, fd = ns_type[0][1], ns = ns_type[0][0];
-	     i < SYD_NS_TYPE_MAX;
-	     fd = ns_type[++i][1], ns = ns_type[i][0])
-	{
-		if (fd <= 0)
-			continue;
-		if (syd_debug_get())
-			syd_say("Unsharing %s namespace.", syd_name_namespace(ns));
-		if (setns(fd, ns) < 0)
-			return -errno;
-	}
+	if (fd_closing <= 0)
+		return -EBADF;
+	if (syd_debug_get())
+		syd_say("Unsharing %s namespace.",
+			syd_name_namespace(namespace_type));
+	if (setns(fd_closing, namespace_type) < 0)
+		return -errno;
 	return 0;
-#undef SYD_NS_TYPE_MAX
+}
+
+int syd_unshare_pid(int fd)
+{
+	return syd_unshare(CLONE_NEWPID, fd);
+}
+
+int syd_unshare_net(int fd)
+{
+	return syd_unshare(CLONE_NEWNET, fd);
+}
+
+int syd_unshare_ns(int fd)
+{
+	return syd_unshare(CLONE_NEWNS, fd);
+}
+
+int syd_unshare_uts(int fd)
+{
+	return syd_unshare(CLONE_NEWUTS, fd);
+}
+
+int syd_unshare_ipc(int fd)
+{
+	return syd_unshare(CLONE_NEWIPC, fd);
+}
+
+int syd_unshare_usr(int fd)
+{
+	return syd_unshare(CLONE_NEWUSER, fd);
 }
 
 int syd_set_death_sig(int signal)
