@@ -6,6 +6,8 @@ DEFS+= \
        -DGITVERSION=\"$(GITVERSION)\"
 
 lib_LTLIBRARIES = libsyd_@LIBSYD_PC_SLOT@.la
+dist_man3_MANS= \
+	       doc/man/man3/syd_version.3
 
 libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	about.c \
