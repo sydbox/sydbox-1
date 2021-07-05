@@ -188,6 +188,7 @@ bool syd_set_int(volatile atomic_int *state, int value);
 typedef void (*syd_time_prof_func_t) (void);
 struct timespec syd_time_diff(const struct timespec *t1, const struct timespec *t2);
 
+#if 0
 /***
  * libsyd: SydB☮x' allocation functions.
  * The defaults panic on allocation failure,
@@ -275,6 +276,7 @@ void syd_free_safe(void *ptr);
 #define syd_map_put_s64 sc_map_put_s64
 #define syd_map_get_s64 sc_map_get_s64
 #define syd_map_del_s64 sc_map_del_s64
+#endif /* S{C,YD}_MAP */
 
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
 __attribute__((sentinel))
