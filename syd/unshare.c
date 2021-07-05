@@ -12,12 +12,23 @@
  */
 
 #include "config.h"
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE /* setns() */
+#endif
 #include "syd.h"
 #include <errno.h>
-#include <seccomp.h>
+#include <sched.h>
 #include <unistd.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
+#include <seccomp.h>
+
+#if 0
+int syd_setns(intfd, int nstype)
+{
+	return -ENOSYS;
+}
+#endif
 
 int syd_set_death_sig(int signal)
 {

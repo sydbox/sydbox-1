@@ -48,10 +48,6 @@
 #define sc_map_free free
 #endif
 */
-#include "xfunc.h"
-#define sc_map_calloc xcalloc
-#define sc_map_free free
-
 #define sc_map_dec_strkey(name, K, V)                                          \
 	struct sc_map_item_##name {                                            \
 		K key;                                                         \
