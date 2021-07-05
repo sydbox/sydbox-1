@@ -68,6 +68,7 @@ int syd_debug_set_fd(const int fd);
  * libsyd: Stringify constants
  ***/
 const char *syd_name_errno(int err_no);
+const char *syd_name_namespace(int namespace);
 
 /***
  * libsyd: Interface for Linux namespaces (containers)
@@ -75,6 +76,22 @@ const char *syd_name_errno(int err_no);
 int syd_set_death_sig(int signal);
 int syd_pivot_root(const char *new_root, const char *put_old);
 
+/***
+ * libsyd: Interfaces to statically allocated hash tables.
+ ***/
+#define SYD_MAP_CLR ROBINHOOD_HASH_CLEAR
+#define SYD_MAP_GET ROBINHOOD_HASH_GET
+#define SYD_MAP_SET ROBINHOOD_HASH_SET
+#define SYD_MAP_DEL ROBINHOOD_HASH_DEL
+
+/*
+ * Unshare using the given file descriptors.
+ * Set file descriptor to -1 to skip unsharing the respective namespace.
+ */
+int syd_unshare(int fd_newpid, int fd_newnet, int fd_newns,
+		int fd_newuts, int fd_newipc, int fd_newuser);
+
+#if 0
 /*
 Execute a process under various restrictions and options.
  */
@@ -106,15 +123,13 @@ int32_t syd_execv(const char *command,
                   const char *parent_death_signal,
                   const uint32_t *supplementary_gids,
                   const char *pid_env_var);
+#endif
 
 /* TODO: Any usage of the constants above in src/ is an indication to move
  * the respective functions to syd/, mostly some leftover /proc stuff and
  * they have already been hardened to validate with seccomp request id
  * so this is not urgent.
  */
-
-size_t syd_strlcat(char *dst, const char *src, size_t siz);
-size_t syd_strlcpy(char *dst, const char *src, size_t siz);
 
 int syd_opendir(const char *dirname);
 int syd_fchdir(int fd);
@@ -188,96 +203,6 @@ bool syd_set_int(volatile atomic_int *state, int value);
 typedef void (*syd_time_prof_func_t) (void);
 struct timespec syd_time_diff(const struct timespec *t1, const struct timespec *t2);
 
-#if 0
-/***
- * libsyd: SydB☮x' allocation functions.
- * The defaults panic on allocation failure,
- * you may change the allocation functions
- * with your own to provide more sophisticated
- * memory management and error recovery.
- ***/
-void syd_set_malloc(
-void *syd_xmalloc(size_t size);
-void *syd_xrealloc(void *ptr, size_t size);
-void *syd_xcalloc(size_t nmemb, size_t size);
-void syd_free_safe(void *ptr);
-
-/***
- * libsyd: Hash Table by sc_map
- ***/
-#define sc_map_calloc syd_xalloc_zero
-#define sc_map_free syd_xalloc_free
-#include "sc_map.h"
-
-/***
- * LibSyd identical interface to fit the naming convention.
- ***/
-#define syd_map_dec_strkey sc_map_dec_strkey
-#define syd_map_dec_scalar sc_map_dec_scalar
-#define syd_map_of sc_map_of
-
-#define syd_map_found sc_map_found
-#define syd_map_oom sc_map_oom
-#define syd_map_free(map) (!(map)->alloc)
-#define syd_map_foreach sc_map_foreach
-
-#define syd_map_32 sc_map_32
-#define syd_map_init_32 sc_map_init_32
-#define syd_map_term_32 sc_map_term_32
-#define syd_map_clear_32 sc_map_clear_32
-#define syd_map_put_32 sc_map_put_32
-#define syd_map_get_32 sc_map_get_32
-#define syd_map_del_32 sc_map_del_32
-
-#define syd_map_64 sc_map_64
-#define syd_map_init_64 sc_map_init_64
-#define syd_map_term_64 sc_map_term_64
-#define syd_map_clear_64 sc_map_clear_64
-#define syd_map_put_64 sc_map_put_64
-#define syd_map_get_64 sc_map_get_64
-#define syd_map_del_64 sc_map_del_64
-
-#define syd_map_64v sc_map_64v
-#define syd_map_init_64v sc_map_init_64v
-#define syd_map_term_64v sc_map_term_64v
-#define syd_map_clear_64v sc_map_clear_64v
-#define syd_map_put_64v sc_map_put_64v
-#define syd_map_get_64v sc_map_get_64v
-#define syd_map_del_64v sc_map_del_64v
-
-#define syd_map_64s sc_map_64s
-#define syd_map_init_64s sc_map_init_64s
-#define syd_map_term_64s sc_map_term_64s
-#define syd_map_clear_64s sc_map_clear_64s
-#define syd_map_put_64s sc_map_put_64s
-#define syd_map_get_64s sc_map_get_64s
-#define syd_map_del_64s sc_map_del_64s
-
-#define syd_map_str sc_map_str
-#define syd_map_init_str sc_map_init_str
-#define syd_map_term_str sc_map_term_str
-#define syd_map_clear_str sc_map_clear_str
-#define syd_map_put_str sc_map_put_str
-#define syd_map_get_str sc_map_get_str
-#define syd_map_del_str sc_map_del_str
-
-#define syd_map_sv sc_map_sv
-#define syd_map_init_sv sc_map_init_sv
-#define syd_map_term_sv sc_map_term_sv
-#define syd_map_clear_sv sc_map_clear_sv
-#define syd_map_put_sv sc_map_put_sv
-#define syd_map_get_sv sc_map_get_sv
-#define syd_map_del_sv sc_map_del_sv
-
-#define syd_map_s64 sc_map_s64
-#define syd_map_init_s64 sc_map_init_s64
-#define syd_map_term_s64 sc_map_term_s64
-#define syd_map_clear_s64 sc_map_clear_s64
-#define syd_map_put_s64 sc_map_put_s64
-#define syd_map_get_s64 sc_map_get_s64
-#define syd_map_del_s64 sc_map_del_s64
-#endif /* S{C,YD}_MAP */
-
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
 __attribute__((sentinel))
 #endif
@@ -296,8 +221,11 @@ void syd_time_prof(unsigned loop, ...);
 #endif
 
 /***
- * Syd's Inlined Functions
+ * Syd's String Functions
  ***/
+size_t syd_strlcat(char *restrict dst, const char *restrict src, size_t siz);
+size_t syd_strlcpy(char *restrict dst, const char *restrict src, size_t siz);
+
 inline int syd_str_startswith(const char *s, const char *prefix,
 			      bool ret_bool)
 {

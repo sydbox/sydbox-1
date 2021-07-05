@@ -26,7 +26,7 @@
  * Returns strlen(src); if retval >= siz, truncation occurred.
  */
 size_t
-syd_strlcpy(char *dst, const char *src, size_t siz)
+syd_strlcpy(char *restrict dst, const char *restrict src, size_t siz)
 {
 	char *d = dst;
 	const char *s = src;

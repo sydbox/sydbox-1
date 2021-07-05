@@ -10,8 +10,13 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
+#include "config.h"
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE /* clone */
+#endif
 #include <stddef.h>
 #include <errno.h>
+#include <sched.h>
 #include "syd.h"
 
 #define CASE(x) case x: return #x
@@ -461,6 +466,26 @@ const char *syd_name_errno(int err_no)
 #ifdef EXFULL
 	CASE(EXFULL);
 #endif
+	default:
+		return NULL;
+	}
+}
+
+const char *syd_name_namespace(int namespace)
+{
+	switch (namespace) {
+	case CLONE_NEWNS:
+		return "mount";
+	case CLONE_NEWPID:
+		return "pid";
+	case CLONE_NEWNET:
+		return "net";
+	case CLONE_NEWUTS:
+		return "uts";
+	case CLONE_NEWIPC:
+		return "ipc";
+	case CLONE_NEWUSER:
+		return "user";
 	default:
 		return NULL;
 	}

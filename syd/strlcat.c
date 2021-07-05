@@ -28,7 +28,7 @@
  * If retval >= siz, truncation occurred.
  */
 size_t
-syd_strlcat(char *dst, const char *src, size_t siz)
+syd_strlcat(char *restrict dst, const char *restrict src, size_t siz)
 {
 	char *d = dst;
 	const char *s = src;
