@@ -41,12 +41,12 @@ export CARGO_TARGET_DIR
 audit:
 	$(MAKE) Cargo.toml
 	$(CARGO) audit
-check-local:
-	$(MAKE) Cargo.toml
-	$(CARGO) test $(CARGO_FLAGS)
-clean-local:
-	$(MAKE) Cargo.toml
-	$(CARGO) clean
+#check-local:
+#	$(MAKE) Cargo.toml
+#	$(CARGO) test $(CARGO_FLAGS)
+#clean-local:
+#	$(MAKE) Cargo.toml
+#	$(CARGO) clean
 # We have no packages with binaries or examples for $(top_builddir)/src/sydbox_rs/ yet.
 #install-exec-local:
 #	$(MAKE) Cargo.toml
@@ -54,17 +54,17 @@ clean-local:
 #	rm -f $(DESTDIR)/usr/$(target_triplet)/.crates.toml
 #	rm -f $(DESTDIR)/usr/$(target_triplet)/.crates2.json
 
-#if WANT_SYDBOX_RS
-SYDBOX_RUST_LIB=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox
-SYDBOX_RUST_LIB_STA=$(SYDBOX_RUST_LIB)_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/lib$(SYDBOX_RUST_LIB).a
-SYDBOX_RUST_LIB_DYN=$(SYDBOX_RUST_LIB)_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/deps/lib$(SYDBOX_RUST_LIB).so
-SYDBOX_RUST_LIBS=\
-		 $(SYDBOX_RUST_LIB_STA)
-CARGO_BUILD_FLAGS= --lib --target-dir $(builddir)/sydbox_rs
-CARGO_BUILD_FLAGS+= $(CARGO_FLAGS)
-lib_LIBS= $(SYDBOX_RUST_LIB_STA)
-BUILT_SOURCES+= $(SYDBOX_RUST_LIB_STA)
-#endif
+##if WANT_SYDBOX_RS
+#SYDBOX_RUST_LIB=sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/libsydbox
+#SYDBOX_RUST_LIB_STA=$(SYDBOX_RUST_LIB)_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/lib$(SYDBOX_RUST_LIB).a
+#SYDBOX_RUST_LIB_DYN=$(SYDBOX_RUST_LIB)_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/deps/lib$(SYDBOX_RUST_LIB).so
+#SYDBOX_RUST_LIBS=\
+#		 $(SYDBOX_RUST_LIB_STA)
+#CARGO_BUILD_FLAGS= --lib --target-dir $(builddir)/sydbox_rs
+#CARGO_BUILD_FLAGS+= $(CARGO_FLAGS)
+#lib_LIBS= $(SYDBOX_RUST_LIB_STA)
+#BUILT_SOURCES+= $(SYDBOX_RUST_LIB_STA)
+##endif
 
 noinst_SCRIPTS= \
 		kingbee.py
@@ -75,6 +75,7 @@ SYD_FCNTL_INCLUDES= \
 	$(SYD_INCLUDEDIR)/asm/fcntl.h \
 	$(SYD_INCLUDEDIR)/asm-generic/fcntl.h \
 	$(SYD_INCLUDEDIR)/bits/fcntl.h \
+	$(SYD_INCLIDEDIR)/bits/fcntl-linux.h \
 	$(SYD_INCLUDEDIR)/sys/fcntl.h \
 	$(SYD_INCLUDEDIR)/linux/fcntl.h
 
@@ -85,6 +86,7 @@ else
 OPT_DUMP+=no
 endif
 
+if WANT_SYDBOX_RS
 lib.rs: lib.rs.in
 	$(AM_V_GEN)
 	$(AM_V_at)chmod -f +w $@ || true
@@ -95,9 +97,11 @@ lib.rs: lib.rs.in
 		-e "s:@DUMP_BUILTIN@:$(OPT_DUMP):g" \
 		$< > $@
 	$(AM_V_at)chmod -f -w $@ || true
+endif
 
 if MAINTAINER_MODE
 if HAVE_CBINDGEN
+if WANT_SYDBOX_RS
 BUILT_SOURCES+= sydbox_rs.h
 CLEANFILES+= sydbox_rs.h
 # TODO -Z parse-only is nightly only, when it's not
@@ -107,11 +111,14 @@ sydbox_rs.h: $(srcdir)/lib.rs $(srcdir)/cbindgen.toml
 		$(RUSTC) $(srcdir)/lib.rs
 endif
 endif
+endif
 
+if WANT_SYDBOX_RS
 $(SYDBOX_RUST_LIB_STA): jobs lib.rs
 	@mkdir -m700 -p $(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)
 	$(AM_V_GEN)
 	$(AM_V_at)$(CARGO) build -j $(JOB_COUNT) $(CARGO_BUILD_FLAGS)
+endif
 
 if MAINTAINER_MODE
 syscall_open_syd.h: Makefile syscall_open_ro.lst syscall_open_syd.h.in
@@ -174,7 +181,6 @@ noinst_HEADERS+= \
 		 asyd.h \
 		 daemon.h \
 		 dump.h \
-		 errno2name.h \
 		 file.h \
 		 hex.h \
 		 macro.h \
@@ -190,8 +196,6 @@ noinst_HEADERS+= \
 		 syscall_open_syd.h \
 		 #profile_parser.y \
 		 #profile_scanner.l \
-		 sc_map.h \
-		 sc_map_syd.h \
 		 serializer.h \
 		 sha1dc_sha1.h \
 		 sha1dc_ubc_check.h \
@@ -203,15 +207,12 @@ noinst_HEADERS+= \
 		 sydconf.h \
 		 sydbox.h
 syd_SOURCES= \
-		 $(SYDBOX_RUST_LIB_STA) \
 		 Cargo.toml \
-		 lib.rs \
 		 sydbox_rs.h \
 		 syscall_open_syd.h \
 		 syscall_open_ro.lst \
 		 arch.c \
 		 daemon.c \
-		 errno2name.c \
 		 file.c \
 		 filter.c \
 		 hex.c \
@@ -222,7 +223,6 @@ syd_SOURCES= \
 		 pathdecode.c \
 		 pathmatch.c \
 		 procmatch.c \
-		 sc_map.c \
 		 serializer.c \
 		 sha1dc_sha1.c \
 		 sha1dc_ubc_check.c \
@@ -251,6 +251,12 @@ syd_SOURCES= \
 		 sydbox.c
 syd_format_SOURCES= \
 		syd-format.c
+
+# Experimental Rust.
+# TODO: To be integrated into libsyd.
+if WANT_SYDBOX_RS
+syd_SOURCES+= lib.rs $(SYDBOX_RUST_LIB_STA)
+endif
 
 # Imported from rsync!
 noinst_HEADERS+= \
@@ -292,13 +298,17 @@ syd_LDADD= \
 	      @SYDBOX_LIBTOOL_FLAGS@ \
 	      $(libseccomp_LIBS) \
 	      $(CODE_COVERAGE_LIBS)
+if WANT_SYDBOX_RS
 syd_LDADD+= $(SYDBOX_RUST_LIB_STA)
+endif
 
 if ENABLE_STATIC
 else
+if WANT_SYDBOX_RS
 syd_LDADD+= \
 	    -L$(builddir)/sydbox_rs/$(SYDBOX_CARGO_RELEASE_TYPE)/deps \
 	    -l$(SYDBOX_RUST_LIB_DYN)
+endif
 endif
 
 if WANT_SYDBOX_RS

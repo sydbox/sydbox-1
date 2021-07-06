@@ -78,7 +78,9 @@ void set_working_directory(char *wd) {
 		free(wd);
 		wd = xstrdup(mkdtemp(tmpl));
 		xasprintf(&linkpath, "%s/sydbox", wd);
-		symlink("/dev/sydbox", linkpath);
+		if (symlink("/dev/sydbox", linkpath) < 0 && syd_debug_get())
+			syd_say("Failed to create symbolic link `/dev/sydbox' -> `%s'",
+				linkpath);
 		free(linkpath);
 		free(tmpl);
 	}

@@ -41,7 +41,6 @@
 #include "arch.h"
 #include <syd/compiler.h>
 
-#include "sc_map_syd.h"
 #include "sha1dc_syd.h"
 #include "hex.h"
 

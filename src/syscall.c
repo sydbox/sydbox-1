@@ -19,7 +19,6 @@
 #include "pink.h"
 #include "macro.h"
 #include "proc.h"
-#include "sc_map_syd.h"
 #include "syscall_open_syd.h"
 
 static int rule_add_access_rd(uint32_t action, int sysnum, int access_mode);

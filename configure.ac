@@ -702,7 +702,8 @@ AC_ARG_ENABLE([sydbox_rs],
 	      [AS_HELP_STRING([--enable-sydbox_rs],
 			      [Enable SydB☮x Rust API])],
 	      [], [enable_sydbox_rs=yes])
-AM_CONDITIONAL([WANT_SYDBOX_RS], test x"$enable_sydbox_rs" = x"yes")
+AM_CONDITIONAL([WANT_SYDBOX_RS], test 0 -eq 1)
+dnl x"$enable_sydbox_rs" = x"yes")
 
 dnl check for pkg-config
 PKG_PROG_PKG_CONFIG([0.20.0])

@@ -628,7 +628,7 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 	}
 
 	if (sydbox->config.allowlist_per_process_directories &&
-	    !sc_map_freed(&sydbox->config.proc_pid_auto))
+	    !syd_map_free(&sydbox->config.proc_pid_auto))
 		procdrop(&sydbox->config.proc_pid_auto, pid);
 
 
@@ -2468,7 +2468,7 @@ int main(int argc, char **argv)
 		case 'h':
 			usage(stdout, 0);
 		case 'v':
-			syd_about();
+			syd_about(stdout);
 			return 0;
 		default:
 			usage(stderr, 1);

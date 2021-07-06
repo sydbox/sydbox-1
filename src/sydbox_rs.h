@@ -30,11 +30,7 @@
 #include <unistd.h>
 #include "syd/compiler.h"
 
-/*
-Print SydB☮x version and build details to standard error.
- */
-void syd_about(void);
-
+#if 0
 /*
 Execute a process under various restrictions and options.
  */
@@ -66,5 +62,6 @@ int32_t syd_execv(const char *command,
                   const char *parent_death_signal,
                   const uint32_t *supplementary_gids,
                   const char *pid_env_var);
+#endif
 
 #endif /* SYD_GUARD_RS_H */
