@@ -657,7 +657,7 @@ dnl/autoupdate: AC_DEFINE_UNQUOTED([RETSIGTYPE],[$ac_cv_type_signal],[Define as 
 dnl/autoupdate: 		    (`int' or `void').])
 
 AC_FUNC_STAT
-AC_CHECK_FUNCS_ONCE(m4_flatten([
+AC_CHECK_FUNCS(m4_flatten([
 	clone
 	__clone2
 	creat64
@@ -675,6 +675,7 @@ AC_CHECK_FUNCS_ONCE(m4_flatten([
 	mkdtemp
 	mkfifoat
 	mknodat
+	nanosleep
 	open64
 	openat
 	openat64
@@ -684,6 +685,7 @@ AC_CHECK_FUNCS_ONCE(m4_flatten([
 	symlinkat
 	truncate64
 	unlinkat
+	usleep
 	utime
 	utimensat
 	utimes

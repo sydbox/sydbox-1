@@ -21,6 +21,11 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	state.c \
 	time.c \
 	unshare.c
+
+# Imported from util-linux' unshare:
+libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
+	all-io.h \
+	c.h
 libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= $(libseccomp_CFLAGS)
 libsyd_@LIBSYD_PC_SLOT@_la_LIBS= $(libseccomp_LIBS)
 

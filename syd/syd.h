@@ -64,6 +64,8 @@ int syd_say_errno(const char *fmt, ...)
 bool syd_debug_get(void);
 void syd_debug_set(const bool val);
 int syd_debug_set_fd(const int fd);
+#define syd_dsay(...) do { if (syd_debug_get()) { syd_say(__VA_ARGS__); }} while (0)
+#define syd_dsay_errno(...) do { if (syd_debug_get()) { syd_say_errno(__VA_ARGS__); }} while (0)
 
 /***
  * libsyd: Stringify constants
@@ -77,14 +79,6 @@ const char *syd_name_namespace(int namespace);
 int syd_set_death_sig(int signal);
 int syd_pivot_root(const char *new_root, const char *put_old);
 
-/***
- * libsyd: Interfaces to statically allocated hash tables.
- ***/
-#define SYD_MAP_CLR ROBINHOOD_HASH_CLEAR
-#define SYD_MAP_GET ROBINHOOD_HASH_GET
-#define SYD_MAP_SET ROBINHOOD_HASH_SET
-#define SYD_MAP_DEL ROBINHOOD_HASH_DEL
-
 /*
  * Unshare using the given file descriptors.
  */
@@ -94,6 +88,24 @@ int syd_unshare_ns(int fd);
 int syd_unshare_uts(int fd);
 int syd_unshare_ipc(int fd);
 int syd_unshare_usr(int fd);
+
+int syd_setgroups_control(int action);
+int syd_map_id(const char *file, uint32_t from, uint32_t to);
+int syd_set_propagation(unsigned long flags);
+int syd_set_ns_target(int type, const char *path);
+int syd_bind_ns_files(pid_t pid);
+ino_t syd_get_mnt_ino(pid_t pid);
+int syd_settime(time_t offset, clockid_t clk_id);
+int syd_bind_ns_files_from_child(pid_t *child, int fds[2]);
+
+
+/***
+ * libsyd: Interfaces to statically allocated hash tables.
+ ***/
+#define SYD_MAP_CLR ROBINHOOD_HASH_CLEAR
+#define SYD_MAP_GET ROBINHOOD_HASH_GET
+#define SYD_MAP_SET ROBINHOOD_HASH_SET
+#define SYD_MAP_DEL ROBINHOOD_HASH_DEL
 
 #if 0
 /*
