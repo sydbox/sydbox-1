@@ -206,6 +206,86 @@ bool syd_set_int(volatile atomic_int *state, int value);
 typedef void (*syd_time_prof_func_t) (void);
 struct timespec syd_time_diff(const struct timespec *t1, const struct timespec *t2);
 
+/***
+ * libsyd: Hash Table by sc_map:
+ * Used transparently as syd_map.
+ ***/
+static inline void free_safe(void *ptr) {
+	if (ptr)
+		free(ptr);
+}
+#define sc_map_calloc calloc
+#define sc_map_free free_safe
+#include "sc_map.h"
+
+/***
+ * LibSyd identical interface to fit the naming convention.
+ ***/
+#define syd_map_dec_strkey sc_map_dec_strkey
+#define syd_map_dec_scalar sc_map_dec_scalar
+#define syd_map_of sc_map_of
+
+#define syd_map_found sc_map_found
+#define syd_map_oom sc_map_oom
+#define syd_map_free(map) (!(map)->alloc)
+#define syd_map_foreach sc_map_foreach
+
+#define syd_map_32 sc_map_32
+#define syd_map_init_32 sc_map_init_32
+#define syd_map_term_32 sc_map_term_32
+#define syd_map_clear_32 sc_map_clear_32
+#define syd_map_put_32 sc_map_put_32
+#define syd_map_get_32 sc_map_get_32
+#define syd_map_del_32 sc_map_del_32
+
+#define syd_map_64 sc_map_64
+#define syd_map_init_64 sc_map_init_64
+#define syd_map_term_64 sc_map_term_64
+#define syd_map_clear_64 sc_map_clear_64
+#define syd_map_put_64 sc_map_put_64
+#define syd_map_get_64 sc_map_get_64
+#define syd_map_del_64 sc_map_del_64
+
+#define syd_map_64v sc_map_64v
+#define syd_map_init_64v sc_map_init_64v
+#define syd_map_term_64v sc_map_term_64v
+#define syd_map_clear_64v sc_map_clear_64v
+#define syd_map_put_64v sc_map_put_64v
+#define syd_map_get_64v sc_map_get_64v
+#define syd_map_del_64v sc_map_del_64v
+
+#define syd_map_64s sc_map_64s
+#define syd_map_init_64s sc_map_init_64s
+#define syd_map_term_64s sc_map_term_64s
+#define syd_map_clear_64s sc_map_clear_64s
+#define syd_map_put_64s sc_map_put_64s
+#define syd_map_get_64s sc_map_get_64s
+#define syd_map_del_64s sc_map_del_64s
+
+#define syd_map_str sc_map_str
+#define syd_map_init_str sc_map_init_str
+#define syd_map_term_str sc_map_term_str
+#define syd_map_clear_str sc_map_clear_str
+#define syd_map_put_str sc_map_put_str
+#define syd_map_get_str sc_map_get_str
+#define syd_map_del_str sc_map_del_str
+
+#define syd_map_sv sc_map_sv
+#define syd_map_init_sv sc_map_init_sv
+#define syd_map_term_sv sc_map_term_sv
+#define syd_map_clear_sv sc_map_clear_sv
+#define syd_map_put_sv sc_map_put_sv
+#define syd_map_get_sv sc_map_get_sv
+#define syd_map_del_sv sc_map_del_sv
+
+#define syd_map_s64 sc_map_s64
+#define syd_map_init_s64 sc_map_init_s64
+#define syd_map_term_s64 sc_map_term_s64
+#define syd_map_clear_s64 sc_map_clear_s64
+#define syd_map_put_s64 sc_map_put_s64
+#define syd_map_get_s64 sc_map_get_s64
+#define syd_map_del_s64 sc_map_del_s64
+
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
 __attribute__((sentinel))
 #endif
