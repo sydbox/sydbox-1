@@ -23,6 +23,8 @@
 /* ANSI colour codes */
 #define ANSI_NORMAL		"[00;00m"
 #define ANSI_DARK_MAGENTA	"[01;35m"
+#define AN	ANSI_NORMAL
+#define ADM	ANSI_DARK_MAGENTA
 #if 0
 #define ANSI_MAGENTA		"[00;35m"
 #define ANSI_GREEN		"[00;32m"
@@ -60,22 +62,32 @@ static void syd_abort(int how) /* SIGTERM == exit(1), SIGABRT == abort() */
 	}
 }
 
-void vsay(FILE *fp, const char *fmt, va_list ap)
+void vsay(FILE *fp, const char *fmt, va_list ap, char level)
 {
 	static int tty = -1;
 
 	if (tty < 0)
 		tty = isatty(STDERR_FILENO) == 1 ? 1 : 0;
-
 	if (tty)
-		fputs(ANSI_DARK_MAGENTA, fp);
+		fputs(ADM, fp);
 	if (fmt[0] != ' ')
 		fputs(PACKAGE": ", fp);
-
+	switch (level) {
+	case 'b':
+		fputs("bug: ", fp);
+		break;
+	case 'f':
+		fputs("fatal: ", fp);
+		break;
+	case 'w':
+		fputs("warning: ", fp);
+		break;
+	default:
+		break;
+	}
 	vfprintf(stderr, fmt, ap);
-
 	if (tty)
-		fputs(ANSI_NORMAL, fp);
+		fputs(AN, fp);
 }
 
 void say(const char *fmt, ...)
@@ -83,7 +95,7 @@ void say(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	vsay(stderr, fmt, ap);
+	vsay(stderr, fmt, ap, 0);
 	va_end(ap);
 	fputc('\n', stderr);
 
@@ -92,7 +104,7 @@ void say(const char *fmt, ...)
 		if (!f)
 			return;
 		va_start(ap, fmt);
-		vsay(f, fmt, ap);
+		vsay(f, fmt, ap, 'd');
 		va_end(ap);
 		fputc('\n', f);
 		fclose(f);
@@ -107,7 +119,7 @@ void bug_on(const char *expr, const char *func, const char *file, size_t line,
 	if (fmt) {
 		fprintf(stderr, "BUG: %s:%s/%s:%zu: ", expr, file, func, line);
 		va_start(ap, fmt);
-		vsay(stderr, fmt, ap);
+		vsay(stderr, fmt, ap, 'b');
 		va_end(ap);
 		fputc('\n', stderr);
 	}
@@ -125,7 +137,7 @@ void warn_on(const char *expr, const char *func, const char *file, size_t line,
 	if (fmt) {
 		fprintf(stderr, "WARN: %s:%s/%s:%zu: ", expr, file, func, line);
 		va_start(ap, fmt);
-		vsay(stderr, fmt, ap);
+		vsay(stderr, fmt, ap, 'w');
 		va_end(ap);
 		fputc('\n', stderr);
 	}
@@ -159,9 +171,10 @@ void assert_not_reached_(const char *func, const char *file, size_t line)
 void die(const char *fmt, ...)
 {
 	va_list ap;
+	static int tty = -1;
 
 	va_start(ap, fmt);
-	vsay(stderr, fmt, ap);
+	vsay(stderr, fmt, ap, 'f');
 	va_end(ap);
 	fputc('\n', stderr);
 
@@ -174,7 +187,7 @@ void say_errno(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	vsay(stderr, fmt, ap);
+	vsay(stderr, fmt, ap, 'e');
 	va_end(ap);
 	say(" (errno:%d|%s %s)", save_errno, errno2name(save_errno),
 	    strerror(save_errno));
@@ -188,7 +201,7 @@ void die_errno(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	vsay(stderr, fmt, ap);
+	vsay(stderr, fmt, ap, 'f');
 	va_end(ap);
 	say(" (errno:%d|%s %s)", save_errno, errno2name(save_errno),
 	    strerror(save_errno));

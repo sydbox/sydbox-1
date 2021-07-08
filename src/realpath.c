@@ -126,11 +126,11 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 	symlink[0] = '\0';
 
 	/*
-	 * Iterate over path components in `left'.
+	 * Iterate over path components in »left«.
 	 */
 	while (left_len != 0) {
 		/*
-		 * Extract the next path component and adjust `left'
+		 * Extract the next path component and adjust »left«
 		 * and its length.
 		 */
 		p = strchr(left, '/');
@@ -258,7 +258,7 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 				/*
 				 * If there are any path components left, then
 				 * append them to symlink. The result is placed
-				 * in `left'.
+				 * in »left«.
 				 */
 				if (p != NULL) {
 					if (symlink[slen - 1] != '/') {

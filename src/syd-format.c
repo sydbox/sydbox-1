@@ -13,7 +13,7 @@
 #ifdef PACKAGE
 # undef PACKAGE
 #endif
-#define PACKAGE "sydfmt"
+#define PACKAGE "syd-format"
 
 #ifndef _GNU_SOURCE
 # define _GNU_SOURCE

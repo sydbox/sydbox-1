@@ -237,10 +237,10 @@ static int sockmatch_parse_ip(int family, const char *src,
 	}
 	ip[range - ip] = '\0';
 
-	/* Delimiter `-' means we have a range of ports,
+	/* Delimiter »-« means we have a range of ports,
 	 * otherwise it's a unique port.
 	 */
-	range++; /* skip `@' */
+	range++; /* skip »@« */
 	delim = strchr(range, '-');
 	if (!delim) {
 		r = parse_port(range, &port0);
@@ -252,7 +252,7 @@ static int sockmatch_parse_ip(int family, const char *src,
 		r = parse_port(range, &port0);
 		if (r < 0)
 			goto out;
-		delim++; /* skip `-' */
+		delim++; /* skip »-« */
 		r = parse_port(delim, &port1);
 		if (r < 0)
 			goto out;

@@ -30,16 +30,16 @@ static void box_report_violation_path(syd_process_t *current,
 
 	switch (arg_index) {
 	case 0:
-		violation(current, "%s(`%s')", name, path);
+		violation(current, "%s(»%s«)", name, path);
 		break;
 	case 1:
-		violation(current, "%s(?, `%s')", name, path);
+		violation(current, "%s(?, »%s«)", name, path);
 		break;
 	case 2:
-		violation(current, "%s(?, ?, `%s')", name, path);
+		violation(current, "%s(?, ?, »%s«)", name, path);
 		break;
 	case 3:
-		violation(current, "%s(?, ?, ?, `%s')", name, path);
+		violation(current, "%s(?, ?, ?, »%s«)", name, path);
 		break;
 	default:
 		violation(current, "%s(?)", name);
@@ -56,13 +56,13 @@ static void box_report_violation_path_at(syd_process_t *current,
 
 	switch (arg_index) {
 	case 1:
-		violation(current, "%s(`%s', prefix=`%s')", name, path, prefix);
+		violation(current, "%s(»%s«, prefix=`%s')", name, path, prefix);
 		break;
 	case 2:
-		violation(current, "%s(?, `%s', prefix=`%s')", name, path, prefix);
+		violation(current, "%s(?, »%s«, prefix=`%s')", name, path, prefix);
 		break;
 	case 3:
-		violation(current, "%s(?, ?, '%s', prefix=`%s')", name, path, prefix);
+		violation(current, "%s(?, ?, '%s', prefix=»%s«)", name, path, prefix);
 		break;
 	default:
 		violation(current, "%s(?)", name);
@@ -345,7 +345,7 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 		goto check_access;
 	}
 
-	/* Step 1: resolve file descriptor for `at' suffixed functions */
+	/* Step 1: resolve file descriptor for »at« suffixed functions */
 	badfd = false;
 	if (info->at_func) {
 		uint8_t fd_index;
@@ -376,7 +376,7 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 	} else if ((r = path_decode(current, info->arg_index, &path)) < 0) {
 		/*
 		 * For EFAULT we assume path argument is NULL.
-		 * For some `at' suffixed functions, NULL as path
+		 * For some »at« suffixed functions, NULL as path
 		 * argument may be OK.
 		 */
 		if (r == -ESRCH) {
@@ -394,7 +394,7 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 			/* Bad directory for non-absolute path! */
 			r = deny(current, EBADF);
 			if (sydbox->config.violation_raise_fail)
-				violation(current, "%s(`%s')",
+				violation(current, "%s(»%s«)",
 					  current->sysname,
 					  path);
 			goto out;
@@ -407,7 +407,7 @@ resolve_path:
 				  pid, info->rmode, &abspath)) < 0) {
 		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
-			violation(current, "%s(`%s')",
+			violation(current, "%s(»%s«)",
 				  current->sysname,
 				  path);
 		goto out;

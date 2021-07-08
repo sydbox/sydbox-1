@@ -466,7 +466,7 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 	 *
 	 * Note: If the parent process has magic lock set, this means the
 	 * sandbox information can no longer be edited. Treat such cases as
-	 * `threads'. (Threads only share sandbox_t which is constant when
+	 * »threads«. (Threads only share sandbox_t which is constant when
 	 * magic_lock is set.)
 	 * TODO: We need to simplify the sandbox data structure to take more
 	 * advantage of such cases and decrease memory usage.
@@ -838,7 +838,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	}
 
 	fprintf(stderr, "%s-- Information on Process ID: %u%s\n", CG, pid, CE);
-	fprintf(stderr, "\t%sName: `%s'%s\n", CN, current->comm, CE);
+	fprintf(stderr, "\t%sName: »%s«%s\n", CN, current->comm, CE);
 	if (current->pid == sydbox->execve_pid)
 		fprintf(stderr, "\t%sParent ID: SYDBOX%s\n", CN, CE);
 	else if (current->ppid > 0)
@@ -846,7 +846,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	else
 		fprintf(stderr, "\t%sParent ID: ? (Orphan)%s\n", CN, CE);
 	fprintf(stderr, "\t%sThread Group ID: %u%s\n", CN, tgid > 0 ? tgid : 0, CE);
-	fprintf(stderr, "\t%sCwd: `%s'%s\n", CN, P_CWD(current), CE);
+	fprintf(stderr, "\t%sCwd: »%s«%s\n", CN, P_CWD(current), CE);
 	fprintf(stderr, "\t%sSyscall: {no:%lu arch:%d name:%s}%s\n", CN,
 			current->sysnum, arch, current->sysname, CE);
 #if 0
@@ -873,7 +873,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 			CI,
 			info.pid, info.ppid, info.pgrp,
 			CE);
-		fprintf(stderr, "\t%sproc: comm=`%s' state=`%c'%s\n",
+		fprintf(stderr, "\t%sproc: comm=»%s« state=»%c«%s\n",
 			CI,
 			info.comm, info.state,
 			CE);
@@ -897,18 +897,18 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	fprintf(stderr, "\t%sMagic Lock: %s%s\n", CN, lock_state_to_string(P_BOX(current)->magic_lock), CE);
 	fprintf(stderr, "\t%sExec Whitelist:%s\n", CI, CE);
 	ACLQ_FOREACH(node, &P_BOX(current)->acl_exec)
-		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->match, CE);
+		fprintf(stderr, "\t\t%s»%s«%s\n", CN, (char *)node->match, CE);
 	fprintf(stderr, "\t%sRead Whitelist:%s\n", CI, CE);
 	ACLQ_FOREACH(node, &P_BOX(current)->acl_read)
-		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->match, CE);
+		fprintf(stderr, "\t\t%s»%s«%s\n", CN, (char *)node->match, CE);
 	fprintf(stderr, "\t%sWrite Whitelist:%s\n", CI, CE);
 	ACLQ_FOREACH(node, &P_BOX(current)->acl_write)
-		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->match, CE);
+		fprintf(stderr, "\t\t%s»%s«%s\n", CN, (char *)node->match, CE);
 	fprintf(stderr, "\t%sNetwork Whitelist bind():%s\n", CI, CE);
 	ACLQ_FOREACH(node, &P_BOX(current)->acl_network_bind) {
 		match = node->match;
 		if (match->str) {
-			fprintf(stderr, "\t\t%s`%s'%s\n", CN, match->str, CE);
+			fprintf(stderr, "\t\t%s»%s«%s\n", CN, match->str, CE);
 		} else {
 			fprintf(stderr, "\t\t%s((%p))%s\n", CN, (void *)match, CE);
 		}
@@ -917,7 +917,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	ACLQ_FOREACH(node, &P_BOX(current)->acl_network_connect) {
 		match = node->match;
 		if (match->str) {
-			fprintf(stderr, "\t\t%s`%s'%s\n", CN, match->str, CE);
+			fprintf(stderr, "\t\t%s»%s«%s\n", CN, match->str, CE);
 		} else {
 			fprintf(stderr, "\t\t%s((%p))%s\n", CN, (void *)match, CE);
 		}
@@ -1331,10 +1331,10 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 		syd_read_vm_data(current, current->addr, comm_rem, 16);
 		if (streq(comm, comm_rem)) {
 			say("vm read/write check succeded: "
-			    "`%s' = `%s'", comm, comm_rem);
+			    "»%s« = »%s«", comm, comm_rem);
 		} else {
 			say("vm read/write check failed: "
-			    "`%s' != `%s'", comm, comm_rem);
+			    "»%s« != »%s«", comm, comm_rem);
 		}
 	}
 #endif
@@ -1411,7 +1411,7 @@ static int event_exec(syd_process_t *current)
 	r = 0;
 	if (acl_match_path(ACL_ACTION_NONE, &sydbox->config.exec_kill_if_match,
 			   current->abspath, &match)) {
-		say("kill_if_match pattern=`%s' matches execve path=`%s'",
+		say("kill_if_match pattern=»%s« matches execve path=»%s«",
 		    match, current->abspath);
 		say("killing process");
 		process_kill(current->pid, SIGKILL);
@@ -1420,7 +1420,7 @@ static int event_exec(syd_process_t *current)
 	/* execve path does not match if_match patterns */
 
 	if (magic_query_violation_raise_safe(current)) {
-		//say("execve: %d executed `%s'", current->pid, current->abspath);
+		//say("execve: %d executed »%s«", current->pid, current->abspath);
 		dump(DUMP_EXEC, current->pid, current->abspath);
 	}
 
@@ -1834,7 +1834,7 @@ static syd_process_t *startup_child(char **argv)
 	arch_argv[0] = NULL;
 
 	if (!noexec && !pathname)
-		die_errno("can't exec `%s'", argv[0]);
+		die_errno("can't exec »%s«", argv[0]);
 	if (pipe2(pfd, O_CLOEXEC|O_DIRECT) < 0)
 		die_errno("can't pipe");
 
@@ -1876,7 +1876,7 @@ static syd_process_t *startup_child(char **argv)
 		if ((r = path_to_hex(proc_exec)) < 0) {
 			errno = -r;
 			say_errno("can't calculate checksum of file "
-				  "`%s'", proc_exec);
+				  "»%s«", proc_exec);
 		} else {
 			strlcat(comm + clen, sydbox->hash, 16);
 		}
@@ -2073,6 +2073,52 @@ void cleanup_for_sydbox(void)
 
 int main(int argc, char **argv)
 {
+	enum {
+		/* unshare options */
+		OPT_MOUNTPROC = CHAR_MAX + 1,
+		OPT_PROPAGATION,
+		OPT_SETGROUPS,
+		OPT_KEEPCAPS,
+		OPT_MONOTONIC,
+		OPT_BOOTTIME,
+		OPT_MAPUSER,
+		OPT_MAPGROUP,
+		/* syd options */
+		OPT_MEMACCESS,
+		OPT_PIVOT_ROOT,
+		OPT_PROFILE,
+		OPT_NICE,
+		OPT_IONICE,
+		OPT_UID,
+		OPT_GID,
+		OPT_ADD_GID,
+		OPT_CLOSE_FDS,
+		OPT_RESET_FDS,
+		OPT_KEEP_SIGMASK,
+	};
+
+	/* unshare option defaults */
+	int unshare_flags = 0;
+	uid_t mapuser = -1;
+	gid_t mapgroup = -1;
+	int kill_child_signo = 0; /* 0 means --kill-child was not used */
+	const char *procmnt = NULL;
+	const char *newroot = NULL;
+	const char *newdir = NULL;
+	pid_t pid_bind = 0;
+	pid_t pid = 0;
+	int fds[2];
+	int status;
+	unsigned long propagation = UNSHARE_PROPAGATION_DEFAULT;
+	int force_uid = 0, force_gid = 0;
+	uid_t uid = 0, real_euid = geteuid();
+	gid_t gid = 0, real_egid = getegid();
+	int keepcaps = 0;
+	time_t monotonic = 0;
+	time_t boottime = 0;
+	int force_monotonic = 0;
+	int force_boottime = 0;
+
 	int opt, r, opt_t[5];
 	size_t i;
 	char *c, *opt_magic = NULL;
@@ -2105,7 +2151,7 @@ int main(int argc, char **argv)
 	if (shoebox) {
 		dfd = open(shoebox, SYDBOX_DUMP_FLAGS, SYDBOX_DUMP_MODE);
 		if (dfd < 0)
-			die_errno("open(`%s')", shoebox);
+			die_errno("open(»%s«)", shoebox);
 		dump_set_fd(dfd);
 	}
 #endif
@@ -2116,47 +2162,84 @@ int main(int argc, char **argv)
 	int options_index;
 	char *profile_name;
 	struct option long_options[] = {
-		{"dry-run",	no_argument,		NULL,	0},
-		{"profile",	required_argument,	NULL,	1},
+		/* default options */
 		{"help",	no_argument,		NULL,	'h'},
 		{"version",	no_argument,		NULL,	'v'},
-		{"bpf",		no_argument,		NULL,	'b'},
-		{"config",	required_argument,	NULL,	'c'},
-		{"magic",	required_argument,	NULL,	'm'},
-		{"lock",	no_argument,		NULL,	'l'},
-		{"env",		required_argument,	NULL,	'E'},
+
+		/* sydbox-0 & paludis compat. */
+		{"profile",	required_argument,	NULL,	OPT_PROFILE},
+
+		/* core options */
 		{"arch",	required_argument,	NULL,	'a'},
+		{"bpf",		no_argument,		NULL,	'b'},
+		{"lock",	no_argument,		NULL,	'l'},
 		{"dump",	no_argument,		NULL,	'd'},
 		{"export",	required_argument,	NULL,	'e'},
-		{"chdir",	required_argument,	NULL,	'D'},
-		{"chroot",	required_argument,	NULL,	'C'},
-		{"pivot-root",	required_argument,	NULL,	'R'},
-		{"memaccess",	required_argument,	NULL,	'p'},
+		{"dry-run",	no_argument,		NULL,	'n'},
+		{"memaccess",	required_argument,	NULL,	OPT_MEMACCESS},
+
+		/* configuration */
+		{"file",	required_argument,	NULL,	'f'},
+		{"syd",		required_argument,	NULL,	'y'},
+
+		/* namespaces (containers) */
+		{"mount",	optional_argument, NULL, 'm'},
+		{"uts",		optional_argument, NULL, 'u'},
+		{"ipc",		optional_argument, NULL, 'i'},
+		{"net",		optional_argument, NULL, 'N'},
+		{"pid",		optional_argument, NULL, 'p'},
+		{"user",	optional_argument, NULL, 'U'},
+		{"cgroup",	optional_argument, NULL, 'C'},
+		{"time",	optional_argument, NULL, 'T'},
+
+		{ "fork",	 no_argument,	    NULL, 'F'		},
+		{ "kill-child",  optional_argument, NULL, '!'},
+		/*{"set-parent-death-signal",
+			required_argument,		NULL,	'!'},*/
+		{ "mount-proc",  optional_argument, NULL, OPT_MOUNTPROC},
+		{ "map-user",	 required_argument, NULL, OPT_MAPUSER},
+		{ "map-group",	 required_argument, NULL, OPT_MAPGROUP},
+		{ "map-root-user", no_argument,       NULL, 'r'		},
+		{ "map-current-user", no_argument,    NULL, 'c'		},
+		{ "propagation",required_argument, NULL, OPT_PROPAGATION},
+		{ "setgroups",	required_argument, NULL, OPT_SETGROUPS},
+		{ "keep-caps",	no_argument,	   NULL, OPT_KEEPCAPS},
+		{ "setuid",	required_argument, NULL, 'S'		},
+		{ "setgid",	required_argument, NULL, 'G'		},
+		{ "root",	required_argument, NULL, 'R'		},
+		{ "pivot-root",	required_argument,	NULL,	OPT_PIVOT_ROOT},
+		{ "wd",		required_argument, NULL, 'w'		},
+		{ "monotonic",	required_argument, NULL, OPT_MONOTONIC},
+		{ "boottime",	required_argument, NULL, OPT_BOOTTIME},
+
+		/* daemon tools */
 		{"allow-daemonize", no_argument,	NULL,	'+'},
 		{"background",	no_argument,		NULL,	'&'},
-		{"set-parent-death-signal",
-			required_argument,		NULL,	'!'},
 		{"stdout",	required_argument,	NULL,	'1'},
 		{"stderr",	required_argument,	NULL,	'2'},
 		{"alias",	required_argument,	NULL,	'A'},
-		{"ionice",	required_argument,	NULL,	'i'},
-		{"nice",	required_argument,	NULL,	'n'},
+		{"uid",		required_argument,	NULL,	OPT_UID},
+		{"gid",		required_argument,	NULL,	OPT_GID},
+		{"add-gid",	required_argument,	NULL,	OPT_ADD_GID},
 		{"umask",	required_argument,	NULL,	'K'},
-		{"uid",		required_argument,	NULL,	'u'},
-		{"gid",		required_argument,	NULL,	'g'},
-		{"add-gid",	required_argument,	NULL,	'G'},
-		{"unshare-pid",	no_argument,		NULL,	'P'},
-		{"unshare-net",	no_argument,		NULL,	'N'},
-		{"unshare-mount",no_argument,		NULL,	'M'},
-		{"unshare-uts",	no_argument,		NULL,	'T'},
-		{"unshare-ipc",	no_argument,		NULL,	'I'},
-		{"unshare-user",no_argument,		NULL,	'U'},
+
+		/* environment */
+		{"env",		required_argument,	NULL,	'E'},
 		{"env-var-with-pid",required_argument,	NULL,	'V'},
-		{"close-fds",	optional_argument,	NULL,	'F'},
-		{"reset-fds",	no_argument,		NULL,	'X'},
-		{"keep-sigmask", no_argument,		NULL,	'S'},
+
+		/* resource management */
+		{"nice",	required_argument,	NULL,	OPT_NICE},
+		{"ionice",	required_argument,	NULL,	OPT_IONICE},
+
+
+		/* fd/signal management */
+		{"close-fds",	optional_argument,	NULL,	OPT_CLOSE_FDS},
+		{"reset-fds",	no_argument,		NULL,	OPT_RESET_FDS},
+		{"keep-sigmask", no_argument,		NULL,	OPT_KEEP_SIGMASK},
 		{"escape-stdout", no_argument,		NULL,	'O'},
+
 		{"test",	no_argument,		NULL,	't'},
+
 		{NULL,		0,		NULL,	0},
 	};
 
@@ -2164,13 +2247,16 @@ int main(int argc, char **argv)
 	if (sigaction(SIGCHLD, &sa, &child_sa) < 0)
 		die_errno("sigaction");
 
-	while ((opt = getopt_long(argc, argv, "a:A:bc:d:e:C:D:m:E:p:i:n:K:thlvPNMTIUFOXS&+1:2:u:g:G:R:V:",
+	while ((opt = getopt_long(argc, argv,
+				  "hva:blde:nyfmuiNpUCTFrcS:G:R:w:+:&:1:2:A:K:E:V:Ot",
 				  long_options, &options_index)) != EOF) {
 		switch (opt) {
-		case 0:
-			sydbox->permissive = true;
-			break;
-		case 1:
+		case 'h':
+			usage(stdout, 0);
+		case 'v':
+			syd_about(stdout);
+			return 0;
+		case OPT_PROFILE:
 			/* special case for backwards compatibility */
 			profile_name = xmalloc(sizeof(char) * (strlen(optarg) + 2));
 			profile_name[0] = SYDBOX_PROFILE_CHAR;
@@ -2187,32 +2273,30 @@ int main(int argc, char **argv)
 		case 'b':
 			sydbox->bpf_only = true;
 			break;
-		case 'c':
-			config_parse_spec(optarg);
+		case 'l':
+			opt_magic = "core/trace/magic_lock:on";
 			break;
 #if SYDBOX_HAVE_DUMP_BUILTIN
 		case 'd':
 			if (!optarg) {
-				say("option requires an argument: d");
-				usage(stderr, 1);
-			}
-			if (!strcmp(optarg, "tmp")) {
+				dump_set_fd(STDERR_FILENO);
+			} else if (!strcmp(optarg, "tmp")) {
 				dump_set_fd(-42);
 			} else {
 				errno = 0;
 				dfd = strtoul(optarg, &end, 10);
 				if ((errno && errno != EINVAL) ||
-				    (unsigned long)dfd  > INT_MAX)
+				    (unsigned long)dfd	> INT_MAX)
 				{
 					say_errno("Invalid argument for option -d: "
-						  "`%s'", optarg);
+						  "»%s«", optarg);
 					usage(stderr, 1);
 				} else if (end != strchr(optarg, '\0')) {
 					dfd = open(optarg, SYDBOX_DUMP_FLAGS,
 						   SYDBOX_DUMP_MODE);
 					if (dfd < 0)
 						die_errno("Failed to open "
-							  "dump file `%s'",
+							  "dump file »%s«",
 							  optarg);
 				}
 				dump_set_fd(dfd);
@@ -2235,15 +2319,130 @@ int main(int argc, char **argv)
 			if (strlen(optarg) > 4 && optarg[3] == ':')
 				sydbox->export_path = xstrdup(optarg + 4);
 			break;
-		case 'l':
-			opt_magic = "core/trace/magic_lock:on";
+		case OPT_MEMACCESS:
+			errno = 0;
+			opt = strtoul(optarg, &end, 10);
+			if ((errno && errno != EINVAL) ||
+			    (unsigned long)opt > SYDBOX_CONFIG_MEMACCESS_MAX)
+			{
+				say_errno("Invalid argument for option --memory: "
+					  "»%s«", optarg);
+				usage(stderr, 1);
+			}
+			opt_mem_access = opt;
 			break;
-		case 'm':
+		case 'n':
+			sydbox->permissive = true;
+			break;
+		case 'f':
+			config_parse_spec(optarg);
+			break;
+		case 'y':
 			r = magic_cast_string(NULL, optarg, 0);
 			if (MAGIC_ERROR(r))
-				die("invalid magic: `%s': %s",
+				die("invalid magic: »%s«: %s",
 				    optarg, magic_strerror(r));
 			break;
+		case 'm':
+			unshare_flags |= CLONE_NEWNS;
+			if (optarg)
+				syd_set_ns_target(CLONE_NEWNS, optarg);
+			break;
+		case 'u':
+			unshare_flags |= CLONE_NEWUTS;
+			if (optarg)
+				syd_set_ns_target(CLONE_NEWUTS, optarg);
+			break;
+		case 'i':
+			unshare_flags |= CLONE_NEWIPC;
+			if (optarg)
+				syd_set_ns_target(CLONE_NEWIPC, optarg);
+			break;
+		case 'n':
+			unshare_flags |= CLONE_NEWNET;
+			if (optarg)
+				syd_set_ns_target(CLONE_NEWNET, optarg);
+			break;
+		case 'p':
+			unshare_flags |= CLONE_NEWPID;
+			if (optarg)
+				syd_set_ns_target(CLONE_NEWPID, optarg);
+			break;
+		case 'U':
+			unshare_flags |= CLONE_NEWUSER;
+			if (optarg)
+				syd_set_ns_target(CLONE_NEWUSER, optarg);
+			break;
+		case 'C':
+			unshare_flags |= CLONE_NEWCGROUP;
+			if (optarg)
+				syd_set_ns_target(CLONE_NEWCGROUP, optarg);
+			break;
+		case 'T':
+			unshare_flags |= CLONE_NEWTIME;
+			if (optarg)
+				syd_set_ns_target(CLONE_NEWTIME, optarg);
+			break;
+		case OPT_MOUNTPROC:
+			unshare_flags |= CLONE_NEWNS;
+			procmnt = optarg ? optarg : "/proc";
+			break;
+#if 0
+		case OPT_MAPUSER:
+			unshare_flags |= CLONE_NEWUSER;
+			mapuser = get_user(optarg, _("failed to parse uid"));
+			break;
+		case OPT_MAPGROUP:
+			unshare_flags |= CLONE_NEWUSER;
+			mapgroup = get_group(optarg, _("failed to parse gid"));
+			break;
+#endif
+		case 'r':
+			unshare_flags |= CLONE_NEWUSER;
+			mapuser = 0;
+			mapgroup = 0;
+			break;
+		case 'c':
+			unshare_flags |= CLONE_NEWUSER;
+			mapuser = real_euid;
+			mapgroup = real_egid;
+			break;
+		case OPT_SETGROUPS:
+			setgrpcmd = setgroups_str2id(optarg);
+			break;
+		case OPT_PROPAGATION:
+			propagation = parse_propagation(optarg);
+			break;
+#if 0
+		case OPT_KEEPCAPS:
+			keepcaps = 1;
+			cap_last_cap(); /* Force last cap to be cached before we fork. */
+			break;
+#endif
+		case 'S':
+			uid = strtoul_or_err(optarg, _("failed to parse uid"));
+			force_uid = 1;
+			break;
+		case 'G':
+			gid = strtoul_or_err(optarg, _("failed to parse gid"));
+			force_gid = 1;
+			break;
+		case 'R':
+			newroot = optarg;
+			break;
+		case 'w':
+			newdir = optarg;
+			break;
+		case OPT_MONOTONIC:
+			monotonic = strtoul_or_err(optarg, _("failed to parse monotonic offset"));
+			force_monotonic = 1;
+			break;
+		case OPT_BOOTTIME:
+			boottime = strtoul_or_err(optarg, _("failed to parse boottime offset"));
+			force_boottime = 1;
+			break;
+
+
 		case 'A':
 			set_arg0(xstrdup(optarg));
 			break;
@@ -2272,7 +2471,7 @@ int main(int argc, char **argv)
 			c = strchr(optarg, ':');
 			if (!c) {
 				say_errno("Invalid argument for option "
-					  "--pivot-root `%s'", optarg);
+					  "--pivot-root »%s«", optarg);
 				usage(stderr, 1);
 			}
 			*c = '\0';
@@ -2306,18 +2505,6 @@ int main(int argc, char **argv)
 		case 'E':
 			if (putenv(optarg))
 				die_errno("putenv");
-			break;
-		case 'p':
-			errno = 0;
-			opt = strtoul(optarg, &end, 10);
-			if ((errno && errno != EINVAL) ||
-			    (unsigned long)opt > SYDBOX_CONFIG_MEMACCESS_MAX)
-			{
-				say_errno("Invalid argument for option --memory: "
-					  "`%s'", optarg);
-				usage(stderr, 1);
-			}
-			opt_mem_access = opt;
 			break;
 		case 't':
 			test_setup();
@@ -2408,7 +2595,7 @@ int main(int argc, char **argv)
 				    (unsigned long)opt > SYD_PID_MAX)
 				{
 					say_errno("Invalid argument for option "
-						  "--close-fds: `%s'", optarg);
+						  "--close-fds: »%s«", optarg);
 					usage(stderr, 1);
 				}
 				close_fds[1] = opt;
@@ -2419,7 +2606,7 @@ int main(int argc, char **argv)
 				    (unsigned long)opt > SYD_PID_MAX)
 				{
 					say_errno("Invalid argument for option "
-						  "--close-fds: `%s'", optarg);
+						  "--close-fds: »%s«", optarg);
 					usage(stderr, 1);
 				}
 				close_fds[0] = opt;
@@ -2431,7 +2618,7 @@ int main(int argc, char **argv)
 					    (unsigned long)opt > SYD_PID_MAX)
 					{
 						say_errno("Invalid argument for option "
-							  "--close-fds: `%s'", optarg);
+							  "--close-fds: »%s«", optarg);
 						usage(stderr, 1);
 					}
 					close_fds[1] = opt;
@@ -2444,7 +2631,7 @@ int main(int argc, char **argv)
 			if ((close_fds[0] != 0 && close_fds[0] < 3) ||
 			    (close_fds[1] != 0 && close_fds[1] < 3)) {
 				say_errno("Invalid argument for option "
-					  "--close-fds: `%s'", optarg);
+					  "--close-fds: »%s«", optarg);
 				usage(stderr, 1);
 			} else if (close_fds[0] > close_fds[1]) {
 				/* XOR swap */
@@ -2465,11 +2652,6 @@ int main(int argc, char **argv)
 		case 'O':
 			escape_stdout = true;
 			break;
-		case 'h':
-			usage(stdout, 0);
-		case 'v':
-			syd_about(stdout);
-			return 0;
 		default:
 			usage(stderr, 1);
 		}
@@ -2531,7 +2713,7 @@ int main(int argc, char **argv)
 	if (opt_magic) {
 		r = magic_cast_string(NULL, opt_magic, 0);
 		if (MAGIC_ERROR(r))
-			die("invalid magic: `%s': %s",
+			die("invalid magic: »%s«: %s",
 			    opt_magic, magic_strerror(r));
 	}
 
@@ -2544,7 +2726,7 @@ int main(int argc, char **argv)
 	    */
 	    SANDBOX_OFF_ALL()) {
 		say("All restrict and sandbox options are off.");
-		die("Refusing to run the program `%s'.", my_argv[0]);
+		die("Refusing to run the program »%s«.", my_argv[0]);
 	}
 
 	/* Set useful environment variables for children */

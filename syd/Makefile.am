@@ -25,7 +25,15 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 # Imported from util-linux' unshare:
 libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
 	all-io.h \
-	c.h
+	c.h \
+	pathnames.h \
+	fileutils.h \
+	fileutils.c \
+	procutils.h \
+	procutils.c \
+	statfs_magic.h \
+	caputils.h \
+	caputils.c
 libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= $(libseccomp_CFLAGS)
 libsyd_@LIBSYD_PC_SLOT@_la_LIBS= $(libseccomp_LIBS)
 

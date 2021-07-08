@@ -1,7 +1,5 @@
 AM_MAKEFLAGS= --no-print-directory
 BUILT_SOURCES= \
-	syscall_open_ro.lst \
-	syscall_open_syd.h \
 	lib.rs \
 	Cargo.toml
 CLEANFILES= \
@@ -75,7 +73,7 @@ SYD_FCNTL_INCLUDES= \
 	$(SYD_INCLUDEDIR)/asm/fcntl.h \
 	$(SYD_INCLUDEDIR)/asm-generic/fcntl.h \
 	$(SYD_INCLUDEDIR)/bits/fcntl.h \
-	$(SYD_INCLIDEDIR)/bits/fcntl-linux.h \
+	$(SYD_INCLUDEDIR)/bits/fcntl-linux.h \
 	$(SYD_INCLUDEDIR)/sys/fcntl.h \
 	$(SYD_INCLUDEDIR)/linux/fcntl.h
 
@@ -131,7 +129,7 @@ syscall_open_ro.lst: Makefile
 		test -e "$$include" || continue ; \
 		$(EGREP) -h '#[[:space:]]*define[[:space:]]+O_' "$$include" |\
 			$(AWK) '{print $$2}' |\
-			$(EGREP) -v 'O_ACCMODE|O_RDONLY|O_WRONLY|O_RDWR|O_CREAT|O_TRUNC|O_DIRECTORY|O_EXEC|O_NDELAY|O_PATH|O_RSYNC|O_SEARCH|O_TMPFILE|O_TMPFILE_MASK|O_TTY_INIT' ;\
+			$(EGREP) -v 'O_ACCMODE|O_FSYNC|O_RDONLY|O_WRONLY|O_RDWR|O_CREAT|O_TRUNC|O_DIRECTORY|O_EXEC|O_NDELAY|O_PATH|O_RSYNC|O_SEARCH|O_TMPFILE|O_TMPFILE_MASK|O_TTY_INIT' ;\
 	done | $(SORT) -u > "$@" || rm -f "$@"
 	$(AM_V_at)sh -c 'test -s "$@" || echo "Failed to generate read-only open flags"'
 	$(AM_V_at)sh -c 'test -s "$@" || exit 1'
@@ -170,7 +168,7 @@ AM_LFLAGS = -v
 AM_YFLAGS = -d
 
 syddir=$(bindir)
-bin_PROGRAMS= syd syd-format
+bin_PROGRAMS= syd-run syd-format
 syd_PROGRAMS= Cargo.toml syd
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
@@ -211,6 +209,7 @@ syd_SOURCES= \
 		 sydbox_rs.h \
 		 syscall_open_syd.h \
 		 syscall_open_ro.lst \
+		 syd-box.c \
 		 arch.c \
 		 daemon.c \
 		 file.c \
@@ -247,8 +246,15 @@ syd_SOURCES= \
 		 syscall-special.c \
 		 syscall-filter.c \
 		 syscall.c \
-		 config.c \
-		 sydbox.c
+		 config.c
+
+syd_run_SOURCES= \
+		 syd-run.c \
+		 xfunc.c \
+		 daemon.c \
+		 dump.c \
+		 util.c
+
 syd_format_SOURCES= \
 		syd-format.c
 
@@ -332,7 +338,7 @@ DUMP_LINKER_ADD=
 DUMP_LINKER_FLAGS=
 
 syd_dumpdir=$(libexecdir)/$(PACKAGE)/dump
-bin_PROGRAMS+= syd-dump
+#bin_PROGRAMS+= syd-dump
 bin_SCRIPTS= syd-shoebox
 
 syd-shoebox: syd-shoebox.in

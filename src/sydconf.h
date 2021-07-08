@@ -40,6 +40,10 @@
 
 #define SYSCALL_ARG_MAX 6
 
+#include <limits.h>
+#define UID_MAX INT_MAX
+#define GID_MAX INT_MAX
+
 #ifndef NR_FILE
 # warning "Your system does not define NR_FILE, defaulting to 1024"
 # define NR_FILE 1024

@@ -19,7 +19,7 @@
 #include <unistd.h>
 
 /*
- * Look up path using `PATH' environment variable.
+ * Look up path using »PATH« environment variable.
  * Returns path on success, NULL on failure.
  */
 char *path_lookup(const char *filename)

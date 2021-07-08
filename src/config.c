@@ -85,16 +85,16 @@ void config_parse_file(const char *filename)
 		goto fp_open;
 	}
 	if (filename_api(filename, &api) < 0)
-		die("no API information in file name `%s', current API is %u",
+		die("no API information in file name »%s«, current API is %u",
 		    filename, SYDBOX_API_VERSION);
 	if (api != SYDBOX_API_VERSION)
-		die("config file name `%s' API mismatch: %u != %u",
+		die("config file name »%s« API mismatch: %u != %u",
 		    filename, api, SYDBOX_API_VERSION);
 
 	fp = fopen(filename, "r");
 fp_open:
 	if (!fp)
-		die_errno("fopen(`%s')", filename);
+		die_errno("fopen(»%s«)", filename);
 
 	line_count = 0;
 	while (fgets(line, LINE_MAX, fp)) {
@@ -104,7 +104,7 @@ fp_open:
 		truncate_nl(line);
 		r = magic_cast_string(NULL, line, 0);
 		if (MAGIC_ERROR(r))
-			die("invalid magic in file `%s' on line %zu: %s",
+			die("invalid magic in file »%s« on line %zu: %s",
 			    filename, line_count, magic_strerror(r));
 	}
 

@@ -101,7 +101,7 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 
 	if (waitpid_nointr(childpid, &status, 0) < 0) {
 		err_no = execve_errno(errno);
-		say("exec(`%s'): waitpid(%u) failed (errno:%d %s)",
+		say("exec(»%s«): waitpid(%u) failed (errno:%d %s)",
 		    argv[0], childpid, errno, strerror(errno));
 		r = -err_no;
 		goto out;

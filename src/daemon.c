@@ -79,7 +79,7 @@ void set_working_directory(char *wd) {
 		wd = xstrdup(mkdtemp(tmpl));
 		xasprintf(&linkpath, "%s/sydbox", wd);
 		if (symlink("/dev/sydbox", linkpath) < 0 && syd_debug_get())
-			syd_say("Failed to create symbolic link `/dev/sydbox' -> `%s'",
+			syd_say("Failed to create symbolic link »/dev/sydbox« -> `%s'",
 				linkpath);
 		free(linkpath);
 		free(tmpl);
@@ -214,7 +214,7 @@ int change_background(void)
 #ifdef TIOCNOTTY
 		tty_fd = open("/dev/tty", O_RDWR);
 		if (tty_fd < 0)
-			say_errno("open(`/dev/tty')");
+			say_errno("open(»/dev/tty«)");
 #endif
 	}
 
@@ -223,7 +223,7 @@ int change_background(void)
 		if (ioctl(tty_fd, TIOCNOTTY, 0) < 0)
 			say_errno("ioctl");
 		if (close(tty_fd) < 0)
-			say_errno("close(`/dev/tty')");
+			say_errno("close(»/dev/tty«)");
 	}
 #endif
 

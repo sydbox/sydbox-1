@@ -144,7 +144,7 @@ SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wno-cpp
 -Werror=implicit-int
 -Werror=pointer-sign
 -Werror=pointer-arith
-
+-Wframe-larger-than=8
 "
 
 SYDBOX_SAFE_WANTED_CFLAGS="-D_FORTIFY_SOURCE=2

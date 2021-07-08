@@ -281,6 +281,6 @@ int utime_reset(const char *path, const struct stat *st)
 		{ .tv_sec = st->st_mtim.tv_sec, .tv_nsec = st->st_mtim.tv_nsec }
 	};
 	utimensat(AT_FDCWD, path, ts, AT_SYMLINK_NOFOLLOW);
-	/* ignore error here (due to possible `noatime' mount option) */
+	/* ignore error here (due to possible »noatime« mount option) */
 	return 0;
 }

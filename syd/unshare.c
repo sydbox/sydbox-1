@@ -11,29 +11,7 @@
  */
 
 #include "config.h"
-#ifndef _GNU_SOURCE
-# define _GNU_SOURCE /* setns() */
-#endif
-#include "syd.h"
-#include <errno.h>
-#include <fcntl.h>
-#include <sched.h>
-#include <linux/sched.h>
-#include <unistd.h>
-#include <sys/prctl.h>
-#include <sys/syscall.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/mount.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/prctl.h>
-#include <grp.h>
-#include <sys/mount.h>
-
-#include <seccomp.h>
+#include <syd/syd.h>
 
 /***
  * Preparation for import from unshare.c
@@ -64,28 +42,13 @@ static struct namespace_file {
 	{ .type = CLONE_NEWNET,   .name = "ns/net"  },
 	{ .type = CLONE_NEWPID,   .name = "ns/pid_for_children" },
 	{ .type = CLONE_NEWNS,    .name = "ns/mnt"  },
-#ifndef CLONE_NEWTIME
-# define CLONE_NEWTIME        0x00000080      /* New time namespace */
-#endif
 	{ .type = CLONE_NEWTIME,  .name = "ns/time_for_children" },
 	{ .name = NULL }
 };
 
 static int npersists;	/* number of persistent namespaces */
 
-enum {
-	SETGROUPS_NONE = -1,
-	SETGROUPS_DENY = 0,
-	SETGROUPS_ALLOW = 1,
-};
-
-static const char *setgroups_strings[] =
-{
-	[SETGROUPS_DENY] = "deny",
-	[SETGROUPS_ALLOW] = "allow"
-};
-
-int setgroups_str2id(const char *str)
+int syd_setgroups_toi(const char *str)
 {
 	size_t i;
 
@@ -150,7 +113,7 @@ int syd_map_id(const char *file, uint32_t from, uint32_t to)
 	return r;
 }
 
-static long long parse_propagation(const char *str)
+long long syd_parse_propagation(const char *str)
 {
 	size_t i;
 	static const struct prop_opts {

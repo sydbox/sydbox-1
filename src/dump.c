@@ -57,7 +57,7 @@ static void dump_close(void)
 	fclose(fp);
 	fp = NULL;
 	if (pathdump[0] != '\0')
-		say("dumped core `%s' for inspection.", pathdump);
+		say("dumped core »%s« for inspection.", pathdump);
 }
 
 static void dump_null(void)
@@ -136,7 +136,7 @@ static void dump_format(const char *argv0, const char *pathname,
 		if (pathname && (r = path_to_hex(pathname)) < 0) {
 			errno = -r;
 			say_errno("can't calculate checksum of file "
-				  "`%s'", pathname);
+				  "»%s«", pathname);
 		}
 	}
 
@@ -304,8 +304,8 @@ static int dump_init(enum dump what)
 		}
 		fd = open(pathdump, O_CREAT|O_APPEND|O_WRONLY|O_NOFOLLOW, 0600);
 		if (fd < 0)
-			die_errno("open_dump(`%s')", pathdump);
-		say("dumping core `%s' for inspection.", pathdump);
+			die_errno("open_dump(»%s«)", pathdump);
+		say("dumping core »%s« for inspection.", pathdump);
 	}
 	if (fp)
 		fclose(fp);

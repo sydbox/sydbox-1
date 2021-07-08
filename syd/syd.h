@@ -34,6 +34,8 @@
 
 #include <syd/compiler.h>
 
+#include <seccomp.h>
+
 /*
  * 16 is sufficient since the largest number we will ever convert
  * will be 2^32-1, which is 10 digits.
@@ -76,6 +78,45 @@ const char *syd_name_namespace(int namespace);
 /***
  * libsyd: Interface for Linux namespaces (containers)
  ***/
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE /* setns() */
+#endif
+#include "syd.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <sched.h>
+#include <linux/sched.h>
+#include <unistd.h>
+#include <sys/prctl.h>
+#include <sys/syscall.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/mount.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/prctl.h>
+#include <grp.h>
+#include <sys/mount.h>
+
+#ifndef CLONE_NEWTIME
+# define CLONE_NEWTIME        0x00000080      /* New time namespace */
+#endif
+#define SYD_UNSHARE_PROPAGATION_DEFAULT  (MS_REC | MS_PRIVATE)
+
+enum {
+	SYD_SETGROUPS_NONE = -1,
+	SYD_SETGROUPS_DENY = 0,
+	SYD_SETGROUPS_ALLOW = 1,
+};
+
+const char *const restrict setgroups_strings[] =
+{
+	[SYD_SETGROUPS_DENY] = "deny",
+	[SYD_SETGROUPS_ALLOW] = "allow"
+};
+
 int syd_set_death_sig(int signal);
 int syd_pivot_root(const char *new_root, const char *put_old);
 
@@ -88,6 +129,9 @@ int syd_unshare_ns(int fd);
 int syd_unshare_uts(int fd);
 int syd_unshare_ipc(int fd);
 int syd_unshare_usr(int fd);
+
+int syd_setgroups_toi(const char *str);
+long long syd_parse_propagation(const char *str);
 
 int syd_setgroups_control(int action);
 int syd_map_id(const char *file, uint32_t from, uint32_t to);
