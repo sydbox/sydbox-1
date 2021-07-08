@@ -48,8 +48,18 @@ int syd_about(FILE *report_fd)
 	      report_fd);
 	fputs(" netlink:yes[0m\n",
 	      report_fd);
-	fputs("[0;1;32;91mCopyright © 2010, 2011, 2012, 2013, 2014, 2015, 2018, 2020, 2021[0m",
-	      report_fd);
+	fprintf(report_fd, "[0;1;31;91m"
+		"Release Codename: "CODENAME"[0m\n");
+	fprintf(report_fd, "[0;1;35;95m"
+		"Compiler Flags: "SYDBOX_CFLAGS"[0m\n");
+	fprintf(report_fd, "[0;1;33;93m"
+		"Linker Flags: "SYDBOX_LDFLAGS"[0m\n");
+	fputs("\n[0;1;32;91m"
+	      "Copyright © "
+	      "2010, 2011, 2012, 2013, "
+	      "2014, 2015, 2018, 2020, "
+	      "2021"
+	      "[0m", report_fd);
 	fputs("[0;1;34;91mAlï P☮latel <alïp@exherb☮.☮rg>[0m", report_fd);
 	fputs("SPDX-License-Identifier: [0;1;31;91mGPL-2.0-only[0m",
 	      report_fd);

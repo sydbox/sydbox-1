@@ -102,6 +102,7 @@ int syd_path_root_check(const char *path)
 	return 0;
 }
 
+SYD_GCC_ATTR((unused))
 static inline int syd_path_root_alloc(char **buf)
 {
 	char *rpath;
@@ -132,7 +133,7 @@ ssize_t syd_readlink_alloc(const char *path, char **buf)
 
 	int r;
 	ssize_t n;
-	size_t l = 128;
+	size_t l = 128, nreadlink = 0;
 	char *p = NULL;
 	for (;;) {
 		char *m;
@@ -162,6 +163,11 @@ ssize_t syd_readlink_alloc(const char *path, char **buf)
 		unsigned long ul = (l * 2);
 		if (ul >= INT_MAX) { /* everything has a limit. */
 			r = -ENAMETOOLONG;
+			goto out;
+		}
+		/* TODO: Test this max symlinks code! */
+		if (++nreadlink > LIBSYD_MAXSYMLINKS) {
+			r = -ELOOP;
 			goto out;
 		}
 		l *= 2;

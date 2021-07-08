@@ -26,8 +26,11 @@
 /* synchronize parent and child by pipe */
 #define PIPE_SYNC_BYTE	0x06
 
-/* 'private' is kernel default */
-#define UNSHARE_PROPAGATION_DEFAULT	(MS_REC | MS_PRIVATE)
+static const char *const restrict setgroups_strings[] =
+{
+	[SYD_SETGROUPS_DENY] = "deny",
+	[SYD_SETGROUPS_ALLOW] = "allow"
+};
 
 /* /proc namespace files and mountpoints for binds */
 static struct namespace_file {
@@ -232,9 +235,10 @@ int syd_bind_ns_files_from_child(pid_t *child, int fds[2])
 	char ch;
 	pid_t ppid = getpid();
 
-	ino_t ino = syd_get_mnt_ino(ppid);
-	if (ino < 0)
-		return ino;
+	long ino_l = syd_get_mnt_ino(ppid);
+	if (ino_l < 0)
+		return ino_l;
+	ino_t ino = (ino_t)ino_l;
 
 	if (pipe(fds) < 0) {
 		r = -errno;

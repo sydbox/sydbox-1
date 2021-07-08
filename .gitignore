@@ -80,6 +80,7 @@ GTAGS
 /compile
 /depcomp
 /install-sh
+/m4/pkg.m4
 /missing
 /stamp-h1
 

@@ -33,12 +33,20 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
 	procutils.c \
 	statfs_magic.h \
 	caputils.h \
-	caputils.c
-libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= $(libseccomp_CFLAGS)
-libsyd_@LIBSYD_PC_SLOT@_la_LIBS= $(libseccomp_LIBS)
+	caputils.c \
+	syd/robinhood_hash.h
+libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= \
+	$(libseccomp_CFLAGS) \
+	$(SYDBOX_CFLAGS)
+libsyd_@LIBSYD_PC_SLOT@_la_LDFLAGS= \
+	$(SYDBOX_LDFLAGS)
+libsyd_@LIBSYD_PC_SLOT@_la_LIBS= \
+	$(libseccomp_LIBS)
 
 libsyd_includedir = $(includedir)/syd-$(LIBSYD_PC_SLOT)/syd
-libsyd_include_HEADERS= syd.h
+libsyd_include_HEADERS= \
+			confname.h \
+			syd.h
 
 noinst_HEADERS= seatest.h check.h compiler.h
 syd_check_SOURCES= seatest.c check.c file-TEST.c proc-TEST.c

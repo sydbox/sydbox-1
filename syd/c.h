@@ -7,6 +7,10 @@
 #ifndef UTIL_LINUX_C_H
 #define UTIL_LINUX_C_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -232,26 +236,26 @@ errmsg(char doexit, int excode, char adderr, const char *fmt, ...)
 			fprintf(stderr, ": ");
 	}
 	if (adderr)
-		fprintf(stderr, "%m");
+		fprintf(stderr, "%s", strerror(errno));
 	fprintf(stderr, "\n");
 	if (doexit)
 		exit(excode);
 }
 
 #ifndef HAVE_ERR
-# define err(E, FMT...) errmsg(1, E, 1, FMT)
+# define err(E, ...) errmsg(1, E, 1, __VA_ARGS__)
 #endif
 
 #ifndef HAVE_ERRX
-# define errx(E, FMT...) errmsg(1, E, 0, FMT)
+# define errx(E, ...) errmsg(1, E, 0, __VA_ARGS__)
 #endif
 
 #ifndef HAVE_WARN
-# define warn(FMT...) errmsg(0, 0, 1, FMT)
+# define warn(...) errmsg(0, 0, 1, __VA_ARGS__)
 #endif
 
 #ifndef HAVE_WARNX
-# define warnx(FMT...) errmsg(0, 0, 0, FMT)
+# define warnx(...) errmsg(0, 0, 0, __VA_ARGS__)
 #endif
 #endif /* !HAVE_ERR_H */
 

@@ -15,8 +15,10 @@ dnl Program, version
 AC_PREREQ([2.69])
 
 dnl Homepage
-m4_define([SYDBOX_BUGREPORT], [https://todo.sr.ht/~alip/sydbox])
-m4_define([SYDBOX_HOMEPAGE], [http://sydbox.exherbo.org/])
+m4_define([SYDBOX_BUGREPORT],
+	  [https://todo.sr.ht/~alip/sydbox])
+m4_define([SYDBOX_HOMEPAGE],
+	  [http://sydbox.exherbo.org/])
 
 dnl Versioning
 dnl major: User interface changes (magic commands, configuration format)
@@ -27,13 +29,19 @@ m4_define([sydbox_version_major],  [2])
 m4_define([sydbox_version_minor],  [2])
 m4_define([sydbox_version_micro],  [0])
 m4_define([sydbox_version_suffix], [])
-m4_define([sydbox_version_full],   [sydbox_version_major.sydbox_version_minor.sydbox_version_micro[]sydbox_version_suffix])
-m4_define([sydbox_version],        [sydbox_version_full])
-m4_define([libsyd_pc_version],     [sydbox_version_full])
-m4_define([libsyd_pc_slot],        [sydbox_version_major.sydbox_version_minor[]sydbox_version_suffix])
+m4_define([sydbox_version_full],
+	  [sydbox_version_major.sydbox_version_minor.sydbox_version_micro[]sydbox_version_suffix])
+m4_define([sydbox_version],
+	  [sydbox_version_full])
+m4_define([libsyd_pc_version],
+	  [sydbox_version_full])
+m4_define([libsyd_pc_slot],
+	  [sydbox_version_major.sydbox_version_minor[]sydbox_version_suffix])
 
-m4_define([sydbox_api_version],    [sydbox_version_major])
-m4_define([sydbox_fname_ext],      [syd-])
+m4_define([sydbox_api_version],
+	  [sydbox_version_major])
+m4_define([sydbox_fname_ext],
+	  [syd-])
 
 dnl sydbox-2 has PACKAGE=syd
 dnl sydbox-1 has PACKAGE=sydbox
@@ -49,13 +57,19 @@ m4_include([m4/ac_msg_result.m4])dnl
 m4_include([m4/colorize_result.m4])dnl
 
 AC_INIT([syd],[sydbox_version],[SYDBOX_BUGREPORT],[sydbox],[SYDBOX_HOMEPAGE])
+m4_define([SYDBOX_CODENAME],
+	  [["Baby Lemonade"]])
+AC_DEFINE_UNQUOTED([CODENAME],
+		   [SYDBOX_CODENAME],
+		   [Sydb☮x Release Codename])
 
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_SRCDIR([src/sydbox.c])
+AC_CONFIG_SRCDIR([src/syd-box.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
 AC_USE_SYSTEM_EXTENSIONS
+AC_GNU_SOURCE
 AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip std-options subdir-objects foreign])
@@ -130,42 +144,116 @@ AX_CHECK_COMPILER_FLAGS([-std=gnu11],
 	  SYDBOX_CC=c11],
 	 [AC_MSG_ERROR(["Sydb☮x requires a C compiler that supports ISO C11!"])])])
 dnl extra CFLAGS
-SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wno-cpp
--Wunused-label
--Wunused-macros
--Wno-unused-parameter
--Wunused-result
--Wunused-value
--Wunused-variable
--Wno-unused-const-variable
--Walloca
--Wvla
--Werror=implicit-function-declaration
--Werror=implicit-int
--Werror=pointer-sign
--Werror=pointer-arith
--Wframe-larger-than=8
+SYD_CFLAGS_OPT="\
+-D_SYD_OPT \
+-Ofast \
+-march=native \
+-mtune=native \
+-fomit-frame-pointer \
+-D_SYD_OPT_OK \
+"
+SYD_CFLAGS_SAFE=" \
+-D_SYD_SAFE \
+-D_FORTIFY_SOURCE=2 \
+-D_GLIBCXX_ASSERTIONS \
+-fasynchronous-unwind-tables \
+-fexceptions \
+-fstack-clash-protection \
+-fstack-protector-all \
+-fstack-protector-strong \
+-ftrivial-auto-var-init=zero \
+-D_SYD_SAFE_OK \
 "
 
-SYDBOX_SAFE_WANTED_CFLAGS="-D_FORTIFY_SOURCE=2
--D_GLIBCXX_ASSERTIONS
--fasynchronous-unwind-tables
--fexceptions
--fstack-clash-protection
--fstack-protector-all
--fstack-protector-strong"
-for flag in $SYDBOX_WANTED_CFLAGS ; do
+SYD_CFLAGS_DEBUG=" \
+-D_SYD_DEBUG \
+-g -gdwarf-5 \
+-gz=zlib \
+-mfentry \
+-mrecord-mcount \
+-D_SYD_DEBUG_OK \
+"
+
+dnl -Wno-gnu
+SYD_CFLAGS_CLANG="
+-D_SYD_CLANG \
+-Qunused-arguments \
+-enable-trivial-auto-var-init-zero-knowing-it-will-be-removed-from-clang \
+-ftrapv \
+-Wno-unknown-warning-option \
+-Wno-ignored-optimization-argument \
+-D_SYD_CLANG_OK \
+"
+
+dnl TODO: -fplan9-extensions
+SYD_CFLAGS="
+-D_SYD_DEF \
+$SYD_CFLAGS_OPT \
+-std=c11 -trigraphs -fmath-errno
+-D_XOPEN_SOURCE=700 \
+-D_GNU_SOURCE=1 \
+-falign-functions=32 \
+-fallow-parameterless-variadic-functions \
+-fconserve-stack \
+-fgimple \
+-fopenacc \
+-fopenacc-dim=worker \
+-fhosted \
+-funsigned-char \
+-flto \
+-fvisibility=hidden \
+-fno-inline-functions-called-once \
+-fno-stack-check \
+-fno-strict-overflow \
+-fsanitize=shadow-call-stack \
+-mgnu-attribute \
+$SYD_CFLAGS_CLANG \
+$SYD_CFLAGS_DEBUG \
+$SYD_CFLAGS_SAFE \
+-W -Wall -Wextra -Wshadow -Wno-cpp \
+-Wformat=2 \
+-Wimplicit-fallthrough \
+-Wunused-label \
+-Wunused-macros \
+-Wno-declaration-after-statement \
+-Wno-unused-parameter \
+-Wunused-result \
+-Wunused-value \
+-Wunused-variable \
+-Wno-unused-but-set-variable \
+-Wno-unused-const-variable \
+-Walloca \
+-Wvla \
+-Werror=date-time \
+-Werror=designated-init \
+-Werror=incompatible-pointer-types \
+-Werror=implicit-function-declaration \
+-Werror=implicit-int \
+-Werror=pointer-arith \
+-Wframe-larger-than=8 \
+-Wno-pointer-sign \
+-Wno-stringop-truncation \
+-D_SYD_DEF_OK \
+"
+
+SYDBOX_CFLAGS=
+for flag in $SYD_CFLAGS ; do
 	AX_CHECK_COMPILER_FLAGS([$flag], [SYDBOX_CFLAGS="$SYDBOX_CFLAGS $flag"],)
 done
-for flag in $SYDBOX_DEV_WANTED_CFLAGS ; do
-	AX_CHECK_COMPILER_FLAGS([$flag], [SYDBOX_DEV_CFLAGS="$SYDBOX_DEV_CFLAGS $flag"],)
-done
-for flag in $SYDBOX_SAFE_WANTED_CFLAGS ; do
-	AX_CHECK_COMPILER_FLAGS([$flag], [SYDBOX_SAFE_CFLAGS="$SYDBOX_SAFE_CFLAGS $flag"],)
-done
 AC_SUBST([SYDBOX_CFLAGS])
-AC_SUBST([SYDBOX_DEV_CFLAGS])
-AC_SUBST([SYDBOX_SAFE_CFLAGS])
+AC_DEFINE_UNQUOTED([SYDBOX_CFLAGS],
+		   [["$SYDBOX_CFLAGS"]],
+		   [Sydb☮x Build Compiler Flags])
+
+
+dnl Default LDFLAGS
+SYDBOX_LDFLAGS="--build-id=sha1 \
+--compress-debug-sections=zlib --gc-sections \
+--pack-dyn-relocs=relr --orphan-handling=warn"
+AC_SUBST([SYDBOX_LDFLAGS])
+AC_DEFINE_UNQUOTED([SYDBOX_LDFLAGS],
+		   [["$SYDBOX_LDFLAGS"]],
+		   [Sydb☮x Build Linker Flags])
 
 dnl extra LDFLAGS
 dnl Build sydbox binary static by default.
@@ -635,8 +723,8 @@ AC_CHECK_FUNCS([asprintf],      [], [AC_MSG_ERROR([I need asprintf])])
 AC_CHECK_FUNCS([isdigit],       [], [AC_MSG_ERROR([I need isdigit])])
 AC_CHECK_FUNCS([ntohs],         [], [AC_MSG_ERROR([I need ntohs])])
 AC_CHECK_FUNCS([getservbyname], [], [AC_MSG_ERROR([I need getservbyname])])
-AC_CHECK_FUNCS([pipe2])
-AC_CHECK_FUNCS([fchdir])
+AC_CHECK_FUNCS([sysconf],       [], [AC_MSG_ERROR([I need sysconf])])
+AC_CHECK_FUNCS([fchdir pipe2])
 
 dnl check for library functions.
 AC_FUNC_CHOWN

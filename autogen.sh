@@ -11,4 +11,14 @@ case "$0" in
 esac
 
 libtoolize --copy --force
-exec ${AUTORECONF:-autoreconf} --install --symlink "$@" ${srcdir:+"$srcdir"}
+exec ${AUTORECONF:-autoreconf} \
+    --force \
+    --install "$@" ${srcdir:+"$srcdir"} \
+    --make \
+    --no-recursive \
+    --verbose
+#Manual steps, use this to debug.
+#aclocal --force --install --verbose -I m4
+#autoheader
+#automake --add-missing
+#autoconf

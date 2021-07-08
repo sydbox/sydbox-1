@@ -103,18 +103,13 @@ const char *syd_name_namespace(int namespace);
 #ifndef CLONE_NEWTIME
 # define CLONE_NEWTIME        0x00000080      /* New time namespace */
 #endif
+/* 'private' is kernel default */
 #define SYD_UNSHARE_PROPAGATION_DEFAULT  (MS_REC | MS_PRIVATE)
 
 enum {
 	SYD_SETGROUPS_NONE = -1,
 	SYD_SETGROUPS_DENY = 0,
 	SYD_SETGROUPS_ALLOW = 1,
-};
-
-const char *const restrict setgroups_strings[] =
-{
-	[SYD_SETGROUPS_DENY] = "deny",
-	[SYD_SETGROUPS_ALLOW] = "allow"
 };
 
 int syd_set_death_sig(int signal);
@@ -367,25 +362,28 @@ size_t syd_strlcat(char *restrict dst, const char *restrict src, size_t siz);
 size_t syd_strlcpy(char *restrict dst, const char *restrict src, size_t siz);
 
 inline int syd_str_startswith(const char *s, const char *prefix,
-			      bool ret_bool)
+			      bool *ret_bool)
 {
 	size_t sl, pl;
 
-	if (!s)
-		return -EINVAL;
-	if (!prefix)
+	if (!s || !prefix || !ret_bool)
 		return -EINVAL;
 
 	sl = strlen(s);
 	pl = strlen(prefix);
 
-	if (pl == 0)
-		return true;
+	if (pl == 0) {
+		*ret_bool = true;
+		return 0;
+	}
 
-	if (sl < pl)
-		return false;
+	if (sl < pl) {
+		*ret_bool = false;
+		return 0;
+	}
 
-	return memcmp(s, prefix, pl) == 0;
+	*ret_bool = memcmp(s, prefix, pl) == 0;
+	return 0;
 }
 
 #endif
