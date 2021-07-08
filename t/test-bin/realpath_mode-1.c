@@ -18,7 +18,7 @@ static char *ret_str;
 	s = argv[i++]; \
 	const char *exp_str = f_get_file(s);
 
-#include "sydconf.h"
+#include "syd-conf.h"
 #include "bsd-compat.h"
 #include "file.h"
 #include "test-skel-1.c"

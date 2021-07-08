@@ -315,6 +315,8 @@ static inline void free_safe(void *ptr) {
 #define syd_map_free(map) (!(map)->alloc)
 #define syd_map_foreach sc_map_foreach
 
+#define syd_map_foreach_value sc_map_foreach_value
+
 #define syd_map_32 sc_map_32
 #define syd_map_init_32 sc_map_init_32
 #define syd_map_term_32 sc_map_term_32
@@ -322,6 +324,7 @@ static inline void free_safe(void *ptr) {
 #define syd_map_put_32 sc_map_put_32
 #define syd_map_get_32 sc_map_get_32
 #define syd_map_del_32 sc_map_del_32
+#define syd_map_size_32 sc_map_size_32
 
 #define syd_map_64 sc_map_64
 #define syd_map_init_64 sc_map_init_64
@@ -330,6 +333,7 @@ static inline void free_safe(void *ptr) {
 #define syd_map_put_64 sc_map_put_64
 #define syd_map_get_64 sc_map_get_64
 #define syd_map_del_64 sc_map_del_64
+#define syd_map_size_64 sc_map_size_64
 
 #define syd_map_64v sc_map_64v
 #define syd_map_init_64v sc_map_init_64v
@@ -338,6 +342,7 @@ static inline void free_safe(void *ptr) {
 #define syd_map_put_64v sc_map_put_64v
 #define syd_map_get_64v sc_map_get_64v
 #define syd_map_del_64v sc_map_del_64v
+#define syd_map_size_64v sc_map_size_64v
 
 #define syd_map_64s sc_map_64s
 #define syd_map_init_64s sc_map_init_64s
@@ -346,6 +351,7 @@ static inline void free_safe(void *ptr) {
 #define syd_map_put_64s sc_map_put_64s
 #define syd_map_get_64s sc_map_get_64s
 #define syd_map_del_64s sc_map_del_64s
+#define syd_map_size_64s sc_map_size_64s
 
 #define syd_map_str sc_map_str
 #define syd_map_init_str sc_map_init_str
@@ -354,6 +360,7 @@ static inline void free_safe(void *ptr) {
 #define syd_map_put_str sc_map_put_str
 #define syd_map_get_str sc_map_get_str
 #define syd_map_del_str sc_map_del_str
+#define syd_map_size_str sc_map_size_str
 
 #define syd_map_sv sc_map_sv
 #define syd_map_init_sv sc_map_init_sv
@@ -362,6 +369,7 @@ static inline void free_safe(void *ptr) {
 #define syd_map_put_sv sc_map_put_sv
 #define syd_map_get_sv sc_map_get_sv
 #define syd_map_del_sv sc_map_del_sv
+#define syd_map_size_sv sc_map_size_sv
 
 #define syd_map_s64 sc_map_s64
 #define syd_map_init_s64 sc_map_init_s64
@@ -370,6 +378,7 @@ static inline void free_safe(void *ptr) {
 #define syd_map_put_s64 sc_map_put_s64
 #define syd_map_get_s64 sc_map_get_s64
 #define syd_map_del_s64 sc_map_del_s64
+#define syd_map_size_s64 sc_map_size_s64
 
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
 __attribute__((sentinel))

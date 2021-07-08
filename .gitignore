@@ -138,6 +138,7 @@ Makefile
 
 /src/kingbee.d/*
 
+jobs
 /syd/libsyd.ld
 /syd/syd-check
 /syd/check-pause

@@ -153,7 +153,7 @@ int syd_set_propagation(unsigned long flags)
 }
 
 
-int set_ns_target(int type, const char *path)
+int syd_set_ns_target(int type, const char *path)
 {
 	struct namespace_file *ns;
 

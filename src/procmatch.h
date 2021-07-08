@@ -10,10 +10,10 @@
 #ifndef PROCMATCH_H
 #define PROCMATCH_H 1
 
-#include "sc_map.h"
+#include <syd/syd.h>
 
-int procadd(struct syd_map_64s *map, pid_t pid);
-int procdrop(struct syd_map_64s *map, pid_t pid);
-int procmatch(struct syd_map_64s *map, const char *path);
+int procadd(struct sc_map_64s *map, pid_t pid);
+int procdrop(struct sc_map_64s *map, pid_t pid);
+int procmatch(struct sc_map_64s *map, const char *path);
 
 #endif

@@ -7,6 +7,8 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
+#include <syd/syd.h>
+
 SYD_GCC_ATTR((warn_unused_result))
 int32_t syd_execv(const char *command,
                   size_t argc,

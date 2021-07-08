@@ -1,7 +1,5 @@
+HILITE = $(top_builddir)/misc/syd-hilite
 AM_MAKEFLAGS= --no-print-directory
-BUILT_SOURCES= \
-	lib.rs \
-	Cargo.toml
 CLEANFILES= \
 	    gmon.out \
 	    *.gcda \
@@ -14,6 +12,16 @@ EXTRA_DIST= \
 	    syd-syscall-open.py \
 	    Cargo.toml.in
 noinst_HEADERS=
+
+BUILT_SOURCES= jobs
+.PHONY: jobs
+jobs: | parallel
+
+BUILT_SOURCES+= build
+.PHONY: build
+build: jobs
+	@echo >&2 "[0;1;31;91msydb☮x: Make is running $(JOB_COUNT) jobs.[0m"
+	$(HILITE) $(MAKE) $(AM_MAKEFLAGS) $(MFLAGS) $(PROGRAMS)
 
 CARGO_VERBOSE = $(cargo_verbose_$(V))
 cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
@@ -141,13 +149,13 @@ DEFS+= \
        -DDATADIR=\"$(datadir)\" \
        -DGITVERSION=\"$(GITVERSION)\" \
        -DSYSCONFDIR=\"$(sysconfdir)\"
+# @SYDBOX_CFLAGS@
 AM_CFLAGS= \
 	   -I$(top_builddir)/syd \
 	   -I$(top_srcdir)/syd \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
-	   $(libseccomp_CFLAGS) \
-	   @SYDBOX_CFLAGS@
+	   $(libseccomp_CFLAGS)
 
 if MAINTAINER_MODE
 AM_CFLAGS+= $(SYDBOX_SAFE_CFLAGS) $(SYDBOX_DEV_CFLAGS)
@@ -167,9 +175,9 @@ AM_CPPFLAGS= $(CODE_COVERAGE_CPPFLAGS)
 AM_LFLAGS = -v
 AM_YFLAGS = -d
 
-syddir=$(bindir)
-bin_PROGRAMS= syd syd-format
-syd_PROGRAMS= Cargo.toml syd
+# TODO: syd-run
+bin_PROGRAMS= syd syd-dump syd-format
+
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
 noinst_INCLUDE_SRCS= syd_seccomp_arch_default.c
@@ -190,8 +198,6 @@ noinst_HEADERS+= \
 		 pathdecode.h \
 		 pathmatch.h \
 		 procmatch.h \
-		 syscall_open_ro.lst \
-		 syscall_open_syd.h \
 		 #profile_parser.y \
 		 #profile_scanner.l \
 		 serializer.h \
@@ -207,8 +213,6 @@ noinst_HEADERS+= \
 syd_SOURCES= \
 		 Cargo.toml \
 		 sydbox_rs.h \
-		 syscall_open_syd.h \
-		 syscall_open_ro.lst \
 		 syd-box.c \
 		 arch.c \
 		 daemon.c \
@@ -248,33 +252,30 @@ syd_SOURCES= \
 		 syscall.c \
 		 config.c
 
-syd_run_SOURCES= \
-		 syd-run.c \
-		 serializer.c \
-		 serializer.h \
-		 xfunc.h \
-		 xfunc.c \
-		 daemon.h \
-		 daemon.c \
-		 dump.h \
-		 dump.c \
-		 bsd-compat.h \
-		 strlcpy.c \
-		 strlcat.c \
-		 util.h \
-		 util.c
-syd_run_LDFLAGS= \
-		 @SYDBOX_LIBTOOL_FLAGS@ \
-		 $(CODE_COVERAGE_LDFLAGS) \
-		 $(CODE_COVERAGE_LIBS) \
-		 $(libseccomp_LIBS)
-		 $(top_builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la
-if ENABLE_STATIC
-else
-syd_run_LDFLAGS+=\
-		 -L$(top_builddir)/syd/.libs \
-		 -lsyd_@LIBSYD_PC_SLOT@
-endif
+#syd_run_SOURCES= \
+#		 syd-run.c \
+#		 serializer.c \
+#		 serializer.h \
+#		 xfunc.h \
+#		 xfunc.c \
+#		 daemon.h \
+#		 daemon.c \
+#		 dump.h \
+#		 dump.c \
+#		 bsd-compat.h \
+#		 strlcpy.c \
+#		 strlcat.c \
+#		 util.h \
+#		 util.c
+#syd_run_LDFLAGS= \
+#		 @SYDBOX_LIBTOOL_FLAGS@ \
+#		 $(CODE_COVERAGE_LDFLAGS)
+#syd_run_LDADD= \
+#		 $(top_builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la \
+#		 $(CODE_COVERAGE_LIBS) \
+#		 $(libseccomp_LIBS) \
+#		 -L$(top_builddir)/syd/.libs \
+#		 -lsyd_@LIBSYD_PC_SLOT@
 
 syd_format_SOURCES= \
 		syd-format.c
@@ -359,7 +360,6 @@ DUMP_LINKER_ADD=
 DUMP_LINKER_FLAGS=
 
 syd_dumpdir=$(libexecdir)/$(PACKAGE)/dump
-#bin_PROGRAMS+= syd-dump
 bin_SCRIPTS= syd-shoebox
 
 syd-shoebox: syd-shoebox.in
@@ -371,7 +371,6 @@ syd-shoebox: syd-shoebox.in
 CLEANFILES+= syd-shoebox
 EXTRA_DIST+= syd-shoebox.in
 
-syd_dump_PROGRAMS= syd-dump
 syd_dump_SOURCES=
 syd_dump_CFLAGS= $(DUMP_COMPILER_FLAGS)
 syd_dump_CPPFLAGS=
@@ -394,19 +393,9 @@ syd_dump_LDADD+= $(syd_LDADD) $(DUMP_LINKER_ADD)
 syd_dump_LDFLAGS+= $(DUMP_LINKER_FLAGS)
 endif
 
-syd-syscall.$(OBJEXT): $(BUILT_SOURCES)
-syd-dump.$(OBJEXT): $(BUILT_SOURCES)
+#syd-syscall.$(OBJEXT): $(BUILT_SOURCES)
+#syd-dump.$(OBJEXT): $(BUILT_SOURCES)
 noinst_HEADERS+= $(noinst_INCLUDE_SRCS)
-
-###
-# Determine make -j job count to pass to cargo.
-# See: https://blog.jgc.org/2015/03/gnu-make-insanity-finding-value-of-j.html
-.DEFAULT_GOAL: all
-.PHONY: all
-all: jobs $(lib_LIBS) $(bin_PROGRAMS)
-
-.PHONY: jobs
-jobs: | parallel; @echo >&2 "[0;1;31;91msydb☮x: Make is running $(JOB_COUNT) jobs.[0m"
 
 .PHONY: parallel
 parallel: .parallel ; @$(eval JOB_COUNT := $(shell sort -n $< | tail -n 1))

@@ -1,9 +1,31 @@
 AM_MAKEFLAGS= --no-print-directory
+HILITE=$(top_builddir)/misc/syd-hilite
 CLEANFILES= \
 	    *~
 DEFS+= \
        -DIN_LIBSYD=1 \
        -DGITVERSION=\"$(GITVERSION)\"
+
+BUILT_SOURCES= jobs
+.PHONY: jobs
+jobs: | parallel
+
+BUILT_SOURCES+= build
+.PHONY: build
+build: jobs
+	@echo >&2 "[0;1;31;91msydb☮x: Make is running $(JOB_COUNT) jobs.[0m"
+	$(HILITE) $(MAKE) $(AM_MAKEFLAGS) $(MFLAGS) libsyd_@LIBSYD_PC_SLOT@.la
+
+.PHONY: parallel
+parallel: .parallel ; @$(eval JOB_COUNT := $(shell sort -n $< | tail -n 1))
+.parallel: FORCE ; @$(MAKE) --no-print-directory par 2>/dev/null >$@ || true
+FORCE:
+
+to_n = $(words $2) $(if $(filter-out $1,$(words x $2)),$(call to_n,$1,x $2))
+
+PAR_COUNT :=
+par: $(addprefix par-,$(call to_n,32))
+par-%: ; @$(eval PAR_COUNT += x)@echo $(words $(PAR_COUNT)) && sleep 1 && false
 
 lib_LTLIBRARIES = libsyd_@LIBSYD_PC_SLOT@.la
 dist_man3_MANS= \

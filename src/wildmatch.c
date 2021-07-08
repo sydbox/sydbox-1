@@ -10,6 +10,7 @@
 */
 
 #include "syd-conf.h"
+#include <syd/syd.h>
 #include "wildmatch.h"
 
 #ifndef uchar
@@ -96,7 +97,7 @@ static int dowild(const uchar *p, const uchar *text, const uchar*const *a)
 	    /* Literal match with following character.  Note that the test
 	     * in "default" handles the p[1] == '\0' failure case. */
 	    p_ch = *++p;
-	    /* FALLTHROUGH */
+	    SYD_GCC_ATTR((fallthrough));
 	  default:
 	    if (t_ch != p_ch)
 		return FALSE;

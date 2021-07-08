@@ -30,12 +30,13 @@ wildtest_CFLAGS= \
 		 --include=$(top_srcdir)/src/wildmatch.c
 
 realpath_mode_1_SOURCES= realpath_mode-1.c \
+			 errno2name.h \
+			 errno2name.c \
 			 $(top_srcdir)/src/realpath.c \
 			 $(top_srcdir)/src/strlcat.c \
 			 $(top_srcdir)/src/strlcpy.c \
 			 $(top_srcdir)/src/file.c \
 			 $(top_srcdir)/src/util.c \
-			 $(top_srcdir)/src/errno2name.c \
 			 $(top_srcdir)/src/xfunc.c
 realpath_mode_1_CFLAGS= $(AM_CFLAGS) -DSYDBOX_NDUMP
 

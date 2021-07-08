@@ -55,6 +55,7 @@ AC_DISABLE_OPTION_CHECKING
 m4_include([m4/_colorize_result_prepare.m4])dnl
 m4_include([m4/ac_msg_result.m4])dnl
 m4_include([m4/colorize_result.m4])dnl
+AT_COLOR_TESTS
 
 AC_INIT([syd],[sydbox_version],[SYDBOX_BUGREPORT],[sydbox],[SYDBOX_HOMEPAGE])
 m4_define([SYDBOX_CODENAME],
@@ -185,9 +186,13 @@ SYD_CFLAGS_CLANG="
 "
 
 dnl TODO: -fplan9-extensions
+dnl $SYD_CFLAGS_CLANG
+dnl $SYD_CFLAGS_DEBUG
+dnl $SYD_CFLAGS_SAFE
 SYD_CFLAGS="
 -D_SYD_DEF \
 $SYD_CFLAGS_OPT \
+$SYD_CFLAGS_SAFE \
 -std=c11 -trigraphs -fmath-errno
 -D_XOPEN_SOURCE=700 \
 -D_GNU_SOURCE=1 \
@@ -205,15 +210,14 @@ $SYD_CFLAGS_OPT \
 -fno-strict-overflow \
 -fsanitize=shadow-call-stack \
 -mgnu-attribute \
-$SYD_CFLAGS_CLANG \
-$SYD_CFLAGS_DEBUG \
-$SYD_CFLAGS_SAFE \
 -W -Wall -Wextra -Wshadow -Wno-cpp \
 -Wformat=2 \
 -Wimplicit-fallthrough \
 -Wunused-label \
 -Wunused-macros \
 -Wno-declaration-after-statement \
+-Wno-ignored-optimization-argument \
+-Wno-unknown-warning-option \
 -Wno-unused-parameter \
 -Wunused-result \
 -Wunused-value \
@@ -228,9 +232,11 @@ $SYD_CFLAGS_SAFE \
 -Werror=implicit-function-declaration \
 -Werror=implicit-int \
 -Werror=pointer-arith \
--Wframe-larger-than=320 \
+-Wframe-larger-than=8600 \
 -Wno-pointer-sign \
 -Wno-stringop-truncation \
+$SYD_CFLAGS_CLANG \
+$SYD_CFLAGS_DEBUG \
 -D_SYD_DEF_OK \
 "
 
@@ -275,8 +281,8 @@ fi
 AC_SUBST([SYDBOX_RUST_LIBTYPES])
 AC_SUBST([SYDBOX_LIBTOOL_FLAGS])
 AC_SUBST([SYDBOX_STATIC_CFLAGS])
-AM_CONDITIONAL([ENABLE_STATIC], test x"$enable_static" = x"yes" -a x"$disable_static" != x"yes")
-if test x"$enable_static" = x"yes" -a x"$disable_static" != x"yes"; then
+AM_CONDITIONAL([ENABLE_STATIC], test x"$enable_static" = x"yes")
+if test x"$enable_static" = x"yes"; then
 	ENABLE_STATIC=1
 else
 	ENABLE_STATIC=0
@@ -1067,6 +1073,7 @@ dnl output
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_CONFIG_FILES([Makefile
 		 pandora/Makefile
+		 misc/Makefile
 		 src/Makefile
 		 syd/libsyd.ld
 		 syd/Makefile
