@@ -10,7 +10,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include "sydbox.h"
+#include "syd-box.h"
 #include <syd/compiler.h>
 #include "daemon.h"
 #include "dump.h"
@@ -106,7 +106,9 @@ static void sig_usr(int sig);
 
 static void interrupt(int sig, siginfo_t *siginfo, void *context);
 static void reap_zombies(void);
+#if 0
 static inline bool process_is_alive(pid_t pid);
+#endif
 static inline bool process_is_zombie(pid_t pid);
 static inline size_t process_count_alive(void);
 static inline pid_t process_find_exec(pid_t pid);
@@ -159,7 +161,13 @@ int path_to_hex(const char *pathname)
 	}
 
 #define PATH_TO_HEX_BUFSIZ (1024*1024)
-	char buf[PATH_TO_HEX_BUFSIZ];
+	/* Avoid this warning.
+	 * warning: stack frame size of 1048664 bytes in function 'path_to_hex'
+	 * [-Wframe-larger-than=]
+	 *
+	 * char buf[PATH_TO_HEX_BUFSIZ];
+	 */
+	char *buf = xmalloc(PATH_TO_HEX_BUFSIZ * sizeof(char));
 	ssize_t nread;
 	unsigned char hash[SYD_SHA1_RAWSZ];
 	int r = 0;
@@ -190,6 +198,7 @@ int path_to_hex(const char *pathname)
 		syd_hash_sha1_final(hash);
 		strlcpy(sydbox->hash, hash_to_hex(hash), SYD_SHA1_HEXSZ);
 	}
+	free(buf);
 	return r;
 }
 
@@ -518,6 +527,7 @@ proc_getcwd:
 			if ((fd = syd_proc_cwd_open(current->pid)) >= 0)
 				sydbox->pfd_cwd = fd;
 		}
+		cwd = NULL;
 		if (fd >= 0 && (r = syd_proc_cwd(fd,
 						 sydbox->config.use_toolong_hack,
 						 &cwd)) < 0) {
@@ -970,8 +980,8 @@ static void init_signals(void)
 
 	/* Term */
 	set_sighandler(SIGALRM, interrupt, NULL);
-	set_sighandler(SIGHUP,  interrupt, NULL);
-	set_sighandler(SIGINT,  interrupt, NULL);
+	set_sighandler(SIGHUP,	interrupt, NULL);
+	set_sighandler(SIGINT,	interrupt, NULL);
 	set_sighandler(SIGQUIT, interrupt, NULL);
 	set_sighandler(SIGPIPE, interrupt, NULL);
 	set_sighandler(SIGTERM, interrupt, NULL);
@@ -1227,10 +1237,12 @@ static bool process_kill(pid_t pid, int sig)
 	return false;
 }
 
+#if 0
 static inline bool process_is_alive(pid_t pid)
 {
 	return process_send_signal(pid, 0) != -1;
 }
+#endif
 
 static inline bool process_is_zombie(pid_t pid)
 {
@@ -1957,25 +1969,24 @@ seccomp_init:
 				get_groups(),
 				pev ? pev : "");
 		free(pathname); /* not NULL because noexec is handled above. */
-               for(;;) {
-                       int status;
+		for(;;) {
+			int status;
 
-                       errno = 0;
-                       waitpid(pid, &status, 0);
-                       switch (errno) {
-                       case 0:
-                               if (WIFEXITED(status))
-                                       _exit(WEXITSTATUS(status));
-                               else if (WIFSIGNALED(status))
-                                       kill(getpid(), WTERMSIG(status));
-                               else
-                                       continue;
-                       case EINTR:
-                               continue;
-                       default:
-                               _exit(127);
-                       }
-               }
+			errno = 0;
+			waitpid(pid, &status, 0);
+			switch (errno) {
+			case 0:
+				if (WIFEXITED(status))
+					_exit(WEXITSTATUS(status));
+				else if (WIFSIGNALED(status))
+					_exit(128 + WTERMSIG(status));
+				SYD_GCC_ATTR((fallthrough));
+			case EINTR:
+				continue;
+			default:
+				_exit(127);
+			}
+		}
 	}
 	seccomp_release(sydbox->ctx);
 
@@ -2098,28 +2109,27 @@ int main(int argc, char **argv)
 	};
 
 	/* unshare option defaults */
+	int setgrpcmd = SYD_SETGROUPS_NONE;
 	int unshare_flags = 0;
 	uid_t mapuser = -1;
 	gid_t mapgroup = -1;
-	int kill_child_signo = 0; /* 0 means --kill-child was not used */
+	long mapuser_opt = -1;
+	long mapgroup_opt = -1;
+	// int kill_child_signo = 0; /* 0 means --kill-child was not used */
 	const char *procmnt = NULL;
 	const char *newroot = NULL;
 	const char *newdir = NULL;
-	pid_t pid_bind = 0;
-	pid_t pid = 0;
-	int fds[2];
-	int status;
-	unsigned long propagation = UNSHARE_PROPAGATION_DEFAULT;
+	unsigned long propagation = SYD_UNSHARE_PROPAGATION_DEFAULT;
 	int force_uid = 0, force_gid = 0;
 	uid_t uid = 0, real_euid = geteuid();
 	gid_t gid = 0, real_egid = getegid();
-	int keepcaps = 0;
+	/* int keepcaps = 0; */
 	time_t monotonic = 0;
 	time_t boottime = 0;
 	int force_monotonic = 0;
 	int force_boottime = 0;
 
-	int opt, r, opt_t[5];
+	int arg, opt, r, opt_t[5];
 	size_t i;
 	char *c, *opt_magic = NULL;
 	struct utsname buf_uts;
@@ -2358,7 +2368,7 @@ int main(int argc, char **argv)
 			if (optarg)
 				syd_set_ns_target(CLONE_NEWIPC, optarg);
 			break;
-		case 'n':
+		case 'N':
 			unshare_flags |= CLONE_NEWNET;
 			if (optarg)
 				syd_set_ns_target(CLONE_NEWNET, optarg);
@@ -2387,16 +2397,32 @@ int main(int argc, char **argv)
 			unshare_flags |= CLONE_NEWNS;
 			procmnt = optarg ? optarg : "/proc";
 			break;
-#if 0
 		case OPT_MAPUSER:
+			errno = 0;
+			mapuser_opt = strtoul(optarg, &end, 10);
+			if ((errno && errno != EINVAL) ||
+			    (unsigned long)mapuser_opt > UID_MAX)
+			{
+				say_errno("Invalid argument for option --mapuser: "
+					  "»%s«", optarg);
+				usage(stderr, 1);
+			}/* else if (end != strchr(optarg, '\0')) { */
 			unshare_flags |= CLONE_NEWUSER;
-			mapuser = get_user(optarg, _("failed to parse uid"));
+			mapuser = (uid_t)mapuser_opt;
 			break;
 		case OPT_MAPGROUP:
+			errno = 0;
+			mapgroup_opt = strtoul(optarg, &end, 10);
+			if ((errno && errno != EINVAL) ||
+			    (unsigned long)mapgroup_opt > GID_MAX)
+			{
+				say_errno("Invalid argument for option --mapgroup: "
+					  "»%s«", optarg);
+				usage(stderr, 1);
+			}/* else if (end != strchr(optarg, '\0')) { */
 			unshare_flags |= CLONE_NEWUSER;
-			mapgroup = get_group(optarg, _("failed to parse gid"));
+			mapgroup = (gid_t)mapgroup_opt;
 			break;
-#endif
 		case 'r':
 			unshare_flags |= CLONE_NEWUSER;
 			mapuser = 0;
@@ -2408,10 +2434,10 @@ int main(int argc, char **argv)
 			mapgroup = real_egid;
 			break;
 		case OPT_SETGROUPS:
-			setgrpcmd = setgroups_str2id(optarg);
+			setgrpcmd = syd_setgroups_toi(optarg);
 			break;
 		case OPT_PROPAGATION:
-			propagation = parse_propagation(optarg);
+			propagation = syd_parse_propagation(optarg);
 			break;
 #if 0
 		case OPT_KEEPCAPS:
@@ -2420,29 +2446,51 @@ int main(int argc, char **argv)
 			break;
 #endif
 		case 'S':
-			uid = strtoul_or_err(optarg, _("failed to parse uid"));
+			if ((r = safe_atoi(optarg, &arg) < 0)) {
+				errno = -r;
+				say_errno("Invalid argument for --setuid option: "
+					  "»%s«", optarg);
+				usage(stderr, 1);
+			}
+			uid = (uid_t)arg;
 			force_uid = 1;
 			break;
-		case 'G':
-			gid = strtoul_or_err(optarg, _("failed to parse gid"));
+		case OPT_ADD_GID:
+			if ((r = safe_atoi(optarg, &arg) < 0)) {
+				errno = -r;
+				say_errno("Invalid argument for --setgid option: "
+					  "»%s«", optarg);
+				usage(stderr, 1);
+			}
+			gid = (gid_t)arg;
 			force_gid = 1;
 			break;
 		case 'R':
 			newroot = optarg;
+			set_root_directory(xstrdup(newroot));
 			break;
 		case 'w':
 			newdir = optarg;
+			set_working_directory(xstrdup(newdir));
 			break;
 		case OPT_MONOTONIC:
-			monotonic = strtoul_or_err(optarg, _("failed to parse monotonic offset"));
+			if ((r = safe_atou(optarg, (unsigned *)&monotonic) < 0)) {
+				errno = -r;
+				say_errno("Invalid argument for --monotonic option: "
+					  "»%s«", optarg);
+				usage(stderr, 1);
+			}
 			force_monotonic = 1;
 			break;
 		case OPT_BOOTTIME:
-			boottime = strtoul_or_err(optarg, _("failed to parse boottime offset"));
+			if ((r = safe_atou(optarg, (unsigned *)&boottime) < 0)) {
+				errno = -r;
+				say_errno("Invalid argument for --boottime option: "
+					  "»%s«", optarg);
+				usage(stderr, 1);
+			}
 			force_boottime = 1;
 			break;
-
-
 		case 'A':
 			set_arg0(xstrdup(optarg));
 			break;
@@ -2461,13 +2509,7 @@ int main(int argc, char **argv)
 		case '2':
 			set_redirect_stderr(xstrdup(optarg));
 			break;
-		case 'C':
-			set_root_directory(xstrdup(optarg));
-			break;
-		case 'D':
-			set_working_directory(xstrdup(optarg));
-			break;
-		case 'R':
+		case OPT_PIVOT_ROOT:
 			c = strchr(optarg, ':');
 			if (!c) {
 				say_errno("Invalid argument for option "
@@ -2477,27 +2519,24 @@ int main(int argc, char **argv)
 			*c = '\0';
 			set_pivot_root(optarg, c + 1);
 			break;
-		case 'i':
+		case OPT_IONICE:
 			c = strchr(optarg, ':');
 			if (!c)
 				set_ionice(atoi(optarg), 0);
 			else
 				set_ionice(atoi(optarg), atoi(c + 1));
 			break;
-		case 'n':
+		case OPT_NICE:
 			set_nice(atoi(optarg));
 			break;
 		case 'K':
 			set_umask(atoi(optarg));
 			break;
-		case 'u':
+		case OPT_UID:
 			set_uid(atoi(optarg));
 			break;
-		case 'g':
+		case OPT_GID:
 			set_gid(atoi(optarg));
-			break;
-		case 'G':
-			set_gid_add(atoi(optarg));
 			break;
 		case 'V':
 			set_pid_env_var(optarg);
@@ -2562,24 +2601,6 @@ int main(int argc, char **argv)
 				say("[>] SydB☮x is supported on this system!");
 			exit(r == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 			break;
-		case 'P':
-			unshare_pid = true;
-			break;
-		case 'N':
-			unshare_net = true;
-			break;
-		case 'M':
-			unshare_mount = true;
-			break;
-		case 'T':
-			unshare_uts = true;
-			break;
-		case 'I':
-			unshare_ipc = true;
-			break;
-		case 'U':
-			unshare_user = true;
-			break;
 		case 'F':
 			if (!optarg) {
 				close_fds[0] = 3;
@@ -2640,7 +2661,7 @@ int main(int argc, char **argv)
 				close_fds[0] ^= close_fds[1];
 			}
 			break;
-		case 'S':
+		case OPT_KEEP_SIGMASK:
 			keep_sigmask = true;
 			break;
 		case 'X':

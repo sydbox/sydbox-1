@@ -8,7 +8,7 @@
 #ifndef SYDBOX_GUARD_SYDBOX_H
 #define SYDBOX_GUARD_SYDBOX_H 1
 
-#include "sydconf.h"
+#include "syd-conf.h"
 
 #ifndef _ATFILE_SOURCE
 #define _ATFILE_SOURCE 1

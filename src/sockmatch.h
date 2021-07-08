@@ -10,7 +10,7 @@
 #ifndef SOCKMATCH_H
 #define SOCKMATCH_H 1
 
-#include "sydconf.h"
+#include "syd-conf.h"
 
 #include <stdbool.h>
 #include <stdlib.h>

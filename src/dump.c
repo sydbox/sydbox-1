@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include "sydbox.h"
+#include "syd-box.h"
 
 #include <stdarg.h>
 #include <stdlib.h>
@@ -20,7 +20,6 @@
 #include <time.h>
 
 #include "serializer.h"
-#include "errno2name.h"
 #include "proc.h"
 
 #define J(s)		"\""#s"\":"
@@ -69,7 +68,7 @@ static void dump_errno(int err_no)
 {
 	fprintf(fp, "{"J(no)"%d", err_no);
 	if (err_no)
-		fprintf(fp, J(name)"\"%s\"}", errno2name(err_no));
+		fprintf(fp, J(name)"\"%s\"}", syd_name_errno(err_no));
 	else
 		fputc('}', fp);
 }

@@ -5,12 +5,11 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include "sydconf.h"
+#include "syd-conf.h"
 #include <syd/compiler.h>
-#include "errno2name.h"
 #include "xfunc.h"
 #include "dump.h"
-#include "sydbox.h"
+#include "syd-box.h"
 
 #include <signal.h>
 #include <stdarg.h>
@@ -189,7 +188,7 @@ void say_errno(const char *fmt, ...)
 	va_start(ap, fmt);
 	vsay(stderr, fmt, ap, 'e');
 	va_end(ap);
-	say(" (errno:%d|%s %s)", save_errno, errno2name(save_errno),
+	say(" (errno:%d|%s %s)", save_errno, syd_name_errno(save_errno),
 	    strerror(save_errno));
 
 	errno = save_errno;
@@ -203,7 +202,7 @@ void die_errno(const char *fmt, ...)
 	va_start(ap, fmt);
 	vsay(stderr, fmt, ap, 'f');
 	va_end(ap);
-	say(" (errno:%d|%s %s)", save_errno, errno2name(save_errno),
+	say(" (errno:%d|%s %s)", save_errno, syd_name_errno(save_errno),
 	    strerror(save_errno));
 
 	syd_abort(SIGTERM);

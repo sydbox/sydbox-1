@@ -54,7 +54,7 @@ extern void syd_abort_func(void (*func)(int));
 #define assert(expr) do { BUG_ON(expr); } while (0)
 #endif
 
-extern void vsay(FILE *f, const char *fmt, va_list ap)
+extern void vsay(FILE *f, const char *fmt, va_list ap, char level)
 	SYD_GCC_ATTR((format (printf, 2, 0)))
 	SYD_GCC_ATTR((nonnull(1, 2)));
 extern void say(const char *fmt, ...)

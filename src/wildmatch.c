@@ -9,7 +9,7 @@
 **  work differently than '*', and to fix the character-class code.
 */
 
-#include "sydconf.h"
+#include "syd-conf.h"
 #include "wildmatch.h"
 
 #ifndef uchar

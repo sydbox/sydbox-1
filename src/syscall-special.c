@@ -12,7 +12,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include "sydbox.h"
+#include "syd-box.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>

@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include "sydbox.h"
+#include "syd-box.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>

@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include "sydbox.h"
+#include "syd-box.h"
 
 int magic_set_trace_memory_access(const void *val, syd_process_t *current)
 {

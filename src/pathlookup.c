@@ -10,7 +10,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include "sydbox.h"
+#include "syd-box.h"
 
 #include <stdlib.h>
 #include <string.h>

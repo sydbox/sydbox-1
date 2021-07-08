@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-#include "sydconf.h"
+#include "syd-conf.h"
 #include "xfunc.h"
 #include <string.h>
 

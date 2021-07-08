@@ -10,7 +10,7 @@
 #ifndef SOCKMAP_H
 #define SOCKMAP_H 1
 
-#include "sydconf.h"
+#include "syd-conf.h"
 #include "xfunc.h"
 #include "sc_map.h"
 #include "sockmatch.h"
@@ -21,7 +21,7 @@ static inline void sockmap_add(struct sc_map_64v *map,
 {
 	struct sockinfo *info_old;
 
-	info_old = sc_map_get_64v(map, inode);
+	info_old = syd_map_get_64v(map, inode);
 	if (sc_map_found(map)) {
 		sc_map_del_64v(map, inode);
 		if (info_old)
@@ -36,7 +36,7 @@ static inline const struct sockinfo *sockmap_find(struct sc_map_64v *map,
 	if (!map)
 		return NULL;
 
-	struct sockinfo *info = sc_map_get_64v(map, inode);
+	struct sockinfo *info = syd_map_get_64v(map, inode);
 	if (sc_map_found(map))
 		return info;
 	return NULL;
@@ -48,7 +48,7 @@ static inline void sockmap_remove(struct sc_map_64v *map,
 	if (!map)
 		return;
 
-	struct sock_info *info = sc_map_get_64v(map, inode);
+	struct sock_info *info = syd_map_get_64v(map, inode);
 	if (!sc_map_found(map))
 		return;
 	sc_map_del_64v(map, inode);

@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include "sydbox.h"
+#include "syd-box.h"
 
 static int magic_edit_acl(int (*edit_func)(enum acl_action, const char *, aclq_t *),
 			  enum acl_action action, const char *val, aclq_t *acl)

@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include "sydbox.h"
+#include "syd-box.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <asm/unistd.h>

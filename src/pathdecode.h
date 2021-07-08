@@ -9,7 +9,7 @@
 #define PATHDECODE_H 1
 
 #include <stdint.h>
-#include "sydbox.h"
+#include "syd-box.h"
 
 int path_decode(syd_process_t *current, uint8_t arg_index, char **buf);
 int path_prefix(syd_process_t *current, uint8_t arg_index, char **buf);

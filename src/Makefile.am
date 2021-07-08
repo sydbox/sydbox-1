@@ -168,7 +168,7 @@ AM_LFLAGS = -v
 AM_YFLAGS = -d
 
 syddir=$(bindir)
-bin_PROGRAMS= syd-run syd-format
+bin_PROGRAMS= syd syd-format
 syd_PROGRAMS= Cargo.toml syd
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
@@ -202,8 +202,8 @@ noinst_HEADERS+= \
 		 sockmap.h \
 		 util.h \
 		 xfunc.h \
-		 sydconf.h \
-		 sydbox.h
+		 syd-conf.h \
+		 syd-box.h
 syd_SOURCES= \
 		 Cargo.toml \
 		 sydbox_rs.h \
@@ -250,10 +250,31 @@ syd_SOURCES= \
 
 syd_run_SOURCES= \
 		 syd-run.c \
+		 serializer.c \
+		 serializer.h \
+		 xfunc.h \
 		 xfunc.c \
+		 daemon.h \
 		 daemon.c \
+		 dump.h \
 		 dump.c \
+		 bsd-compat.h \
+		 strlcpy.c \
+		 strlcat.c \
+		 util.h \
 		 util.c
+syd_run_LDFLAGS= \
+		 @SYDBOX_LIBTOOL_FLAGS@ \
+		 $(CODE_COVERAGE_LDFLAGS) \
+		 $(CODE_COVERAGE_LIBS) \
+		 $(libseccomp_LIBS)
+		 $(top_builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la
+if ENABLE_STATIC
+else
+syd_run_LDFLAGS+=\
+		 -L$(top_builddir)/syd/.libs \
+		 -lsyd_@LIBSYD_PC_SLOT@
+endif
 
 syd_format_SOURCES= \
 		syd-format.c

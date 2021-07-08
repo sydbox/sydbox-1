@@ -12,6 +12,7 @@ dist_man3_MANS= \
 libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	about.c \
 	debug.c \
+	exec.c \
 	name.c \
 	strlcat.c \
 	strlcpy.c \
@@ -21,6 +22,18 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	state.c \
 	time.c \
 	unshare.c
+
+# Robinhood Hash.
+# Implemented by Vitaly "_Vi" Shukela in 2017. License = MIT or Apache 2.0
+libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
+	robinhood_hash.h
+
+# sc_map: simple, efficient hash table
+# Copyright 2021 Ozan Tezcan
+# BSD-3-Clause.
+libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
+	sc_map.h \
+	sc_map.c
 
 # Imported from util-linux' unshare:
 libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
@@ -33,12 +46,12 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
 	procutils.c \
 	statfs_magic.h \
 	caputils.h \
-	caputils.c \
-	syd/robinhood_hash.h
+	caputils.c
 libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= \
 	$(libseccomp_CFLAGS) \
 	$(SYDBOX_CFLAGS)
 libsyd_@LIBSYD_PC_SLOT@_la_LDFLAGS= \
+	-Wl,--version-script=$(srcdir)/libsyd.ld \
 	$(SYDBOX_LDFLAGS)
 libsyd_@LIBSYD_PC_SLOT@_la_LIBS= \
 	$(libseccomp_LIBS)

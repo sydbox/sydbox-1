@@ -15,7 +15,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "sydconf.h"
+#include "syd-conf.h"
 #include "bsd-compat.h"
 #include "file.h"
 #include "xfunc.h"

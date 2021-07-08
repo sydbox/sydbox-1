@@ -167,7 +167,7 @@ SYD_CFLAGS_SAFE=" \
 
 SYD_CFLAGS_DEBUG=" \
 -D_SYD_DEBUG \
--g -gdwarf-5 \
+-g -gdwarf-4 \
 -gz=zlib \
 -mfentry \
 -mrecord-mcount \
@@ -179,7 +179,6 @@ SYD_CFLAGS_CLANG="
 -D_SYD_CLANG \
 -Qunused-arguments \
 -enable-trivial-auto-var-init-zero-knowing-it-will-be-removed-from-clang \
--ftrapv \
 -Wno-unknown-warning-option \
 -Wno-ignored-optimization-argument \
 -D_SYD_CLANG_OK \
@@ -200,7 +199,6 @@ $SYD_CFLAGS_OPT \
 -fopenacc-dim=worker \
 -fhosted \
 -funsigned-char \
--flto \
 -fvisibility=hidden \
 -fno-inline-functions-called-once \
 -fno-stack-check \
@@ -230,7 +228,7 @@ $SYD_CFLAGS_SAFE \
 -Werror=implicit-function-declaration \
 -Werror=implicit-int \
 -Werror=pointer-arith \
--Wframe-larger-than=8 \
+-Wframe-larger-than=320 \
 -Wno-pointer-sign \
 -Wno-stringop-truncation \
 -D_SYD_DEF_OK \
@@ -247,9 +245,8 @@ AC_DEFINE_UNQUOTED([SYDBOX_CFLAGS],
 
 
 dnl Default LDFLAGS
-SYDBOX_LDFLAGS="--build-id=sha1 \
---compress-debug-sections=zlib --gc-sections \
---pack-dyn-relocs=relr --orphan-handling=warn"
+SYDBOX_LDFLAGS="--build-id=sha1 --compress-debug-sections=zlib \
+--gc-sections --pack-dyn-relocs=relr --orphan-handling=warn"
 AC_SUBST([SYDBOX_LDFLAGS])
 AC_DEFINE_UNQUOTED([SYDBOX_LDFLAGS],
 		   [["$SYDBOX_LDFLAGS"]],
@@ -1071,6 +1068,7 @@ AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_CONFIG_FILES([Makefile
 		 pandora/Makefile
 		 src/Makefile
+		 syd/libsyd.ld
 		 syd/Makefile
 		 data/Makefile
 		 man/Makefile

@@ -9,7 +9,7 @@
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
  */
 
-#include "sydconf.h"
+#include "syd-conf.h"
 #include "proc.h"
 
 #include <sys/types.h>

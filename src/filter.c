@@ -7,7 +7,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
-#include "sydbox.h"
+#include "syd-box.h"
 
 #define FILTER_NMEMB_MAX 1048576 /* Allows up to ~42000 filters. */
 static int filter_nmemb = 4096;

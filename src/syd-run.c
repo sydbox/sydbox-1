@@ -11,11 +11,14 @@
 #include <limits.h>
 #include <getopt.h>
 #include <syd/syd.h>
-#include "sydconf.h"
+#include "syd-conf.h"
 #include "xfunc.h"
 #include "daemon.h"
 #include "dump.h"
 #include "util.h"
+
+#include "syd-box.h"
+sydbox_t *sydbox;
 
 #ifdef PACKAGE
 # undef PACKAGE
@@ -53,11 +56,16 @@ int main(int argc, char **argv)
 	};
 
 	int opt, r, arg;
-	char *end;
+	char *c, *end;
 	long dfd;
 
 	/* sydbox options */
 	bool allow_daemonize = false;
+	bool keep_sigmask = false;
+	bool reset_fds = false;
+	bool escape_stdout = false;
+	char *parent_death_signal = NULL;
+	uint32_t close_fds[2] = { 0, 0 };
 
 	/* unshare option defaults */
 	int setgrpcmd = SYD_SETGROUPS_NONE;
@@ -70,10 +78,6 @@ int main(int argc, char **argv)
 	const char *procmnt = NULL;
 	const char *newroot = NULL;
 	const char *newdir = NULL;
-	pid_t pid_bind = 0;
-	pid_t pid = 0;
-	int fds[2];
-	int status;
 	unsigned long propagation = SYD_UNSHARE_PROPAGATION_DEFAULT;
 	int force_uid = 0, force_gid = 0;
 	uid_t uid = 0, real_euid = geteuid();
@@ -88,7 +92,6 @@ int main(int argc, char **argv)
 	 * Thus they are not documented!
 	 */
 	int options_index;
-	char *profile_name;
 	struct option long_options[] = {
 		/* default options */
 		{"help",	no_argument,		NULL,	'h'},
@@ -311,7 +314,7 @@ int main(int argc, char **argv)
 			uid = (uid_t)arg;
 			force_uid = 1;
 			break;
-		case 'G':
+		case OPT_ADD_GID:
 			if ((r = safe_atoi(optarg, &arg) < 0)) {
 				errno = -r;
 				say_errno("Invalid argument for --setgid option: "
@@ -323,9 +326,11 @@ int main(int argc, char **argv)
 			break;
 		case 'R':
 			newroot = optarg;
+			set_root_directory(xstrdup(newroot));
 			break;
 		case 'w':
 			newdir = optarg;
+			set_working_directory(xstrdup(newdir));
 			break;
 		case OPT_MONOTONIC:
 			if ((r = safe_atou(optarg, (unsigned *)&monotonic) < 0)) {
@@ -363,13 +368,7 @@ int main(int argc, char **argv)
 		case '2':
 			set_redirect_stderr(xstrdup(optarg));
 			break;
-		case 'C':
-			set_root_directory(xstrdup(optarg));
-			break;
-		case 'D':
-			set_working_directory(xstrdup(optarg));
-			break;
-		case 'R':
+		case OPT_PIVOT_ROOT:
 			c = strchr(optarg, ':');
 			if (!c) {
 				say_errno("Invalid argument for option "
@@ -379,20 +378,20 @@ int main(int argc, char **argv)
 			*c = '\0';
 			set_pivot_root(optarg, c + 1);
 			break;
-		case 'i':
+		case OPT_IONICE:
 			c = strchr(optarg, ':');
 			if (!c)
 				set_ionice(atoi(optarg), 0);
 			else
 				set_ionice(atoi(optarg), atoi(c + 1));
 			break;
-		case 'n':
+		case OPT_NICE:
 			set_nice(atoi(optarg));
 			break;
 		case 'K':
 			set_umask(atoi(optarg));
 			break;
-		case 'u':
+		case OPT_UID:
 			set_uid(atoi(optarg));
 			break;
 		case 'g':
@@ -409,79 +408,8 @@ int main(int argc, char **argv)
 				die_errno("putenv");
 			break;
 		case 't':
-			test_setup();
-			say("[>] Checking for libseccomp architectures...");
-			/* test_seccomp_arch() returns the number of valid
-			 * architectures. */
-			opt_t[0] = test_seccomp_arch() == 0 ? EDOM : 0;
-			say("[>] Checking for requirements...");
-			if (uname(&buf_uts) < 0) {
-				say_errno("uname");
-			} else {
-				say("%s/%s %s %s",
-				    buf_uts.sysname,
-				    buf_uts.nodename,
-				    buf_uts.release,
-				    buf_uts.version);
-			}
-			if (os_release >= KERNEL_VERSION(5,6,0))
-				say("[*] Linux kernel is 5.6.0 or newer, good.");
-			else
-				say("warning: Your Linux kernel is too old "
-				    "to support seccomp bpf and seccomp "
-				    "user notify. Please update your kernel.");
-			opt_t[1] = test_cross_memory_attach(true);
-			opt_t[2] = test_proc_mem(true);
-			opt_t[3] = test_pidfd(true);
-			opt_t[4] = test_seccomp(true);
-			r = 0;
-			for (i = 0; i < 5; i++) {
-				if (opt_t[i] != 0) {
-					r = opt_t[i];
-					break;
-				}
-			}
-			if (opt_t[0] != 0) {
-				say("[!] Failed to detect any valid libseccomp "
-				    "architecture.");
-				say("[!] This is probably a bug with the "
-				    "architecture detection code.");
-				say("[!] Please report, thank you.");
-			}
-			if (opt_t[1] != 0) {
-				say("Enable CONFIG_CROSS_MEMORY_ATTACH "
-				    "in your kernel configuration "
-				    "for cross memory attach to work.");
-			}
-			if (opt_t[1] != 0 && opt_t[2] != 0) {
-				say("warning: Neither cross memory attach "
-				    "nor /proc/pid/mem interface is "
-				    "available.");
-				say("Sandboxing is only supported with bpf "
-				    "mode.");
-			}
-			if (!r)
-				say("[>] SydB☮x is supported on this system!");
-			exit(r == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
-			break;
-		case 'P':
-			unshare_pid = true;
-			break;
-		case 'N':
-			unshare_net = true;
-			break;
-		case 'M':
-			unshare_mount = true;
-			break;
-		case 'T':
-			unshare_uts = true;
-			break;
-		case 'I':
-			unshare_ipc = true;
-			break;
-		case 'U':
-			unshare_user = true;
-			break;
+			say("[0;1;32;91m"PACKAGE": OK[0m");
+			exit(EXIT_SUCCESS);
 		case 'F':
 			if (!optarg) {
 				close_fds[0] = 3;
