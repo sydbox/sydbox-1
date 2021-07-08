@@ -351,7 +351,7 @@ static void new_shared_memory_clone_fs(struct syd_process *p)
 
 static void new_shared_memory_clone_files(struct syd_process *p)
 {
-	if (!sc_map_init_64v(&p->sockmap,
+	if (!syd_map_init_64v(&p->sockmap,
 			     SYDBOX_SOCKMAP_CAP,
 			     SYDBOX_MAP_LOAD_FAC)) {
 		errno = -ENOMEM;
@@ -625,9 +625,9 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 		p->abspath = NULL;
 	}
 	*/
-	if (sc_map_size_64v(&p->sockmap)) {
-		sc_map_clear_64v(&p->sockmap);
-		sc_map_term_64v(&p->sockmap);
+	if (syd_map_size_64v(&p->sockmap)) {
+		syd_map_clear_64v(&p->sockmap);
+		syd_map_term_64v(&p->sockmap);
 	}
 
 	for (unsigned short i = 0; i < 6; i++) {
@@ -760,7 +760,7 @@ static syd_process_t *parent_process(pid_t pid_task, bool *genuine)
 	 * We need IN_EXECVE for threaded exec -> leader lost case.
 	 */
 	syd_process_t *node;
-	sc_map_foreach_value(&sydbox->tree, node) {
+	syd_map_foreach_value(&sydbox->tree, node) {
 		if (!(node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE)))
 			continue;
 
@@ -1144,7 +1144,7 @@ static void sig_usr(int sig)
 
 	fprintf(stderr, "sydbox: Dumping process tree:\n");
 	count = 0;
-	sc_map_foreach_value(&sydbox->tree, node) {
+	syd_map_foreach_value(&sydbox->tree, node) {
 		dump_one_process(node, complete_dump);
 		count++;
 	}
@@ -1168,7 +1168,7 @@ static void reap_zombies(void)
 #endif
 #endif
 	syd_process_t *node;
-	sc_map_foreach_value(&sydbox->tree, node) {
+	syd_map_foreach_value(&sydbox->tree, node) {
 		//if (node->pid == sydbox->execve_pid)
 		//	continue;
 		/* Zombies includes dead processes too,
@@ -1217,7 +1217,7 @@ static inline size_t process_count_alive(void)
 	size_t count = 0;
 	syd_process_t *node;
 
-	sc_map_foreach_value(&sydbox->tree, node) {
+	syd_map_foreach_value(&sydbox->tree, node) {
 		/* See the explanation in reap_zombies */
 		if (!process_is_zombie(node->pid))
 			continue;
@@ -1267,7 +1267,7 @@ static inline syd_process_t *process_find_clone(pid_t child_pid, pid_t ppid,
 {
 	syd_process_t *node;
 
-	sc_map_foreach_value(&sydbox->tree, node) {
+	syd_map_foreach_value(&sydbox->tree, node) {
 		if (node->pid != ppid ||
 		    node->pid != tgid)
 			continue;
@@ -1285,7 +1285,7 @@ static inline pid_t process_find_exec(pid_t exec_pid)
 {
 	syd_process_t *node;
 
-	sc_map_foreach_value(&sydbox->tree, node) {
+	syd_map_foreach_value(&sydbox->tree, node) {
 		if (node->pid != node->tgid)
 			continue;
 		int fd = syd_proc_open(node->pid);
@@ -1368,7 +1368,7 @@ static void init_early(void)
 	sydbox->export_mode = SYDBOX_EXPORT_NUL;
 	sydbox->hash[0] = '\0';
 	sydbox->proc_fd = opendir("/proc");
-	if (!sc_map_init_64v(&sydbox->tree,
+	if (!syd_map_init_64v(&sydbox->tree,
 			     SYDBOX_PROCMAP_CAP,
 			     SYDBOX_MAP_LOAD_FAC)) {
 		errno = ENOMEM;
@@ -1376,7 +1376,7 @@ static void init_early(void)
 	}
 	config_init();
 	filter_init();
-	sc_map_init_64v(&sydbox->tree, 0, 0);
+	syd_map_init_64v(&sydbox->tree, 0, 0);
 	//syd_abort_func(kill_all);
 }
 
@@ -2044,13 +2044,13 @@ void cleanup_for_child(void)
 
 	/* FIXME: Why can't we free these? */
 #if 0
-	if (sc_map_size_64s(&sydbox->config.proc_pid_auto)) {
-		sc_map_clear_64s(&sydbox->config.proc_pid_auto);
-		sc_map_term_64s(&sydbox->config.proc_pid_auto);
+	if (syd_map_size_64s(&sydbox->config.proc_pid_auto)) {
+		syd_map_clear_64s(&sydbox->config.proc_pid_auto);
+		syd_map_term_64s(&sydbox->config.proc_pid_auto);
 	}
-	if (sc_map_size_64v(&sydbox->tree)) {
-		sc_map_clear_64v(&sydbox->tree);
-		sc_map_term_64v(&sydbox->tree);
+	if (syd_map_size_64v(&sydbox->tree)) {
+		syd_map_clear_64v(&sydbox->tree);
+		syd_map_term_64v(&sydbox->tree);
 	}
 
 	filter_free();

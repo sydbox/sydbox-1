@@ -460,7 +460,7 @@ struct syd_process {
 	/*
 	 * Inode socket address mapping for bind allowlist
 	 */
-	struct sc_map_64v sockmap;
+	struct syd_map_64v sockmap;
 };
 typedef struct syd_process syd_process_t;
 
@@ -526,7 +526,7 @@ struct config {
 	aclq_t filter_write;
 	aclq_t filter_network;
 
-	struct sc_map_64s proc_pid_auto;
+	struct syd_map_64s proc_pid_auto;
 	aclq_t acl_network_connect_auto;
 };
 typedef struct config config_t;
@@ -600,7 +600,7 @@ struct sydbox {
 	struct seccomp_notif_resp *response;
 
 	/* The Process Tree */
-	struct sc_map_64v tree;
+	struct syd_map_64v tree;
 
 	/* SecComp Context */
 	scmp_filter_ctx ctx;
@@ -779,23 +779,23 @@ extern sydbox_t *sydbox;
 
 static inline uint32_t process_count(void)
 {
-	return sc_map_size_64v(&sydbox->tree);
+	return syd_map_size_64v(&sydbox->tree);
 }
 
 static inline void process_add(syd_process_t *p)
 {
-	sc_map_put_64v(&sydbox->tree, p->pid, p);
+	syd_map_put_64v(&sydbox->tree, p->pid, p);
 }
 
 static inline void process_remove(syd_process_t *p)
 {
-	sc_map_del_64v(&sydbox->tree, p->pid);
+	syd_map_del_64v(&sydbox->tree, p->pid);
 }
 
 static inline syd_process_t *process_lookup(pid_t pid)
 {
-	syd_process_t *p = sc_map_get_64v(&sydbox->tree, pid);
-	if (sc_map_found(&sydbox->tree))
+	syd_process_t *p = syd_map_get_64v(&sydbox->tree, pid);
+	if (syd_map_found(&sydbox->tree))
 		return p;
 	return NULL;
 }

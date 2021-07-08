@@ -192,7 +192,7 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 				   &inode)) < 0)
 		return r;
 
-	struct sc_map_64v sockmap = P_SOCKMAP(current);
+	struct syd_map_64v sockmap = P_SOCKMAP(current);
 	syd_process_t *tgp, *pp;
 	info = sockmap_find(&sockmap, inode);
 	if (!info) {

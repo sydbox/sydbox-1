@@ -47,7 +47,7 @@ void config_init(void)
 	sydbox->config.box_static.mode.sandbox_network = SANDBOX_BPF;
 
 	/* initialize access control lists */
-	if (!sc_map_init_64s(&sydbox->config.proc_pid_auto,
+	if (!syd_map_init_64s(&sydbox->config.proc_pid_auto,
 			     SYDBOX_PROCMAP_CAP,
 			     SYDBOX_MAP_LOAD_FAC)) {
 		errno = ENOMEM;

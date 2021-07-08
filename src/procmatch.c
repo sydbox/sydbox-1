@@ -15,37 +15,37 @@
 #include "pathmatch.h"
 #include "sc_map.h"
 
-int procadd(struct sc_map_64s *map, pid_t pid)
+int procadd(struct syd_map_64s *map, pid_t pid)
 {
-	sc_map_get_64s(map, pid);
-	if (sc_map_found(map))
+	syd_map_get_64s(map, pid);
+	if (syd_map_found(map))
 		return 0;
 
 	char *p;
 	xasprintf(&p, "/proc/%u/***", pid);
-	sc_map_put_64s(map, pid, p);
+	syd_map_put_64s(map, pid, p);
 
 	return 1;
 }
 
-int procdrop(struct sc_map_64s *map, pid_t pid)
+int procdrop(struct syd_map_64s *map, pid_t pid)
 {
 	char *p;
 
-	p = (char *)sc_map_del_64s(map, pid);
-	if (!sc_map_found(map))
+	p = (char *)syd_map_del_64s(map, pid);
+	if (!syd_map_found(map))
 		return 0;
 	free(p);
 
 	return 1;
 }
 
-int procmatch(struct sc_map_64s *map, const char *path)
+int procmatch(struct syd_map_64s *map, const char *path)
 {
 	pid_t pid;
 	const char *match;
 
-	sc_map_foreach(map, pid, match) {
+	syd_map_foreach(map, pid, match) {
 		if (pathmatch(match, path))
 			return 1;
 	}

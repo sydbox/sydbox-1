@@ -90,7 +90,7 @@ void kill_all(int fatal_sig, pid_t skip_pid)
 	if (!sydbox)
 		return;
 
-	sc_map_foreach_value(&sydbox->tree, node) {
+	syd_map_foreach_value(&sydbox->tree, node) {
 		if (skip_pid && node->pid == skip_pid)
 			continue;
 		if (kill_one(node, fatal_sig) == -ESRCH)
