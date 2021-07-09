@@ -19,7 +19,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include "ansi.h"
 
 #if IN_SYDBOX
 # define in_child()	((sydbox)->in_child)
