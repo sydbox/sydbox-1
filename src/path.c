@@ -29,7 +29,9 @@ char *path_make_absolute(const char *p, const char *prefix)
 	if (path_is_absolute(p) || !prefix)
 		return syd_strdup(p);
 
-	if (syd_asprintf(&r, "%s/%s", prefix, p) < 0)
+	if (syd_asprintf(&r, "%s%s%s", prefix,
+			 p && p[0] != '\0' ? "/" : "",
+			 p && p[0] != '\0' ? p : "") < 0)
 		return NULL;
 
 	return r;

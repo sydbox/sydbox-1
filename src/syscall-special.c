@@ -586,7 +586,7 @@ int sys_fstatat(syd_process_t *current)
 	/* Step 1: Check the dirfd */
 	bool badfd = false;
 	char *prefix = NULL;
-	int r = path_prefix(current, current->args[0], &prefix);
+	int r = path_prefix(current, 0, &prefix);
 	if (r == -ESRCH) {
 		return -ESRCH;
 	} else if (r == -EBADF) {
@@ -623,7 +623,7 @@ int sys_fstatat(syd_process_t *current)
 
 	char *abspath = NULL;
 	unsigned rmode = 0;
-	if (current->args[2] & AT_SYMLINK_NOFOLLOW)
+	if (current->args[3] & AT_SYMLINK_NOFOLLOW)
 		rmode |= RPATH_NOFOLLOW;
 	if ((r = box_resolve_path(path, prefix ? prefix : P_CWD(current),
 				  sydbox->pid_valid, rmode, &abspath)) < 0) {
@@ -658,7 +658,7 @@ int sys_statx(syd_process_t *current)
 	/* Step 1: Check the dirfd */
 	bool badfd = false;
 	char *prefix = NULL;
-	int r = path_prefix(current, current->args[0], &prefix);
+	int r = path_prefix(current, 0, &prefix);
 	if (r == -ESRCH) {
 		return -ESRCH;
 	} else if (r == -EBADF) {
