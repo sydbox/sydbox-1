@@ -178,7 +178,6 @@ dnl -Wno-gnu
 SYD_CFLAGS_CLANG="
 -D_SYD_CLANG \
 -Qunused-arguments \
--enable-trivial-auto-var-init-zero-knowing-it-will-be-removed-from-clang \
 -Wno-unknown-warning-option \
 -Wno-ignored-optimization-argument \
 -D_SYD_CLANG_OK \
