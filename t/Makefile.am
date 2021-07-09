@@ -40,21 +40,21 @@ TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
 SYDBOX_CHECK_OPTIONS=--tee --verbose $(TEST_OPTIONS)
 export SYDBOX_CHECK_OPTIONS
 TESTS= \
-	t0000-basic.sh \
-	t0001-path-wildmatch.sh \
-	t0002-path-realpath.sh \
-	t0003-core-basic.sh \
-	t0004-core-seccomp.sh \
-	t0005-core-exit.sh \
-	t0006-core-abort.sh \
-	t0007-core-magic.sh \
-	t0008-core-open-read.sh \
-	t0009-core-exec.sh \
-	t0010-core-chdir.sh \
-	t0011-net-netmatch.sh \
-	t0012-exec-sandbox.sh \
-	t0013-net-sandbox.sh \
-	t0014-sys-fuzzer.sh
+	t00-basic.sh \
+	t01-path-wildmatch.sh \
+	t02-path-realpath.sh \
+	t03-core-basic.sh \
+	t04-core-seccomp.sh \
+	t05-core-exit.sh \
+	t06-core-abort.sh \
+	t07-core-magic.sh \
+	t08-core-open-read.sh \
+	t09-core-exec.sh \
+	t10-core-chdir.sh \
+	t11-net-netmatch.sh \
+	t12-exec-sandbox.sh \
+	t13-net-sandbox.sh \
+	t14-sys-fuzzer.sh
 check_SCRIPTS+= $(TESTS)
 
 syddir=$(libexecdir)/$(PACKAGE)/t-$(SYDBOX_API_VERSION)
