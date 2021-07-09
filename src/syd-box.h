@@ -28,7 +28,6 @@
 #include <sched.h>
 #include <seccomp.h>
 #include <linux/sched.h>
-#include "sydbox_rs.h"
 #include "pink.h"
 #include "acl-queue.h"
 #include "bsd-compat.h"

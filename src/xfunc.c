@@ -57,7 +57,7 @@ void vsay(FILE *fp, const char *fmt, va_list ap, char level)
 	if (tty < 0)
 		tty = isatty(STDERR_FILENO) == 1 ? 1 : 0;
 	if (tty)
-		fputs(ADM, fp);
+		fputs(SYD_WARN, fp);
 	if (fmt[0] != ' ')
 		fputs(PACKAGE": ", fp);
 	switch (level) {
@@ -75,7 +75,7 @@ void vsay(FILE *fp, const char *fmt, va_list ap, char level)
 	}
 	vfprintf(stderr, fmt, ap);
 	if (tty)
-		fputs(AN, fp);
+		fputs(SYD_RESET, fp);
 }
 
 void say(const char *fmt, ...)

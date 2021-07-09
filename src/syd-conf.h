@@ -15,10 +15,7 @@
 #ifndef SYDCONF_H
 #define SYDCONF_H
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-
+#include "HELPME.h"
 #ifndef IN_SYDBOX
 # define IN_SYDBOX 0
 # endif

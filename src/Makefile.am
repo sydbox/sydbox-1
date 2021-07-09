@@ -185,7 +185,6 @@ syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
 noinst_INCLUDE_SRCS= syd_seccomp_arch_default.c
 noinst_HEADERS+= \
 		 acl-queue.h \
-		 ansi.h \
 		 arch.h \
 		 asyd.h \
 		 daemon.h \
