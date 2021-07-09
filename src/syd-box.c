@@ -1879,7 +1879,7 @@ static syd_process_t *startup_child(char **argv)
 				       SIGCHLD, &sydbox->execve_pidfd);
 	pid = sydbox->execve_pid;
 	if (pid < 0)
-		die_errno("can't fork");
+		die_errno("clone3 failed");
 	else if (pid == 0) {
 		sydbox->execve_pid = getpid();
 		sydbox->in_child = true;
