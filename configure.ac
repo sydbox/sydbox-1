@@ -270,8 +270,15 @@ AX_PTHREAD([],
 
 if test x"$ax_cv_PTHREAD_CLANG" = x"yes"; then
 	SYD_CFLAGS="$SYD_CFLAGS $SYD_CFLAGS_CLANG"
+	SYD_GCC=0
+	SYD_CLANG=1
+else
+	SYD_GCC=1
+	SYD_CLANG=0
 fi
 SYD_CFLAGS="$SYD_CFLAGS -D_SYD_DEF_OK"
+AC_DEFINE_UNQUOTED([SYD_GCC], [$SYD_GCC], [Sydb☮x Build Compiler is GNU C Compiler])
+AC_DEFINE_UNQUOTED([SYD_CLANG], [$SYD_CLANG], [Sydb☮x Build Compiler is CLang Compiler])
 
 SYDBOX_CFLAGS=
 for flag in $SYD_CFLAGS ; do

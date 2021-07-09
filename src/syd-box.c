@@ -142,7 +142,7 @@ static void usage(FILE *outfp, int code)
 syd-"VERSION GITVERSION" -- secc☮mp bⒶsed ⒶpplicⒶtion sⒶndb☮x\n\
 usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
            [--export <bpf|pfc:filename>] [--memaccess 0..1]\n\
-           [--arch arch...] [--file pathspec...] [--syd magic...]\n\
+           [--arch arch...] [--file pathspec...] [--syd magic-command...]\n\
            [--lock] [--root directory] [--pivot-root new-root:put-old]\n\
            [--wd directory] [--env var...] [--env var=val...]\n\
            [--ionice class:data] [--nice level]\n\
@@ -159,8 +159,8 @@ usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
            {command [arg...]}\n", outfp);
        fputs("\
        syd [--export <bpf|pfc:filename>]\n\
-           [--arch arch...] [--config pathspec...]\n\
-           [--magic command...] {noexec}\n\
+           [--arch arch...] [--file pathspec...]\n\
+           [--syd magic-command...] {noexec}\n\
        syd --test\n\
        syd dump {syd-args...}\n\
        syd errno [-hv] -|errno-name|errno-number...\n\
