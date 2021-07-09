@@ -170,14 +170,14 @@ usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
            [--debug] [--immediate]\n\
            [--long] [--run test]\n\
            [--verbose-only] [--quiet]\n\
-              [--verbose-log]\n\
-              [--no-color]\n\
-              [--dump] [--pfc]\n\
-              [--strace] [--valgrind]\n\
-              [--root directory]\n\
-              [--chain-lint] [--no-chain-lint]\n\
-              [--stress] [--stress-jobs jobs]\n\
-              [--stress-limit limit]\n\
+           [--verbose-log]\n\
+           [--no-color]\n\
+           [--dump] [--pfc]\n\
+           [--strace] [--valgrind]\n\
+           [--root directory]\n\
+           [--chain-lint] [--no-chain-lint]\n\
+           [--stress] [--stress-jobs jobs]\n\
+           [--stress-limit limit]\n\
 \n"SYD_HELPME, outfp);
 	exit(code);
 }
