@@ -1,4 +1,4 @@
-libsyd_@LIBSYD_PC_SLOT@ {
+libsyd_@SYD_PC_SLOT@ {
 global:
 	/* sc_map.h */
 	sc_map_dec_strkey;
