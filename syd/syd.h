@@ -359,7 +359,6 @@ static inline void free_safe(void *ptr) {
 #define syd_map_oom sc_map_oom
 #define syd_map_free(map) (!(map)->alloc)
 #define syd_map_foreach sc_map_foreach
-
 #define syd_map_foreach_value sc_map_foreach_value
 
 #define syd_map_32 sc_map_32
