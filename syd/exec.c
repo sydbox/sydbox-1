@@ -8,7 +8,9 @@
  */
 
 #include <syd/syd.h>
+#include <sys/syscall.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #include <sched.h>
 #include <linux/sched.h>
 
