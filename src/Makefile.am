@@ -150,6 +150,36 @@ DEFS+= \
        -DDATADIR=\"$(datadir)\" \
        -DLIBEXECDIR=\"$(libexecdir)/$(PACKAGE)\" \
        -DSYSCONFDIR=\"$(sysconfdir)\"
+
+# libsyd
+libsyd_SRCS = \
+	$(top_srcdir)/syd/about.c \
+	$(top_srcdir)/syd/debug.c \
+	$(top_srcdir)/syd/exec.c \
+	$(top_srcdir)/syd/name.c \
+	$(top_srcdir)/syd/strlcat.c \
+	$(top_srcdir)/syd/file.c \
+	$(top_srcdir)/syd/pidfd.c \
+	$(top_srcdir)/syd/proc.c \
+	$(top_srcdir)/syd/strlcpy.c \
+	$(top_srcdir)/syd/state.c \
+	$(top_srcdir)/syd/time.c \
+	$(top_srcdir)/syd/unshare.c \
+	$(top_srcdir)/syd/robinhood_hash.h \
+	$(top_srcdir)/syd/sc_map.c \
+	$(top_srcdir)/syd/sc_map.h \
+	$(top_srcdir)/syd/all-io.h \
+	$(top_srcdir)/syd/c.h \
+	$(top_srcdir)/syd/pathnames.h \
+	$(top_srcdir)/syd/fileutils.h \
+	$(top_srcdir)/syd/fileutils.c \
+	$(top_srcdir)/syd/procutils.h \
+	$(top_srcdir)/syd/procutils.c \
+	$(top_srcdir)/syd/statfs_magic.h \
+	$(top_srcdir)/syd/caputils.h \
+	$(top_srcdir)/syd/caputils.c
+syd_SOURCES= $(libsyd_SRCS)
+
 # @SYDBOX_CFLAGS@
 AM_CFLAGS= \
 	   -I$(top_builddir)/syd \
@@ -213,7 +243,7 @@ noinst_HEADERS+= \
 		 xfunc.h \
 		 syd-conf.h \
 		 syd-box.h
-syd_SOURCES= \
+syd_SOURCES+= \
 	     syd-box.c \
 	     Cargo.toml \
 	     sydbox_rs.h \
@@ -275,11 +305,8 @@ syd_SOURCES= \
 #		 @SYDBOX_LIBTOOL_FLAGS@ \
 #		 $(CODE_COVERAGE_LDFLAGS)
 #syd_run_LDADD= \
-#		 $(top_builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la \
 #		 $(CODE_COVERAGE_LIBS) \
-#		 $(libseccomp_LIBS) \
-#		 -L$(top_builddir)/syd/.libs \
-#		 -lsyd_@LIBSYD_PC_SLOT@
+#		 $(libseccomp_LIBS)
 
 # Experimental Rust.
 # TODO: To be integrated into libsyd.
@@ -328,9 +355,6 @@ endif
 syd_LDFLAGS= -pthread -lpthread -ldl \
 	     $(CODE_COVERAGE_LDFLAGS)
 syd_LDADD= \
-	      $(top_builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la \
-	      -L$(top_builddir)/syd/.libs \
-	      -lsyd_@LIBSYD_PC_SLOT@ \
 	      @SYDBOX_LIBTOOL_FLAGS@ \
 	      $(libseccomp_LIBS) \
 	      $(CODE_COVERAGE_LIBS)
