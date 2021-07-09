@@ -1,5 +1,5 @@
+H=$(top_builddir)/misc/syd-hilite
 AM_MAKEFLAGS= --no-print-directory
-HILITE=$(top_builddir)/misc/syd-hilite
 CLEANFILES= \
 	    *~
 DEFS+= \
@@ -14,7 +14,7 @@ BUILT_SOURCES+= build
 .PHONY: build
 build: jobs
 	@echo >&2 "[0;1;31;91msydb☮x: Make is running $(JOB_COUNT) jobs.[0m"
-	$(HILITE) $(MAKE) $(AM_MAKEFLAGS) $(MFLAGS) libsyd_@LIBSYD_PC_SLOT@.la
+	$(H) make $(AM_MAKEFLAGS) $(MFLAGS) libsyd_@LIBSYD_PC_SLOT@.la
 
 .PHONY: parallel
 parallel: .parallel ; @$(eval JOB_COUNT := $(shell sort -n $< | tail -n 1))

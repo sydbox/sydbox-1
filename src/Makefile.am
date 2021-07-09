@@ -21,7 +21,7 @@ BUILT_SOURCES+= build
 .PHONY: build
 build: jobs
 	@echo >&2 "[0;1;31;91msydb☮x: Make is running $(JOB_COUNT) jobs.[0m"
-	$(H) $(MAKE) $(AM_MAKEFLAGS) $(MFLAGS) $(PROGRAMS)
+	$(H) make $(AM_MAKEFLAGS) $(MFLAGS) $(PROGRAMS)
 
 CARGO_VERBOSE = $(cargo_verbose_$(V))
 cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
