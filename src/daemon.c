@@ -42,7 +42,16 @@ const char *get_redirect_stderr(void) { return redirect_stderr; }
 uid_t get_uid(void) { return uid ; }
 gid_t get_gid(void) { return gid ; }
 int get_nice(void) { return nice_inc; }
-const char *get_arg0(void) { return arg0; }
+const char *get_arg0(void) {
+	char *dup = NULL;
+
+	if (arg0 == NULL)
+		arg0 = strdup("☮");
+	else if (asprintf(&dup, "☮%s", arg0) >= 0)
+		return dup;
+	else
+		return arg0;
+}
 const char *get_root_directory(void) { return root_directory; }
 const char *get_working_directory(void) { return working_directory; }
 const char *get_pid_env_var(void) { return pid_env_var; }

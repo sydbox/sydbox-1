@@ -1889,13 +1889,24 @@ static syd_process_t *startup_child(char **argv)
 #define SYD_CLONE_FLAGS (CLONE_CLEAR_SIGHAND|\
 			 CLONE_PARENT_SETTID)
 	sydbox->sydbox_pid = getpid();
-	sydbox->execve_pid = syd_clone(SYD_CLONE_FLAGS |\
-				       unshare_flags,
+startup_child:
+	sydbox->execve_pid = syd_clone(SYD_CLONE_FLAGS | unshare_flags,
 				       SIGCHLD, &sydbox->execve_pidfd);
 	pid = sydbox->execve_pid;
-	if (pid < 0)
+	if (pid < 0) {
+		if (errno == EINVAL) {
+			/* Filter out unsupported clone flags and retry... */
+			for (uint8_t i = 0; i < SYD_UNSHARE_FLAGS_MAX; i++) {
+				if (unshare_flags & syd_unshare_flags[i]) {
+					say("clone3 failed, retrying without "
+					    "flag:%d", syd_unshare_flags[i]);
+					unshare_flags &= ~syd_unshare_flags[i];
+					goto startup_child;
+				}
+			}
+		}
 		die_errno("can't fork");
-	else if (pid == 0) {
+	} else if (pid == 0) {
 		sydbox->execve_pid = getpid();
 		sydbox->in_child = true;
 		sydbox->seccomp_fd = pfd[1];
