@@ -171,6 +171,8 @@ static int box_resolve_path_helper(const char *abspath, pid_t tid,
 	int r;
 	char *p;
 
+	if (abspath && startswith(abspath, SYDBOX_MAGIC_PREFIX))
+		return 0;
 	p = box_resolve_path_special(abspath, tid);
 	r = realpath_mode(p ? p : abspath, rmode, res);
 	if (p)
@@ -279,7 +281,7 @@ static int box_check_ftype(const char *path, syscall_info_t *info)
 	}
 
 	if (stat_ret < 0)
-		return 0; /* stat() failed, TODO: are we fine returning 0? */
+		return -errno;
 
 	if (info->ret_statbuf)
 		*info->ret_statbuf = buf;
@@ -481,6 +483,12 @@ check_access:
 	 */
 deny:
 	if ((stat_errno = box_check_ftype(abspath, info)) != 0) {
+		if (stat_errno == ENOENT &&
+		    startswith(abspath, SYDBOX_MAGIC_PREFIX)) {
+			/* Let SydB☮x Magic through! */
+			r = 0;
+			goto out;
+		}
 		deny_errno = stat_errno;
 		if (!sydbox->config.violation_raise_safe) {
 			/* ignore safe system call */

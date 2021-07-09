@@ -635,7 +635,7 @@ int sys_fstatat(syd_process_t *current)
 		goto out;
 	}
 
-	r = do_stat(current, abspath, 2, false);
+	r = do_stat(current, abspath ? abspath : path, 2, false);
 out:
 	if (prefix)
 		free(prefix);
