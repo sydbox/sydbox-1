@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
+#include "HELPME.h"
 #include <syd/syd.h>
 #include <sys/syscall.h>
 #include <sys/mman.h>

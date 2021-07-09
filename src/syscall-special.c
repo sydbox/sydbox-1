@@ -583,14 +583,24 @@ int sys_fstatat(syd_process_t *current)
 		return 0;
 	}
 
-	/* We intentionally disregard the first argument, aka `dirfd' here
-	 * because the added complexity is not worth adding support for a
-	 * usecase that's almost never possible, ie:
-	 * cd /dev; fstatat(AT_FDCWD, sydbox/..., 0);
-	 * does not work, however
-	 * fstatat(AT_FDCWD, /dev/sydbox/..., 0);
-	 * does.
-	 */
+	/* Step 1: Check the dirfd */
+	bool badfd = false;
+	char *prefix = NULL;
+	int r = path_prefix(current, current->args[0], &prefix);
+	if (r == -ESRCH) {
+		return -ESRCH;
+	} else if (r == -EBADF) {
+		/* Using a bad directory for absolute paths is fine!
+		 */
+		badfd = true;
+	} else if (r < 0) {
+		r = deny(current, -r);
+		if (sydbox->config.violation_raise_fail)
+			violation(current, "%s()", current->sysname);
+		return r;
+	}
+
+	/* Step 2: Check the second argument */
 	addr = current->args[1];
 	if ((count = syd_read_string(current, addr, path, SYDBOX_PATH_MAX)) < 0)
 		return errno == EFAULT ? 0 : -errno;
@@ -599,7 +609,27 @@ int sys_fstatat(syd_process_t *current)
 	else
 		path[count] = '\0';
 
-	return do_stat(current, path, 2, false);
+	char *abspath = NULL;
+	unsigned rmode = 0;
+	if (current->args[2] & AT_SYMLINK_NOFOLLOW)
+		rmode |= RPATH_NOFOLLOW;
+	if ((r = box_resolve_path(path, prefix ? prefix : P_CWD(current),
+				  sydbox->pid_valid, rmode, &abspath)) < 0) {
+		r = deny(current, -r);
+		if (sydbox->config.violation_raise_fail)
+			violation(current, "%s(»%s«)",
+				  current->sysname,
+				  path);
+		goto out;
+	}
+
+	r = do_stat(current, abspath, 2, false);
+out:
+	if (prefix)
+		free(prefix);
+	if (abspath)
+		free(abspath);
+	return r;
 }
 
 int sys_statx(syd_process_t *current)
