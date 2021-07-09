@@ -586,11 +586,12 @@ struct sydbox {
 	uint32_t seccomp_action;
 	pid_t sydbox_pid; /* Process ID of the SydB☮x process. */
 	pid_t execve_pid; /* Process ID of the process SydB☮x executes. */
-	pid_t status_pid;
-	int exit_code;
 
 	/* Execve process pid FD */
 	unsigned long long execve_pidfd;
+
+	/* Exit code of the execve process */
+	int exit_code;
 
 	/* /proc */
 	DIR *proc_fd;

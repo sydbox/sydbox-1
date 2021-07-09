@@ -36,7 +36,7 @@ pid_t syd_clone(int flags, int exit_signal, unsigned long long *pidfd_out)
 	args.exit_signal = exit_signal;
 
 	pid_t pid = syd_clone3(&args);
-	if (pid > 0)
+	if (pid > 0 && (flags & CLONE_PIDFD))
 		*pidfd_out = pidfd;
 	return pid;
 }

@@ -1067,7 +1067,7 @@ static int sig_child(void)
 	int status;
 	pid_t pid = interruptid;
 
-	if (pid == sydbox->status_pid) {
+	if (pid == sydbox->execve_pid) {
 		if (interruptcode == CLD_EXITED)
 			sydbox->exit_code = WEXITSTATUS(interruptstat);
 		else if (interruptcode == CLD_KILLED ||
@@ -1874,8 +1874,11 @@ static syd_process_t *startup_child(char **argv)
 	 * apply the unconditional restrictions about SydB☮x process
 	 * receiving any signal other than SIGCHLD.
 	 */
+#define SYD_CLONE_FLAGS (CLONE_CLEAR_SIGHAND|\
+			 CLONE_PARENT_SETTID)
 	sydbox->sydbox_pid = getpid();
-	sydbox->execve_pid = syd_clone(CLONE_PIDFD|CLONE_PARENT_SETTID,
+	sydbox->execve_pid = syd_clone(SYD_CLONE_FLAGS |\
+				       unshare_flags,
 				       SIGCHLD, &sydbox->execve_pidfd);
 	pid = sydbox->execve_pid;
 	if (pid < 0)
@@ -1991,7 +1994,7 @@ seccomp_init:
 			errno = -pid;
 			say_errno("Error executing »%s«", pathname);
 		}
-		free(pathname); /* not NULL because noexec is handled above. */
+		free(pathname);
 		_exit(127);
 	}
 	seccomp_release(sydbox->ctx);
@@ -2028,7 +2031,6 @@ seccomp_init:
 
 	current->pid = pid;
 	sydbox->execve_pid = pid;
-	sydbox->status_pid = pid;
 
 	return current;
 }
@@ -2781,7 +2783,7 @@ int main(int argc, char **argv)
 		pid = waitpid(-1, &status, __WALL);
 		switch (errno) {
 		case 0:
-			if (pid == sydbox->status_pid) {
+			if (pid == sydbox->execve_pid) {
 				if (WIFEXITED(status))
 					sydbox->exit_code = WEXITSTATUS(status);
 				else if (WIFSIGNALED(status))
