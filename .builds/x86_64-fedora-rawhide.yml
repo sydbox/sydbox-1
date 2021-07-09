@@ -18,6 +18,7 @@ packages:
 - autoconf
 - automake
 - pkgconf
+- gperf
 - bzip2
 - tmux
 - cgdb

@@ -3,7 +3,6 @@ arch: x86_64
 artifacts: [ sydbox-test.tar.bz2 ]
 packages:
 - linux-headers
-- libseccomp
 - bind-tools
 - perl
 - libxslt
@@ -13,6 +12,7 @@ packages:
 - autoconf
 - automake
 - pkgconf
+- gperf
 - bzip2
 - tmux
 - cgdb
@@ -23,6 +23,8 @@ packages:
 sources:
 - https://git.sr.ht/~alip/sydbox
 tasks:
+- libseccomp: |
+    test -d || git clone https://github.com/seccomp/libseccomp.git && cd libseccomp && ./autogen.sh && ./configure --prefix=/usr --enable-static && make -j$(nproc) && sudo make -j install
 - init: |
     grep CONFIG_CROSS_MEMORY_ATTACH /proc/config || true
     zgrep CONFIG_CROSS_MEMORY_ATTACH /proc/config.gz || true
