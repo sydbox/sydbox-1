@@ -197,6 +197,10 @@ SYD_CFLAGS_CLANG="
 
 dnl TODO: -fauto-profile=misc/sydbox.afdo
 dnl TODO: -fplan9-extensions
+dnl These two is a bit too much and
+dnl generates lots of warnings for libsyd:
+dnl -fbranch-target-load-optimize
+dnl -fbranch-target-load-optimize2
 SYD_CFLAGS="
 -D_SYD_DEF \
 $SYD_CFLAGS_OPT \
@@ -210,8 +214,6 @@ $SYD_CFLAGS_SAFE \
 -fwide-exec-charset=UTF-8 \
 -falign-functions=32 \
 -fallow-parameterless-variadic-functions \
--fbranch-target-load-optimize \
--fbranch-target-load-optimize2 \
 -fbtr-bb-exclusive \
 -fdata-sections \
 -ffast-math \
