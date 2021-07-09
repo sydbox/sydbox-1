@@ -3,8 +3,7 @@ AM_MAKEFLAGS= --no-print-directory
 CLEANFILES= \
 	    *~
 DEFS+= \
-       -DIN_LIBSYD=1 \
-       -DGITVERSION=\"$(GITVERSION)\"
+       -DIN_LIBSYD=1
 
 BUILT_SOURCES= jobs
 .PHONY: jobs
@@ -37,7 +36,6 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	exec.c \
 	name.c \
 	strlcat.c \
-	strlcpy.c \
 	file.c \
 	pidfd.c \
 	proc.c \

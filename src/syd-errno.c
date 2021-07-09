@@ -6,10 +6,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-
+#include "HELPME.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -109,13 +106,7 @@ Given an errno number, print its name.\n\
 Given an errno name, print its number.\n\
 Given `-', print all error numbers defined by the system.\n\
 Multiple arguments may be given.\n\
-\n\
-Hey you, out there on the road,\n\
-Always doing what you're told,\n\
-Can you help me?\n\
-\n\
-Send bug reports to \"" PACKAGE_BUGREPORT "\"\n\
-Attaching poems encourages consideration tremendously.\n");
+\n"SYD_HELPME);
 	exit(code);
 }
 

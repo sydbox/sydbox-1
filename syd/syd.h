@@ -65,8 +65,6 @@ pid_t syd_clone3(struct clone_args *args);
 #define SYD_ANSI_GREEN		"[00;32m"
 #define SYD_ANSI_YELLOW		"[00;33m"
 #define SYD_ANSI_CYAN		"[00;36m"
-#define SYD_WARN	SYD_ANSI_DARK_MAGENTA
-#define SYD_RESET	SYD_ANSI_NORMAL
 
 /*
  * 16 is sufficient since the largest number we will ever convert

@@ -178,6 +178,7 @@ dnl -Wno-gnu
 SYD_CFLAGS_CLANG="
 -D_SYD_CLANG \
 -Qunused-arguments \
+-Wno-invalid-pp-token
 -Wno-unknown-warning-option \
 -Wno-ignored-optimization-argument \
 -D_SYD_CLANG_OK \
@@ -191,9 +192,13 @@ SYD_CFLAGS="
 -D_SYD_DEF \
 $SYD_CFLAGS_OPT \
 $SYD_CFLAGS_SAFE \
--std=c11 -trigraphs -fmath-errno
+-std=c11 -std=gnu11 \
+-trigraphs -fmath-errno
 -D_XOPEN_SOURCE=700 \
 -D_GNU_SOURCE=1 \
+-fexec-charset=UTF-8 \
+-finput-charset=UTF-8 \
+-fwide-exec-charset=UTF-8 \
 -falign-functions=32 \
 -fallow-parameterless-variadic-functions \
 -fconserve-stack \
@@ -1013,6 +1018,7 @@ else
 fi
 AM_CONDITIONAL([WANT_GIT], test x"$WANT_GIT" = x"yes")
 AC_DEFINE_UNQUOTED([SYDBOX_GIT], [$SYDBOX_GIT], ['Denotes SydB☮x is built from Git'])
+AC_DEFINE_UNQUOTED([GITVERSION], [["$GITVERSION"]], ['SydB☮x Git version'])
 AC_SUBST([SYDBOX_GIT])
 
 dnl unshare requires Rust and Cargo.

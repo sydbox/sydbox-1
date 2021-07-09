@@ -30,6 +30,7 @@ EXTRA_DIST+= $(PANDORA_EXTRA_DIST)
 dist_doc_DATA= \
 	       BUGS \
 	       COPYING \
+	       HELPME.h \
 	       LICENSE \
 	       LICENSE.psyscall \
 	       LICENSE.sinit \

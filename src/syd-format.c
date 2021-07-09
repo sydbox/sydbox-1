@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
+#include "HELPME.h"
 #include "syd-conf.h"
 #include <syd/compiler.h>
 
@@ -51,13 +52,7 @@ usage: "PACKAGE" [-hv]\n\
        "PACKAGE" exec [--] {command [arg...]}\n\
 -h          -- Show usage and exit\n\
 -v          -- Show version and exit\n\
-\n\
-Hey you, out there on the road,\n\
-Always doing what you're told,\n\
-Can you help me?\n\
-\n\
-Send bug reports to \"" PACKAGE_BUGREPORT "\"\n\
-Attaching poems encourages consideration tremendously.\n");
+\n"SYD_HELPME);
 	exit(code);
 }
 

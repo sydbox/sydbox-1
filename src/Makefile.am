@@ -146,8 +146,9 @@ endif
 DEFS+= \
        -DIN_SYD=1 \
        -DIN_SYDBOX=1 \
+       -DBINDIR=\"$(bindir)\" \
        -DDATADIR=\"$(datadir)\" \
-       -DGITVERSION=\"$(GITVERSION)\" \
+       -DLIBEXECDIR=\"$(libexecdir)/$(PACKAGE)\" \
        -DSYSCONFDIR=\"$(sysconfdir)\"
 # @SYDBOX_CFLAGS@
 AM_CFLAGS= \

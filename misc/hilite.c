@@ -27,17 +27,46 @@
  * 330, Boston, MA 02111-1307, USA.
  */
 
+#include "HELPME.h"
+#ifdef PACKAGE
+# undef PACKAGE
+#endif
+#define PACKAGE "syd-hilite"
+
+#include <sys/wait.h>
+#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <errno.h>
-#include <sys/wait.h>
 
-#define HEADER "\033[91m"
-#define FOOTER "\033[0m"
+//#define HEADER "\033[91m"
+#define HEADER SYD_WARN
+#define FOOTER SYD_RESET
 
-#define FAIL(msg) { fprintf (stderr, "%s: " msg "() failed: %s\n", argv[0], \
+#define FAIL(msg) { fprintf (stderr, SYD_WARN"%s: " msg "() failed: %s\n"SYD_RESET, argv[0], \
                               strerror (errno)); return 1; }
+
+static void about(void)
+{
+	printf(PACKAGE"-"VERSION GITVERSION"\n");
+}
+
+static void usage(FILE *outfp, int code)
+{
+	fprintf(outfp, "\
+"PACKAGE"-"VERSION GITVERSION" -- sydbox' standard error highlighter\n\
+usage: "PACKAGE" [-hv] command args...\n\
+-h          -- Show usage and exit\n\
+-v          -- Show version and exit\n\
+\n\
+Runs a command, highlighting everything it sends to stderr.\n\
+"SYD_WARN"The highlighting colour is dark magenta."SYD_RESET"\n\
+Replaces the character »o« with »☮« case insensitively.\n\
+Replaces the character »a« with »♡« case insensitively.\n\
+\n"SYD_HELPME);
+	exit(code);
+}
 
 int
 main (int argc, char **argv)
@@ -47,9 +76,19 @@ main (int argc, char **argv)
 
   if (argc < 2)
     {
-      fprintf (stderr, "%s: specify a command to execute\n", argv[0]);
+      usage(stderr, 1);
       return 1;
     }
+	if (argv[1][0] == '-') {
+		if (!strcmp(argv[1], "-h") ||
+		    !strcmp(argv[1], "--help"))
+			usage(stdout, EXIT_SUCCESS);
+		if (!strcmp(argv[1], "-v") ||
+		    !strcmp(argv[1], "--version")) {
+			about();
+			return EXIT_SUCCESS;
+		}
+	}
 
   if (pipe (p) != 0)
     FAIL ("pipe");
@@ -79,7 +118,25 @@ main (int argc, char **argv)
             break;
 
           buf[r] = 0;
-          fprintf (stderr, "%s%s%s", HEADER, buf, FOOTER);
+	  /* alip:
+	   * Peace and Love for SydBox! */
+	  fputs(HEADER, stderr);
+	  for (size_t i = 0; buf[i] != '\0'; i++) {
+		switch (buf[i]) {
+		case 'o':
+		case 'O':
+			fputs("☮", stderr);
+			break;
+		case 'a':
+		case 'A':
+			fputs("♡", stderr);
+			break;
+		default:
+			fputc(buf[i], stderr);
+			break;
+		}
+	  }
+	  fputs(FOOTER, stderr);
 	}
 
       if (errno == EINTR) 

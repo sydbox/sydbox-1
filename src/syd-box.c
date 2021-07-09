@@ -10,6 +10,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
+#include "HELPME.h"
 #include "syd-box.h"
 #include <syd/compiler.h>
 #include "daemon.h"
@@ -159,14 +160,7 @@ usage: "PACKAGE" [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
               [--arch arch...] [--config pathspec...]\n\
               [--magic command...] {noexec}\n\
        "PACKAGE" --test\n\
-\n\
-Hey y☮u, ☮ut there bey☮nd the wall,\n\
-Breaking b☮ttles in the hall,\n\
-Can y☮u help me?\n\
-\n\
-Read the "PACKAGE"(1) manual page f☮r m☮re inf☮rmati☮n.\n\
-Send bug rep☮rts t☮ \"" PACKAGE_BUGREPORT "\"\n\
-Attaching p☮ems enc☮urages c☮nsiderati☮n tremend☮usly.\n");
+\n"SYD_HELPME);
 	exit(code);
 }
 
@@ -2092,6 +2086,25 @@ void cleanup_for_sydbox(void)
 
 int main(int argc, char **argv)
 {
+	/*
+	 * Act as a multicall binary for
+	 * the Syd family of commands.
+	 */
+	if (argc > 1) {
+		if (streq(argv[1], "errno"))
+			execv(BINDIR"/syd-errno", argv + 1);
+		if (streq(argv[1], "format"))
+			execv(BINDIR"/syd-format", argv + 1);
+		if (streq(argv[1], "hilite"))
+			execv(BINDIR"/syd-hilite", argv + 1);
+		if (streq(argv[1], "shoebox"))
+			execv(BINDIR"/syd-shoebox", argv + 1);
+		if (streq(argv[1], "test"))
+			execv(BINDIR"/syd-test", argv + 1);
+		if (streq(argv[1], "dump"))
+			execv(LIBEXECDIR"/syd-dump", argv + 1);
+		exit(ECANCELED);
+	}
 	enum {
 		/* unshare options */
 		OPT_MOUNTPROC = CHAR_MAX + 1,
