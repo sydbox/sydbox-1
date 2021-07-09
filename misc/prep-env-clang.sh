@@ -12,7 +12,6 @@ if [[ ! -x "$CC" ]]; then
     exit 1
 fi
 export CC
-export LD=ldd
 
 CFLAGS="-D__ALIP_WAS_HERE"
 CFLAGS="${CFLAGS} -O2 -pipe -ggdb"

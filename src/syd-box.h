@@ -589,6 +589,9 @@ struct sydbox {
 	pid_t status_pid;
 	int exit_code;
 
+	/* Execve process pid FD */
+	unsigned long long execve_pidfd;
+
 	/* /proc */
 	DIR *proc_fd;
 

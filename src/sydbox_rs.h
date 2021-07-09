@@ -30,7 +30,4 @@
 #include <unistd.h>
 #include "syd/compiler.h"
 
-#if 0
-#endif
-
 #endif /* SYD_GUARD_RS_H */

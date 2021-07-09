@@ -216,6 +216,7 @@ $SYD_CFLAGS_SAFE \
 -Wunused-label \
 -Wunused-macros \
 -Wno-declaration-after-statement \
+-Wno-format-nonliteral \
 -Wno-ignored-optimization-argument \
 -Wno-unknown-warning-option \
 -Wno-unused-parameter \
@@ -232,7 +233,7 @@ $SYD_CFLAGS_SAFE \
 -Werror=implicit-function-declaration \
 -Werror=implicit-int \
 -Werror=pointer-arith \
--Wframe-larger-than=8600 \
+-Wframe-larger-than=16384 \
 -Wno-pointer-sign \
 -Wno-stringop-truncation \
 $SYD_CFLAGS_CLANG \
@@ -250,9 +251,17 @@ AC_DEFINE_UNQUOTED([SYDBOX_CFLAGS],
 		   [Sydb☮x Build Compiler Flags])
 
 
-dnl Default LDFLAGS
-SYDBOX_LDFLAGS="--build-id=sha1 --compress-debug-sections=zlib \
---gc-sections --pack-dyn-relocs=relr --orphan-handling=warn"
+dnl TODO: Default LDFLAGS
+dnl EXTRA_LDFLAGS="\
+dnl --build-id=sha1 \
+dnl --compress-debug-sections=zlib \
+dnl --gc-sections \
+dnl --pack-dyn-relocs=relr \
+dnl --orphan-handling=warn"
+dnl AX_COMPILER_FLAGS_LDFLAGS[EXTRA_LDFLAGS])
+dnl LDFLAGS="$EXTRA_LDFLAGS $LDFLAGS"
+dnl SYDBOX_LDFLAGS=$WARN_LDFLAGS
+SYDBOX_LDFLAGS=
 AC_SUBST([SYDBOX_LDFLAGS])
 AC_DEFINE_UNQUOTED([SYDBOX_LDFLAGS],
 		   [["$SYDBOX_LDFLAGS"]],
@@ -273,6 +282,7 @@ if test x"$enable_static" = x"yes" -a x"$disable_static" != x"yes"; then
 	AC_ENABLE_SHARED(no)
 	AC_ENABLE_STATIC(yes)
 	SYDBOX_RUST_LIBTYPES='"staticlib"'
+	SYDBOX_LDFLAGS="-static $SYDBOX_LDFLAGS"
 else
 	AC_ENABLE_SHARED(yes)
 	AC_ENABLE_STATIC(no)
@@ -659,6 +669,7 @@ AC_CHECK_HEADERS(m4_flatten([
 	linux/fs.h
 	linux/mount.h
 	linux/openat2.h
+	linux/sched.h
 	linux/stat.h
 	linux/uio.h
 	linux/unistd.h
@@ -876,6 +887,19 @@ AC_SUBST([SYDBOX_DEBUG])
 AC_SUBST([SYDBOX_CARGO_RELEASE_TYPE])
 AM_CONDITIONAL([SYDBOX_CARGO_RELEASE],
 	       test x"$SYDBOX_CARGO_RELEASE_TYPE" = x"release")
+
+dnl check for clone3
+CLONE3_WARN=0
+m4_define([include_clone3_headers],
+	  #include <sched.h>
+	  #ifdef HAVE_LINUX_SCHED_H
+	  # include <linux/sched.h>
+	  #endif
+])
+AC_CHECK_DECL([__NR_clone3],
+	      [CLONE3_WARN=0],
+	      [CLONE3_WARN=1],
+	      [include_clone3_headers])
 
 dnl check for process_vm_readv and process_vm_writev
 STRUCT_IOVEC_WARN=0
@@ -1136,6 +1160,9 @@ fi
 if test x"$PIDFD_OPEN_WARN" = x"1"; then
 	AC_MSG_WARN([__NR_pidfd_open not declared! Setting pidfd_open to 434.])
 	PIDFD_WARN=1
+fi
+if test x"$CLONE3_WARN" = x"1"; then
+	AC_MSG_WARN([__NR_clone3 not declared! Setting clone3 to 435.])
 fi
 if test x"$PIDFD_GETFD_WARN" = x"1"; then
 	AC_MSG_WARN([__NR_pidfd_getfd not declared! Setting pidfd_getfd to 438.])

@@ -13,7 +13,8 @@ AM_CPPFLAGS = $(DEFS) \
 	      @SYDBOX_CFLAGS@ -DNDEBUG $(CODE_COVERAGE_CPPFLAGS)
 AM_CFLAGS = \
 	    `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_CFLAGS)` \
-	    $(CODE_COVERAGE_CFLAGS)
+	    $(CODE_COVERAGE_CFLAGS) \
+	    -I$(top_srcdir)/syd
 AM_LDFLAGS = \
 	     `expr $@ : .*-static >/dev/null && echo -all-static` \
 	     `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_LIBS)` \
@@ -30,8 +31,7 @@ wildtest_CFLAGS= \
 		 --include=$(top_srcdir)/src/wildmatch.c
 
 realpath_mode_1_SOURCES= realpath_mode-1.c \
-			 errno2name.h \
-			 errno2name.c \
+			 $(top_srcdir)/src/errno2name.c \
 			 $(top_srcdir)/src/realpath.c \
 			 $(top_srcdir)/src/strlcat.c \
 			 $(top_srcdir)/src/strlcpy.c \
@@ -41,12 +41,12 @@ realpath_mode_1_SOURCES= realpath_mode-1.c \
 realpath_mode_1_CFLAGS= $(AM_CFLAGS) -DSYDBOX_NDUMP
 
 sockmatchtest_SOURCES= sockmatchtest.c \
+		       $(top_srcdir)/src/errno2name.c \
 		       $(top_srcdir)/src/path.c \
 		       $(top_srcdir)/src/pathmatch.c \
 		       $(top_srcdir)/src/sockmatch.c \
 		       $(top_srcdir)/src/util.c \
 		       $(top_srcdir)/src/wildmatch.c \
-		       $(top_srcdir)/src/errno2name.c \
 		       $(top_srcdir)/src/xfunc.c
 sockmatchtest_CFLAGS= $(AM_CFLAGS) -DSYDBOX_NDUMP
 

@@ -73,8 +73,7 @@ libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= \
 	$(libseccomp_CFLAGS) \
 	$(SYDBOX_CFLAGS)
 libsyd_@LIBSYD_PC_SLOT@_la_LDFLAGS= \
-	-Wl,--version-script=$(srcdir)/libsyd.ld \
-	$(SYDBOX_LDFLAGS)
+	-Wl,--version-script=$(srcdir)/libsyd.ld
 libsyd_@LIBSYD_PC_SLOT@_la_LIBS= \
 	$(libseccomp_LIBS)
 
@@ -87,7 +86,7 @@ noinst_HEADERS= seatest.h check.h compiler.h
 syd_check_SOURCES= seatest.c check.c file-TEST.c proc-TEST.c
 syd_check_CFLAGS= -I$(srcdir)
 syd_check_LDFLAGS= -lrt -lm \
-		   $(builddir)/libsyd_@LIBSYD_PC_SLOT@.la \
+		   $(builddir)/libsyd_@LIBSYD_PC_SLOT@.la
 		   -L$(builddir)/.libs \
 		   -lsyd_@LIBSYD_PC_SLOT@
 

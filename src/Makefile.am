@@ -1,4 +1,4 @@
-HILITE = $(top_builddir)/misc/syd-hilite
+H = $(top_builddir)/misc/syd-hilite
 AM_MAKEFLAGS= --no-print-directory
 CLEANFILES= \
 	    gmon.out \
@@ -21,7 +21,7 @@ BUILT_SOURCES+= build
 .PHONY: build
 build: jobs
 	@echo >&2 "[0;1;31;91msydb☮x: Make is running $(JOB_COUNT) jobs.[0m"
-	$(HILITE) $(MAKE) $(AM_MAKEFLAGS) $(MFLAGS) $(PROGRAMS)
+	$(H) $(MAKE) $(AM_MAKEFLAGS) $(MFLAGS) $(PROGRAMS)
 
 CARGO_VERBOSE = $(cargo_verbose_$(V))
 cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
@@ -176,16 +176,19 @@ AM_LFLAGS = -v
 AM_YFLAGS = -d
 
 # TODO: syd-run
-bin_PROGRAMS= syd syd-dump syd-format
+bin_PROGRAMS= syd syd-dump syd-errno syd-format
 
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
+syd_errno_CPPFLAGS= -DSYDERR -DSYD_ERRNO=1
 syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
 noinst_INCLUDE_SRCS= syd_seccomp_arch_default.c
 noinst_HEADERS+= \
 		 acl-queue.h \
+		 ansi.h \
 		 arch.h \
 		 asyd.h \
 		 daemon.h \
+		 errno2name.h \
 		 dump.h \
 		 file.h \
 		 hex.h \
@@ -211,46 +214,47 @@ noinst_HEADERS+= \
 		 syd-conf.h \
 		 syd-box.h
 syd_SOURCES= \
-		 Cargo.toml \
-		 sydbox_rs.h \
-		 syd-box.c \
-		 arch.c \
-		 daemon.c \
-		 file.c \
-		 filter.c \
-		 hex.c \
-		 path.c \
-		 pathlookup.c \
-		 pink.c \
-		 proc.c \
-		 pathdecode.c \
-		 pathmatch.c \
-		 procmatch.c \
-		 serializer.c \
-		 sha1dc_sha1.c \
-		 sha1dc_ubc_check.c \
-		 sha1dc_syd.c \
-		 sockmatch.c \
-		 acl-queue.c \
-		 util.c \
-		 xfunc.c \
-		 magic-panic.c \
-		 magic-sandbox.c \
-		 magic-trace.c \
-		 magic-restrict.c \
-		 magic-allowlist.c \
-		 magic-acl.c \
-		 magic-match.c \
-		 magic-cmd.c \
-		 magic.c \
-		 sandbox.c \
-		 panic.c \
-		 syscall-file.c \
-		 syscall-sock.c \
-		 syscall-special.c \
-		 syscall-filter.c \
-		 syscall.c \
-		 config.c
+	     syd-box.c \
+	     Cargo.toml \
+	     sydbox_rs.h \
+	     arch.c \
+	     daemon.c \
+	     errno2name.c \
+	     file.c \
+	     filter.c \
+	     hex.c \
+	     path.c \
+	     pathlookup.c \
+	     pink.c \
+	     proc.c \
+	     pathdecode.c \
+	     pathmatch.c \
+	     procmatch.c \
+	     serializer.c \
+	     sha1dc_sha1.c \
+	     sha1dc_ubc_check.c \
+	     sha1dc_syd.c \
+	     sockmatch.c \
+	     acl-queue.c \
+	     util.c \
+	     xfunc.c \
+	     magic-panic.c \
+	     magic-sandbox.c \
+	     magic-trace.c \
+	     magic-restrict.c \
+	     magic-allowlist.c \
+	     magic-acl.c \
+	     magic-match.c \
+	     magic-cmd.c \
+	     magic.c \
+	     sandbox.c \
+	     panic.c \
+	     syscall-file.c \
+	     syscall-sock.c \
+	     syscall-special.c \
+	     syscall-filter.c \
+	     syscall.c \
+	     config.c
 
 #syd_run_SOURCES= \
 #		 syd-run.c \
@@ -277,9 +281,6 @@ syd_SOURCES= \
 #		 -L$(top_builddir)/syd/.libs \
 #		 -lsyd_@LIBSYD_PC_SLOT@
 
-syd_format_SOURCES= \
-		syd-format.c
-
 # Experimental Rust.
 # TODO: To be integrated into libsyd.
 if WANT_SYDBOX_RS
@@ -290,25 +291,32 @@ endif
 noinst_HEADERS+= \
 		 wildmatch.h
 syd_SOURCES+= \
-		 wildmatch.c
+	      wildmatch.c
 
 # Imported from zsh!
 noinst_HEADERS+= \
 		 toolong.h
 syd_SOURCES+= \
-		 toolong.c
+	      toolong.c
 
 # (partly modified and) imported from FreeBSD's lib/libc/stdlib
 noinst_HEADERS+= \
 		 bsd-compat.h
 syd_SOURCES+= \
-		 realpath.c \
-		 strlcat.c \
-		 strlcpy.c
+	      realpath.c \
+	      strlcat.c \
+	      strlcpy.c
 
 # imported from OpenBSD
 noinst_HEADERS+= \
 		 sys-queue.h
+
+syd_errno_SOURCES= \
+		   errno2name.c \
+		   syd-errno.c
+
+syd_format_SOURCES= \
+		syd-format.c
 
 if WANT_PSYSCALL
 # imported from psyscall

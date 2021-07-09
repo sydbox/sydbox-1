@@ -32,9 +32,55 @@
 #include <dirent.h>
 #include <time.h>
 
+#include <asm/unistd.h>
+#include <sched.h>
+#include <linux/sched.h>
+#ifndef CLONE_CLEAR_SIGHAND
+# define CLONE_CLEAR_SIGHAND 0x100000000ULL /* Clear any signal handler and
+					       reset to SIG_DFL. */
+#endif
+#ifndef CLONE_NEWTIME
+# define CLONE_NEWTIME	      0x00000080      /* New time namespace */
+#endif
+#ifndef CLONE_PIDFD
+# define CLONE_PIDFD 0x00001000
+#endif
+
+#ifdef __NR_clone3
+# define SYD_clone3 __NR_clone3
+#else
+# define SYD_clone3 435
+#endif
+pid_t syd_clone3(struct clone_args *args);
+
 #include <syd/compiler.h>
 
 #include <seccomp.h>
+#define syd_ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
+
+/* ANSI colour codes */
+#define SYD_ANSI_NORMAL		"[00;00m"
+#define SYD_ANSI_DARK_MAGENTA	"[01;35m"
+#define SYD_ANSI_MAGENTA	"[00;35m"
+#define SYD_ANSI_GREEN		"[00;32m"
+#define SYD_ANSI_YELLOW		"[00;33m"
+#define SYD_ANSI_CYAN		"[00;36m"
+#define SYD_WARN	SYD_ANSI_DARK_MAGENTA
+#define SYD_RESET	SYD_ANSI_NORMAL
+
+#if 0
+#define SYD_CLONE_FLAGS (CLONE_VM|\
+			 CLONE_FS|\
+			 CLONE_FILES|\
+			 CLONE_CLEAR_SIGHAND|\
+			 CLONE_THREAD|\
+			 CLONE_SYSVSEM|\
+			 CLONE_PIDFD|\
+			 CLONE_PARENT_SETTID|\
+			 CLONE_CHILD_CLEARTID)
+#endif
+
+#define SYD_CLONE_FLAGS CLONE_PIDFD|CLONE_PARENT_SETTID
 
 /*
  * 16 is sufficient since the largest number we will ever convert
@@ -73,7 +119,9 @@ int syd_debug_set_fd(const int fd);
  * libsyd: Stringify constants
  ***/
 const char *syd_name_errno(int err_no);
+int syd_name2errno(const char *errname);
 const char *syd_name_namespace(int namespace);
+int syd_name2signal(const char *signame);
 
 /***
  * libsyd: Interface for Linux namespaces (containers)
@@ -101,41 +149,38 @@ const char *syd_name_namespace(int namespace);
 #include <sys/mount.h>
 
 /*
-Execute a process under various restrictions and options.
-Main point of entry
+Clone & Execute a process under various restrictions and options.
  */
-SYD_GCC_ATTR((warn_unused_result))
-int32_t syd_execv(const char *command,
-                  size_t argc,
-                  const char *const *argv,
-                  const char *alias,
-                  const char *workdir,
-                  bool _verbose,
-                  uint32_t uid,
-                  uint32_t gid,
-                  const char *chroot,
-                  const char *new_root,
-                  const char *put_old,
-                  bool unshare_pid,
-                  bool unshare_net,
-                  bool unshare_mount,
-                  bool unshare_uts,
-                  bool unshare_ipc,
-                  bool unshare_user,
-                  int32_t close_fds_beg,
-                  int32_t close_fds_end,
-                  bool reset_fds,
-                  bool keep_sigmask,
-                  bool escape_stdout,
-                  bool allow_daemonize,
-                  bool make_group_leader,
-                  const char *parent_death_signal,
-                  const uint32_t *supplementary_gids,
-                  const char *pid_env_var);
+struct syd_execv_opt {
+	const char *alias;
+	const char *workdir;
+	bool verbose;
+	uint32_t uid;
+	uint32_t gid;
+	const char *chroot;
+	const char *new_root;
+	const char *put_old;
+	int unshare_flags;
+	int32_t close_fds_beg;
+	int32_t close_fds_end;
+	bool reset_fds;
+	bool keep_sigmask;
+	bool escape_stdout;
+	bool allow_daemonize;
+	bool make_group_leader;
+	int parent_death_signal;
+	const uint32_t *supplementary_gids;
+	const char *pid_env_var;
+};
 
-#ifndef CLONE_NEWTIME
-# define CLONE_NEWTIME        0x00000080      /* New time namespace */
-#endif
+SYD_GCC_ATTR((warn_unused_result))
+int syd_execv(const char *command,
+	      size_t argc, char *const *argv,
+	      struct syd_execv_opt *opt);
+
+SYD_GCC_ATTR((warn_unused_result,nonnull((3))))
+pid_t syd_clone(int flags, int exit_signal, unsigned long long *pidfd_out);
+
 /* 'private' is kernel default */
 #define SYD_UNSHARE_PROPAGATION_DEFAULT  (MS_REC | MS_PRIVATE)
 
@@ -185,32 +230,34 @@ Execute a process under various restrictions and options.
  */
 SYD_GCC_ATTR((warn_unused_result))
 int32_t syd_execv(const char *command,
-                  size_t argc,
-                  const char *const *argv,
-                  const char *alias,
-                  const char *workdir,
-                  bool _verbose,
-                  uint32_t uid,
-                  uint32_t gid,
-                  const char *chroot,
-                  const char *new_root,
-                  const char *put_old,
-                  bool unshare_pid,
-                  bool unshare_net,
-                  bool unshare_mount,
-                  bool unshare_uts,
-                  bool unshare_ipc,
-                  bool unshare_user,
-                  int32_t close_fds_beg,
-                  int32_t close_fds_end,
-                  bool reset_fds,
-                  bool keep_sigmask,
-                  bool escape_stdout,
-                  bool allow_daemonize,
-                  bool make_group_leader,
-                  const char *parent_death_signal,
-                  const uint32_t *supplementary_gids,
-                  const char *pid_env_var);
+		size_t argc,
+		const char *const *argv,
+		const char *alias,
+		const char *workdir,
+		bool verbose SYD_GCC_ATTR((unused)),
+		uint32_t uid,
+		uint32_t gid,
+		const char *chroot,
+		const char *new_root,
+		const char *put_old,
+		bool unshare_pid,
+		bool unshare_net,
+		bool unshare_mount,
+		bool unshare_uts,
+		bool unshare_ipc,
+		bool unshare_user,
+		bool unshare_time,
+		bool unshare_cgroups,
+		int32_t close_fds_beg,
+		int32_t close_fds_end,
+		bool reset_fds,
+		bool keep_sigmask,
+		bool escape_stdout,
+		bool allow_daemonize,
+		bool make_group_leader,
+		const char *parent_death_signal,
+		const uint32_t *supplementary_gids,
+		const char *pid_env_var)
 #endif
 
 /* TODO: Any usage of the constants above in src/ is an indication to move

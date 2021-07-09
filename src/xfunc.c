@@ -9,6 +9,7 @@
 #include <syd/compiler.h>
 #include "xfunc.h"
 #include "dump.h"
+#include "errno2name.h"
 #include "syd-box.h"
 
 #include <signal.h>
@@ -18,18 +19,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-
-/* ANSI colour codes */
-#define ANSI_NORMAL		"[00;00m"
-#define ANSI_DARK_MAGENTA	"[01;35m"
-#define AN	ANSI_NORMAL
-#define ADM	ANSI_DARK_MAGENTA
-#if 0
-#define ANSI_MAGENTA		"[00;35m"
-#define ANSI_GREEN		"[00;32m"
-#define ANSI_YELLOW		"[00;33m"
-#define ANSI_CYAN		"[00;36m"
-#endif
+#include "ansi.h"
 
 #if IN_SYDBOX
 # define in_child()	((sydbox)->in_child)
@@ -170,7 +160,6 @@ void assert_not_reached_(const char *func, const char *file, size_t line)
 void die(const char *fmt, ...)
 {
 	va_list ap;
-	static int tty = -1;
 
 	va_start(ap, fmt);
 	vsay(stderr, fmt, ap, 'f');
@@ -188,7 +177,7 @@ void say_errno(const char *fmt, ...)
 	va_start(ap, fmt);
 	vsay(stderr, fmt, ap, 'e');
 	va_end(ap);
-	say(" (errno:%d|%s %s)", save_errno, syd_name_errno(save_errno),
+	say(" (errno:%d|%s %s)", save_errno, errno2name(save_errno),
 	    strerror(save_errno));
 
 	errno = save_errno;
@@ -202,7 +191,7 @@ void die_errno(const char *fmt, ...)
 	va_start(ap, fmt);
 	vsay(stderr, fmt, ap, 'f');
 	va_end(ap);
-	say(" (errno:%d|%s %s)", save_errno, syd_name_errno(save_errno),
+	say(" (errno:%d|%s %s)", save_errno, errno2name(save_errno),
 	    strerror(save_errno));
 
 	syd_abort(SIGTERM);

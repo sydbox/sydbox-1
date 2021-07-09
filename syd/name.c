@@ -19,10 +19,485 @@
 #include <sched.h>
 #include "syd.h"
 
-#define CASE(x) case x: return #x
+#define S(NAME,NUM) do {\
+	if (!strcasecmp(name, (NAME))) \
+		return (NUM); } while(0)
+
+int syd_name2errno(const char *errname)
+{
+	const char *name = errname;
+#ifdef E2BIG
+	S("E2BIG", E2BIG);
+#endif
+#ifdef EACCES
+	S("EACCES", EACCES);
+#endif
+#ifdef EADDRINUSE
+	S("EADDRINUSE", EADDRINUSE);
+#endif
+#ifdef EADDRNOTAVAIL
+	S("EADDRNOTAVAIL", EADDRNOTAVAIL);
+#endif
+#ifdef EADV
+	S("EADV", EADV);
+#endif
+#ifdef EAFNOSUPPORT
+	S("EAFNOSUPPORT", EAFNOSUPPORT);
+#endif
+#ifdef EAGAIN
+	S("EAGAIN", EAGAIN);
+#endif
+#ifdef EALREADY
+	S("EALREADY", EALREADY);
+#endif
+#ifdef EBADCOOKIE
+	S("EBADCOOKIE", EBADCOOKIE);
+#endif
+#ifdef EBADE
+	S("EBADE", EBADE);
+#endif
+#ifdef EBADF
+	S("EBADF", EBADF);
+#endif
+#ifdef EBADFD
+	S("EBADFD", EBADFD);
+#endif
+#ifdef EBADHANDLE
+	S("EBADHANDLE", EBADHANDLE);
+#endif
+#ifdef EBADMSG
+	S("EBADMSG", EBADMSG);
+#endif
+#ifdef EBADR
+	S("EBADR", EBADR);
+#endif
+#ifdef EBADRQC
+	S("EBADRQC", EBADRQC);
+#endif
+#ifdef EBADSLT
+	S("EBADSLT", EBADSLT);
+#endif
+#ifdef EBADTYPE
+	S("EBADTYPE", EBADTYPE);
+#endif
+#ifdef EBFONT
+	S("EBFONT", EBFONT);
+#endif
+#ifdef EBUSY
+	S("EBUSY", EBUSY);
+#endif
+#ifdef ECANCELED
+	S("ECANCELED", ECANCELED);
+#endif
+#ifdef ECHILD
+	S("ECHILD", ECHILD);
+#endif
+#ifdef ECHRNG
+	S("ECHRNG", ECHRNG);
+#endif
+#ifdef ECOMM
+	S("ECOMM", ECOMM);
+#endif
+#ifdef ECONNABORTED
+	S("ECONNABORTED", ECONNABORTED);
+#endif
+#ifdef ECONNREFUSED
+	S("ECONNREFUSED", ECONNREFUSED);
+#endif
+#ifdef ECONNRESET
+	S("ECONNRESET", ECONNRESET);
+#endif
+#ifdef EDEADLK
+	S("EDEADLK", EDEADLK);
+#endif
+#ifdef EDESTADDRREQ
+	S("EDESTADDRREQ", EDESTADDRREQ);
+#endif
+#ifdef EDOM
+	S("EDOM", EDOM);
+#endif
+#ifdef EDOTDOT
+	S("EDOTDOT", EDOTDOT);
+#endif
+#ifdef EDQUOT
+	S("EDQUOT", EDQUOT);
+#endif
+#ifdef EEXIST
+	S("EEXIST", EEXIST);
+#endif
+#ifdef EFAULT
+	S("EFAULT", EFAULT);
+#endif
+#ifdef EFBIG
+	S("EFBIG", EFBIG);
+#endif
+#ifdef EHOSTDOWN
+	S("EHOSTDOWN", EHOSTDOWN);
+#endif
+#ifdef EHOSTUNREACH
+	S("EHOSTUNREACH", EHOSTUNREACH);
+#endif
+#ifdef EHWPOISON
+	S("EHWPOISON", EHWPOISON);
+#endif
+#ifdef EIDRM
+	S("EIDRM", EIDRM);
+#endif
+#ifdef EILSEQ
+	S("EILSEQ", EILSEQ);
+#endif
+#ifdef EINPROGRESS
+	S("EINPROGRESS", EINPROGRESS);
+#endif
+#ifdef EINTR
+	S("EINTR", EINTR);
+#endif
+#ifdef EINVAL
+	S("EINVAL", EINVAL);
+#endif
+#ifdef EIO
+	S("EIO", EIO);
+#endif
+#ifdef EIOCBQUEUED
+	S("EIOCBQUEUED", EIOCBQUEUED);
+#endif
+#ifdef EISCONN
+	S("EISCONN", EISCONN);
+#endif
+#ifdef EISDIR
+	S("EISDIR", EISDIR);
+#endif
+#ifdef EISNAM
+	S("EISNAM", EISNAM);
+#endif
+#ifdef EJUKEBOX
+	S("EJUKEBOX", EJUKEBOX);
+#endif
+#ifdef EKEYEXPIRED
+	S("EKEYEXPIRED", EKEYEXPIRED);
+#endif
+#ifdef EKEYREJECTED
+	S("EKEYREJECTED", EKEYREJECTED);
+#endif
+#ifdef EKEYREVOKED
+	S("EKEYREVOKED", EKEYREVOKED);
+#endif
+#ifdef EL2HLT
+	S("EL2HLT", EL2HLT);
+#endif
+#ifdef EL2NSYNC
+	S("EL2NSYNC", EL2NSYNC);
+#endif
+#ifdef EL3HLT
+	S("EL3HLT", EL3HLT);
+#endif
+#ifdef EL3RST
+	S("EL3RST", EL3RST);
+#endif
+#ifdef ELIBACC
+	S("ELIBACC", ELIBACC);
+#endif
+#ifdef ELIBBAD
+	S("ELIBBAD", ELIBBAD);
+#endif
+#ifdef ELIBEXEC
+	S("ELIBEXEC", ELIBEXEC);
+#endif
+#ifdef ELIBMAX
+	S("ELIBMAX", ELIBMAX);
+#endif
+#ifdef ELIBSCN
+	S("ELIBSCN", ELIBSCN);
+#endif
+#ifdef ELNRNG
+	S("ELNRNG", ELNRNG);
+#endif
+#ifdef ELOOP
+	S("ELOOP", ELOOP);
+#endif
+#ifdef EMEDIUMTYPE
+	S("EMEDIUMTYPE", EMEDIUMTYPE);
+#endif
+#ifdef EMFILE
+	S("EMFILE", EMFILE);
+#endif
+#ifdef EMLINK
+	S("EMLINK", EMLINK);
+#endif
+#ifdef EMSGSIZE
+	S("EMSGSIZE", EMSGSIZE);
+#endif
+#ifdef EMULTIHOP
+	S("EMULTIHOP", EMULTIHOP);
+#endif
+#ifdef ENAMETOOLONG
+	S("ENAMETOOLONG", ENAMETOOLONG);
+#endif
+#ifdef ENAVAIL
+	S("ENAVAIL", ENAVAIL);
+#endif
+#ifdef ENETDOWN
+	S("ENETDOWN", ENETDOWN);
+#endif
+#ifdef ENETRESET
+	S("ENETRESET", ENETRESET);
+#endif
+#ifdef ENETUNREACH
+	S("ENETUNREACH", ENETUNREACH);
+#endif
+#ifdef ENFILE
+	S("ENFILE", ENFILE);
+#endif
+#ifdef ENOANO
+	S("ENOANO", ENOANO);
+#endif
+#ifdef ENOBUFS
+	S("ENOBUFS", ENOBUFS);
+#endif
+#ifdef ENOCSI
+	S("ENOCSI", ENOCSI);
+#endif
+#ifdef ENODATA
+	S("ENODATA", ENODATA);
+#endif
+#ifdef ENODEV
+	S("ENODEV", ENODEV);
+#endif
+#ifdef ENOENT
+	S("ENOENT", ENOENT);
+#endif
+#ifdef ENOEXEC
+	S("ENOEXEC", ENOEXEC);
+#endif
+#ifdef ENOIOCTLCMD
+	S("ENOIOCTLCMD", ENOIOCTLCMD);
+#endif
+#ifdef ENOKEY
+	S("ENOKEY", ENOKEY);
+#endif
+#ifdef ENOLCK
+	S("ENOLCK", ENOLCK);
+#endif
+#ifdef ENOLINK
+	S("ENOLINK", ENOLINK);
+#endif
+#ifdef ENOMEDIUM
+	S("ENOMEDIUM", ENOMEDIUM);
+#endif
+#ifdef ENOMEM
+	S("ENOMEM", ENOMEM);
+#endif
+#ifdef ENOMSG
+	S("ENOMSG", ENOMSG);
+#endif
+#ifdef ENONET
+	S("ENONET", ENONET);
+#endif
+#ifdef ENOPKG
+	S("ENOPKG", ENOPKG);
+#endif
+#ifdef ENOPROTOOPT
+	S("ENOPROTOOPT", ENOPROTOOPT);
+#endif
+#ifdef ENOSPC
+	S("ENOSPC", ENOSPC);
+#endif
+#ifdef ENOSR
+	S("ENOSR", ENOSR);
+#endif
+#ifdef ENOSTR
+	S("ENOSTR", ENOSTR);
+#endif
+#ifdef ENOSYS
+	S("ENOSYS", ENOSYS);
+#endif
+#ifdef ENOTBLK
+	S("ENOTBLK", ENOTBLK);
+#endif
+#ifdef ENOTCONN
+	S("ENOTCONN", ENOTCONN);
+#endif
+#ifdef ENOTDIR
+	S("ENOTDIR", ENOTDIR);
+#endif
+#ifdef ENOTEMPTY
+	S("ENOTEMPTY", ENOTEMPTY);
+#endif
+#ifdef ENOTNAM
+	S("ENOTNAM", ENOTNAM);
+#endif
+#ifdef ENOTRECOVERABLE
+	S("ENOTRECOVERABLE", ENOTRECOVERABLE);
+#endif
+#ifdef ENOTSOCK
+	S("ENOTSOCK", ENOTSOCK);
+#endif
+#ifdef ENOTSUPP
+	S("ENOTSUPP", ENOTSUPP);
+#endif
+#ifdef ENOTSYNC
+	S("ENOTSYNC", ENOTSYNC);
+#endif
+#ifdef ENOTTY
+	S("ENOTTY", ENOTTY);
+#endif
+#ifdef ENOTUNIQ
+	S("ENOTUNIQ", ENOTUNIQ);
+#endif
+#ifdef ENXIO
+	S("ENXIO", ENXIO);
+#endif
+#ifdef EOPENSTALE
+	S("EOPENSTALE", EOPENSTALE);
+#endif
+#ifdef EOPNOTSUPP
+	S("EOPNOTSUPP", EOPNOTSUPP);
+#endif
+#ifdef EOVERFLOW
+	S("EOVERFLOW", EOVERFLOW);
+#endif
+#ifdef EOWNERDEAD
+	S("EOWNERDEAD", EOWNERDEAD);
+#endif
+#ifdef EPERM
+	S("EPERM", EPERM);
+#endif
+#ifdef EPFNOSUPPORT
+	S("EPFNOSUPPORT", EPFNOSUPPORT);
+#endif
+#ifdef EPIPE
+	S("EPIPE", EPIPE);
+#endif
+#ifdef EPROBE_DEFER
+	S("EPROBE_DEFER", EPROBE_DEFER);
+#endif
+#ifdef EPROTO
+	S("EPROTO", EPROTO);
+#endif
+#ifdef EPROTONOSUPPORT
+	S("EPROTONOSUPPORT", EPROTONOSUPPORT);
+#endif
+#ifdef EPROTOTYPE
+	S("EPROTOTYPE", EPROTOTYPE);
+#endif
+#ifdef ERANGE
+	S("ERANGE", ERANGE);
+#endif
+#ifdef EREMCHG
+	S("EREMCHG", EREMCHG);
+#endif
+#ifdef EREMOTE
+	S("EREMOTE", EREMOTE);
+#endif
+#ifdef EREMOTEIO
+	S("EREMOTEIO", EREMOTEIO);
+#endif
+#ifdef ERESTART
+	S("ERESTART", ERESTART);
+#endif
+#ifdef ERESTARTNOHAND
+	S("ERESTARTNOHAND", ERESTARTNOHAND);
+#endif
+#ifdef ERESTARTNOINTR
+	S("ERESTARTNOINTR", ERESTARTNOINTR);
+#endif
+#ifdef ERESTARTSYS
+	S("ERESTARTSYS", ERESTARTSYS);
+#endif
+#ifdef ERESTART_RESTARTBLOCK
+	S("ERESTART_RESTARTBLOCK", ERESTART_RESTARTBLOCK);
+#endif
+#ifdef ERFKILL
+	S("ERFKILL", ERFKILL);
+#endif
+#ifdef EROFS
+	S("EROFS", EROFS);
+#endif
+#ifdef ESERVERFAULT
+	S("ESERVERFAULT", ESERVERFAULT);
+#endif
+#ifdef ESHUTDOWN
+	S("ESHUTDOWN", ESHUTDOWN);
+#endif
+#ifdef ESOCKTNOSUPPORT
+	S("ESOCKTNOSUPPORT", ESOCKTNOSUPPORT);
+#endif
+#ifdef ESPIPE
+	S("ESPIPE", ESPIPE);
+#endif
+#ifdef ESRCH
+	S("ESRCH", ESRCH);
+#endif
+#ifdef ESRMNT
+	S("ESRMNT", ESRMNT);
+#endif
+#ifdef ESTALE
+	S("ESTALE", ESTALE);
+#endif
+#ifdef ESTRPIPE
+	S("ESTRPIPE", ESTRPIPE);
+#endif
+#ifdef ETIME
+	S("ETIME", ETIME);
+#endif
+#ifdef ETIMEDOUT
+	S("ETIMEDOUT", ETIMEDOUT);
+#endif
+#ifdef ETOOMANYREFS
+	S("ETOOMANYREFS", ETOOMANYREFS);
+#endif
+#ifdef ETOOSMALL
+	S("ETOOSMALL", ETOOSMALL);
+#endif
+#ifdef ETXTBSY
+	S("ETXTBSY", ETXTBSY);
+#endif
+#ifdef EUCLEAN
+	S("EUCLEAN", EUCLEAN);
+#endif
+#ifdef EUNATCH
+	S("EUNATCH", EUNATCH);
+#endif
+#ifdef EUSERS
+	S("EUSERS", EUSERS);
+#endif
+#ifdef EXDEV
+	S("EXDEV", EXDEV);
+#endif
+#ifdef EXFULL
+	S("EXFULL", EXFULL);
+#endif
+	return -EINVAL;
+}
+
+int syd_name2signal(const char *signame)
+{
+	const char *name = signame;
+
+	/* ISO C99 signals.  */
+	S("INT", SIGINT); /* Interactive attention signal.  */
+	S("ILL", SIGILL); /* Illegal instruction.  */
+	S("ABRT", SIGABRT); /* Abnormal termination.  */
+	S("FPE", SIGFPE); /* Erroneous arithmetic operation.  */
+	S("SEGV", SIGSEGV); /* Invalid access to storage.  */
+	S("TERM", SIGTERM); /* Termination request.  */
+	/* Historical signals specified by POSIX. */
+	S("HUP", SIGHUP); /* Hangup.  */
+	S("QUIT", SIGQUIT); /* Quit.  */
+	S("TRAP", SIGTRAP); /* Trace/breakpoint trap.  */
+	S("KILL", SIGKILL); /* Killed.  */
+	S("BUS", SIGBUS); /* Bus error.  */
+	S("SYS", SIGSYS); /* Bad system call.  */
+	S("PIPE", SIGPIPE); /* Broken pipe.  */
+	S("ALRM", SIGALRM); /* Alarm clock.  */
+#undef S
+
+	return -1;
+}
 
 const char *syd_name_errno(int err_no)
 {
+#define CASE(x) case x: return #x
 	switch (err_no) {
 	/* names taken from linux/errnoent.h */
 #ifdef E2BIG
@@ -469,6 +944,7 @@ const char *syd_name_errno(int err_no)
 	default:
 		return NULL;
 	}
+#undef CASE
 }
 
 const char *syd_name_namespace(int namespace)

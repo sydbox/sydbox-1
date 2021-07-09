@@ -14,5 +14,6 @@
 #define ERRNO2NAME_h 1
 
 const char *errno2name(int err_no);
+int name2errno(const char *errname);
 
 #endif

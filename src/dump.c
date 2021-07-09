@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <time.h>
 
+#include "errno2name.h"
 #include "serializer.h"
 #include "proc.h"
 
@@ -68,7 +69,7 @@ static void dump_errno(int err_no)
 {
 	fprintf(fp, "{"J(no)"%d", err_no);
 	if (err_no)
-		fprintf(fp, J(name)"\"%s\"}", syd_name_errno(err_no));
+		fprintf(fp, J(name)"\"%s\"}", errno2name(err_no));
 	else
 		fputc('}', fp);
 }

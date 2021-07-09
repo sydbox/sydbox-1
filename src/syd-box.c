@@ -94,12 +94,31 @@ static sigset_t empty_set, blocked_set;
 static bool child_block_interrupt_signals;
 struct termios old_tio, new_tio;
 
-static bool unshare_pid, unshare_net, unshare_mount;
-static bool unshare_uts, unshare_ipc, unshare_user;
 static bool escape_stdout, reset_fds, allow_daemonize;
 static bool make_group_leader, keep_sigmask;
+static int parent_death_signal;
 static uint32_t close_fds[2];
-static char *parent_death_signal;
+
+/* unshare option defaults */
+int setgrpcmd = SYD_SETGROUPS_NONE;
+int unshare_flags = 0;
+uid_t mapuser = -1;
+gid_t mapgroup = -1;
+long mapuser_opt = -1;
+long mapgroup_opt = -1;
+// int kill_child_signo = 0; /* 0 means --kill-child was not used */
+const char *procmnt = NULL;
+const char *newroot = NULL;
+const char *newdir = NULL;
+unsigned long propagation = SYD_UNSHARE_PROPAGATION_DEFAULT;
+int force_uid = 0, force_gid = 0;
+uid_t uid = 0;
+gid_t gid = 0;
+/* int keepcaps = 0; */
+time_t monotonic = 0;
+time_t boottime = 0;
+int force_monotonic = 0;
+int force_boottime = 0;
 
 static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
@@ -1845,7 +1864,7 @@ static syd_process_t *startup_child(char **argv)
 		free(arch_argv[i]);
 	arch_argv[0] = NULL;
 
-	if (!noexec && !pathname)
+	if (!noexec && !pathname || !*pathname)
 		die_errno("can't exec »%s«", argv[0]);
 	if (pipe2(pfd, O_CLOEXEC|O_DIRECT) < 0)
 		die_errno("can't pipe");
@@ -1856,7 +1875,9 @@ static syd_process_t *startup_child(char **argv)
 	 * receiving any signal other than SIGCHLD.
 	 */
 	sydbox->sydbox_pid = getpid();
-	pid = fork();
+	sydbox->execve_pid = syd_clone(CLONE_PIDFD|CLONE_PARENT_SETTID,
+				       SIGCHLD, &sydbox->execve_pidfd);
+	pid = sydbox->execve_pid;
 	if (pid < 0)
 		die_errno("can't fork");
 	else if (pid == 0) {
@@ -1940,53 +1961,38 @@ seccomp_init:
 			_exit(getenv(SYDBOX_NOEXEC_ENV) ?
 				atoi(getenv(SYDBOX_NOEXEC_ENV)) :
 				0);
-		bool verbose = false;
+		struct syd_execv_opt opt;
+
+		opt.verbose = false;
 #if SYDBOX_HAVE_DUMP_BUILTIN
-		verbose = dump_get_fd() >= 0;
+		opt.verbose = dump_get_fd() >= 0;
 #endif
-		const char *arg0 = get_arg0();
-		const char *wd = get_working_directory();
-		const char *root = get_root_directory();
-		const char *pev = get_pid_env_var();
-		char *new_root, *put_old;
-		get_pivot_root(&new_root, &put_old);
+		opt.alias = get_arg0();
+		opt.workdir = get_working_directory();
+		opt.chroot = get_root_directory();
+		opt.pid_env_var = get_pid_env_var();
+		get_pivot_root((char **)&opt.new_root,
+			       (char **)&opt.put_old);
+		opt.unshare_flags = unshare_flags;
+		opt.uid = get_uid();
+		opt.gid = get_gid();
+		opt.close_fds_beg = close_fds[0];
+		opt.close_fds_end = close_fds[1];
+		opt.keep_sigmask = keep_sigmask;
+		opt.escape_stdout = escape_stdout;
+		opt.allow_daemonize = allow_daemonize;
+		opt.make_group_leader = make_group_leader;
+		opt.parent_death_signal = parent_death_signal;
+		opt.supplementary_gids = get_groups();
 		int argc;
 		for (argc = 0; argv[argc] != NULL; argc++);
-		pid = syd_execv(pathname, argc, (const char *const *)argv,
-				arg0 ? arg0 : "",
-				wd ? wd : "", verbose,
-				get_uid(), get_gid(),
-				root ? root : "",
-				new_root ? new_root : "",
-				put_old ? put_old : "",
-				unshare_pid, unshare_net, unshare_mount,
-				unshare_uts, unshare_ipc, unshare_user,
-				close_fds[0], close_fds[1], reset_fds,
-				keep_sigmask,
-				escape_stdout, allow_daemonize,
-				make_group_leader,
-				parent_death_signal,
-				get_groups(),
-				pev ? pev : "");
-		free(pathname); /* not NULL because noexec is handled above. */
-		for(;;) {
-			int status;
-
-			errno = 0;
-			waitpid(pid, &status, 0);
-			switch (errno) {
-			case 0:
-				if (WIFEXITED(status))
-					_exit(WEXITSTATUS(status));
-				else if (WIFSIGNALED(status))
-					_exit(128 + WTERMSIG(status));
-				SYD_GCC_ATTR((fallthrough));
-			case EINTR:
-				continue;
-			default:
-				_exit(127);
-			}
+		r = syd_execv(pathname, argc, argv, &opt);
+		if (r < 0) {
+			errno = -pid;
+			say_errno("Error executing »%s«", pathname);
 		}
+		free(pathname); /* not NULL because noexec is handled above. */
+		_exit(127);
 	}
 	seccomp_release(sydbox->ctx);
 
@@ -2108,31 +2114,13 @@ int main(int argc, char **argv)
 		OPT_KEEP_SIGMASK,
 	};
 
-	/* unshare option defaults */
-	int setgrpcmd = SYD_SETGROUPS_NONE;
-	int unshare_flags = 0;
-	uid_t mapuser = -1;
-	gid_t mapgroup = -1;
-	long mapuser_opt = -1;
-	long mapgroup_opt = -1;
-	// int kill_child_signo = 0; /* 0 means --kill-child was not used */
-	const char *procmnt = NULL;
-	const char *newroot = NULL;
-	const char *newdir = NULL;
-	unsigned long propagation = SYD_UNSHARE_PROPAGATION_DEFAULT;
-	int force_uid = 0, force_gid = 0;
-	uid_t uid = 0, real_euid = geteuid();
-	gid_t gid = 0, real_egid = getegid();
-	/* int keepcaps = 0; */
-	time_t monotonic = 0;
-	time_t boottime = 0;
-	int force_monotonic = 0;
-	int force_boottime = 0;
-
 	int arg, opt, r, opt_t[5];
 	size_t i;
 	char *c, *opt_magic = NULL;
 	struct utsname buf_uts;
+
+	uid_t real_euid = geteuid();
+	gid_t real_egid = getegid();
 
 	/* Zero-initialise option states */
 	enum sydbox_export_mode opt_export_mode = SYDBOX_EXPORT_NUL;
@@ -2499,9 +2487,12 @@ int main(int argc, char **argv)
 			allow_daemonize = true;
 			break;
 		case '!':
-			if (parent_death_signal)
-				free(parent_death_signal);
-			parent_death_signal = xstrdup(optarg);
+			parent_death_signal = syd_name2signal(optarg);
+			if (parent_death_signal < 0) {
+				say("Invalid signal »%s« passed to option "
+				    "--parent-death-signal", optarg);
+				usage(stderr, 1);
+			}
 			break;
 		case '1':
 			set_redirect_stdout(xstrdup(optarg));
@@ -2712,12 +2703,14 @@ int main(int argc, char **argv)
 		set_working_directory(xstrdup("tmp"));
 		close_fds[0] = 3;
 		close_fds[1] = 0;
-		unshare_pid = true;
-		unshare_net = true;
-		unshare_mount = true;
-		unshare_uts = true;
-		unshare_ipc = true;
-		unshare_user = true;
+		unshare_flags |= (CLONE_NEWPID|\
+				  CLONE_NEWNET|\
+				  CLONE_NEWNS|\
+				  CLONE_NEWUTS|\
+				  CLONE_NEWIPC|\
+				  CLONE_NEWUSER|\
+				  CLONE_NEWTIME|\
+				  CLONE_NEWCGROUP);
 		my_argv = sydsh_argv;
 		sydbox->program_invocation_name = xstrdup("sydsh");
 		child_block_interrupt_signals = true;

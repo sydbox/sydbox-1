@@ -26,6 +26,7 @@
 #endif
 #include "pink.h"
 #include "bsd-compat.h"
+#include "errno2name.h"
 #include "sockmap.h"
 
 #if defined(HAVE_LINUX_OPENAT2_H) && defined(HAVE_STRUCT_OPEN_HOW)
@@ -445,7 +446,7 @@ aclocal-1.16: error: echo failed with exit status: 1
 	r = chmod(current->abspath, current->args[1]);
 	say("emulated chmod(`%s',%ld), denying with %d<%s>",
 	    current->abspath, current->args[1],
-	    errno, syd_name_errno(errno));
+	    errno, errno2name(errno));
 	sydbox_syscall_deny(errno);
 
 	return r;

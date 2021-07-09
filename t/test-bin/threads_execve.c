@@ -10,8 +10,8 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "sydconf.h"
 #include <syd/compiler.h>
+#include "syd-conf.h"
 #include "errno2name.h"
 #include <stdarg.h>
 #include <string.h>
