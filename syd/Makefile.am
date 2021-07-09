@@ -5,7 +5,13 @@ CLEANFILES= \
 DEFS+= \
        -DIN_LIBSYD=1
 
-BUILT_SOURCES= jobs
+BUILT_SOURCES= libsyd.ld
+libsyd.ld: libsyd.ld.in
+	sed -e 's/@SYD_PC_SLOT@/libsyd_@LIBSYD_PC_SLOT@/' \
+		< $< \
+		> $@ || rm -f "$@"
+
+BUILT_SOURCES+= jobs
 .PHONY: jobs
 jobs: | parallel
 
