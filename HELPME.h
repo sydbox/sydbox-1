@@ -29,7 +29,10 @@ Y☮u mⒶy view the Sydb☮x bl☮g\t@\thttps://pink.exherbo.org/\n\
 Y☮u mⒶy view the Syd(1) mⒶnuⒶl pⒶge @\thttps://sydbox.exherbo.org/\n\
 Y☮u mⒶy view Pand☮ra's pr☮ject pⒶge @\thttps://pandora.exherbo.org/\n\
 Send bug rep☮rts t☮\t\t\thttps://todo.sr.ht/~alip/sydbox \n\
-ⒶttⒶching p☮ems enc☮urⒶges c☮nsiderⒶti☮n tremend☮usly.\n"
+ⒶttⒶching p☮ems enc☮urⒶges c☮nsiderⒶti☮n tremend☮usly.\n\
+\n\
+Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2018, 2020, 2021 Ⓐlï P☮latel <alip@exherbo.org>\n\
+SPDX-License-Identifier: GPL-2.0-only\n"
 
 /*
  * Include generated configuration

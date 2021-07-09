@@ -52,6 +52,15 @@ sydbox_rsdir="$srcdir/sydbox_rs"
 
 AC_DISABLE_OPTION_CHECKING
 
+m4_include([m4/ax_check_compiler_flags.m4])dnl
+m4_include([m4/ax_compiler_flags_cflags.m4])dnl
+m4_include([m4/ax_compiler_flags_cxxflags.m4])dnl
+m4_include([m4/ax_compiler_flags_gir.m4])dnl
+m4_include([m4/ax_compiler_flags_ldflags.m4])dnl
+m4_include([m4/ax_compiler_flags.m4])dnl
+m4_include([m4/ax_compiler_vendor.m4])dnl
+m4_include([m4/ax_compiler_version.m4])dnl
+
 m4_include([m4/_colorize_result_prepare.m4])dnl
 m4_include([m4/ac_msg_result.m4])dnl
 m4_include([m4/colorize_result.m4])dnl
@@ -253,18 +262,10 @@ AC_DEFINE_UNQUOTED([SYDBOX_CFLAGS],
 		   [["$SYDBOX_CFLAGS"]],
 		   [Sydb☮x Build Compiler Flags])
 
-
-dnl TODO: Default LDFLAGS
-dnl EXTRA_LDFLAGS="\
-dnl --build-id=sha1 \
-dnl --compress-debug-sections=zlib \
-dnl --gc-sections \
-dnl --pack-dyn-relocs=relr \
-dnl --orphan-handling=warn"
-dnl AX_COMPILER_FLAGS_LDFLAGS[EXTRA_LDFLAGS])
-dnl LDFLAGS="$EXTRA_LDFLAGS $LDFLAGS"
-dnl SYDBOX_LDFLAGS=$WARN_LDFLAGS
-SYDBOX_LDFLAGS=
+dnl TODO: Check with AX_CHECK_COMPILER_LDFLAGS
+EXTRA_LDFLAGS="--build-id=sha1 --compress-debug-sections=zlib --gc-sections --pack-dyn-relocs=relr --orphan-handling=warn"
+dnl AX_COMPILER_FLAGS_LDFLAGS([EXTRA_LDFLAGS])
+LDFLAGS="$EXTRA_LDFLAGS $LDFLAGS"
 AC_SUBST([SYDBOX_LDFLAGS])
 AC_DEFINE_UNQUOTED([SYDBOX_LDFLAGS],
 		   [["$SYDBOX_LDFLAGS"]],

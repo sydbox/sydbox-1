@@ -138,29 +138,47 @@ static inline syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 SYD_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
-	fprintf(outfp, "\
-"PACKAGE"-"VERSION GITVERSION" -- seccomp based application sandbox\n\
-usage: "PACKAGE" [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
-              [--export <bpf|pfc:filename>] [--memaccess 0..1]\n\
-              [--arch arch...] [--config pathspec...] [--magic magic...]\n\
-              [--lock] [--chroot directory] [--pivot-root new-root:put-old]\n\
-              [--chdir directory] [--env var...] [--env var=val...]\n\
-              [--ionice class:data] [--nice level]\n\
-              [--allow-daemonize] [--background]\n\
-              [--set-parent-death-signal signal]\n\
-              [--stdout logfile] [--stderr logfile]\n\
-              [--alias name] [--umask mode]\n\
-              [--uid user-id] [--gid group-id] [--add-gid group-id]\n\
-              [--unshare-pid] [--unshare-net] [--unshare-mount]\n\
-              [--unshare-uts] [--unshare-ipc] [--unshare-user]\n\
-              [--close-fds <begin:end>] [--reset-fds] [--escape-stdout]\n\
-              [--env-var-with-pid <varname>]\n\
-              {command [arg...]}\n\
-       "PACKAGE" [--export <bpf|pfc:filename>]\n\
-              [--arch arch...] [--config pathspec...]\n\
-              [--magic command...] {noexec}\n\
-       "PACKAGE" --test\n\
-\n"SYD_HELPME);
+	fputs("\
+syd-"VERSION GITVERSION" -- secc☮mp bⒶsed ⒶpplicⒶtion sⒶndb☮x\n\
+usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
+           [--export <bpf|pfc:filename>] [--memaccess 0..1]\n\
+           [--arch arch...] [--file pathspec...] [--syd magic...]\n\
+           [--lock] [--root directory] [--pivot-root new-root:put-old]\n\
+           [--wd directory] [--env var...] [--env var=val...]\n\
+           [--ionice class:data] [--nice level]\n\
+           [--allow-daemonize] [--background]\n\
+           [--set-parent-death-signal signal]\n\
+           [--stdout logfile] [--stderr logfile]\n\
+           [--alias name] [--umask mode]\n\
+           [--uid user-id] [--gid group-id] [--add-gid group-id]\n\
+           [--unshare-pid] [--unshare-net] [--unshare-mount]\n\
+           [--unshare-uts] [--unshare-ipc] [--unshare-user]\n\
+           [--unshare-cgroups] [--unshare-time]\n\
+           [--close-fds <begin:end>] [--reset-fds] [--escape-stdout]\n\
+           [--env-var-with-pid <varname>]\n\
+           {command [arg...]}\n", outfp);
+       fputs("\
+       syd [--export <bpf|pfc:filename>]\n\
+           [--arch arch...] [--config pathspec...]\n\
+           [--magic command...] {noexec}\n\
+       syd --test\n\
+       syd dump {syd-args...}\n\
+       syd errno [-hv] -|errno-name|errno-number...\n\
+       syd format exec [--] {command [arg...]}\n\
+       syd hilite [-hv] command args...\n\
+       syd test [-hvx]\n\
+           [--debug] [--immediate]\n\
+           [--long] [--run test]\n\
+           [--verbose-only] [--quiet]\n\
+              [--verbose-log]\n\
+              [--no-color]\n\
+              [--dump] [--pfc]\n\
+              [--strace] [--valgrind]\n\
+              [--root directory]\n\
+              [--chain-lint] [--no-chain-lint]\n\
+              [--stress] [--stress-jobs jobs]\n\
+              [--stress-limit limit]\n\
+\n"SYD_HELPME, outfp);
 	exit(code);
 }
 
@@ -2091,19 +2109,30 @@ int main(int argc, char **argv)
 	 * the Syd family of commands.
 	 */
 	if (argc > 1) {
-		if (streq(argv[1], "errno"))
+		if (streq(argv[1], "errno")) {
 			execv(BINDIR"/syd-errno", argv + 1);
-		if (streq(argv[1], "format"))
+			exit(ECANCELED);
+		}
+		if (streq(argv[1], "format")) {
 			execv(BINDIR"/syd-format", argv + 1);
-		if (streq(argv[1], "hilite"))
+			exit(ECANCELED);
+		}
+		if (streq(argv[1], "hilite")) {
 			execv(BINDIR"/syd-hilite", argv + 1);
-		if (streq(argv[1], "shoebox"))
+			exit(ECANCELED);
+		}
+		if (streq(argv[1], "shoebox")) {
 			execv(BINDIR"/syd-shoebox", argv + 1);
-		if (streq(argv[1], "test"))
+			exit(ECANCELED);
+		}
+		if (streq(argv[1], "test")) {
 			execv(BINDIR"/syd-test", argv + 1);
-		if (streq(argv[1], "dump"))
+			exit(ECANCELED);
+		}
+		if (streq(argv[1], "dump")) {
 			execv(LIBEXECDIR"/syd-dump", argv + 1);
-		exit(ECANCELED);
+			exit(ECANCELED);
+		}
 	}
 	enum {
 		/* unshare options */
