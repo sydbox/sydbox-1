@@ -129,6 +129,7 @@ m4_defun([_LT_AC_LANG_F77_CONFIG], [:])
 
 dnl toolchain checks
 : ${CFLAGS=""}
+: ${LDFLAGS=""}
 AC_USE_SYSTEM_EXTENSIONS
 LT_INIT
 LT_PATH_LD
@@ -194,10 +195,8 @@ SYD_CFLAGS_CLANG="
 -D_SYD_CLANG_OK \
 "
 
+dnl TODO: -fauto-profile=misc/sydbox.afdo
 dnl TODO: -fplan9-extensions
-dnl $SYD_CFLAGS_CLANG
-dnl $SYD_CFLAGS_DEBUG
-dnl $SYD_CFLAGS_SAFE
 SYD_CFLAGS="
 -D_SYD_DEF \
 $SYD_CFLAGS_OPT \
@@ -211,11 +210,24 @@ $SYD_CFLAGS_SAFE \
 -fwide-exec-charset=UTF-8 \
 -falign-functions=32 \
 -fallow-parameterless-variadic-functions \
+-fbranch-target-load-optimize \
+-fbranch-target-load-optimize2 \
+-fbtr-bb-exclusive \
+-fdata-sections \
+-ffast-math \
+-fno-math-errno \
+-funsafe-math-optimizations \
+-fassociative-math \
+-freciprocal-math \
+-ffinite-math-only \
+-ffunction-sections \
 -fconserve-stack \
 -fgimple \
 -fopenacc \
 -fopenacc-dim=worker \
 -fhosted \
+-fsection-anchors \
+-fstdarg-opt \
 -funsigned-char \
 -fvisibility=hidden \
 -fno-inline-functions-called-once \
@@ -249,10 +261,17 @@ $SYD_CFLAGS_SAFE \
 -Wframe-larger-than=16384 \
 -Wno-pointer-sign \
 -Wno-stringop-truncation \
-$SYD_CFLAGS_CLANG \
 $SYD_CFLAGS_DEBUG \
--D_SYD_DEF_OK \
 "
+
+dnl check for pthreads
+AX_PTHREAD([],
+	   [AC_MSG_WARN([POSIX threads library is missing, some tests may not build!])])
+
+if test x"$ax_cv_PTHREAD_CLANG" = x"yes"; then
+	SYD_CFLAGS="$SYD_CFLAGS $SYD_CFLAGS_CLANG"
+fi
+SYD_CFLAGS="$SYD_CFLAGS -D_SYD_DEF_OK"
 
 SYDBOX_CFLAGS=
 for flag in $SYD_CFLAGS ; do
@@ -263,18 +282,9 @@ AC_DEFINE_UNQUOTED([SYDBOX_CFLAGS],
 		   [["$SYDBOX_CFLAGS"]],
 		   [Sydb☮x Build Compiler Flags])
 
-dnl TODO: Check with AX_CHECK_COMPILER_LDFLAGS
-EXTRA_LDFLAGS="--build-id=sha1 --compress-debug-sections=zlib --gc-sections --pack-dyn-relocs=relr --orphan-handling=warn"
-dnl AX_COMPILER_FLAGS_LDFLAGS([EXTRA_LDFLAGS])
-LDFLAGS="$EXTRA_LDFLAGS $LDFLAGS"
-AC_SUBST([SYDBOX_LDFLAGS])
-AC_DEFINE_UNQUOTED([SYDBOX_LDFLAGS],
-		   [["$SYDBOX_LDFLAGS"]],
-		   [Sydb☮x Build Linker Flags])
-
-dnl extra LDFLAGS
 dnl Build sydbox binary static by default.
 dnl Disable with --disable-static
+SYDBOX_LDFLAGS=
 SYDBOX_LIBTOOL_FLAGS=""
 SYDBOX_STATIC_CFLAGS=
 AC_ARG_ENABLE([static],
@@ -306,6 +316,11 @@ AC_DEFINE_UNQUOTED([ENABLE_STATIC], [$ENABLE_STATIC],
 		   [Define to 1 if this is static build.])
 AM_CONDITIONAL([HAVE_GNU_CC], [test x"$GCC" = x"yes"])
 AM_CONDITIONAL([HAVE_GNU_LD], [test x"$with_gnu_ld" = x"yes"])
+
+AC_SUBST([SYDBOX_LDFLAGS])
+AC_DEFINE_UNQUOTED([SYDBOX_LDFLAGS],
+		   [["$SYDBOX_LDFLAGS"]],
+		   [Sydb☮x Build Linker Flags])
 
 dnl check for supported operating system
 KERNEL_VERSION=
@@ -800,10 +815,6 @@ AC_CHECK_FUNCS(m4_flatten([
 
 dnl check for large file support
 AC_SYS_LARGEFILE
-
-dnl check for pthreads
-AX_PTHREAD([],
-	   [AC_MSG_WARN([POSIX threads library is missing, some tests may not build!])])
 
 dnl Enable experimental flag
 dnl Requires rust.

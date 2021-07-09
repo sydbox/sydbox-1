@@ -24,7 +24,7 @@ int syd_about(FILE *report_fd)
 	int r = fprintf(report_fd,
 			"[0;1;31;91m"
 			PACKAGE"-"VERSION GITVERSION
-			"[0m") < 0 ? -errno : 0;
+			"[0m\n") < 0 ? -errno : 0;
 	if (r < 0)
 		return -errno;
 	if (syd_scmp_version) {
@@ -36,7 +36,7 @@ int syd_about(FILE *report_fd)
 		if (r < 0)
 			return -errno;
 	}
-	fputs("[0;1;31;91mOptions: ", report_fd);
+	fputs("[0;1;31;91m Options: ", report_fd);
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	fputs("dump:yes", report_fd);
 #else
@@ -49,7 +49,7 @@ int syd_about(FILE *report_fd)
 	fputs(" netlink:yes[0m\n",
 	      report_fd);
 	fprintf(report_fd, "[0;1;31;91m"
-		"Release Codename: "CODENAME"[0m\n");
+		"Release Codename: "CODENAME"[0m\n\n");
 	fprintf(report_fd, "[0;1;35;95m"
 		"Compiler Flags: "SYDBOX_CFLAGS"[0m\n");
 	fprintf(report_fd, "[0;1;33;93m"
@@ -59,8 +59,8 @@ int syd_about(FILE *report_fd)
 	      "2010, 2011, 2012, 2013, "
 	      "2014, 2015, 2018, 2020, "
 	      "2021"
-	      "[0m", report_fd);
-	fputs("[0;1;34;91mAlï P☮latel <alïp@exherb☮.☮rg>[0m", report_fd);
+	      "[0m\n", report_fd);
+	fputs("[0;1;34;91mAlï P☮latel <alïp@exherb☮.☮rg>[0m\n", report_fd);
 	fputs("SPDX-License-Identifier: [0;1;31;91mGPL-2.0-only[0m",
 	      report_fd);
 
