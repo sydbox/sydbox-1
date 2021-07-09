@@ -649,6 +649,8 @@ int magic_cast_string(syd_process_t *current, const char *magic, int prefix)
 	struct key entry;
 
 	if (prefix) {
+		if (!magic || magic[0] == '\0')
+			return MAGIC_RET_INVALID_COMMAND;
 		if (!startswith(magic, SYDBOX_MAGIC_PREFIX)) {
 			/* no magic */
 			return MAGIC_RET_NOOP;
@@ -667,6 +669,9 @@ int magic_cast_string(syd_process_t *current, const char *magic, int prefix)
 	} else {
 		cmd = magic;
 	}
+
+	if (!cmd || cmd[0] == '\0')
+		return MAGIC_RET_INVALID_COMMAND;
 
 	/* Figure out the magic command */
 	for (key = MAGIC_KEY_NONE;;) {

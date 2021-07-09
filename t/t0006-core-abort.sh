@@ -6,7 +6,7 @@ test_description='test the termination return code of sydbox'
 . ./test-lib.sh
 
 save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
-SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS -mcore/sandbox/read:allow"
+SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS -ycore/sandbox/read:allow"
 export SYDBOX_TEST_OPTIONS
 
 # These termination exit code checks fails on buildhost only when run via CI.
@@ -214,7 +214,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked
     test_expect_code 136 syd -- syd-abort-pthread-static 8
 '
 
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked multithreaded tracee is terminated with SIGSEGV' '
+test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked multithreaded tracee is terminated with SIGSEGV' '
     test_expect_code 139 syd -- syd-abort-pthread-static 11
 '
 

@@ -47,6 +47,7 @@ series
 
 # ctags files
 tags
+TAGS
 
 # cscope files
 cscope.*
@@ -129,7 +130,7 @@ Makefile
 /src/syd-format
 /src/syd-shoebox
 /src/lib.rs
-/t/sydtest
+/t/syd-test
 /t/bin-wrappers/syd
 /t/bin-wrappers/syd-dump
 /t/bin-wrappers/syd-format

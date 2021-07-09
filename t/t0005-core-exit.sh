@@ -6,7 +6,7 @@ test_description='test the exit return code of syd'
 . ./test-lib.sh
 
 save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
-SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS -mcore/sandbox/read:allow"
+SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS -ycore/sandbox/read:allow"
 export SYDBOX_TEST_OPTIONS
 
 test_expect_success 'return success if tracee returns success' '

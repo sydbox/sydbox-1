@@ -68,20 +68,6 @@ pid_t syd_clone3(struct clone_args *args);
 #define SYD_WARN	SYD_ANSI_DARK_MAGENTA
 #define SYD_RESET	SYD_ANSI_NORMAL
 
-#if 0
-#define SYD_CLONE_FLAGS (CLONE_VM|\
-			 CLONE_FS|\
-			 CLONE_FILES|\
-			 CLONE_CLEAR_SIGHAND|\
-			 CLONE_THREAD|\
-			 CLONE_SYSVSEM|\
-			 CLONE_PIDFD|\
-			 CLONE_PARENT_SETTID|\
-			 CLONE_CHILD_CLEARTID)
-#endif
-
-#define SYD_CLONE_FLAGS CLONE_PIDFD|CLONE_PARENT_SETTID
-
 /*
  * 16 is sufficient since the largest number we will ever convert
  * will be 2^32-1, which is 10 digits.

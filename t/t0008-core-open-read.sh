@@ -16,11 +16,11 @@ for cor_mem_access in 0 1; do
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
     test_must_fail syd \
-        -p '${cor_mem_access}' \
-        -m core/sandbox/read:deny \
-        -m core/sandbox/write:off \
-        -m core/sandbox/exec:off \
-        -m core/sandbox/network:off \
+        --memaccess '${cor_mem_access}' \
+        -y core/sandbox/read:deny \
+        -y core/sandbox/write:off \
+        -y core/sandbox/exec:off \
+        -y core/sandbox/network:off \
         syd-open-static "$cdir"/readme rdonly
 '
 
@@ -32,9 +32,9 @@ for cor_mem_access in 0 1; do
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
     syd \
-        -p '${cor_mem_access}' \
-        -m core/sandbox/read:deny \
-        -m "allowlist/read+/***" \
+        --memaccess '${cor_mem_access}' \
+        -y core/sandbox/read:deny \
+        -y "allowlist/read+/***" \
         syd-open-static "$cdir"/readme rdonly
 '
 done

@@ -43,71 +43,71 @@ test_expect_success GREP_P 'default action is allow with --bpf-only' '
 '
 
 test_expect_success GREP_P 'default action is permission denied with Level 1 restrictions' '
-    syd -b -m core/restrict/general:1 noexec &&
+    syd -b -y core/restrict/general:1 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success GREP_P 'default action is permission denied with -b and Level 1 restrictions' '
-    syd -b -m core/restrict/general:1 noexec &&
+    syd -b -y core/restrict/general:1 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success GREP_P 'default action is permission denied with Level 2 restrictions' '
-    syd -b -m core/restrict/general:2 noexec &&
+    syd -b -y core/restrict/general:2 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success GREP_P 'default action is permission denied with -b and Level 2 restrictions' '
-    syd -b -m core/restrict/general:2 noexec &&
+    syd -b -y core/restrict/general:2 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success GREP_P 'default action is permission denied with Level 3 restrictions' '
-    syd -b -m core/restrict/general:3 noexec &&
+    syd -b -y core/restrict/general:3 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success GREP_P 'default action is permission denied with -b and Level 3 restrictions' '
-    syd -b -m core/restrict/general:3 noexec &&
+    syd -b -y core/restrict/general:3 noexec &&
     test_bpf_action default "ERRNO\(1\)"
 '
 
 test_expect_success GREP_P 'default action is allow with read sandboxing bpf' '
     syd \
-        -m core/sandbox/read:bpf \
-        -m core/sandbox/write:off \
-        -m core/sandbox/exec:off \
-        -m core/sandbox/network:off \
+        -y core/sandbox/read:bpf \
+        -y core/sandbox/write:off \
+        -y core/sandbox/exec:off \
+        -y core/sandbox/network:off \
         noexec &&
     test_bpf_action default ALLOW
 '
 
 test_expect_success GREP_P 'default action is allow with write sandboxing bpf' '
     syd \
-        -m core/sandbox/read:off \
-        -m core/sandbox/write:bpf \
-        -m core/sandbox/exec:off \
-        -m core/sandbox/network:off \
+        -y core/sandbox/read:off \
+        -y core/sandbox/write:bpf \
+        -y core/sandbox/exec:off \
+        -y core/sandbox/network:off \
         noexec &&
     test_bpf_action default ALLOW
 '
 
 test_expect_success 'default action is allow with exec sandboxing bpf' '
     syd \
-        -m core/sandbox/read:off \
-        -m core/sandbox/write:bpf \
-        -m core/sandbox/exec:bpf \
-        -m core/sandbox/network:off \
+        -y core/sandbox/read:off \
+        -y core/sandbox/write:bpf \
+        -y core/sandbox/exec:bpf \
+        -y core/sandbox/network:off \
         noexec &&
     test_bpf_action default ALLOW
 '
 
 test_expect_success 'default action is allow with network sandboxing bpf' '
     syd \
-        -m core/sandbox/read:off \
-        -m core/sandbox/write:off \
-        -m core/sandbox/exec:off \
-        -m core/sandbox/network:bpf \
+        -y core/sandbox/read:off \
+        -y core/sandbox/write:off \
+        -y core/sandbox/exec:off \
+        -y core/sandbox/network:bpf \
         noexec &&
     test_bpf_action default ALLOW
 '

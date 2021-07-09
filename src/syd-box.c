@@ -1864,7 +1864,7 @@ static syd_process_t *startup_child(char **argv)
 		free(arch_argv[i]);
 	arch_argv[0] = NULL;
 
-	if (!noexec && !pathname || !*pathname)
+	if (!noexec && !pathname)
 		die_errno("can't exec »%s«", argv[0]);
 	if (pipe2(pfd, O_CLOEXEC|O_DIRECT) < 0)
 		die_errno("can't pipe");
@@ -2248,7 +2248,7 @@ int main(int argc, char **argv)
 		die_errno("sigaction");
 
 	while ((opt = getopt_long(argc, argv,
-				  "hva:blde:nyfmuiNpUCTFrcS:G:R:w:+:&:1:2:A:K:E:V:Ot",
+				  "hva:blde:ny:fmuiNpUCTFrcS:G:R:w:+:&:1:2:A:K:E:V:Ot",
 				  long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 'h':
