@@ -175,6 +175,7 @@ global:
 	syd_time_prof;
 	syd_strlcat;
 	syd_strlcpy;
+	syd_str_startswith;
 local:
 	*;
 };

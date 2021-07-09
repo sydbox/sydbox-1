@@ -447,29 +447,6 @@ void syd_time_prof(unsigned loop, ...);
 size_t syd_strlcat(char *restrict dst, const char *restrict src, size_t siz);
 size_t syd_strlcpy(char *restrict dst, const char *restrict src, size_t siz);
 
-inline int syd_str_startswith(const char *s, const char *prefix,
-			      bool *ret_bool)
-{
-	size_t sl, pl;
-
-	if (!s || !prefix || !ret_bool)
-		return -EINVAL;
-
-	sl = strlen(s);
-	pl = strlen(prefix);
-
-	if (pl == 0) {
-		*ret_bool = true;
-		return 0;
-	}
-
-	if (sl < pl) {
-		*ret_bool = false;
-		return 0;
-	}
-
-	*ret_bool = memcmp(s, prefix, pl) == 0;
-	return 0;
-}
+int syd_str_startswith(const char *s, const char *prefix, bool *ret_bool);
 
 #endif

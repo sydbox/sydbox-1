@@ -609,6 +609,18 @@ int sys_fstatat(syd_process_t *current)
 	else
 		path[count] = '\0';
 
+	/* Careful, we may both have a bad fd and the path may be either
+	 * NULL or empty string! */
+	if (badfd && (!path || !*path || !path_is_absolute(path))) {
+		/* Bad directory for non-absolute path! */
+		r = deny(current, EBADF);
+		if (sydbox->config.violation_raise_fail)
+			violation(current, "%s()", current->sysname);
+		if (prefix)
+			free(prefix);
+		return r;
+	}
+
 	char *abspath = NULL;
 	unsigned rmode = 0;
 	if (current->args[2] & AT_SYMLINK_NOFOLLOW)
@@ -643,7 +655,24 @@ int sys_statx(syd_process_t *current)
 		return 0;
 	}
 
-	/* See the note in sys_fstatat() on why we ignore AT_FDCWD. */
+	/* Step 1: Check the dirfd */
+	bool badfd = false;
+	char *prefix = NULL;
+	int r = path_prefix(current, current->args[0], &prefix);
+	if (r == -ESRCH) {
+		return -ESRCH;
+	} else if (r == -EBADF) {
+		/* Using a bad directory for absolute paths is fine!
+		 */
+		badfd = true;
+	} else if (r < 0) {
+		r = deny(current, -r);
+		if (sydbox->config.violation_raise_fail)
+			violation(current, "%s()", current->sysname);
+		return r;
+	}
+
+	/* Step 2: Check the second argument */
 	addr = current->args[1];
 	if ((count = syd_read_string(current, addr, path, SYDBOX_PATH_MAX)) < 0)
 		return errno == EFAULT ? 0 : -errno;
@@ -652,7 +681,39 @@ int sys_statx(syd_process_t *current)
 	else
 		path[count] = '\0';
 
-	return do_stat(current, path, 4, true);
+	/* Careful, we may both have a bad fd and the path may be either
+	 * NULL or empty string! */
+	if (badfd && (!path || !*path || !path_is_absolute(path))) {
+		/* Bad directory for non-absolute path! */
+		r = deny(current, EBADF);
+		if (sydbox->config.violation_raise_fail)
+			violation(current, "%s()", current->sysname);
+		if (prefix)
+			free(prefix);
+		return r;
+	}
+
+	char *abspath = NULL;
+	unsigned rmode = 0;
+	if (current->args[2] & AT_SYMLINK_NOFOLLOW)
+		rmode |= RPATH_NOFOLLOW;
+	if ((r = box_resolve_path(path, prefix ? prefix : P_CWD(current),
+				  sydbox->pid_valid, rmode, &abspath)) < 0) {
+		r = deny(current, -r);
+		if (sydbox->config.violation_raise_fail)
+			violation(current, "%s(»%s«)",
+				  current->sysname,
+				  path);
+		goto out;
+	}
+
+	r = do_stat(current, abspath, 4, true);
+out:
+	if (prefix)
+		free(prefix);
+	if (abspath)
+		free(abspath);
+	return r;
 }
 
 int filter_uname(uint32_t arch)

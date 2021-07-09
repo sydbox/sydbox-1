@@ -19,6 +19,30 @@
 #include <sched.h>
 #include "syd.h"
 
+int syd_str_startswith(const char *s, const char *prefix, bool *ret_bool)
+{
+	size_t sl, pl;
+
+	if (!s || !prefix || !ret_bool)
+		return -EINVAL;
+
+	sl = strlen(s);
+	pl = strlen(prefix);
+
+	if (pl == 0) {
+		*ret_bool = true;
+		return 0;
+	}
+
+	if (sl < pl) {
+		*ret_bool = false;
+		return 0;
+	}
+
+	*ret_bool = memcmp(s, prefix, pl) == 0;
+	return 0;
+}
+
 #define S(NAME,NUM) do {\
 	if (!strcasecmp(name, (NAME))) \
 		return (NUM); } while(0)
