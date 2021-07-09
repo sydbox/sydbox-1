@@ -34,7 +34,7 @@ dist_doc_DATA= \
 	       LICENSE \
 	       LICENSE.psyscall \
 	       LICENSE.sinit \
-	       README \
+	       README.md \
 	       KERNEL.md \
 	       TODO.md \
 	       man/ptrace-ntpl.txt
