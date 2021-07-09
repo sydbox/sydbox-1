@@ -1126,7 +1126,6 @@ AC_CONFIG_FILES([Makefile
 		 pandora/Makefile
 		 misc/Makefile
 		 src/Makefile
-		 syd/libsyd.ld
 		 syd/Makefile
 		 data/Makefile
 		 man/Makefile
