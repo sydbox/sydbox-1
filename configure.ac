@@ -872,7 +872,8 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([
 ],
 [[
 const struct scmp_version *v = seccomp_version();
-exit(v->major > 2 || (v->major == 2 && v->minor >= 4) ? 0 : 1);
+exit((!v->major && !v->minor && !v->micro) ||
+     (v->major > 2 || (v->major == 2 && v->minor >= 4)) ? 0 : 1);
 ]])],
 [AC_MSG_RESULT([yes])
 ],[AC_MSG_ERROR([SydB☮x requires libseccomp-$LIBSECCOMP_REQUIRED or newer])
