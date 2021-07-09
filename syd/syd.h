@@ -133,7 +133,7 @@ int syd_name2signal(const char *signame);
 #include <sys/mount.h>
 
 #define SYD_UNSHARE_FLAGS_MAX 8
-const int syd_unshare_flags[SYD_UNSHARE_FLAGS_MAX] = {
+static const int syd_unshare_flags[SYD_UNSHARE_FLAGS_MAX] = {
 	CLONE_NEWCGROUP,
 	CLONE_NEWTIME,
 	CLONE_NEWIPC,
