@@ -171,7 +171,7 @@ static const int syd_unshare_flags[SYD_UNSHARE_FLAGS_MAX] = {
 /*
 Clone & Execute a process under various restrictions and options.
  */
-struct syd_execv_opt {
+struct syd_exec_opt {
 	const char *alias;
 	const char *workdir;
 	bool verbose;
@@ -190,13 +190,14 @@ struct syd_execv_opt {
 	bool make_group_leader;
 	int parent_death_signal;
 	const uint32_t *supplementary_gids;
+	size_t supplementary_gids_length;
 	const char *pid_env_var;
 };
 
 SYD_GCC_ATTR((warn_unused_result))
 int syd_execv(const char *command,
-	      size_t argc, char *const *argv,
-	      struct syd_execv_opt *opt);
+	      size_t argc, char **argv,
+	      struct syd_exec_opt *opt);
 
 SYD_GCC_ATTR((warn_unused_result,nonnull((3))))
 pid_t syd_clone(int flags, int exit_signal, unsigned long long *pidfd_out);

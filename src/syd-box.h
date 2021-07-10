@@ -1074,6 +1074,22 @@ static inline void free_sandbox(sandbox_t *box)
 	free(box);
 }
 
+static inline char sandbox_mode_toc(enum sandbox_mode mode)
+{
+	switch (mode) {
+	case SANDBOX_OFF:
+		return '-';
+	case SANDBOX_BPF:
+		return '+';
+	case SANDBOX_DENY:
+		return '!';
+	case SANDBOX_ALLOW:
+		return '%';
+	default:
+		assert_not_reached();
+	}
+}
+
 static inline unsigned short pack_clone_flags(long clone_flags)
 {
 	unsigned short f = 0;

@@ -1880,17 +1880,24 @@ startup_child:
 			SYDBOX_PROC_MAX);
 		syd_proc_cmdline(sydbox->pfd, current->prog, LINE_MAX-1);
 		current->prog[LINE_MAX-1] = '\0';
-		/* 16 bytes including the terminating NUL byte.
-		* syd- is 4 bytes.
-		* comm is max 7 bytes.
-		* hash is 5..9 bytes.
-		*/
-		char comm[16];
-		syd_proc_comm(sydbox->pfd, current->comm, SYDBOX_PROC_MAX);
-		size_t len = strlen(current->comm);
-		size_t clen = len;
-		strlcpy(comm , current->comm, clen + 1);
-		strlcat(comm + clen++, "☮", sizeof("☮"));
+
+		/* 16 bytes including the terminating NUL byte. */
+		char comm[16] = {0};
+
+		/* SydBox marker */
+		comm[0] = '@';
+
+		/* 4 bytes for sandboxing information */
+		sandbox_t *box = box_current(NULL);
+		comm[1] = sandbox_mode_toc(box->mode.sandbox_read);
+		comm[2] = sandbox_mode_toc(box->mode.sandbox_write);
+		comm[3] = sandbox_mode_toc(box->mode.sandbox_exec);
+		comm[4] = sandbox_mode_toc(box->mode.sandbox_network);
+
+		size_t len = strlen(argv[0]);
+		strlcpy(comm + 5, argv[0], len + 1);
+		comm[5 + len] = '-';
+
 		char *proc_exec;
 		xasprintf(&proc_exec, "/proc/%u/exe", current->pid);
 		if ((r = syd_path_to_sha1_hex(proc_exec, sydbox->hash)) < 0) {
@@ -1898,10 +1905,11 @@ startup_child:
 			say_errno("can't calculate checksum of file "
 				  "»%s«", proc_exec);
 		} else {
-			strlcat(comm + clen, sydbox->hash, 16);
+			strlcat(comm, sydbox->hash, 16);
 		}
 		comm[15] = '\0';
-		set_arg0(comm);
+		if (!get_arg0())
+			set_arg0(comm);
 
 		if (change_umask() < 0)
 			say_errno("change_umask");
@@ -1948,7 +1956,7 @@ seccomp_init:
 			_exit(getenv(SYDBOX_NOEXEC_ENV) ?
 				atoi(getenv(SYDBOX_NOEXEC_ENV)) :
 				0);
-		struct syd_execv_opt opt;
+		struct syd_exec_opt opt;
 
 		opt.verbose = false;
 #if SYDBOX_HAVE_DUMP_BUILTIN
@@ -1971,6 +1979,7 @@ seccomp_init:
 		opt.make_group_leader = make_group_leader;
 		opt.parent_death_signal = parent_death_signal;
 		opt.supplementary_gids = get_groups();
+		opt.supplementary_gids_length = get_groups_length();
 		r = syd_execv(pathname, argc, argv, &opt);
 		if (r < 0) {
 			errno = -pid;
@@ -2445,12 +2454,11 @@ int main(int argc, char **argv)
 		case OPT_ADD_GID:
 			if ((r = safe_atoi(optarg, &arg) < 0)) {
 				errno = -r;
-				say_errno("Invalid argument for --setgid option: "
+				say_errno("Invalid argument for --add-gid option: "
 					  "»%s«", optarg);
 				usage(stderr, 1);
 			}
-			gid = (gid_t)arg;
-			force_gid = 1;
+			set_groups(arg);
 			break;
 		case 'R':
 			newroot = optarg;

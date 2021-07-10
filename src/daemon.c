@@ -42,20 +42,14 @@ const char *get_redirect_stderr(void) { return redirect_stderr; }
 uid_t get_uid(void) { return uid ; }
 gid_t get_gid(void) { return gid ; }
 int get_nice(void) { return nice_inc; }
-const char *get_arg0(void) {
-	char *dup = NULL;
-
-	if (arg0 == NULL)
-		arg0 = strdup("☮");
-	else if (asprintf(&dup, "☮%s", arg0) >= 0)
-		return dup;
-	return arg0;
-}
+const char *get_arg0(void) { return arg0; }
 const char *get_root_directory(void) { return root_directory; }
 const char *get_working_directory(void) { return working_directory; }
 const char *get_pid_env_var(void) { return pid_env_var; }
 mode_t get_umask(void) { return file_mode_creation_mask; }
-const gid_t *get_groups(void) { return gid_add; }
+const gid_t *get_groups(void) { return gid_add_index ? gid_add : NULL; }
+size_t get_groups_length(void) { return gid_add_index; }
+
 void get_pivot_root(char **new_root, char **put_old)
 {
 	assert(new_root);
@@ -70,7 +64,7 @@ void set_redirect_stdout(const char *log) { redirect_stdout = log; }
 void set_redirect_stderr(const char *log) { redirect_stderr = log; }
 void set_uid(uid_t new_uid) { uid = new_uid; }
 void set_gid(gid_t new_gid) { gid = new_gid; }
-void set_gid_add(gid_t new_gid) {
+void set_groups(gid_t new_gid) {
 	if (gid_add_index >= GID_ADD_MAX)
 		return;
 	gid_add[gid_add_index++] = new_gid;

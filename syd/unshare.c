@@ -78,14 +78,14 @@ int syd_setgroups_control(int action)
 		if (errno == ENOENT)
 			return -ENOENT;
 		int save_errno = errno;
-		syd_dsay("cannot open `%s'", file);
+		syd_dsay("cannot open »%s«", file);
 		return -save_errno;
 	}
 
 	int r = 0;
 	if (write_all(fd, cmd, strlen(cmd))) {
 		r = -errno;
-		syd_say("write failed `%s'", file);
+		syd_say("write failed »%s«", file);
 	}
 	close(fd);
 	return r;
@@ -98,7 +98,7 @@ int syd_map_id(const char *file, uint32_t from, uint32_t to)
 
 	fd = open(file, O_WRONLY);
 	if (fd < 0) {
-		syd_dsay("cannot open `%s'", file);
+		syd_dsay("cannot open »%s«", file);
 		return -errno;
 	}
 
@@ -109,7 +109,7 @@ int syd_map_id(const char *file, uint32_t from, uint32_t to)
 	int r = 0;
 	if (write_all(fd, buf, strlen(buf))) {
 		r = -errno;
-		syd_dsay("write failed `%s'", file);
+		syd_dsay("write failed »%s«", file);
 	}
 	free(buf);
 	close(fd);
@@ -182,7 +182,7 @@ int syd_bind_ns_files(pid_t pid)
 
 		if (mount(src, ns->target, NULL, MS_BIND, NULL) != 0) {
 			r = -errno;
-			syd_dsay("mount `%s' on `%s' failed", src, ns->target);
+			syd_dsay("mount »%s« on »%s« failed", src, ns->target);
 		}
 	}
 
@@ -198,7 +198,7 @@ ino_t syd_get_mnt_ino(pid_t pid)
 
 	if (stat(path, &st) != 0) {
 		int r = -errno;
-		syd_dsay("stat of `%s' failed", path);
+		syd_dsay("stat of »%s« failed", path);
 		return r;
 	}
 	return st.st_ino;
