@@ -34,14 +34,14 @@ static void usage(FILE *outfp, int code)
 	fprintf(outfp, "\
 "PACKAGE"-"VERSION GITVERSION" -- Syd's SHA-1 Calculator\n\
 usage: "PACKAGE" [-hv]\n\
-                 [--check {-|file}] [--output {-|file}]\n\
-                 -|file...\n\
+                [--check {-|file}] [--output {-|file}]\n\
+                -|file...\n\
 -h          -- Show usage and exit\n\
 -v          -- Show version and exit\n\
 -c          -- Read SHA-1 sums from the FILEs and check them\n\
-               If argument is `-', read SHA-1 sums from file »./.syd.sha1sum«,\n\
+               If argument is `-', read SHA-1 sums from file »~/.syd.sha1sum«,\n\
                and check them.\n\
--o          -- Write SHA-1 sums to the given file, or to »./.syd.sha1sum«,\n\
+-o          -- Write SHA-1 sums to the given file, or to »~/.syd.sha1sum«,\n\
                if the given argument is »-«.\n\
 \n\
 Given a file, calculate its SHA-1 and output in hex.\n\
@@ -53,13 +53,14 @@ With --verify, read checksums from file »./.syd.sha1sum« and check them\n\
 In check mode, use »✓« for match, »×« for mismatch and »💀« for detected collision.\n\
 Use »☮« to denote reading from standard input.\n\
 \n\
-SHA-1 Calculator uses SHA-1DC imported from Git, which is:\n\
+SHA-1 Calculator uses SHA-1DC which is:\n\
 Copyright (c) 2017 Marc Stevens, Dan Shumow\n\
 SPDX-License-Identifier: MIT\n\
+URL: https://github.com/cr-marcstevens/sha1collisiondetection.git\n\
 "SYD_WARN"\n\
 Collision Detection is enabled.\n\
 Detection of reduced-round SHA1 collisions is enabled.\n\
-Safe SHA-1 is enabled:"SYD_RESET"\n\
+Safe SHA-1 is enabled:"SYD_RESET"\n\n\
 Collision attacks are thwarted by hashing a detected near-collision block 3 times.\n\
 Think of it as extending SHA-1 from 80-steps to 240-steps for such blocks:\n\
 The best collision attacks against SHA-1 have complexity about 2^60,\n\
@@ -391,7 +392,7 @@ int main(int argc, char **argv)
 	}
 
 	int opt;
-	const char *output_path = NULL;
+	char *output_path = NULL;
 	FILE *output_file = NULL;
 	struct option long_options[] = {
 		/* default options */
@@ -414,13 +415,19 @@ int main(int argc, char **argv)
 			syd_about(stdout);
 			return 0;
 		case 'c':
-			opt_check = optarg;
+			if (opt_check)
+				free(opt_check);
+			opt_check = strdup(optarg);
 			break;
 		case 'o':
+			if (output_path)
+				free(output_path);
 			if (strcmp(optarg, "-"))
-				output_path = optarg;
+				output_path = strdup(optarg);
 			else
-				output_path = SYD_SHA1_CHECK_DEF;
+				asprintf(&output_path, "%s/%s",
+					 getenv("HOME"),
+					 SYD_SHA1_CHECK_DEF);
 			break;
 		default:
 			usage(stderr, 1);
@@ -441,17 +448,15 @@ int main(int argc, char **argv)
 	const char *name = NULL;
 	if (opt_check) {
 		if (opt_check[0] == '-' && opt_check[1] == '\0') {
-			check_file_init(SYD_SHA1_CHECK_DEF);
-			r = check_sha1sum(SYD_SHA1_CHECK_DEF);
-			name = SYD_SHA1_CHECK_DEF;
-		} else {
-			check_file_init(opt_check);
-			r = check_sha1sum(opt_check);
-			name = opt_check;
+			if (asprintf(&opt_check, "%s/%s",
+				     getenv("HOME"), SYD_SHA1_CHECK_DEF) < 0)
+				die_errno("asprintf");
 		}
+		check_file_init(opt_check);
+		r = check_sha1sum(opt_check);
 		if (r < 0)
-			say_errno("check_sha1sum(`%s')", name);
-		check_file_done(name);
+			say_errno("check_sha1sum(`%s')", opt_check);
+		check_file_done(opt_check);
 	}
 
 	for (int i = optind; argv[i] != NULL; i++) {
