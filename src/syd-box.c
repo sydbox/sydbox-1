@@ -191,46 +191,7 @@ int path_to_hex(const char *pathname)
 		return -save_errno;
 	}
 
-#define PATH_TO_HEX_BUFSIZ (1024*1024)
-	/* Avoid this warning.
-	 * warning: stack frame size of 1048664 bytes in function 'path_to_hex'
-	 * [-Wframe-larger-than=]
-	 *
-	 * char buf[PATH_TO_HEX_BUFSIZ];
-	 */
-	char *buf = xmalloc(PATH_TO_HEX_BUFSIZ * sizeof(char));
-	ssize_t nread;
-	unsigned char hash[SYD_SHA1_RAWSZ];
-	int r = 0;
-	syd_hash_sha1_init();
-	for (;;) {
-		errno = 0;
-		nread = read(fd, buf + r, PATH_TO_HEX_BUFSIZ - r);
-		if (!nread) {
-			r = 0;
-			break;
-		}
-		if (nread > 0)
-			r += nread;
-		if (errno == EINTR ||
-		    (nread > 0 && (size_t)r < PATH_TO_HEX_BUFSIZ)) {
-			continue;
-		} else if (nread < 0 && r == 0) { /* not partial read */
-			int save_errno = errno;
-			sprintf(sydbox->hash, "<read:%d>", save_errno);
-			r = -save_errno;
-			break;
-		}
-		syd_hash_sha1_update(buf, r);
-		r = 0;
-	}
-	close(fd);
-	if (r == 0) {
-		syd_hash_sha1_final(hash);
-		strlcpy(sydbox->hash, hash_to_hex(hash), SYD_SHA1_HEXSZ);
-	}
-	free(buf);
-	return r;
+	return syd_fd_to_sha1_hex(fd, sydbox->hash);
 }
 
 #if SYDBOX_DEBUG
@@ -2889,20 +2850,3 @@ out:
 		tcsetattr(0, TCSANOW, &old_tio);
 	return sydbox->exit_code;
 }
-
-/*************** CHECKSUM CALCULATION *****************************************/
-inline void syd_hash_sha1_init(void)
-{
-	syd_SHA1_Init(&sydbox->sha1);
-}
-
-inline void syd_hash_sha1_update(const void *data, size_t len)
-{
-	syd_SHA1_Update(&sydbox->sha1, data, len);
-}
-
-inline void syd_hash_sha1_final(unsigned char *hash)
-{
-	syd_SHA1_Final(hash, &sydbox->sha1);
-}
-/*********** END OF CHECKSUM CALCULATION **************************************/

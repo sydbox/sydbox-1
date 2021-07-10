@@ -56,6 +56,20 @@ pid_t syd_clone3(struct clone_args *args);
 #include <syd/compiler.h>
 
 #include <seccomp.h>
+
+/***
+ * LibSyd: SHA1 Interface
+ ***/
+#include <syd/sha1dc_sha1.h>
+#include <syd/sha1dc_syd.h>
+#include <syd/hex.h>
+void syd_hash_sha1_init(syd_SHA_CTX *ctx);
+void syd_hash_sha1_update(syd_SHA_CTX *ctx, const void *data, size_t len);
+bool syd_hash_sha1_final(syd_SHA_CTX *ctx, unsigned char *hash);
+int syd_fd_to_sha1_hex(int fd, char *hex);
+int syd_file_to_sha1_hex(FILE *file, char *hex);
+int syd_path_to_sha1_hex(const char *pathname, char *hex);
+
 #define syd_ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
 
 /* ANSI colour codes */

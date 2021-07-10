@@ -179,15 +179,24 @@ libsyd_SRCS = \
 	$(top_srcdir)/syd/statfs_magic.h \
 	$(top_srcdir)/syd/caputils.h \
 	$(top_srcdir)/syd/caputils.c
+	$(top_srcdir)/syd/sha1dc_sha1.h \
+	$(top_srcdir)/syd/sha1dc_sha1.c \
+	$(top_srcdir)/syd/sha1dc_ubc_check.h \
+	$(top_srcdir)/syd/sha1dc_ubc_check.c \
+	$(top_srcdir)/syd/sha1dc_syd.h \
+	$(top_srcdir)/syd/sha1dc_syd.c \
+	$(top_srcdir)/syd/hex.h \
+	$(top_srcdir)/syd/sha1.c
+
 syd_SOURCES= $(libsyd_SRCS)
 
-# @SYDBOX_CFLAGS@
 AM_CFLAGS= \
 	   -I$(top_builddir)/syd \
 	   -I$(top_srcdir)/syd \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
-	   $(libseccomp_CFLAGS)
+	   $(libseccomp_CFLAGS) \
+	   @SYDBOX_CFLAGS@
 
 if MAINTAINER_MODE
 AM_CFLAGS+= $(SYDBOX_SAFE_CFLAGS) $(SYDBOX_DEV_CFLAGS)
@@ -222,7 +231,6 @@ noinst_HEADERS+= \
 		 errno2name.h \
 		 dump.h \
 		 file.h \
-		 hex.h \
 		 macro.h \
 		 path.h \
 		 pathlookup.h \
@@ -235,9 +243,6 @@ noinst_HEADERS+= \
 		 #profile_parser.y \
 		 #profile_scanner.l \
 		 serializer.h \
-		 sha1dc_sha1.h \
-		 sha1dc_ubc_check.h \
-		 sha1dc_syd.h \
 		 sockmatch.h \
 		 sockmap.h \
 		 util.h \
@@ -262,9 +267,6 @@ syd_SOURCES+= \
 	     pathmatch.c \
 	     procmatch.c \
 	     serializer.c \
-	     sha1dc_sha1.c \
-	     sha1dc_ubc_check.c \
-	     sha1dc_syd.c \
 	     sockmatch.c \
 	     acl-queue.c \
 	     util.c \
@@ -358,7 +360,8 @@ syd_LDFLAGS= -pthread -lpthread -ldl \
 syd_LDADD= \
 	      @SYDBOX_LIBTOOL_FLAGS@ \
 	      $(libseccomp_LIBS) \
-	      $(CODE_COVERAGE_LIBS)
+	      $(CODE_COVERAGE_LIBS) \
+	      $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
 if WANT_SYDBOX_RS
 syd_LDADD+= $(SYDBOX_RUST_LIB_STA)
 endif

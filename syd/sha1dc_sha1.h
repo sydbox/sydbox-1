@@ -14,6 +14,7 @@ extern "C" {
 
 #ifndef SHA1DC_NO_STANDARD_INCLUDES
 #include <stdint.h>
+#include <sys/types.h>
 #endif
 
 /* sha-1 compression function that takes an already expanded message, and additionally store intermediate states */

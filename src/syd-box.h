@@ -1113,9 +1113,6 @@ static inline bool use_notify(void)
 	return false;
 }
 
-void syd_hash_sha1_init(void);
-void syd_hash_sha1_update(const void *data, size_t len);
-void syd_hash_sha1_final(unsigned char *hash);
 int path_to_hex(const char *pathname);
 
 int sysinit(scmp_filter_ctx scmp_ctx);

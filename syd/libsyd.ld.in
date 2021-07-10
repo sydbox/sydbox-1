@@ -112,6 +112,25 @@ global:
 	sc_map_put_64v;
 	sc_map_del_64v;
 	sc_map_init_64v;
+	/* sha1dc */
+	SHA1_CTX;
+	SHA1DCInit;
+	SHA1DCSetSafeHash;
+	SHA1DCSetUseUBC;
+	SHA1DCSetUseDetectColl;
+	SHA1DCSetCallback;
+	SHA1DCUpdate;
+	SHA1DCFinal;
+	SHA1DCUpdate;
+	syd_SHA1DCInit;
+	syd_SHA1DCFinal;
+	syd_SHA1DCUpdate;
+	syd_hash_sha1_init;
+	syd_hash_sha1_update;
+	syd_hash_sha1_final;
+	syd_fd_to_sha1_hex;
+	syd_file_to_sha1_hex;
+	syd_path_to_sha1_hex;
 	/* syd.h */
 	syd_about;
 	syd_clone3;

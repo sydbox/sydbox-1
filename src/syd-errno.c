@@ -1,6 +1,6 @@
 /*
  * sydbox/syd-run.c
- * SydBox's Errno Helper
+ * Syd's Errno Helper
  *
  * Copyright (c) 2021 Ali Polatel <alip@exherbo.org>
  * SPDX-License-Identifier: GPL-2.0-only

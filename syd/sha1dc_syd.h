@@ -5,10 +5,12 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
+#include "HELPME.h"
 #include "sha1dc_sha1.h"
+#include "hex.h"
 #define syd_SHA1DCInit	SHA1DCInit
 
-void syd_SHA1DCFinal(unsigned char [20], SHA1_CTX *);
+bool syd_SHA1DCFinal(unsigned char [20], SHA1_CTX *);
 void syd_SHA1DCUpdate(SHA1_CTX *ctx, const void *data, unsigned long len);
 
 #define platform_SHA_CTX SHA1_CTX

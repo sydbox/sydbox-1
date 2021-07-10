@@ -50,6 +50,17 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	time.c \
 	unshare.c
 
+# SHA1DC
+libsyd_@LIBSYD_PC_SLOT@_la_SOURCES+= \
+	sha1.c \
+	sha1dc_sha1.h \
+	sha1dc_sha1.c \
+	sha1dc_ubc_check.h \
+	sha1dc_ubc_check.c \
+	sha1dc_syd.h \
+	sha1dc_syd.c \
+	hex.h
+
 # Robinhood Hash.
 # Implemented by Vitaly "_Vi" Shukela in 2017. License = MIT or Apache 2.0
 libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
@@ -85,6 +96,8 @@ libsyd_@LIBSYD_PC_SLOT@_la_LIBS= \
 libsyd_includedir = $(includedir)/syd-$(LIBSYD_PC_SLOT)/syd
 libsyd_include_HEADERS= \
 			confname.h \
+			sha1dc_syd.h \
+			hex.h \
 			syd.h
 
 noinst_HEADERS= seatest.h check.h compiler.h
