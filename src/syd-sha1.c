@@ -32,10 +32,11 @@ static void about(void)
 static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
-"PACKAGE"-"VERSION GITVERSION" -- Syd's SHA-1 Calculator\n\
+"PACKAGE"-"VERSION GITVERSION"\n\
+Syd's SHA-1 Calculator and Verifier\n\
 usage: "PACKAGE" [-hv]\n\
                 [--check {-|file}] [--output {-|file}]\n\
-                -|file...\n\
+                {-|file...}\n\
 -h          -- Show usage and exit\n\
 -v          -- Show version and exit\n\
 -c          -- Read SHA-1 sums from the FILEs and check them\n\
@@ -392,7 +393,7 @@ int main(int argc, char **argv)
 	char hex[SYD_SHA1_HEXSZ];
 
 	if (argc < 2) {
-		syd_file_to_sha1_hex(stderr, hex);
+		syd_file_to_sha1_hex(stdin, hex);
 		say_sha1sum(NULL, "☮", hex, 0);
 		return 0;
 	}

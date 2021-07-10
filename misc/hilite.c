@@ -55,7 +55,8 @@ static void about(void)
 static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
-"PACKAGE"-"VERSION GITVERSION" -- sydbox' standard error highlighter\n\
+"PACKAGE"-"VERSION GITVERSION"
+Syd' standard error highlighter\n\
 usage: "PACKAGE" [-hv] command args...\n\
 -h          -- Show usage and exit\n\
 -v          -- Show version and exit\n\

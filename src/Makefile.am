@@ -176,8 +176,11 @@ AM_CPPFLAGS= $(CODE_COVERAGE_CPPFLAGS)
 AM_LFLAGS = -v
 AM_YFLAGS = -d
 
+bin_PROGRAMS= syd
+
 # TODO: syd-run
-bin_PROGRAMS= syd syd-dump syd-errno syd-format syd-sha1
+syd_libexecdir=$(libexecdir)/$(PACKAGE)/bin
+syd_libexec_PROGRAMS= syd-dump syd-errno syd-format syd-sha1
 
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_errno_CPPFLAGS= -DSYDERR -DSYD_ERRNO=1

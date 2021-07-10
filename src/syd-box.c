@@ -139,7 +139,8 @@ SYD_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
 	fputs("\
-syd-"VERSION GITVERSION" -- Syd's secc☮mp bⒶsed ⒶpplicⒶtion sⒶndb☮x\n\
+syd-"VERSION GITVERSION"\n\
+Syd's secc☮mp bⒶsed ⒶpplicⒶtion sⒶndb☮x\n\
 usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
            [--export <bpf|pfc:filename>] [--memaccess 0..1]\n\
            [--arch arch...] [--file pathspec...] [--syd magic-command...]\n\
@@ -166,18 +167,21 @@ usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
        syd errno [-hv] -|errno-name|errno-number...\n\
        syd format exec [--] {command [arg...]}\n\
        syd hilite [-hv] command args...\n\
+       syd sha1 [-hv]\n\
+                [--check {-|file}] [--output {-|file}]\n\
+                {-|file...}\n\
        syd test [-hvx]\n\
-           [--debug] [--immediate]\n\
-           [--long] [--run test]\n\
-           [--verbose-only] [--quiet]\n\
-           [--verbose-log]\n\
-           [--no-color]\n\
-           [--dump] [--pfc]\n\
-           [--strace] [--valgrind]\n\
-           [--root directory]\n\
-           [--chain-lint] [--no-chain-lint]\n\
-           [--stress] [--stress-jobs jobs]\n\
-           [--stress-limit limit]\n\
+                [--debug] [--immediate]\n\
+                [--long] [--run test]\n\
+                [--verbose-only] [--quiet]\n\
+                [--verbose-log]\n\
+                [--no-color]\n\
+                [--dump] [--pfc]\n\
+                [--strace] [--valgrind]\n\
+                [--root directory]\n\
+                [--chain-lint] [--no-chain-lint]\n\
+                [--stress] [--stress-jobs jobs]\n\
+                [--stress-limit limit]\n\
 \n"SYD_HELPME, outfp);
 	exit(code);
 }
@@ -2075,28 +2079,13 @@ int main(int argc, char **argv)
 	 * the Syd family of commands.
 	 */
 	if (argc > 1) {
-		if (streq(argv[1], "errno")) {
-			execv(BINDIR"/syd-errno", argv + 1);
-			exit(ECANCELED);
+		char *bin;
+		if (asprintf(&bin, LIBEXECDIR"/bin/syd-%s", argv[1]) < 0) {
+			say_errno("asprintf");
+			return ENOMEM;
 		}
-		if (streq(argv[1], "format")) {
-			execv(BINDIR"/syd-format", argv + 1);
-			exit(ECANCELED);
-		}
-		if (streq(argv[1], "hilite")) {
-			execv(BINDIR"/syd-hilite", argv + 1);
-			exit(ECANCELED);
-		}
-		if (streq(argv[1], "shoebox")) {
-			execv(BINDIR"/syd-shoebox", argv + 1);
-			exit(ECANCELED);
-		}
-		if (streq(argv[1], "test")) {
-			execv(BINDIR"/syd-test", argv + 1);
-			exit(ECANCELED);
-		}
-		if (streq(argv[1], "dump")) {
-			execv(LIBEXECDIR"/syd-dump", argv + 1);
+		if (access(bin, X_OK) == 0) {
+			execv(bin, argv + 1);
 			exit(ECANCELED);
 		}
 	}

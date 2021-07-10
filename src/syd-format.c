@@ -48,7 +48,8 @@ SYD_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
-"PACKAGE"-"VERSION GITVERSION" -- Syd's magic command formatter \n\
+"PACKAGE"-"VERSION GITVERSION"\n\
+Syd's magic command formatter\n\
 usage: "PACKAGE" [-hv]\n\
        "PACKAGE" exec [--] {command [arg...]}\n\
 -h          -- Show usage and exit\n\

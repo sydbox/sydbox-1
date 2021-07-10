@@ -96,7 +96,8 @@ SYD_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
-"PACKAGE"-"VERSION GITVERSION" -- Syd's errno <-> name converter\n\
+"PACKAGE"-"VERSION GITVERSION"\n\
+Syd's errno <-> name converter\n\
 usage: "PACKAGE" [-hv] -|errno-name|errno-number...\n\
 -h          -- Show usage and exit\n\
 -v          -- Show version and exit\n\
