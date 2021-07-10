@@ -52,7 +52,7 @@ const signed char hexval_table[256] = {
 	 -1, -1, -1, -1, -1, -1, -1, -1,		/* f8-ff */
 };
 
-int hex_to_bytes(unsigned char *binary, const char *hex, size_t len)
+int syd_hex_to_bytes(unsigned char *binary, const char *hex, size_t len)
 {
 	for (; len; len--, hex += 2) {
 		unsigned int val = (hexval(hex[0]) << 4) | hexval(hex[1]);
@@ -64,7 +64,7 @@ int hex_to_bytes(unsigned char *binary, const char *hex, size_t len)
 	return 0;
 }
 
-char *hash_to_hex_r(char *buffer, const unsigned char *hash)
+char *syd_hash_to_hex_r(char *buffer, const unsigned char *hash)
 {
 	static const char hex[] = "0123456789abcdef";
 	char *buf = buffer;
@@ -80,10 +80,10 @@ char *hash_to_hex_r(char *buffer, const unsigned char *hash)
 	return buffer;
 }
 
-char *hash_to_hex(const unsigned char *hash)
+char *syd_hash_to_hex(const unsigned char *hash)
 {
 	static int bufno;
 	static char hexbuffer[4][SYD_MAX_HEXSZ + 1];
 	bufno = (bufno + 1) % ELEMENTSOF(hexbuffer);
-	return hash_to_hex_r(hexbuffer[bufno], hash);
+	return syd_hash_to_hex_r(hexbuffer[bufno], hash);
 }

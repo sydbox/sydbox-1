@@ -113,24 +113,30 @@ global:
 	sc_map_del_64v;
 	sc_map_init_64v;
 	/* sha1dc */
+	syd_hash_to_hex;
+	syd_hash_to_hex_r;
+	syd_hash_to_hex;
 	SHA1_CTX;
 	SHA1DCInit;
 	SHA1DCSetSafeHash;
 	SHA1DCSetUseUBC;
 	SHA1DCSetUseDetectColl;
+	SHA1DCSetDetectReducedRoundCollision;
 	SHA1DCSetCallback;
 	SHA1DCUpdate;
 	SHA1DCFinal;
-	SHA1DCUpdate;
 	syd_SHA1DCInit;
 	syd_SHA1DCFinal;
 	syd_SHA1DCUpdate;
-	syd_hash_sha1_init;
-	syd_hash_sha1_update;
-	syd_hash_sha1_final;
 	syd_fd_to_sha1_hex;
 	syd_file_to_sha1_hex;
 	syd_path_to_sha1_hex;
+	syd_hash_sha1_init;
+	syd_hash_sha1_update;
+	syd_hash_sha1_final;
+	syd_hex_to_bytes;
+	syd_hash_to_hex_r;
+	syd_hash_to_hex;
 	/* syd.h */
 	syd_about;
 	syd_clone3;
@@ -195,6 +201,14 @@ global:
 	syd_strlcat;
 	syd_strlcpy;
 	syd_str_startswith;
+	syd_extfs_get_flags;
+	syd_extfs_set_flags;
+	syd_extfs_get_undeletable;
+	syd_extfs_set_undeletable;
+	syd_extfs_get_sec_delete;
+	syd_extfs_set_sec_delete;
+	syd_extfs_get_immutable;
+	syd_extfs_set_immutable;
 local:
 	*;
 };

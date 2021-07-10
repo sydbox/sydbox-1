@@ -494,7 +494,7 @@ void usage(FILE *outfp, int code)
 
 {
 	fprintf(outfp, "\
-"PACKAGE"-"VERSION GITVERSION" -- syd's execve() interceptor \n\
+"PACKAGE"-"VERSION GITVERSION" -- Syd's execve() interceptor \n\
 usage: "PACKAGE" [-hvdmuiNpUCTFrcOt]\n\
                  [--wd directory] [--root directory]\n\
                  [--mount-proc <directory>]\n\

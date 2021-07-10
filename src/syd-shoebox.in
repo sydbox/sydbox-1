@@ -540,16 +540,18 @@ def command_magic(args):
 
 def main():
     parser = argparse.ArgumentParser(prog='shoebox',
-                                     description='Pink hiding in a shoe box',
+                                     description='Pink hiding in a Shoe Box',
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      # usage='%(prog)s [options] {command [arg...]}',
                                      epilog='''
-Hey you, out there on the road,
-Always doing what you're told,
-Can you help me?
-
-Send bug reports to "alip@exherbo.org"
-Attaching poems encourages consideration tremendously.''')
+Hey y☮u, ☮ut there bey☮nd the wⒶll,
+BreⒶking b☮ttles in the hⒶll,
+CⒶn y☮u help me?
+Y☮u mⒶy view the Sydb☮x bl☮g\t@\thttps://pink.exherbo.org/
+Y☮u mⒶy view the Syd(1) mⒶnuⒶl pⒶge @\thttps://sydbox.exherbo.org/
+Y☮u mⒶy view Pand☮ra's pr☮ject pⒶge @\thttps://pandora.exherbo.org/
+Send bug rep☮rts t☮\t\t\thttps://todo.sr.ht/~alip/sydbox
+ⒶttⒶching p☮ems enc☮urⒶges c☮nsiderⒶti☮n tremend☮usly.''')
     parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s-@SHOEBOX_VERSION@')
     parser.add_argument('-c', '--core', default = None, metavar = 'SYDCORE', help = 'Path to sydbox core dump')
 

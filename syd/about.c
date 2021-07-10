@@ -29,18 +29,20 @@ int syd_about(FILE *report_fd)
 		return -errno;
 	if (syd_scmp_version) {
 		r = fprintf(report_fd,
-			    "[0;1;31;91mUsing libseccomp v%u.%u.%u[0m",
+			    "[0;1;31;91mUsing "
+			    "[0;1;32;92m"
+			    "libseccomp v%u.%u.%u[0m\n",
 				syd_scmp_version->major,
 				syd_scmp_version->minor,
 				syd_scmp_version->micro);
 		if (r < 0)
 			return -errno;
 	}
-	fputs("[0;1;31;91m Options: ", report_fd);
+	fputs("[0;1;31;91mOptions: [0;1;32;92m", report_fd);
 #if SYDBOX_HAVE_DUMP_BUILTIN
-	fputs("dump:yes", report_fd);
+	fputs("dump:yes ", report_fd);
 #else
-	fputs("dump:no", report_fd);
+	fputs("dump:no ", report_fd);
 #endif
 	fputs("seccomp:yes",
 	      report_fd);
@@ -49,7 +51,9 @@ int syd_about(FILE *report_fd)
 	fputs(" netlink:yes[0m\n",
 	      report_fd);
 	fprintf(report_fd, "[0;1;31;91m"
-		"Release Codename: "CODENAME"[0m\n\n");
+		"Release Codename: "
+		"[0;1;36;96m"
+		CODENAME"[0m\n\n");
 	fprintf(report_fd, "[0;1;35;95m"
 		"Compiler Flags: "SYDBOX_CFLAGS"[0m\n");
 	fprintf(report_fd, "[0;1;33;93m"
@@ -61,7 +65,11 @@ int syd_about(FILE *report_fd)
 	      "2021"
 	      "[0m\n", report_fd);
 	fputs("[0;1;34;91mAlï P☮latel <alïp@exherb☮.☮rg>[0m\n", report_fd);
-	fputs("SPDX-License-Identifier: [0;1;31;91mGPL-2.0-only[0m",
+	fputs("[0;1;32;92m"
+	      "SPDX-License-Identifier: "
+	      "[0;1;34;94m"
+	      "GPL-2.0-only"
+	      "[0m\n",
 	      report_fd);
 
 	return 0;

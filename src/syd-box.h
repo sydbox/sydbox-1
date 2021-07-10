@@ -444,14 +444,14 @@ struct syd_process {
 #define SYDBOX_PROC_MAX 32
 	char comm[SYDBOX_PROC_MAX];
 
-	/* SHA1 hash of the binary which executed the process. */
-	char hash[SYD_SHA1_HEXSZ];
-
 	/* The command line of the binary which executed the process. */
 	char prog[LINE_MAX];
 
 	/* Current working directory */
 	char *cwd;
+
+	/* SHA1 hash of the binary which executed the process. */
+	char hash[SYD_SHA1_HEXSZ + 1];
 
 	/* Per-process sandbox */
 	sandbox_t *box;
@@ -965,7 +965,8 @@ void cleanup_for_sydbox(void);
 int parent_read_int(int *message);
 int parent_write_int(int message);
 
-void kill_all(int fatal_sig, pid_t skip_pid);
+void kill_all(int fatal_sig);
+void kill_all_skip(int fatal_sig, pid_t skip_pid);
 int kill_one(syd_process_t *current, int fatal_sig);
 int deny(syd_process_t *current, int err_no);
 int restore(syd_process_t *current);

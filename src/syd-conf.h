@@ -64,6 +64,9 @@
 #include <limits.h>
 #include <unistd.h>
 
+#define SYD_SHA1_CHECK_DEF ".syd.sha1sum"
+#define SYD_SHA1_XATTR_MAX 0
+
 #ifndef PAGE_SIZE
 # define PAGE_SIZE sysconf(_SC_PAGESIZE)
 #endif
@@ -205,6 +208,7 @@
 #ifndef SYD_EXEC_SLEEP_STEP_NSEC
 # define SYD_EXEC_SLEEP_STEP_NSEC 0
 #endif
+
 
 #define SYD_SECCOMP_ARCH_ARGV_SIZ 20
 #include <errno.h>

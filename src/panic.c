@@ -83,7 +83,20 @@ int kill_one(syd_process_t *node, int fatal_sig)
 	return r;
 }
 
-void kill_all(int fatal_sig, pid_t skip_pid)
+void kill_all(int fatal_sig)
+{
+	syd_process_t *node;
+
+	if (!sydbox)
+		return;
+
+	syd_map_foreach_value(&sydbox->tree, node) {
+		if (kill_one(node, fatal_sig) == -ESRCH)
+			bury_process(node, true);
+	}
+}
+
+void kill_all_skip(int fatal_sig, pid_t skip_pid)
 {
 	syd_process_t *node;
 
@@ -96,8 +109,6 @@ void kill_all(int fatal_sig, pid_t skip_pid)
 		if (kill_one(node, fatal_sig) == -ESRCH)
 			bury_process(node, true);
 	}
-	//cleanup_for_sydbox();
-	//exit(fatal_sig);
 }
 
 SYD_GCC_ATTR((format (printf, 2, 0)))
@@ -194,7 +205,7 @@ int violation(syd_process_t *current, const char *fmt, ...)
 		return -ESRCH;
 	case VIOLATION_KILLALL:
 		say("VIOLATION_KILLALL");
-		kill_all(SIGLOST, 0);
+		kill_all(SIGLOST);
 		cleanup_for_sydbox();
 		exit(128 + SIGLOST);
 	default:

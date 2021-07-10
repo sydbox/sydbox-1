@@ -152,43 +152,7 @@ DEFS+= \
        -DLIBEXECDIR=\"$(libexecdir)/$(PACKAGE)\" \
        -DSYSCONFDIR=\"$(sysconfdir)\"
 
-# libsyd
-libsyd_SRCS = \
-	$(top_srcdir)/syd/about.c \
-	$(top_srcdir)/syd/debug.c \
-	$(top_srcdir)/syd/exec.c \
-	$(top_srcdir)/syd/name.c \
-	$(top_srcdir)/syd/strlcat.c \
-	$(top_srcdir)/syd/file.c \
-	$(top_srcdir)/syd/pidfd.c \
-	$(top_srcdir)/syd/proc.c \
-	$(top_srcdir)/syd/strlcpy.c \
-	$(top_srcdir)/syd/state.c \
-	$(top_srcdir)/syd/time.c \
-	$(top_srcdir)/syd/unshare.c \
-	$(top_srcdir)/syd/robinhood_hash.h \
-	$(top_srcdir)/syd/sc_map.c \
-	$(top_srcdir)/syd/sc_map.h \
-	$(top_srcdir)/syd/all-io.h \
-	$(top_srcdir)/syd/c.h \
-	$(top_srcdir)/syd/pathnames.h \
-	$(top_srcdir)/syd/fileutils.h \
-	$(top_srcdir)/syd/fileutils.c \
-	$(top_srcdir)/syd/procutils.h \
-	$(top_srcdir)/syd/procutils.c \
-	$(top_srcdir)/syd/statfs_magic.h \
-	$(top_srcdir)/syd/caputils.h \
-	$(top_srcdir)/syd/caputils.c
-	$(top_srcdir)/syd/sha1dc_sha1.h \
-	$(top_srcdir)/syd/sha1dc_sha1.c \
-	$(top_srcdir)/syd/sha1dc_ubc_check.h \
-	$(top_srcdir)/syd/sha1dc_ubc_check.c \
-	$(top_srcdir)/syd/sha1dc_syd.h \
-	$(top_srcdir)/syd/sha1dc_syd.c \
-	$(top_srcdir)/syd/hex.h \
-	$(top_srcdir)/syd/sha1.c
-
-syd_SOURCES= $(libsyd_SRCS)
+syd_SOURCES=
 
 AM_CFLAGS= \
 	   -I$(top_builddir)/syd \
@@ -196,11 +160,7 @@ AM_CFLAGS= \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
 	   $(libseccomp_CFLAGS) \
-	   @SYDBOX_CFLAGS@
-
-if MAINTAINER_MODE
-AM_CFLAGS+= $(SYDBOX_SAFE_CFLAGS) $(SYDBOX_DEV_CFLAGS)
-endif
+	   $(SYDBOX_CFLAGS)
 
 if WANT_GIT
 AM_CFLAGS+= $(libgit2_CFLAGS)
@@ -217,7 +177,7 @@ AM_LFLAGS = -v
 AM_YFLAGS = -d
 
 # TODO: syd-run
-bin_PROGRAMS= syd syd-dump syd-errno syd-format
+bin_PROGRAMS= syd syd-dump syd-errno syd-format syd-sha1
 
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_errno_CPPFLAGS= -DSYDERR -DSYD_ERRNO=1
@@ -258,7 +218,6 @@ syd_SOURCES+= \
 	     errno2name.c \
 	     file.c \
 	     filter.c \
-	     hex.c \
 	     path.c \
 	     pathlookup.c \
 	     pink.c \
@@ -343,10 +302,39 @@ noinst_HEADERS+= \
 
 syd_errno_SOURCES= \
 		   errno2name.c \
+		   errno2name.h \
 		   syd-errno.c
+syd_errno_LDFLAGS=\
+		  $(CODE_COVERAGE_LDFLAGS) \
+		  $(libseccomp_LIBS)
+syd_errno_LDADD=\
+		@SYDBOX_LIBTOOL_FLAGS@ \
+		$(CODE_COVERAGE_LIBS) \
+		$(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
 
 syd_format_SOURCES= \
-		syd-format.c
+		    syd-format.c
+syd_format_LDFLAGS=\
+		   $(CODE_COVERAGE_LDFLAGS) \
+		   $(libseccomp_LIBS)
+syd_format_LDADD=\
+		 @SYDBOX_LIBTOOL_FLAGS@ \
+		 $(CODE_COVERAGE_LIBS) \
+		 $(libseccomp_LIBS) \
+		 $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+
+syd_sha1_SOURCES= \
+		  errno2name.c \
+		  errno2name.h \
+		  syd-sha1.c
+syd_sha1_LDFLAGS=\
+		 $(CODE_COVERAGE_LDFLAGS) \
+		 $(libseccomp_LIBS)
+syd_sha1_LDADD=\
+	       @SYDBOX_LIBTOOL_FLAGS@ \
+	       $(CODE_COVERAGE_LIBS) \
+	       $(libseccomp_LIBS) \
+	       $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
 
 if WANT_PSYSCALL
 # imported from psyscall
@@ -356,12 +344,14 @@ syd_SOURCES+= psyscall.c psyscall_syd.c
 endif
 
 syd_LDFLAGS= -pthread -lpthread -ldl \
-	     $(CODE_COVERAGE_LDFLAGS)
+	     $(CODE_COVERAGE_LDFLAGS) \
+	      $(libseccomp_LIBS)
 syd_LDADD= \
-	      @SYDBOX_LIBTOOL_FLAGS@ \
-	      $(libseccomp_LIBS) \
-	      $(CODE_COVERAGE_LIBS) \
-	      $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+	   @SYDBOX_LIBTOOL_FLAGS@ \
+	   $(CODE_COVERAGE_LIBS) \
+	   $(libseccomp_LIBS) \
+	   $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+
 if WANT_SYDBOX_RS
 syd_LDADD+= $(SYDBOX_RUST_LIB_STA)
 endif

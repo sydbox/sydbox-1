@@ -276,7 +276,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 			syd_proc_cmdline(sydbox->pfd, current->prog,
 					 LINE_MAX-1);
 			current->prog[LINE_MAX-1] = '\0';
-			if ((r = path_to_hex(abspath)) < 0) {
+			if ((r = syd_path_to_sha1_hex(abspath, sydbox->hash)) < 0) {
 				errno = -r;
 				say_errno("can't calculate checksum of file "
 					  "`%s'", abspath);
@@ -611,7 +611,7 @@ int sys_fstatat(syd_process_t *current)
 
 	/* Careful, we may both have a bad fd and the path may be either
 	 * NULL or empty string! */
-	if (badfd && (!path || !*path || !path_is_absolute(path))) {
+	if (badfd && (!*path || !path_is_absolute(path))) {
 		/* Bad directory for non-absolute path! */
 		r = deny(current, EBADF);
 		if (sydbox->config.violation_raise_fail)
@@ -683,7 +683,7 @@ int sys_statx(syd_process_t *current)
 
 	/* Careful, we may both have a bad fd and the path may be either
 	 * NULL or empty string! */
-	if (badfd && (!path || !*path || !path_is_absolute(path))) {
+	if (badfd && (!*path || !path_is_absolute(path))) {
 		/* Bad directory for non-absolute path! */
 		r = deny(current, EBADF);
 		if (sydbox->config.violation_raise_fail)

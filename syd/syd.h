@@ -20,6 +20,7 @@
 
 #include <errno.h>
 #include <sys/types.h>
+#include <linux/types.h>
 #include <sys/stat.h>
 #include <stdarg.h>
 #include <stdatomic.h>
@@ -63,14 +64,23 @@ pid_t syd_clone3(struct clone_args *args);
 #include <syd/sha1dc_sha1.h>
 #include <syd/sha1dc_syd.h>
 #include <syd/hex.h>
-void syd_hash_sha1_init(syd_SHA_CTX *ctx);
-void syd_hash_sha1_update(syd_SHA_CTX *ctx, const void *data, size_t len);
-bool syd_hash_sha1_final(syd_SHA_CTX *ctx, unsigned char *hash);
+
 int syd_fd_to_sha1_hex(int fd, char *hex);
 int syd_file_to_sha1_hex(FILE *file, char *hex);
 int syd_path_to_sha1_hex(const char *pathname, char *hex);
 
+void syd_hash_sha1_init(syd_SHA_CTX *ctx);
+void syd_hash_sha1_update(syd_SHA_CTX *ctx, const void *data, size_t len);
+int syd_hash_sha1_final(syd_SHA_CTX *ctx, unsigned char *hash)
+	SYD_GCC_ATTR((warn_unused_result));
+
+int syd_hex_to_bytes(unsigned char *binary, const char *hex, size_t len);
+char *syd_hash_to_hex_r(char *buffer, const unsigned char *hash);
+char *syd_hash_to_hex(const unsigned char *hash);
+
 #define syd_ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
+#define syd_str2(x) #x
+#define syd_str(X) syd_str2(X)
 
 /* ANSI colour codes */
 #define SYD_ANSI_NORMAL		"[00;00m"
@@ -227,6 +237,65 @@ ino_t syd_get_mnt_ino(pid_t pid);
 int syd_settime(time_t offset, clockid_t clk_id);
 int syd_bind_ns_files_from_child(pid_t *child, int fds[2]);
 
+/***
+ * libsyd: Utilities for EXT* File Systems
+ ***/
+
+/*
+ * Inode flags
+ */
+#define SYD_EXT2_SECRM_FL		0x00000001 /* Secure deletion */
+#define SYD_EXT2_UNRM_FL		0x00000002 /* Undelete */
+#define SYD_EXT2_COMPR_FL		0x00000004 /* Compress file */
+#define SYD_EXT2_SYNC_FL		0x00000008 /* Synchronous updates */
+#define SYD_EXT2_IMMUTABLE_FL		0x00000010 /* Immutable file */
+#define SYD_EXT2_APPEND_FL		0x00000020 /* writes to file may only append */
+#define SYD_EXT2_NODUMP_FL		0x00000040 /* do not dump file */
+#define SYD_EXT2_NOATIME_FL		0x00000080 /* do not update atime */
+/* Reserved for compression usage... */
+#define SYD_EXT2_DIRTY_FL		0x00000100
+#define SYD_EXT2_COMPRBLK_FL		0x00000200 /* One or more compressed clusters */
+#define SYD_EXT2_NOCOMPR_FL		0x00000400 /* Access raw compressed data */
+	/* nb: was previously EXT2_ECOMPR_FL */
+#define SYD_EXT4_ENCRYPT_FL		0x00000800 /* encrypted inode */
+/* End compression flags --- maybe not all used */
+#define SYD_EXT2_BTREE_FL		0x00001000 /* btree format dir */
+#define SYD_EXT2_INDEX_FL		0x00001000 /* hash-indexed directory */
+#define SYD_EXT2_IMAGIC_FL		0x00002000
+#define SYD_EXT3_JOURNAL_DATA_FL	0x00004000 /* file data should be journaled */
+#define SYD_EXT2_NOTAIL_FL		0x00008000 /* file tail should not be merged */
+#define SYD_EXT2_DIRSYNC_FL 		0x00010000 /* Synchronous directory modifications */
+#define SYD_EXT2_TOPDIR_FL		0x00020000 /* Top of directory hierarchies*/
+#define SYD_EXT4_HUGE_FILE_FL		0x00040000 /* Set to each huge file */
+#define SYD_EXT4_EXTENTS_FL 		0x00080000 /* Inode uses extents */
+#define SYD_EXT4_VERITY_FL		0x00100000 /* Verity protected inode */
+#define SYD_EXT4_EA_INODE_FL	        0x00200000 /* Inode used for large EA */
+/* EXT4_EOFBLOCKS_FL 0x00400000 was here */
+#define FS_NOCOW_FL			0x00800000 /* Do not cow file */
+#define SYD_EXT4_SNAPFILE_FL		0x01000000  /* Inode is a snapshot */
+#define FS_DAX_FL			0x02000000 /* Inode is DAX */
+#define SYD_EXT4_SNAPFILE_DELETED_FL	0x04000000  /* Snapshot is being deleted */
+#define SYD_EXT4_SNAPFILE_SHRUNK_FL	0x08000000  /* Snapshot shrink has completed */
+#define SYD_EXT4_INLINE_DATA_FL		0x10000000 /* Inode has inline data */
+#define SYD_EXT4_PROJINHERIT_FL		0x20000000 /* Create with parents projid */
+#define SYD_EXT4_CASEFOLD_FL		0x40000000 /* Casefolded file */
+#define SYD_EXT2_RESERVED_FL		0x80000000 /* reserved for ext2 lib */
+
+#define SYD_EXT2_FL_USER_VISIBLE	0x604BDFFF /* User visible flags */
+#define SYD_EXT2_FL_USER_MODIFIABLE	0x604B80FF /* User modifiable flags */
+
+#define SYD_EXT2_IOC_GETFLAGS		_IOR('f', 1, long)
+#define SYD_EXT2_IOC_SETFLAGS		_IOW('f', 2, long)
+
+int syd_extfs_get_flags(int fd, unsigned long *flags);
+int syd_extfs_set_flags(int fd, unsigned long flags);
+
+int syd_extfs_get_undeletable(const char *filename, bool *undeletable);
+int syd_extfs_set_undeletable(const char *filename, bool on);
+int syd_extfs_get_sec_delete(const char *filename, bool *sec_delete);
+int syd_extfs_set_sec_delete(const char *filename, bool on);
+int syd_extfs_get_immutable(const char *filename, bool *immutable);
+int syd_extfs_set_immutable(const char *filename, bool on);
 
 /***
  * libsyd: Interfaces to statically allocated hash tables.

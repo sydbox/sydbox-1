@@ -30,9 +30,9 @@ int syd_fd_to_sha1_hex(int fd, char *hex)
 		return -ENOMEM;
 	ssize_t nread;
 	unsigned char hash[SYD_SHA1_RAWSZ];
-	int r = 0;
 	syd_SHA_CTX ctx;
 	syd_hash_sha1_init(&ctx);
+	int r = 0;
 	for (;;) {
 		errno = 0;
 		nread = read(fd, buf + r, PATH_TO_HEX_BUFSIZ - r);
@@ -56,8 +56,9 @@ int syd_fd_to_sha1_hex(int fd, char *hex)
 	}
 	close(fd);
 	if (r == 0) {
-		syd_hash_sha1_final(&ctx, hash);
-		syd_strlcpy(hex, hash_to_hex(hash), SYD_SHA1_HEXSZ);
+		if ((r = syd_hash_sha1_final(&ctx, hash)) < 0)
+			return r;
+		syd_strlcpy(hex, syd_hash_to_hex(hash), SYD_SHA1_HEXSZ + 1);
 	}
 	free(buf);
 	return r;
@@ -73,17 +74,24 @@ int syd_path_to_sha1_hex(const char *pathname, char *hex)
 	int fd = open(pathname, O_RDONLY|O_CLOEXEC|O_LARGEFILE);
 	if (fd == -1) {
 		int save_errno = errno;
-		sprintf(hex, "<open:%d>", save_errno);
+		sprintf(hex, "<open:%d:%s>", save_errno,
+			syd_name_errno(save_errno));
 		return -save_errno;
 	}
 
-	return syd_fd_to_sha1_hex(fd, hex);
+	int r = syd_fd_to_sha1_hex(fd, hex);
+	close(fd);
+	return r;
 }
 
 /*************** CHECKSUM CALCULATION *****************************************/
 void syd_hash_sha1_init(syd_SHA_CTX *ctx)
 {
 	syd_SHA1_Init(ctx);
+	SHA1DCSetSafeHash(ctx, 1);
+	SHA1DCSetUseUBC(ctx, 1);
+	SHA1DCSetUseDetectColl(ctx, 1);
+	SHA1DCSetDetectReducedRoundCollision(ctx, 1);
 }
 
 void syd_hash_sha1_update(syd_SHA_CTX *ctx, const void *data,
@@ -92,8 +100,9 @@ void syd_hash_sha1_update(syd_SHA_CTX *ctx, const void *data,
 	syd_SHA1_Update(ctx, data, len);
 }
 
-bool syd_hash_sha1_final(syd_SHA_CTX *ctx, unsigned char *hash)
+SYD_GCC_ATTR((warn_unused_result))
+int syd_hash_sha1_final(syd_SHA_CTX *ctx, unsigned char *hash)
 {
-	return syd_SHA1_Final(hash, ctx);
+	return syd_SHA1_Final(hash, ctx) ? 0 : -EKEYREVOKED;
 }
 /*********** END OF CHECKSUM CALCULATION **************************************/

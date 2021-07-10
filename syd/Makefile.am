@@ -48,7 +48,8 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	strlcpy.c \
 	state.c \
 	time.c \
-	unshare.c
+	unshare.c \
+	extfs.c
 
 # SHA1DC
 libsyd_@LIBSYD_PC_SLOT@_la_SOURCES+= \
@@ -59,7 +60,8 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES+= \
 	sha1dc_ubc_check.c \
 	sha1dc_syd.h \
 	sha1dc_syd.c \
-	hex.h
+	hex.h \
+	hex.c
 
 # Robinhood Hash.
 # Implemented by Vitaly "_Vi" Shukela in 2017. License = MIT or Apache 2.0
@@ -89,8 +91,11 @@ libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= \
 	$(libseccomp_CFLAGS) \
 	$(SYDBOX_CFLAGS)
 libsyd_@LIBSYD_PC_SLOT@_la_LDFLAGS= \
-	-Wl,--version-script=$(srcdir)/libsyd.ld
+	-Wl,--version-script=$(srcdir)/libsyd.ld \
+	$(COVERAGE_LDFLAGS) \
+	$(libseccomp_LIBS)
 libsyd_@LIBSYD_PC_SLOT@_la_LIBS= \
+	$(COVERAGE_LIBS) \
 	$(libseccomp_LIBS)
 
 libsyd_includedir = $(includedir)/syd-$(LIBSYD_PC_SLOT)/syd
@@ -100,7 +105,7 @@ libsyd_include_HEADERS= \
 			hex.h \
 			syd.h
 
-noinst_HEADERS= seatest.h check.h compiler.h
+noinst_HEADERS= seatest.h check.h compiler.h macro.h
 syd_check_SOURCES= \
 		   file.c \
 		   proc.c \

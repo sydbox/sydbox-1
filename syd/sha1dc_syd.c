@@ -9,8 +9,8 @@ bool syd_SHA1DCFinal(unsigned char hash[20], SHA1_CTX *ctx)
 {
 	if (!SHA1DCFinal(hash, ctx))
 		return true;
-	syd_say("SHA-1 appears to be part of a collision attack: %s",
-		hash_to_hex(hash));
+	syd_say("SHA-1 appears to be part of a collision attack: »%s«",
+		syd_hash_to_hex(hash));
 	return false;
 }
 

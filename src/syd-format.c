@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syd/syd.h>
 #include "pink.h"
 
 static int puts_exec(char **argv);
@@ -40,14 +41,14 @@ static const struct key key_table[] = {
 
 static void about(void)
 {
-	printf(PACKAGE"-"VERSION GITVERSION"\n");
+	printf(SYD_WARN PACKAGE"-"VERSION GITVERSION SYD_RESET "\n");
 }
 
 SYD_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
-"PACKAGE"-"VERSION GITVERSION" -- sydbox magic command formatter \n\
+"PACKAGE"-"VERSION GITVERSION" -- Syd's magic command formatter \n\
 usage: "PACKAGE" [-hv]\n\
        "PACKAGE" exec [--] {command [arg...]}\n\
 -h          -- Show usage and exit\n\
@@ -98,6 +99,7 @@ int main(int argc, char **argv)
 		if (!strcmp(argv[1], "-v") ||
 		    !strcmp(argv[1], "--version")) {
 			about();
+			syd_about(stdout);
 			return EXIT_SUCCESS;
 		}
 	}

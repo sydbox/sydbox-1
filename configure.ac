@@ -197,6 +197,8 @@ SYD_CFLAGS_CLANG="
 
 dnl TODO: -fauto-profile=misc/sydbox.afdo
 dnl TODO: -fplan9-extensions
+dnl Unsupported on x86_64:
+dnl -fsection-anchors
 dnl These two is a bit too much and
 dnl generates lots of warnings for libsyd:
 dnl -fbranch-target-load-optimize
@@ -228,7 +230,6 @@ $SYD_CFLAGS_SAFE \
 -fopenacc \
 -fopenacc-dim=worker \
 -fhosted \
--fsection-anchors \
 -fstdarg-opt \
 -funsigned-char \
 -fvisibility=hidden \
@@ -243,9 +244,8 @@ $SYD_CFLAGS_SAFE \
 -Wunused-label \
 -Wunused-macros \
 -Wno-declaration-after-statement \
+-Wno-format-extra-args \
 -Wno-format-nonliteral \
--Wno-ignored-optimization-argument \
--Wno-unknown-warning-option \
 -Wno-unused-parameter \
 -Wunused-result \
 -Wunused-value \
@@ -270,7 +270,7 @@ dnl check for pthreads
 AX_PTHREAD([],
 	   [AC_MSG_WARN([POSIX threads library is missing, some tests may not build!])])
 
-if test x"$ax_cv_PTHREAD_CLANG" = x"yes"; then
+if echo "$CC" | grep -iq clang; then
 	SYD_CFLAGS="$SYD_CFLAGS $SYD_CFLAGS_CLANG"
 	SYD_GCC=0
 	SYD_CLANG=1

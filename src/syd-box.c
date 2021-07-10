@@ -56,7 +56,7 @@ sydbox_t *sydbox;
 static unsigned os_release;
 static struct sigaction child_sa;
 
-static const char *sydsh_argv[] = {
+static char *sydsh_argv[] = {
 	"/usr/bin/env",
 	"bash",
 	"--rcfile",
@@ -139,7 +139,7 @@ SYD_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
 	fputs("\
-syd-"VERSION GITVERSION" -- secc☮mp bⒶsed ⒶpplicⒶtion sⒶndb☮x\n\
+syd-"VERSION GITVERSION" -- Syd's secc☮mp bⒶsed ⒶpplicⒶtion sⒶndb☮x\n\
 usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
            [--export <bpf|pfc:filename>] [--memaccess 0..1]\n\
            [--arch arch...] [--file pathspec...] [--syd magic-command...]\n\
@@ -180,18 +180,6 @@ usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
            [--stress-limit limit]\n\
 \n"SYD_HELPME, outfp);
 	exit(code);
-}
-
-int path_to_hex(const char *pathname)
-{
-	int fd = open(pathname, O_RDONLY|O_CLOEXEC|O_LARGEFILE);
-	if (fd == -1) {
-		int save_errno = errno;
-		sprintf(sydbox->hash, "<open:%d>", save_errno);
-		return -save_errno;
-	}
-
-	return syd_fd_to_sha1_hex(fd, sydbox->hash);
 }
 
 #if SYDBOX_DEBUG
@@ -1111,7 +1099,7 @@ static int handle_interrupt(int sig)
 #warning TODO: nice useful work for statistics, finish up!
 		dump(DUMP_INTR, "kill.all", sig, name, sig != SIGINT;
 #endif
-		kill_all(sig, 0);
+		kill_all(sig);
 		return 128 + sig;
 	}
 }
@@ -1145,7 +1133,7 @@ static void sig_usr(int sig)
 
 static void oops(int sig)
 {
-	kill_all(sig, 0);
+	kill_all(sig);
 	dump(DUMP_CLOSE);
 }
 
@@ -1352,24 +1340,29 @@ static void init_early(void)
 	assert(!sydbox);
 
 	os_release = get_os_release();
+
 	sydbox = xcalloc(1, sizeof(sydbox_t));
+
 	proc_invalidate();
+
 	sydbox->arch[0] = UINT32_MAX;
 	sydbox->seccomp_fd = -1;
 	sydbox->notify_fd = -1;
 	sydbox->export_mode = SYDBOX_EXPORT_NUL;
-	sydbox->hash[0] = '\0';
+
 	sydbox->proc_fd = opendir("/proc");
+
 	if (!syd_map_init_64v(&sydbox->tree,
 			     SYDBOX_PROCMAP_CAP,
 			     SYDBOX_MAP_LOAD_FAC)) {
 		errno = ENOMEM;
 		die_errno("failed to allocate hashmap for process tree");
 	}
+
 	config_init();
 	filter_init();
-	syd_map_init_64v(&sydbox->tree, 0, 0);
-	//syd_abort_func(kill_all);
+
+	syd_abort_func(kill_all);
 }
 
 static int event_clone(syd_process_t *current, const char clone_type,
@@ -1804,7 +1797,7 @@ out:
 	return r;
 }
 
-static syd_process_t *startup_child(char **argv)
+static syd_process_t *startup_child(int argc, char **argv)
 {
 	int r, pfd[2];
 	char *pathname = NULL;
@@ -1830,12 +1823,15 @@ static syd_process_t *startup_child(char **argv)
 	seccomp_setup();
 
 	/* All ready, initialise dump */
-	dump(DUMP_INIT, argv[0], pathname, get_arg0(), arch_argv);
+	dump(DUMP_INIT, pathname, argv[0], get_arg0(), arch_argv);
+
 	/* We may free the elements of arch_argv now,
-	 * they are no longer required. */
+	 * they are no longer required.
+	 * FIXME: Freeing here segfaults, why?
 	for (size_t i = 0; arch_argv[i] != NULL; i++)
 		free(arch_argv[i]);
 	arch_argv[0] = NULL;
+	*/
 
 	if (!noexec && !pathname)
 		die_errno("can't exec »%s«", argv[0]);
@@ -1893,7 +1889,7 @@ startup_child:
 		strlcat(comm + clen++, "☮", sizeof("☮"));
 		char *proc_exec;
 		xasprintf(&proc_exec, "/proc/%u/exe", current->pid);
-		if ((r = path_to_hex(proc_exec)) < 0) {
+		if ((r = syd_path_to_sha1_hex(proc_exec, sydbox->hash)) < 0) {
 			errno = -r;
 			say_errno("can't calculate checksum of file "
 				  "»%s«", proc_exec);
@@ -1971,8 +1967,6 @@ seccomp_init:
 		opt.make_group_leader = make_group_leader;
 		opt.parent_death_signal = parent_death_signal;
 		opt.supplementary_gids = get_groups();
-		int argc;
-		for (argc = 0; argv[argc] != NULL; argc++);
 		r = syd_execv(pathname, argc, argv, &opt);
 		if (r < 0) {
 			errno = -pid;
@@ -2709,7 +2703,8 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	const char *const *my_argv;
+	int my_argc;
+	char **my_argv;
 	if (optind == argc) {
 		config_parse_spec(DATADIR "/" PACKAGE
 				  "/default.syd-" STRINGIFY(SYDBOX_API_VERSION));
@@ -2727,11 +2722,13 @@ int main(int argc, char **argv)
 				  CLONE_NEWUSER|\
 				  CLONE_NEWTIME|\
 				  CLONE_NEWCGROUP);
+		my_argc = ELEMENTSOF(sydsh_argv);
 		my_argv = sydsh_argv;
 		sydbox->program_invocation_name = xstrdup("sydsh");
 		child_block_interrupt_signals = true;
 	} else {
-		my_argv = (const char *const *)(argv + optind);
+		my_argv = (char **)(argv + optind);
+		my_argc = argc - optind;
 		/*
 		 * Initial program_invocation_name to be used for P_COMM(current).
 		 * Saves one proc_comm() call.
@@ -2773,7 +2770,7 @@ int main(int argc, char **argv)
 	if (child_block_interrupt_signals)
 		tcgetattr(0, &old_tio);
 	if (use_notify()) {
-		child = startup_child((char **)my_argv);
+		child = startup_child(my_argc, my_argv);
 		pid = child->pid;
 		sydbox->execve_pid = pid;
 		proc_validate(pid);
@@ -2789,7 +2786,7 @@ int main(int argc, char **argv)
 		 */
 		notify_loop();
 	} else {
-		child = startup_child((char **)my_argv);
+		child = startup_child(my_argc, my_argv);
 		pid = child->pid;
 	}
 	for (;;) {
@@ -2829,7 +2826,7 @@ out:
 			bury_process(p, false);
 		}
 
-		kill_all(SIGLOST, skip_pid);
+		kill_all_skip(SIGLOST, skip_pid);
 	}
 	dump(DUMP_EXIT,
 	     sydbox->exit_code/* sydbox->violation_exit_code */,

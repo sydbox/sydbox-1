@@ -49,8 +49,7 @@ const char *get_arg0(void) {
 		arg0 = strdup("☮");
 	else if (asprintf(&dup, "☮%s", arg0) >= 0)
 		return dup;
-	else
-		return arg0;
+	return arg0;
 }
 const char *get_root_directory(void) { return root_directory; }
 const char *get_working_directory(void) { return working_directory; }

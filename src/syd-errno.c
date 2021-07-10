@@ -14,7 +14,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <syd/compiler.h>
+#include <syd/syd.h>
 
 #include "errno2name.h"
 
@@ -46,10 +46,11 @@ int main(int argc, char **argv)
 		if (!strcmp(argv[1], "-v") ||
 		    !strcmp(argv[1], "--version")) {
 			about();
+			syd_about(stdout);
 			return EXIT_SUCCESS;
 		}
 	}
-	for (size_t i = 1; i < argc; i++) {
+	for (int i = 1; i < argc; i++) {
 		if (!strcasecmp(argv[i], "-"))
 			print_errno_all();
 		else
@@ -61,7 +62,6 @@ int main(int argc, char **argv)
 static void print_errno(const char *arg)
 {
 	int val;
-	char *name;
 	char c = arg[0];
 	switch (c) {
 	case '\0':
@@ -89,30 +89,30 @@ static void print_errno(const char *arg)
 
 static void about(void)
 {
-	printf(PACKAGE"-"VERSION GITVERSION"\n");
+	printf(SYD_WARN PACKAGE"-"VERSION GITVERSION SYD_RESET "\n");
 }
 
 SYD_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
-"PACKAGE"-"VERSION GITVERSION" -- sydbox' errno <-> name converter\n\
+"PACKAGE"-"VERSION GITVERSION" -- Syd's errno <-> name converter\n\
 usage: "PACKAGE" [-hv] -|errno-name|errno-number...\n\
 -h          -- Show usage and exit\n\
 -v          -- Show version and exit\n\
 \n\
 Given an errno number, print its name.\n\
 Given an errno name, print its number.\n\
-Given `-', print all error numbers defined by the system.\n\
+Given »-«, print all error numbers defined by the system.\n\
 Multiple arguments may be given.\n\
 \n"SYD_HELPME);
 	exit(code);
 }
 
+SYD_GCC_ATTR((unused))
 static void die(const char *fmt, ...)
 {
 	va_list ap;
-	static int tty = -1;
 
 	va_start(ap, fmt);
 	vsay(stderr, fmt, ap, 'f');
@@ -136,6 +136,7 @@ static void say_errno(const char *fmt, ...)
 	errno = save_errno;
 }
 
+SYD_GCC_ATTR((unused))
 static void die_errno(const char *fmt, ...)
 {
 	int save_errno = errno;
@@ -190,7 +191,7 @@ static void vsay(FILE *fp, const char *fmt, va_list ap, char level)
 
 static void print_errno_all(void)
 {
-#define PUTS(e) do { printf("%d\t%s\n", (e), errno2name((e))); } while(0)
+#define PUTS(e) do { printf("%d\t%s\t»%s«\n", (e), errno2name((e)), strerror(e)); } while(0)
 #ifdef E2BIG
 	PUTS(E2BIG);
 #endif
