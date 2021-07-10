@@ -163,12 +163,12 @@ void say_sha1sum(FILE *check_file, const char *name, const char *checksum, char 
 		normal = "+ ";
 		break;
 	case '-':
-		colour = "[0;1;35;95m";
+		colour = "[0;1;31;91m";
 		verify = "× ";
 		normal = "- ";
 		break;
 	case '!':
-		colour = "[0;1;31;91m";
+		colour = "[0;1;35;95m";
 		verify = "💀 ";
 		normal = "! ";
 		break;
@@ -180,13 +180,19 @@ void say_sha1sum(FILE *check_file, const char *name, const char *checksum, char 
 	default:
 		abort();
 	}
+
 	bool tty = isatty(STDOUT_FILENO);
+	char *abspath = realpath(name, NULL);
+
 	printf("%s%s%s  %s%s\n",
 	       tty ? colour : "",
-	       verify, checksum, name,
+	       verify, checksum,
+	       abspath ? abspath : name,
 	       tty ? "[0m" : "");
 	if (check_file)
 		fprintf(check_file, "%s  %s %s\n", checksum, name, normal);
+	if (abspath)
+		free(abspath);
 }
 
 int check_file_init(const char *check)
@@ -404,6 +410,7 @@ int main(int argc, char **argv)
 
 	int options_index, r = 0;
 	char *opt_check = NULL;
+	const char *home = getenv("HOME");
 	while ((opt = getopt_long(argc, argv, "hvc:o:", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
@@ -426,7 +433,7 @@ int main(int argc, char **argv)
 				output_path = strdup(optarg);
 			else
 				asprintf(&output_path, "%s/%s",
-					 getenv("HOME"),
+					 home ? home : "./",
 					 SYD_SHA1_CHECK_DEF);
 			break;
 		default:
@@ -449,7 +456,8 @@ int main(int argc, char **argv)
 	if (opt_check) {
 		if (opt_check[0] == '-' && opt_check[1] == '\0') {
 			if (asprintf(&opt_check, "%s/%s",
-				     getenv("HOME"), SYD_SHA1_CHECK_DEF) < 0)
+				     home ? home : "./",
+				     SYD_SHA1_CHECK_DEF) < 0)
 				die_errno("asprintf");
 		}
 		check_file_init(opt_check);
