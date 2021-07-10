@@ -42,5 +42,6 @@ extern char syd_fail_message[SYD_FAIL_MESSAGE_MAX];
 
 void test_suite_file(void);
 void test_suite_proc(void);
+void test_suite_sha1(void);
 
 #endif

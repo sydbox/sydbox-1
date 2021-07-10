@@ -17,73 +17,46 @@
 #include <syd/syd.h>
 #include <syd/sha1dc_syd.h>
 
-static syd_SHA_CTX globctx;
+static syd_SHA_CTX glob_ctx;
+static unsigned char glob_hash[SYD_SHA1_RAWSZ];
+static char glob_hex[SYD_SHA1_HEXSZ + 1];
 
-int syd_fd_to_sha1_hex(int fd, char *hex)
-{
-#define PATH_TO_HEX_BUFSIZ (1024*1024)
-	/* Avoid this warning.
-	 * warning: stack frame size of 1048664 bytes in function 'path_to_hex'
-	 * [-Wframe-larger-than=]
-	 *
-	 * char buf[PATH_TO_HEX_BUFSIZ];
-	 */
-	syd_hash_sha1_init(&globctx);
-
-	char *buf = malloc(PATH_TO_HEX_BUFSIZ * sizeof(char));
-	if (!buf)
-		return -ENOMEM;
-	ssize_t nread;
-	unsigned char hash[SYD_SHA1_RAWSZ];
-	int r = 0;
-	for (;;) {
-		errno = 0;
-		nread = read(fd, buf + r, PATH_TO_HEX_BUFSIZ - r);
-		if (!nread) {
-			r = 0;
-			break;
-		}
-		if (nread > 0)
-			r += nread;
-		if (errno == EINTR ||
-		    (nread > 0 && (size_t)r < PATH_TO_HEX_BUFSIZ)) {
-			continue;
-		} else if (nread < 0 && r == 0) { /* not partial read */
-			int save_errno = errno;
-			sprintf(hex, "<read:%d>", save_errno);
-			r = -save_errno;
-			break;
-		}
-		syd_hash_sha1_update(&globctx, buf, r);
-		r = 0;
-	}
-	close(fd);
-	if (r == 0) {
-		if ((r = syd_hash_sha1_final(&globctx, hash)) < 0)
-			return r;
-		syd_strlcpy(hex, syd_hash_to_hex(hash), SYD_SHA1_HEXSZ + 1);
-	}
-	free(buf);
-	return r;
-}
+#define SYD_PATH_TO_HEX_BUFSIZ (65536)
+static char glob_buf[SYD_PATH_TO_HEX_BUFSIZ];
 
 int syd_file_to_sha1_hex(FILE *file, char *hex)
 {
-	return syd_fd_to_sha1_hex(fileno(file), hex);
+	int r = 0;
+	syd_hash_sha1_init(&glob_ctx);
+	for (;;) {
+		errno = 0;
+		ssize_t nread = fread(glob_buf, 1, SYD_PATH_TO_HEX_BUFSIZ, file);
+		syd_hash_sha1_update(&glob_ctx, glob_buf, (unsigned)nread);
+		if (nread != SYD_PATH_TO_HEX_BUFSIZ)
+			break;
+	}
+	if (r == 0) {
+		r = syd_hash_sha1_final(&glob_ctx, glob_hash);
+		syd_strlcpy(hex, syd_hash_to_hex(glob_hash),
+			    SYD_SHA1_HEXSZ + 1);
+	}
+	return r;
 }
 
 int syd_path_to_sha1_hex(const char *pathname, char *hex)
 {
-	int fd = open(pathname, O_RDONLY|O_CLOEXEC|O_LARGEFILE);
-	if (fd == -1) {
+	FILE *f = fopen(pathname, "r");
+	if (!f) {
 		int save_errno = errno;
 		sprintf(hex, "<open:%d:%s>", save_errno,
 			syd_name_errno(save_errno));
 		return -save_errno;
 	}
 
-	int r = syd_fd_to_sha1_hex(fd, hex);
-	close(fd);
+	int r = syd_file_to_sha1_hex(f, hex);
+
+	fclose(f);
+
 	return r;
 }
 

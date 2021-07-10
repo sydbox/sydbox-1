@@ -149,29 +149,43 @@ static void die_errno(const char *fmt, ...)
 	exit(EXIT_FAILURE);
 }
 
-void say_checksum(FILE *check_file, const char *name, const char *checksum, char check)
+void say_sha1sum(FILE *check_file, const char *name, const char *checksum, char check)
 {
+	char *colour;
 	char *verify;
+	char *normal;
+
 	switch (check) {
 	case '+':
-		verify = "  ✓";
+		colour = "[0;1;32;92m";
+		verify = "✓ ";
+		normal = "+ ";
 		break;
 	case '-':
-		verify = "  ×";
+		colour = "[0;1;35;95m";
+		verify = "× ";
+		normal = "- ";
 		break;
 	case '!':
-		verify = "  💀";
+		colour = "[0;1;31;91m";
+		verify = "💀 ";
+		normal = "! ";
 		break;
 	case 0:
+		colour = "";
 		verify = "";
+		normal = "";
 		break;
 	default:
 		abort();
 	}
-
-	printf("%s  %s%s\n", checksum, name, verify);
+	bool tty = isatty(STDOUT_FILENO);
+	printf("%s%s%s  %s%s\n",
+	       tty ? colour : "",
+	       verify, checksum, name,
+	       tty ? "[0m" : "");
 	if (check_file)
-		fprintf(check_file, "%s  %s%s\n", checksum, name, verify);
+		fprintf(check_file, "%s  %s %s\n", checksum, name, normal);
 }
 
 int check_file_init(const char *check)
@@ -227,16 +241,34 @@ int check_file_done(const char *check)
 		free(xattr_val);
 	}
 
-	/* Step 3: Set secure delete. */
-	if ((r = syd_extfs_set_sec_delete(check, true)) < 0 &&
+	/* Step 3: Set undeletable */
+	if ((r = syd_extfs_set_undeletable(check, true)) < 0 &&
 	    errno != EOPNOTSUPP &&
 	    errno != EPERM &&
 	    errno != ENOENT) {
 		errno = -r;
-		say_errno("syd_extfs_set_sec_delete(»%s«, »true«)", check);
+		say_errno("syd_extfs_set_undeletable(»%s«, »true«)", check);
 	}
 
-	/* Step 4: Set file immutable. */
+	/* Step 4: Set append only */
+	if ((r = syd_extfs_set_append_only(check, true)) < 0 &&
+	    errno != EOPNOTSUPP &&
+	    errno != EPERM &&
+	    errno != ENOENT) {
+		errno = -r;
+		say_errno("syd_extfs_set_append_only(»%s«, »true«)", check);
+	}
+
+	/* Step 5: Set compression */
+	if ((r = syd_extfs_set_compression(check, true)) < 0 &&
+	    errno != EOPNOTSUPP &&
+	    errno != EPERM &&
+	    errno != ENOENT) {
+		errno = -r;
+		say_errno("syd_extfs_set_compression(»%s«, »true«)", check);
+	}
+
+	/* Step 6: Set file immutable. */
 	if ((r = syd_extfs_set_immutable(check, true)) < 0 &&
 	    errno != EOPNOTSUPP &&
 	    errno != EPERM &&
@@ -248,7 +280,7 @@ int check_file_done(const char *check)
 	return 0;
 }
 
-int check_checksum(const char *check)
+int check_sha1sum(const char *check)
 {
 	int r;
 
@@ -279,13 +311,13 @@ int check_checksum(const char *check)
 			say("Error reading line »%zu« in check file »%s«, "
 			    "fscanf returned %d.",
 			    i + 1, check, r);
-			continue;
+			break;
 		}
 
 		char *name;
 		if (!strcmp(path, "-") ||
 		    !strcmp(path, "☮")) {
-			r = syd_fd_to_sha1_hex(STDIN_FILENO, hex);
+			r = syd_file_to_sha1_hex(stderr, hex);
 			name = "☮";
 		} else {
 			r = syd_path_to_sha1_hex(path, hex);
@@ -341,7 +373,7 @@ int check_checksum(const char *check)
 					  xattr_key, op_name);
 			free(xattr_key);
 		}
-		say_checksum(NULL, name, hex, op);
+		say_sha1sum(NULL, name, hex, op);
 		free(hash); free(path);
 	}
 
@@ -350,13 +382,11 @@ int check_checksum(const char *check)
 
 int main(int argc, char **argv)
 {
-	int fd;
 	char hex[SYD_SHA1_HEXSZ];
 
 	if (argc < 2) {
-		fd = STDIN_FILENO;
-		syd_fd_to_sha1_hex(fd, hex);
-		say_checksum(NULL, "☮", hex, 0);
+		syd_file_to_sha1_hex(stderr, hex);
+		say_sha1sum(NULL, "☮", hex, 0);
 		return 0;
 	}
 
@@ -367,13 +397,13 @@ int main(int argc, char **argv)
 		/* default options */
 		{"help",	no_argument,		NULL,	'h'},
 		{"version",	no_argument,		NULL,	'v'},
-		{"check",	no_argument,		NULL,	'c'},
+		{"check",	required_argument,	NULL,	'c'},
 		{"output",	required_argument,	NULL,	'o'},
 	};
 
 	int options_index, r = 0;
-	bool opt_check = false;
-	while ((opt = getopt_long(argc, argv, "hvco:", long_options,
+	char *opt_check = NULL;
+	while ((opt = getopt_long(argc, argv, "hvc:o:", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
 		case 'h':
@@ -384,7 +414,7 @@ int main(int argc, char **argv)
 			syd_about(stdout);
 			return 0;
 		case 'c':
-			opt_check = true;
+			opt_check = optarg;
 			break;
 		case 'o':
 			if (strcmp(optarg, "-"))
@@ -397,6 +427,9 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (!opt_check && argc == optind)
+		usage(stderr, 1);
+
 	if (output_path) {
 		check_file_init(output_path);
 		output_file = fopen(output_path, "a");
@@ -405,26 +438,34 @@ int main(int argc, char **argv)
 				  "appending.", output_path);
 	}
 
+	const char *name = NULL;
+	if (opt_check) {
+		if (opt_check[0] == '-' && opt_check[1] == '\0') {
+			check_file_init(SYD_SHA1_CHECK_DEF);
+			r = check_sha1sum(SYD_SHA1_CHECK_DEF);
+			name = SYD_SHA1_CHECK_DEF;
+		} else {
+			check_file_init(opt_check);
+			r = check_sha1sum(opt_check);
+			name = opt_check;
+		}
+		if (r < 0)
+			say_errno("check_sha1sum(`%s')", name);
+		check_file_done(name);
+	}
+
 	for (int i = optind; argv[i] != NULL; i++) {
-		const char *name = NULL;
 		if (opt_check) {
-			if (argv[i][0] == '-' &&
-			    argv[i][1] == '\0') {
-				check_file_init(SYD_SHA1_CHECK_DEF);
-				r = check_checksum(SYD_SHA1_CHECK_DEF);
-				name = SYD_SHA1_CHECK_DEF;
-			} else {
-				check_file_init(argv[i]);
-				r = check_checksum(argv[i]);
-				name = argv[i];
+			check_file_init(argv[i]);
+			r = check_sha1sum(argv[i]);
+			if (r < 0) {
+				errno = -r;
+				say_errno("check_sha1sum(`%s')", argv[i]);
 			}
-			if (r < 0)
-				say_errno("check_checksum(`%s')", name);
-			check_file_done(name);
+			check_file_done(argv[i]);
 			continue;
 		} else if (argv[i][0] == '-') {
-			fd = STDIN_FILENO;
-			syd_fd_to_sha1_hex(fd, hex);
+			syd_file_to_sha1_hex(stderr, hex);
 			name = "☮";
 		} else {
 			name = argv[i];
@@ -435,7 +476,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		say_checksum(output_file, name, hex, 0);
+		say_sha1sum(output_file, name, hex, 0);
 		if (i <= SYD_SHA1_XATTR_MAX && output_path) {
 			char *xattr_key;
 			if (asprintf(&xattr_key, "user.syd.hash.%d.path", i) > 0) {

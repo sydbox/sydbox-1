@@ -13,12 +13,6 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#if AT_FDCWD == -128
-#define INVALID_FD -129
-#else
-#define INVALID_FD -128
-#endif
-
 #define TMPDIR			"./file-TEST-tmp"
 #define TMP_FILE		"file"
 #define TMP_VOID_FILE		"void"

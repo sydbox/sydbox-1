@@ -11,6 +11,98 @@
 #include <sys/ioctl.h>
 #include "syd.h"
 
+int syd_extfs_get_compression(const char *filename, bool *compress)
+{
+	int fd;
+
+	if (!compress)
+		return -EINVAL;
+
+	if ((fd = openat(AT_FDCWD, filename, O_RDONLY|O_NONBLOCK)) < 0)
+		return -errno;
+
+	unsigned long flags;
+	int r = syd_extfs_get_flags(fd, &flags);
+	if (r < 0)
+		goto out;
+	*compress = !!(flags & SYD_EXT2_COMPR_FL);
+
+out:
+	close(fd);
+	return 0;
+}
+
+int syd_extfs_set_compression(const char *filename, bool on)
+{
+	int fd, r = 0;
+	unsigned long flags;
+
+	if ((fd = openat(AT_FDCWD, filename, O_RDONLY|O_NONBLOCK)) < 0)
+		return -errno;
+	if ((r = syd_extfs_get_flags(fd, &flags)) < 0)
+		goto out;
+	if (flags & SYD_EXT2_COMPR_FL) {
+		if (on)
+			return 0;
+		flags &= ~SYD_EXT2_COMPR_FL;
+		r = syd_extfs_set_flags(fd, flags);
+		goto out;
+	} else if (on) {
+		flags |= SYD_EXT2_COMPR_FL;
+		r = syd_extfs_set_flags(fd, flags);
+		goto out;
+	}
+out:
+	close(fd);
+	return r;
+}
+
+int syd_extfs_get_append_only(const char *filename, bool *appendonly)
+{
+	int fd;
+
+	if (!appendonly)
+		return -EINVAL;
+
+	if ((fd = openat(AT_FDCWD, filename, O_RDONLY|O_NONBLOCK)) < 0)
+		return -errno;
+
+	unsigned long flags;
+	int r = syd_extfs_get_flags(fd, &flags);
+	if (r < 0)
+		goto out;
+	*appendonly = !!(flags & SYD_EXT2_APPEND_FL);
+
+out:
+	close(fd);
+	return 0;
+}
+
+int syd_extfs_set_append_only(const char *filename, bool on)
+{
+	int fd, r = 0;
+	unsigned long flags;
+
+	if ((fd = openat(AT_FDCWD, filename, O_RDONLY|O_NONBLOCK)) < 0)
+		return -errno;
+	if ((r = syd_extfs_get_flags(fd, &flags)) < 0)
+		goto out;
+	if (flags & SYD_EXT2_APPEND_FL) {
+		if (on)
+			return 0;
+		flags &= ~SYD_EXT2_APPEND_FL;
+		r = syd_extfs_set_flags(fd, flags);
+		goto out;
+	} else if (on) {
+		flags |= SYD_EXT2_APPEND_FL;
+		r = syd_extfs_set_flags(fd, flags);
+		goto out;
+	}
+out:
+	close(fd);
+	return r;
+}
+
 int syd_extfs_get_undeletable(const char *filename, bool *undeletable)
 {
 	int fd;
@@ -57,7 +149,7 @@ out:
 	return r;
 }
 
-int syd_extfs_get_sec_delete(const char *filename, bool *sec_delete)
+int syd_extfs_get_secure_delete(const char *filename, bool *sec_delete)
 {
 	int fd;
 
@@ -78,7 +170,7 @@ out:
 	return 0;
 }
 
-int syd_extfs_set_sec_delete(const char *filename, bool on)
+int syd_extfs_set_secure_delete(const char *filename, bool on)
 {
 	int fd, r = 0;
 	unsigned long flags;

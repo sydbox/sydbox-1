@@ -73,7 +73,6 @@ char *syd_hash_to_hex_r(char *buffer, const unsigned char *hash);
 char *syd_hash_to_hex(const unsigned char *hash); /* static buffer result! */
 int syd_hex_to_bytes(unsigned char *binary, const char *hex, size_t len);
 
-int syd_fd_to_sha1_hex(int fd, char *hex);
 int syd_file_to_sha1_hex(FILE *file, char *hex);
 int syd_path_to_sha1_hex(const char *pathname, char *hex);
 
@@ -291,10 +290,14 @@ int syd_extfs_set_flags(int fd, unsigned long flags);
 
 int syd_extfs_get_undeletable(const char *filename, bool *undeletable);
 int syd_extfs_set_undeletable(const char *filename, bool on);
-int syd_extfs_get_sec_delete(const char *filename, bool *sec_delete);
-int syd_extfs_set_sec_delete(const char *filename, bool on);
+int syd_extfs_get_secure_delete(const char *filename, bool *secure_delete);
+int syd_extfs_set_secure_delete(const char *filename, bool on);
 int syd_extfs_get_immutable(const char *filename, bool *immutable);
 int syd_extfs_set_immutable(const char *filename, bool on);
+int syd_extfs_get_append_only(const char *filename, bool *appendonly);
+int syd_extfs_set_append_only(const char *filename, bool on);
+int syd_extfs_get_compression(const char *filename, bool *compress);
+int syd_extfs_set_compression(const char *filename, bool on);
 
 /***
  * libsyd: Interfaces to statically allocated hash tables.

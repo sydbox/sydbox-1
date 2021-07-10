@@ -88,8 +88,7 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
 	caputils.h \
 	caputils.c
 libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= \
-	$(libseccomp_CFLAGS) \
-	$(SYDBOX_CFLAGS)
+	$(libseccomp_CFLAGS)
 libsyd_@LIBSYD_PC_SLOT@_la_LDFLAGS= \
 	-Wl,--version-script=$(srcdir)/libsyd.ld \
 	$(COVERAGE_LDFLAGS) \
@@ -105,17 +104,54 @@ libsyd_include_HEADERS= \
 			hex.h \
 			syd.h
 
-noinst_HEADERS= seatest.h check.h compiler.h macro.h
+noinst_HEADERS= \
+		seatest.h \
+		check.h \
+		compiler.h \
+		macro.h
 syd_check_SOURCES= \
-		   file.c \
-		   proc.c \
-		   strlcpy.c \
 		   seatest.c \
 		   check.c \
 		   file-TEST.c \
-		   proc-TEST.c
-syd_check_CFLAGS= -I$(srcdir)
-syd_check_LDFLAGS= -lrt -lm $(libseccomp_LIBS)
+		   proc-TEST.c \
+		   sha1-TEST.c \
+		   about.c \
+		   debug.c \
+		   name.c \
+		   file.c \
+		   proc.c \
+		   strlcpy.c \
+		   hex.c \
+		   sha1.c \
+		   sha1dc_syd.c \
+		   sha1dc/lib/sha1.c \
+		   sha1dc/lib/ubc_check.c
+syd_check_CFLAGS= \
+		  -I$(srcdir) \
+		  $(libseccomp_CFLAGS)
+syd_check_LDFLAGS= \
+		   -lrt -lm $(libseccomp_LIBS) \
+		   $(COVERAGE_LDFLAGS) \
+		   $(libseccomp_LIBS)
+syd_check_LDADD= \
+		 $(COVERAGE_LIBS) \
+		 $(libseccomp_LIBS)
+		.libs/libsyd_@LIBSYD_PC_SLOT@.la
+
+syd_checkdir=$(libexecdir)/$(PACKAGE)/t/sha1_samples
+syd_check_DATA=\
+	       sha1_samples/200d69c3555389e536b57d7f9f95eb1eb5e377a1 \
+	       sha1_samples/2d34e230014f5dbd4e9b2344d23bf3fce94fae38 \
+	       sha1_samples/48edf6bfd0c00f87d86fd23d67d0351495e106b1 \
+	       sha1_samples/50865daa00c7f3f238c774ea13a2f25cbc8ed27a \
+	       sha1_samples/5c828d244d745a59ed85bd472bdc6bb4d6ecea89 \
+	       sha1_samples/89a91d5421249fbd8cb448ebf5d2b42798e3126c \
+	       sha1_samples/8dea5576cecc69b043c937e87ce3d035dfbaf971 \
+	       sha1_samples/953edfc0217c405b17f647dbd749d4b09ce8aa49 \
+	       sha1_samples/a3e2cc1f7e2e2659b8080a6ec3534c322551f834 \
+	       sha1_samples/c325d19b0aa730530c849805a4ce5a5da5bb25d1 \
+	       sha1_samples/c8b8d277235110eea01a836b6e9ab9e66d48c90d \
+	       sha1_samples/e2a01a5166873953413b502c2fd75620b751e4e8
 
 check_PROGRAMS= check-pause syd-check
 TESTS= syd-check
