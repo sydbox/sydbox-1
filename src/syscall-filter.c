@@ -1199,12 +1199,13 @@ static int filter_general_level_0(void)
 	/* Note, seccomp returns EEXIST if the rule already exists,
 	 * and EACCES when one attempts to add a rule with the same
 	 * action as the default action, ie the rule is redundant.
-	 * We do not error in these two cases and resume operation.
+	 * EINVAL is returned when the system call is invalid.
+	 * We do not error in these three cases and resume operation.
 	 */
 	for (unsigned i = 0; i < ELEMENTSOF(deny_list_level0); i++) {
 		syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ECANCELED),
 			     deny_list_level0[i], 0);
-		if (r && r != -EEXIST && r != -EACCES) {
+		if (r && r != -EEXIST && r != -EACCES && r != -EINVAL) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(deny_list_level0[i],
 								SCMP_ARCH_NATIVE);
@@ -1221,7 +1222,7 @@ static int filter_general_level_0(void)
 	for (unsigned i = 0; i < ELEMENTSOF(allow_list_level0); i++) {
 		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, allow_list_level0[i],
 			     0);
-		if (r && r != -EEXIST && r != -EACCES) {
+		if (r && r != -EEXIST && r != -EACCES && r != -EINVAL) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(allow_list_level0[i],
 								SCMP_ARCH_NATIVE);
@@ -1581,7 +1582,7 @@ static int filter_general_level_1(void)
 	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level1); i++) {
 		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, filter_gen_level1[i],
 			     0);
-		if (r && r != -EEXIST) {
+		if (r && r != -EEXIST && r != -EACCES && r != -EINVAL) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(filter_gen_level1[i],
 								SCMP_ARCH_NATIVE);
@@ -1609,7 +1610,7 @@ static int filter_general_level_2(void)
 	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level2); i++) {
 		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, filter_gen_level2[i],
 			     0);
-		if (r && r != -EEXIST) {
+		if (r && r != -EEXIST && r != -EACCES && r != -EINVAL) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(filter_gen_level2[i],
 								SCMP_ARCH_NATIVE);
@@ -1655,7 +1656,7 @@ static int filter_general_level_3(void)
 	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level3); i++) {
 		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, filter_gen_level3[i],
 			     0);
-		if (r && r != -EEXIST) {
+		if (r && r != -EEXIST && r != -EACCES && r != -EINVAL) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(filter_gen_level3[i],
 								SCMP_ARCH_NATIVE);

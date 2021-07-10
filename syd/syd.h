@@ -192,6 +192,7 @@ struct syd_exec_opt {
 	const uint32_t *supplementary_gids;
 	size_t supplementary_gids_length;
 	const char *pid_env_var;
+	const char *proc_mount;
 };
 
 SYD_GCC_ATTR((warn_unused_result))
@@ -200,10 +201,14 @@ int syd_execv(const char *command,
 	      struct syd_exec_opt *opt);
 
 SYD_GCC_ATTR((warn_unused_result,nonnull((3))))
-pid_t syd_clone(int flags, int exit_signal, unsigned long long *pidfd_out);
 
 /* 'private' is kernel default */
 #define SYD_UNSHARE_PROPAGATION_DEFAULT  (MS_REC | MS_PRIVATE)
+SYD_GCC_ATTR((warn_unused_result))
+pid_t syd_clone(int flags, int exit_signal,
+		int *pidfd_out,
+		pid_t *ptid_out,
+		pid_t *ctid_out);;
 
 enum {
 	SYD_SETGROUPS_NONE = -1,

@@ -21,8 +21,8 @@ static bool background;
 static const char *redirect_stdout;
 static const char *redirect_stderr;
 
-static uid_t uid;
-static gid_t gid;
+static uid_t uid = -1;
+static gid_t gid = -1;
 #define GID_ADD_MAX 32
 static size_t gid_add_index;
 static gid_t gid_add[GID_ADD_MAX];

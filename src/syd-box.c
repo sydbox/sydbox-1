@@ -1819,6 +1819,13 @@ static syd_process_t *startup_child(int argc, char **argv)
 	bool noexec = streq(argv[0], SYDBOX_NOEXEC_NAME);
 	if (!noexec) {
 		pathname = path_lookup(argv[0]);
+		if (!pathname)
+			die_errno("Path look up for »%s« failed", argv[0]);
+		if ((r = syd_path_to_sha1_hex(pathname, sydbox->hash)) < 0) {
+			errno = -r;
+			say_errno("Can't calculate SHA-1 checksum of file "
+				  "»%s«", pathname);
+		}
 	} else {
 		strlcpy(sydbox->hash, "<noexec>", sizeof("<noexec>"));
 	}
@@ -1847,13 +1854,12 @@ static syd_process_t *startup_child(int argc, char **argv)
 	 * apply the unconditional restrictions about SydB☮x process
 	 * receiving any signal other than SIGCHLD.
 	 */
-#define SYD_CLONE_FLAGS (CLONE_CLEAR_SIGHAND|\
-			 CLONE_PARENT_SETTID)
 	sydbox->sydbox_pid = getpid();
+#define SYD_CLONE_FLAGS CLONE_CLEAR_SIGHAND
 startup_child:
-	sydbox->execve_pid = syd_clone(SYD_CLONE_FLAGS | unshare_flags,
-				       SIGCHLD, &sydbox->execve_pidfd);
-	pid = sydbox->execve_pid;
+	pid = syd_clone(SYD_CLONE_FLAGS | unshare_flags,
+			SIGCHLD, &sydbox->execve_pidfd,
+			NULL, NULL);
 	if (pid < 0) {
 		if (errno == EINVAL) {
 			/* Filter out unsupported clone flags and retry... */
@@ -1874,12 +1880,14 @@ startup_child:
 
 		pid = sydbox->execve_pid;
 		current->pid = pid;
+#if 0
 		proc_validate(pid);
 		init_process_data(current, NULL, false); /* calls proc_cwd */
 		strlcpy(current->comm, sydbox->program_invocation_name,
 			SYDBOX_PROC_MAX);
 		syd_proc_cmdline(sydbox->pfd, current->prog, LINE_MAX-1);
 		current->prog[LINE_MAX-1] = '\0';
+#endif
 
 		/* 16 bytes including the terminating NUL byte. */
 		char comm[16] = {0};
@@ -1893,20 +1901,11 @@ startup_child:
 		comm[2] = sandbox_mode_toc(box->mode.sandbox_write);
 		comm[3] = sandbox_mode_toc(box->mode.sandbox_exec);
 		comm[4] = sandbox_mode_toc(box->mode.sandbox_network);
-
-		size_t len = strlen(argv[0]);
-		strlcpy(comm + 5, argv[0], len + 1);
-		comm[5 + len] = '-';
-
-		char *proc_exec;
-		xasprintf(&proc_exec, "/proc/%u/exe", current->pid);
-		if ((r = syd_path_to_sha1_hex(proc_exec, sydbox->hash)) < 0) {
-			errno = -r;
-			say_errno("can't calculate checksum of file "
-				  "»%s«", proc_exec);
-		} else {
-			strlcat(comm, sydbox->hash, 16);
-		}
+		char *name = basename(argv[0]);
+		size_t len = strlen(name) + 5;
+		strlcpy(comm + 5, name, 16 - 5);
+		comm[len++] = '-';
+		strlcpy(comm + len, sydbox->hash, 16 - len);
 		comm[15] = '\0';
 		if (!get_arg0())
 			set_arg0(comm);
@@ -1980,9 +1979,10 @@ seccomp_init:
 		opt.parent_death_signal = parent_death_signal;
 		opt.supplementary_gids = get_groups();
 		opt.supplementary_gids_length = get_groups_length();
+		opt.proc_mount = procmnt;
 		r = syd_execv(pathname, argc, argv, &opt);
 		if (r < 0) {
-			errno = -pid;
+			errno = -r;
 			say_errno("Error executing »%s«", pathname);
 		}
 		free(pathname);
@@ -2021,6 +2021,7 @@ seccomp_init:
 	sydbox->seccomp_fd = -1;
 
 	current->pid = pid;
+	current->ppid = sydbox->sydbox_pid;
 	sydbox->execve_pid = pid;
 
 	return current;
@@ -2705,9 +2706,7 @@ int main(int argc, char **argv)
 	if (optind == argc) {
 		config_parse_spec(DATADIR "/" PACKAGE
 				  "/default.syd-" STRINGIFY(SYDBOX_API_VERSION));
-		set_uid(65534); /* nobody */
-		set_gid(65534); /* nobody */
-		set_arg0("sydsh");
+		set_arg0("syd-sh");
 		set_working_directory(xstrdup("tmp"));
 		close_fds[0] = 3;
 		close_fds[1] = 0;
@@ -2721,7 +2720,7 @@ int main(int argc, char **argv)
 				  CLONE_NEWCGROUP);
 		my_argc = ELEMENTSOF(sydsh_argv);
 		my_argv = sydsh_argv;
-		sydbox->program_invocation_name = xstrdup("sydsh");
+		sydbox->program_invocation_name = xstrdup("syd-sh");
 		child_block_interrupt_signals = true;
 	} else {
 		my_argv = (char **)(argv + optind);

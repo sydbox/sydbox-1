@@ -214,7 +214,8 @@
 #include <errno.h>
 # define syd_rule_ok(r) ((r) == 0 ||\
 			 (r) == -EACCES ||\
-			 (r) == -EEXIST)
+			 (r) == -EEXIST ||\
+			 (r) == -EINVAL)
 #if defined(SYDBOX_DUMP) && SYDBOX_DUMP
 # define syd_rule_add(ctx, ...) { \
 	r = seccomp_rule_add(ctx, __VA_ARGS__); \

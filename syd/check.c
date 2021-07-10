@@ -38,5 +38,5 @@ int main(int argc, char *argv[])
 	int r;
 
 	r = seatest_testrunner(argc, argv, all_tests, NULL, NULL);
-	return (r != 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+	return r == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

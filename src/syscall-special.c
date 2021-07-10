@@ -335,7 +335,8 @@ int sys_execveat(syd_process_t *current)
 	return do_execve(current, true);
 }
 
-#define FAKE_MODE (S_IFCHR|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
+//#define FAKE_MODE (S_IFCHR|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
+#define FAKE_MODE (S_IFCHR|S_IRUSR|S_IROTH)
 /* /dev/null */
 #define FAKE_RDEV_MAJOR 1
 #define FAKE_RDEV_MINOR 3
@@ -343,6 +344,8 @@ int sys_execveat(syd_process_t *current)
 #define FAKE_ATIME 505958400
 #define FAKE_MTIME -842745600
 #define FAKE_CTIME -2036448000
+#define FAKE_UID 42
+#define FAKE_GID 1984
 
 #define FAKE_SYSNAME "[01;36m☮[0m"
 #define FAKE_NODENAME "sydb☮x"
@@ -377,6 +380,8 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 		buf32.st_atime = FAKE_ATIME;
 		buf32.st_mtime = FAKE_MTIME;
 		buf32.st_ctime = FAKE_CTIME;
+		buf32.st_uid = FAKE_UID;
+		buf32.st_gid = FAKE_GID;
 		bufaddr = (char *)&buf32;
 		bufsize = sizeof(struct stat32);
 	}
@@ -411,6 +416,8 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 #ifdef HAVE_STRUCT_STATX
 		memset(&bufx, 0, sizeof(struct statx));
 		bufx.stx_mode = FAKE_MODE;
+		bufx.stx_uid = FAKE_UID;
+		bufx.stx_gid = FAKE_GID;
 		bufx.stx_rdev_major = FAKE_RDEV_MAJOR;
 		bufx.stx_rdev_minor = FAKE_RDEV_MINOR;
 		bufx.stx_atime.tv_sec = FAKE_ATIME;
@@ -439,6 +446,8 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 		buf.st_atime = FAKE_ATIME;
 		buf.st_mtime = FAKE_MTIME;
 		buf.st_ctime = FAKE_CTIME;
+		buf.st_uid = FAKE_UID;
+		buf.st_gid = FAKE_GID;
 		bufaddr = (char *)&buf;
 		bufsize = sizeof(struct stat);
 	}

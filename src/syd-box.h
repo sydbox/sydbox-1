@@ -587,7 +587,7 @@ struct sydbox {
 	pid_t execve_pid; /* Process ID of the process SydB☮x executes. */
 
 	/* Execve process pid FD */
-	unsigned long long execve_pidfd;
+	int execve_pidfd;
 
 	/* Exit code of the execve process */
 	int exit_code;

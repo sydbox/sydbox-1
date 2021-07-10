@@ -20,21 +20,27 @@ pid_t syd_clone3(struct clone_args *args)
 	return syscall(SYD_clone3, args, sizeof(struct clone_args));
 }
 
-SYD_GCC_ATTR((warn_unused_result,nonnull((3))))
-pid_t syd_clone(int flags, int exit_signal, unsigned long long *pidfd_out)
+SYD_GCC_ATTR((warn_unused_result))
+pid_t syd_clone(int flags, int exit_signal,
+		int *pidfd_out,
+		pid_t *ptid_out,
+		pid_t *ctid_out)
 {
-	unsigned long long pidfd = -1;
-	unsigned long long parent_tid = -1;
 	struct clone_args args = {0};
-	args.pidfd = syd_ptr_to_u64(pidfd);
-	args.parent_tid = syd_ptr_to_u64(parent_tid);
+
+	if (pidfd_out)
+		flags |= CLONE_PIDFD;
+	if (ptid_out)
+		flags |= CLONE_PARENT_SETTID;
+	if (ctid_out)
+		flags |= CLONE_CHILD_SETTID;
 	args.flags = flags;
 	args.exit_signal = exit_signal;
+	args.pidfd = syd_ptr_to_u64(pidfd_out);
+	args.parent_tid = syd_ptr_to_u64(ptid_out);
+	args.child_tid = syd_ptr_to_u64(ctid_out);
 
-	pid_t pid = syd_clone3(&args);
-	if (pid > 0 && (flags & CLONE_PIDFD))
-		*pidfd_out = pidfd;
-	return pid;
+	return syd_clone3(&args);
 }
 
 SYD_GCC_ATTR((warn_unused_result))
@@ -56,8 +62,9 @@ int syd_execv(const char *command,
 
 	if ((r = syd_set_death_sig(death_sig)) < 0) {
 		errno = -r;
-		syd_say_errno("Error setting parent death signal");
-		return r;
+		syd_say_errno("Error setting parent death signal to `%d'",
+			      death_sig);
+		/* Continue */
 	}
 
 	if (opt->pid_env_var) {
@@ -101,9 +108,9 @@ int syd_execv(const char *command,
 		return -save_errno;
 	}
 
-	if (opt->gid && setgid(opt->gid) < 0) {
+	if (opt->gid != -1 && setgid(opt->gid) < 0) {
 		int save_errno = errno;
-		syd_say_errno("Error changing group");
+		syd_say_errno("Error changing group to »%d«", opt->gid);
 		return -save_errno;
 	}
 
@@ -115,9 +122,9 @@ int syd_execv(const char *command,
 		return -save_errno;
 	}
 
-	if (opt->uid && setuid(opt->uid) < 0) {
+	if (opt->uid != -1 && setuid(opt->uid) < 0) {
 		int save_errno = errno;
-		syd_say_errno("Error changing user");
+		syd_say_errno("Error changing user to »%d«", opt->uid);
 		return -save_errno;
 	}
 
