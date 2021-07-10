@@ -3,6 +3,8 @@
 root=$(git rev-parse --show-toplevel)
 
 . "$root"/misc/prep-env.sh
+CFLAGS="-O0 -pipe -ggdb"
+export CFLAGS
 cd "$root"
 ./autogen.sh
 exec "$root"/./configure --prefix=/usr --sysconfdir=/etc \

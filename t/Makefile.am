@@ -1,5 +1,5 @@
 AM_MAKEFLAGS= --no-print-directory
-SUBDIRS= bin-wrappers test-bin test-data valgrind .
+SUBDIRS= bin-wrappers bin test-data valgrind .
 CLEANFILES= \
 	    gmon.out \
 	    *.gcda \
@@ -81,4 +81,4 @@ install-data-local:
 .PHONY: check-build
 check-build:
 	${MAKE} ${AM_MAKEFLAGS} ${check_SCRIPTS}
-	${MAKE} ${AM_MAKEFLAGS} -C test-bin check-build
+	${MAKE} ${AM_MAKEFLAGS} -C bin check-build

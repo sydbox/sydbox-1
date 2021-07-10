@@ -1454,7 +1454,7 @@ test_done () {
 #fi
 #export PATH
 #
-PATH="$TEST_DIRECTORY/sb:$TEST_DIRECTORY/bin-wrappers:$TEST_DIRECTORY/test-bin:$PATH"
+PATH="$TEST_DIRECTORY/sb:$TEST_DIRECTORY/bin-wrappers:$TEST_DIRECTORY/bin:$PATH"
 if test -n "$dump"
 then
 	SYDBOX_DUMP_ENABLED=t

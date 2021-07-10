@@ -281,7 +281,7 @@ static int box_check_ftype(const char *path, syscall_info_t *info)
 	}
 
 	if (stat_ret < 0)
-		return -errno;
+		return (errno == ENOENT || errno == EPERM) ? 0 : -errno;
 
 	if (info->ret_statbuf)
 		*info->ret_statbuf = buf;

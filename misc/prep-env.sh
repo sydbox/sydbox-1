@@ -1,8 +1,6 @@
 #!/bin/sh -x
 
 CFLAGS="-D__ALIP_WAS_HERE"
-# 2021.07.04 name change gecesi resitaline özel
-# hizlandirmak icin kapattik.
 #CFLAGS="${CFLAGS} -O0 -pipe -ggdb"
 CFLAGS="${CFLAGS} -Ofast -march=native -mtune=native"
 CFLAGS="${CFLAGS} -D__PINK_IS_BEHIND_THE_WALL"

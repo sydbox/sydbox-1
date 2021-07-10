@@ -1131,7 +1131,7 @@ AC_CONFIG_FILES([Makefile
 		 man/Makefile
 		 t/Makefile
 		 t/bin-wrappers/Makefile
-		 t/test-bin/Makefile
+		 t/bin/Makefile
 		 t/test-data/Makefile
 		 t/valgrind/Makefile])
 AC_OUTPUT
