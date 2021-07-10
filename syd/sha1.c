@@ -15,6 +15,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <syd/syd.h>
+#include <syd/sha1dc_syd.h>
+
+static syd_SHA_CTX globctx;
 
 int syd_fd_to_sha1_hex(int fd, char *hex)
 {
@@ -25,13 +28,13 @@ int syd_fd_to_sha1_hex(int fd, char *hex)
 	 *
 	 * char buf[PATH_TO_HEX_BUFSIZ];
 	 */
+	syd_hash_sha1_init(&globctx);
+
 	char *buf = malloc(PATH_TO_HEX_BUFSIZ * sizeof(char));
 	if (!buf)
 		return -ENOMEM;
 	ssize_t nread;
 	unsigned char hash[SYD_SHA1_RAWSZ];
-	syd_SHA_CTX ctx;
-	syd_hash_sha1_init(&ctx);
 	int r = 0;
 	for (;;) {
 		errno = 0;
@@ -51,12 +54,12 @@ int syd_fd_to_sha1_hex(int fd, char *hex)
 			r = -save_errno;
 			break;
 		}
-		syd_hash_sha1_update(&ctx, buf, r);
+		syd_hash_sha1_update(&globctx, buf, r);
 		r = 0;
 	}
 	close(fd);
 	if (r == 0) {
-		if ((r = syd_hash_sha1_final(&ctx, hash)) < 0)
+		if ((r = syd_hash_sha1_final(&globctx, hash)) < 0)
 			return r;
 		syd_strlcpy(hex, syd_hash_to_hex(hash), SYD_SHA1_HEXSZ + 1);
 	}

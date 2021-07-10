@@ -17,6 +17,13 @@
 #include "hex.h"
 #include "macro.h"
 
+/* The length in bytes and in hex digits of an object name (SHA-1 value). */
+#define SYD_SHA1_RAWSZ 20
+#define SYD_SHA1_HEXSZ (2 * SYD_SHA1_RAWSZ + 1)
+/* The block size of SHA-1. */
+//#define SYD_SHA1_BLKSZ 64
+#define SYD_MAX_HEXSZ SYD_SHA1_HEXSZ
+
 const signed char hexval_table[256] = {
 	 -1, -1, -1, -1, -1, -1, -1, -1,		/* 00-07 */
 	 -1, -1, -1, -1, -1, -1, -1, -1,		/* 08-0f */

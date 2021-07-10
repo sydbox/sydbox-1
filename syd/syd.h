@@ -61,22 +61,21 @@ pid_t syd_clone3(struct clone_args *args);
 /***
  * LibSyd: SHA1 Interface
  ***/
-#include <syd/sha1dc_sha1.h>
-#include <syd/sha1dc_syd.h>
-#include <syd/hex.h>
+
+/* The length in bytes and in hex digits of an object name (SHA-1 value). */
+#define SYD_SHA1_RAWSZ 20
+#define SYD_SHA1_HEXSZ (2 * SYD_SHA1_RAWSZ + 1)
+/* The block size of SHA-1. */
+#define SYD_SHA1_BLKSZ 64
+#define SYD_MAX_HEXSZ SYD_SHA1_HEXSZ
+
+char *syd_hash_to_hex_r(char *buffer, const unsigned char *hash);
+char *syd_hash_to_hex(const unsigned char *hash); /* static buffer result! */
+int syd_hex_to_bytes(unsigned char *binary, const char *hex, size_t len);
 
 int syd_fd_to_sha1_hex(int fd, char *hex);
 int syd_file_to_sha1_hex(FILE *file, char *hex);
 int syd_path_to_sha1_hex(const char *pathname, char *hex);
-
-void syd_hash_sha1_init(syd_SHA_CTX *ctx);
-void syd_hash_sha1_update(syd_SHA_CTX *ctx, const void *data, size_t len);
-int syd_hash_sha1_final(syd_SHA_CTX *ctx, unsigned char *hash)
-	SYD_GCC_ATTR((warn_unused_result));
-
-int syd_hex_to_bytes(unsigned char *binary, const char *hex, size_t len);
-char *syd_hash_to_hex_r(char *buffer, const unsigned char *hash);
-char *syd_hash_to_hex(const unsigned char *hash);
 
 #define syd_ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
 #define syd_str2(x) #x

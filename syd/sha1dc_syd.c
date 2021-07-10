@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <syd/syd.h>
+#include <syd/sha1dc_syd.h>
 
 /*
  * Same as SHA1DCFinal, but convert collision attack case into a verbose die().

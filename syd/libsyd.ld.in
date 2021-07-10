@@ -115,28 +115,10 @@ global:
 	/* sha1dc */
 	syd_hash_to_hex;
 	syd_hash_to_hex_r;
-	syd_hash_to_hex;
-	SHA1_CTX;
-	SHA1DCInit;
-	SHA1DCSetSafeHash;
-	SHA1DCSetUseUBC;
-	SHA1DCSetUseDetectColl;
-	SHA1DCSetDetectReducedRoundCollision;
-	SHA1DCSetCallback;
-	SHA1DCUpdate;
-	SHA1DCFinal;
-	syd_SHA1DCInit;
-	syd_SHA1DCFinal;
-	syd_SHA1DCUpdate;
+	syd_hex_to_bytes;
 	syd_fd_to_sha1_hex;
 	syd_file_to_sha1_hex;
 	syd_path_to_sha1_hex;
-	syd_hash_sha1_init;
-	syd_hash_sha1_update;
-	syd_hash_sha1_final;
-	syd_hex_to_bytes;
-	syd_hash_to_hex_r;
-	syd_hash_to_hex;
 	/* syd.h */
 	syd_about;
 	syd_clone3;

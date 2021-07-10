@@ -49,15 +49,15 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	state.c \
 	time.c \
 	unshare.c \
-	extfs.c
+	extfs.c \
+	sha1.c
 
 # SHA1DC
 libsyd_@LIBSYD_PC_SLOT@_la_SOURCES+= \
-	sha1.c \
-	sha1dc_sha1.h \
-	sha1dc_sha1.c \
-	sha1dc_ubc_check.h \
-	sha1dc_ubc_check.c \
+	$(srcdir)/sha1dc/lib/sha1.c \
+	$(srcdir)/sha1dc/lib/sha1.h \
+	$(srcdir)/sha1dc/lib/ubc_check.c \
+	$(srcdir)/sha1dc/lib/ubc_check.h \
 	sha1dc_syd.h \
 	sha1dc_syd.c \
 	hex.h \

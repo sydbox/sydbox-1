@@ -9,13 +9,6 @@
 #ifndef HEX_H
 #define HEX_H 1
 
-/* The length in bytes and in hex digits of an object name (SHA-1 value). */
-#define SYD_SHA1_RAWSZ 20
-#define SYD_SHA1_HEXSZ (2 * SYD_SHA1_RAWSZ + 1)
-/* The block size of SHA-1. */
-#define SYD_SHA1_BLKSZ 64
-#define SYD_MAX_HEXSZ SYD_SHA1_HEXSZ
-
 extern const signed char hexval_table[256];
 static inline unsigned int hexval(unsigned char c)
 {
@@ -35,7 +28,7 @@ static inline unsigned int hexval(unsigned char c)
  *   printf("%s -> %s", hash_to_hex(one), hash_to_hex(two));
  *   printf("%s -> %s", oid_to_hex(one), oid_to_hex(two));
  */
-char *hash_to_hex_r(char *buffer, const unsigned char *hash);
-char *hash_to_hex(const unsigned char *hash); /* static buffer result! */
+char *syd_hash_to_hex_r(char *buffer, const unsigned char *hash);
+char *syd_hash_to_hex(const unsigned char *hash); /* static buffer result! */
 
 #endif
