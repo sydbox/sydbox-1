@@ -108,11 +108,9 @@ Makefile
 # Specific ignores
 /data/sydbox.bashrc
 
-/man/sydbox.1
-/man/sydbox.html
-/man/sydfmt.1
-/man/sydfmt.html
-/man/sydbox.ent
+/man/*.1
+/man/*.html
+/man/*.ent
 
 # Sydb☮x-1
 /src/sydbox
