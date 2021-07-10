@@ -932,6 +932,9 @@ static void init_signal_sets(void)
 	sigaddset(&blocked_set, SIGTERM);
 	sigaddset(&blocked_set, SIGUSR1);
 	sigaddset(&blocked_set, SIGUSR2);
+	sigaddset(&blocked_set, SIGTTOU);
+	sigaddset(&blocked_set, SIGTTIN);
+	sigaddset(&blocked_set, SIGTSTP);
 }
 
 static inline void allow_signals(void)
@@ -1783,9 +1786,12 @@ out:
 		/* We handled quick cases, we are permitted to interrupt now. */
 		r = 0;
 		allow_signals();
-		if (interrupted && (r = handle_interrupt(interrupted)))
+		if (interrupted && (r = handle_interrupt(interrupted))) {
+			block_signals();
 			break;
+		}
 		interrupted = 0;
+		block_signals();
 	}
 
 	seccomp_notify_free(sydbox->request, sydbox->response);
