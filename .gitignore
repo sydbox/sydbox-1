@@ -163,13 +163,13 @@ tests/t[0-9][0-9][0-9]*
 /t/test-results
 /t/temporary*
 /t/trash*
-/t/test-bin/*-[0-9]
-/t/test-bin/syd-*
-!/t/test-bin/syd-*.[ch]
-!/t/test-bin/syd-*.p[ly]
-/t/test-bin/threads_execve
-/t/test-bin/sockmatchtest
-/t/test-bin/wildtest
+/t/bin/*-[0-9]
+/t/bin/syd-*
+!/t/bin/syd-*.[ch]
+!/t/bin/syd-*.p[ly]
+/t/bin/threads_execve
+/t/bin/sockmatchtest
+/t/bin/wildtest
 /t/valgrind/bin/*
 /t/valgrind/valgrind.sh
 
