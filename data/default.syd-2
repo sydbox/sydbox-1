@@ -127,7 +127,6 @@ denylist/read+/dev/kmsg
 denylist/read+/proc/cmdline
 denylist/read+/proc/config*
 denylist/read+/proc/version
-denylist/read+/proc/sys/***
 denylist/read+/etc/sysctl.conf
 denylist/read+/etc/sysctl.d/***
 

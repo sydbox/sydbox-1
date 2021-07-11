@@ -43,6 +43,8 @@ void config_init(void)
 	sydbox->config.box_static.magic_lock = LOCK_UNSET;
 
 	/* initialize default sandbox modes */
+	sydbox->config.box_static.mode.sandbox_read = SANDBOX_ALLOW;
+	sydbox->config.box_static.mode.sandbox_exec = SANDBOX_ALLOW;
 	sydbox->config.box_static.mode.sandbox_write = SANDBOX_BPF;
 	sydbox->config.box_static.mode.sandbox_network = SANDBOX_BPF;
 

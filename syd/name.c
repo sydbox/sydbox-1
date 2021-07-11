@@ -47,6 +47,52 @@ int syd_str_startswith(const char *s, const char *prefix, bool *ret_bool)
 	if (!strcasecmp(name, (NAME))) \
 		return (NUM); } while(0)
 
+const char *syd_name_arch(uint32_t arch)
+{
+	switch (arch) {
+	case SCMP_ARCH_NATIVE:
+		return "native";
+	case SCMP_ARCH_X86:
+		return "x86";
+	case SCMP_ARCH_X86_64:
+		return "x86_64";
+	case SCMP_ARCH_X32:
+		return "x32";
+	case SCMP_ARCH_ARM:
+		return "arm";
+	case SCMP_ARCH_AARCH64:
+		return "aarch64";
+	case SCMP_ARCH_MIPS:
+		return "mips";
+	case SCMP_ARCH_MIPS64:
+		return "mips64";
+	case SCMP_ARCH_MIPS64N32:
+		return "mips64n32";
+	case SCMP_ARCH_MIPSEL:
+		return "mipsel";
+	case SCMP_ARCH_MIPSEL64:
+		return "mipsel64";
+	case SCMP_ARCH_MIPSEL64N32:
+		return "mipsel64n32";
+	case SCMP_ARCH_PPC:
+		return "ppc";
+	case SCMP_ARCH_PPC64:
+		return "ppc64";
+	case SCMP_ARCH_PPC64LE:
+		return "ppc64le";
+	case SCMP_ARCH_S390:
+		return "s390";
+	case SCMP_ARCH_PARISC:
+		return "parisc";
+	case SCMP_ARCH_PARISC64:
+		return "parisc64";
+	case SCMP_ARCH_RISCV64:
+		return "riscv64";
+	default:
+		return "?";
+	}
+}
+
 int syd_name2errno(const char *errname)
 {
 	const char *name = errname;

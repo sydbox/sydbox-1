@@ -359,7 +359,6 @@ int sys_execveat(syd_process_t *current)
 	int r;
 
 	r = do_execve(current, true);
-
 #if 0
 # TODO: see comment in sys_execve
 	if (!r && current->abspath) {

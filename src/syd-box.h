@@ -968,6 +968,13 @@ void config_parse_spec(const char *filename) SYD_GCC_ATTR((nonnull(1)));
 
 void callback_init(void);
 
+
+int box_resolve_dirfd(syd_process_t *current, syscall_info_t *info,
+		      char **prefix, bool *badfd)
+	SYD_GCC_ATTR((nonnull(1,2,3,4)));
+int box_vm_read_path(syd_process_t *current, syscall_info_t *info,
+		     bool badfd, char **path, bool *null, bool *done)
+	SYD_GCC_ATTR((nonnull(1,2,4,5,6)));
 int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 		     unsigned rmode, char **res);
 int box_check_path(syd_process_t *current, syscall_info_t *info);

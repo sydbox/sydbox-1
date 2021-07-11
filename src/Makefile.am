@@ -249,6 +249,7 @@ syd_SOURCES+= \
 	     syscall-sock.c \
 	     syscall-special.c \
 	     syscall-filter.c \
+	     syscall-system.c \
 	     syscall.c \
 	     config.c
 

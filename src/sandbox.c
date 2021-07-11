@@ -56,10 +56,10 @@ static void box_report_violation_path_at(syd_process_t *current,
 
 	switch (arg_index) {
 	case 1:
-		violation(current, "%s(»%s«, prefix=`%s')", name, path, prefix);
+		violation(current, "%s(»%s«, prefix=»%s«)", name, path, prefix);
 		break;
 	case 2:
-		violation(current, "%s(?, »%s«, prefix=`%s')", name, path, prefix);
+		violation(current, "%s(?, »%s«, prefix=»%s«)", name, path, prefix);
 		break;
 	case 3:
 		violation(current, "%s(?, ?, '%s', prefix=»%s«)", name, path, prefix);
@@ -139,7 +139,9 @@ static void box_report_violation_sock(syd_process_t *current,
 	}
 }
 
-static char *box_resolve_path_special(const char *abspath, pid_t tid)
+SYD_GCC_ATTR((nonnull(3)))
+static int box_resolve_path_special(const char *abspath, pid_t tid,
+				    char **out)
 {
 	char *p;
 	const char *tail;
@@ -147,7 +149,6 @@ static char *box_resolve_path_special(const char *abspath, pid_t tid)
 	/*
 	 * Special case for a couple of special files under /proc
 	 */
-
 	p = NULL;
 	if (streq(abspath, "/proc/mounts")) {
 		/* /proc/mounts -> /proc/$tid/mounts */
@@ -162,7 +163,8 @@ static char *box_resolve_path_special(const char *abspath, pid_t tid)
 		xasprintf(&p, "/proc/%u%s", tid, tail);
 	}
 
-	return p;
+	*out = p;
+	return 0;
 }
 
 static int box_resolve_path_helper(const char *abspath, pid_t tid,
@@ -173,7 +175,8 @@ static int box_resolve_path_helper(const char *abspath, pid_t tid,
 
 	if (abspath && startswith(abspath, SYDBOX_MAGIC_PREFIX))
 		return 0;
-	p = box_resolve_path_special(abspath, tid);
+	if ((r = box_resolve_path_special(abspath, tid, &p)) < 0)
+		return r;
 	r = realpath_mode(p ? p : abspath, rmode, res);
 	if (p)
 		free(p);
@@ -325,6 +328,84 @@ static int box_check_ftype(const char *path, syscall_info_t *info)
 	return deny_errno;
 }
 
+SYD_GCC_ATTR((nonnull(1,2,3,4)))
+int box_resolve_dirfd(syd_process_t *current, syscall_info_t *info,
+		      char **prefix, bool *badfd)
+{
+	int r;
+
+	if (info->at_func) {
+		uint8_t fd_index;
+		if (info->arg_index == SYSCALL_ARG_MAX)
+			fd_index = 0;
+		else
+			fd_index = info->arg_index - 1;
+		r = path_prefix(current, fd_index, prefix);
+		if (r == -ESRCH) {
+			return -ESRCH;
+		} else if (r == -EBADF) {
+			/* Using a bad directory for absolute paths is fine!
+			 * System call will be denied after path_decode()
+			 */
+			*badfd = true;
+			return 0;
+		} else if (r < 0) {
+			r = deny(current, -r);
+			if (sydbox->config.violation_raise_fail)
+				violation(current, "%s()", current->sysname);
+			return r;
+		}
+	}
+
+	return 0;
+}
+
+SYD_GCC_ATTR((nonnull(1,2,4,5,6)))
+int box_vm_read_path(syd_process_t *current, syscall_info_t *info,
+		     bool badfd, char **path, bool *null, bool *done)
+{
+	int r;
+	char *p;
+
+	*null = false;
+	if (info->arg_index == SYSCALL_ARG_MAX) {
+		/* e.g: fchdir, getdents, getdents64 */
+		*null = true;
+	} else if ((r = path_decode(current, info->arg_index, &p)) < 0) {
+		/*
+		 * For EFAULT we assume path argument is NULL.
+		 * For some »at« suffixed functions, NULL as path
+		 * argument may be OK.
+		 */
+		if (r == -ESRCH) {
+			*done = true;
+			return r;
+		} else if (!(r == -EFAULT && info->at_func && info->null_ok)) {
+			r = deny(current, -r);
+			if (sydbox->config.violation_raise_fail)
+				violation(current, "%s()", current->sysname);
+			*done = true;
+			return r;
+		}
+	} else { /* r == 0 */
+		/* Careful, we may both have a bad fd and the path may be either
+		 * NULL or empty string! */
+		if (badfd && (!p || !*p || !path_is_absolute(p))) {
+			/* Bad directory for non-absolute path! */
+			r = deny(current, EBADF);
+			if (sydbox->config.violation_raise_fail)
+				violation(current, "%s(»%s«)",
+					  current->sysname,
+					  p);
+			*done = true;
+			return r;
+		}
+	}
+
+	*path = p;
+	return 0;
+}
+
 int box_check_path(syd_process_t *current, syscall_info_t *info)
 {
 	bool badfd;
@@ -348,60 +429,16 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 	}
 
 	/* Step 1: resolve file descriptor for »at« suffixed functions */
-	badfd = false;
-	if (info->at_func) {
-		uint8_t fd_index;
-		if (info->arg_index == SYSCALL_ARG_MAX)
-			fd_index = 0;
-		else
-			fd_index = info->arg_index - 1;
-		r = path_prefix(current, fd_index, &prefix);
-		if (r == -ESRCH) {
-			return -ESRCH;
-		} else if (r == -EBADF) {
-			/* Using a bad directory for absolute paths is fine!
-			 * System call will be denied after path_decode()
-			 */
-			badfd = true;
-		} else if (r < 0) {
-			r = deny(current, -r);
-			if (sydbox->config.violation_raise_fail)
-				violation(current, "%s()", current->sysname);
-			return r;
-		}
-	}
+	if ((r = box_resolve_dirfd(current, info, &prefix, &badfd)) < 0)
+		return r;
 
-	/* Step 2: read path */
-	if (info->arg_index == SYSCALL_ARG_MAX) {
-		/* e.g: fchdir, getdents, getdents64 */
+	/* Step 2: VM read path */
+	bool done, null;
+	if ((r = box_vm_read_path(current, info, badfd, &path, &null, &done)) < 0 &&
+	    done)
+		goto out;
+	if (null)
 		path = NULL;
-	} else if ((r = path_decode(current, info->arg_index, &path)) < 0) {
-		/*
-		 * For EFAULT we assume path argument is NULL.
-		 * For some »at« suffixed functions, NULL as path
-		 * argument may be OK.
-		 */
-		if (r == -ESRCH) {
-			goto out;
-		} else if (!(r == -EFAULT && info->at_func && info->null_ok)) {
-			r = deny(current, -r);
-			if (sydbox->config.violation_raise_fail)
-				violation(current, "%s()", current->sysname);
-			goto out;
-		}
-	} else { /* r == 0 */
-		/* Careful, we may both have a bad fd and the path may be either
-		 * NULL or empty string! */
-		if (badfd && (!path || !*path || !path_is_absolute(path))) {
-			/* Bad directory for non-absolute path! */
-			r = deny(current, EBADF);
-			if (sydbox->config.violation_raise_fail)
-				violation(current, "%s(»%s«)",
-					  current->sysname,
-					  path);
-			goto out;
-		}
-	}
 
 	/* Step 3: resolve path */
 resolve_path:
@@ -463,7 +500,8 @@ check_access:
 		bool cwd_ok = streq(p, P_CWD(current));
 		free(p);
 		if (!cwd_ok) {
-			//say("cwd mismatch, retrying box resolve path!");
+			sayv("Working directory mismatch, "
+			     "retrying sandbox resolve path!");
 			free(abspath);
 			goto resolve_path;
 		}
@@ -471,7 +509,7 @@ check_access:
 
 	if (info->safe && !sydbox->config.violation_raise_safe) {
 		/* ignore safe system call */
-		r = deny(current, ECANCELED/*deny_errno*/);
+		r = deny(current, deny_errno);
 		goto out;
 	}
 

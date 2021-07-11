@@ -126,6 +126,7 @@ global:
 	syd_debug_set;
 	syd_debug_set_fd;
 	syd_execv;
+	syd_name_arch;
 	syd_name_errno;
 	syd_name_namespace;
 	syd_set_death_sig;

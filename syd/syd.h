@@ -124,6 +124,7 @@ int syd_debug_set_fd(const int fd);
 /***
  * libsyd: Stringify constants
  ***/
+const char *syd_name_arch(uint32_t arch);
 const char *syd_name_errno(int err_no);
 int syd_name2errno(const char *errname);
 const char *syd_name_namespace(int namespace);

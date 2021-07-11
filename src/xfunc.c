@@ -78,6 +78,16 @@ void vsay(FILE *fp, const char *fmt, va_list ap, char level)
 		fputs(SYD_RESET, fp);
 }
 
+void warn(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vsay(stderr, fmt, ap, 'w');
+	va_end(ap);
+	fputc('\n', stderr);
+}
+
 void say(const char *fmt, ...)
 {
 	va_list ap;
