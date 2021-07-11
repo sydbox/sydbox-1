@@ -396,11 +396,11 @@ void dump(enum dump what, ...)
 					J(id)"%llu,"
 					J(ts)"%llu,"
 					J(event)"{\"id\":%u,\"name\":\"%s☮☮ps%s\"},"
-					J(proc)"{\"pid\":%s%d%s,comm:%s\"%s\"%s,"
-						"prog:%s\"%s\"%s,"
-						"hash:%s\"%s\"%s,"
-						"cwd:%s\"%s\"%s,"
-						"proc_cwd:%s\"%s\"%s},"
+					J(proc)"{\"pid\":%s%d%s,\"comm\":%s\"%s\"%s,"
+						"\"prog\":%s\"%s\"%s,"
+						"\"hash\":%s\"%s\"%s,"
+						"\"cwd\":%s\"%s\"%s,"
+						"\"proc_cwd\":%s\"%s\"%s},"
 					J(sys)"\"%s%s%s\","
 					J(syd)"\"%s%s%s\","
 					J(cmd)"\"%s%s%s\","
@@ -518,9 +518,9 @@ void dump(enum dump what, ...)
 		fprintf(fp, ","
 			J(notif)"{"
 			J(id)"%llu,"
-			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
-				"prog:\"%s\","
-				"hash:\"%s\"},"
+			J(proc)"{\"pid\":%"PRIu32",\"comm\":\"%s\","
+				"\"prog\":\"%s\","
+				"\"hash\":\"%s\"},"
 			J(data)"{"
 			J(nr)"%d,"
 			J(arch)"%"PRIu32","
@@ -577,9 +577,9 @@ void dump(enum dump what, ...)
 			J(id)"%llu,"
 			J(ts)"%llu,"
 			J(event)"{\"id\":%u,\"name\":\"%s\"},"
-			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
-				"prog:\"%s\","
-				"hash:\"%s\"},"
+			J(proc)"{\"pid\":%"PRIu32",\"comm\":\"%s\","
+				"\"prog\":\"%s\","
+				"\"hash\":\"%s\"},"
 			J(sig)"%d}",
 			id++, (unsigned long long)now,
 			DUMP_KILL, "kill",
@@ -667,9 +667,9 @@ void dump(enum dump what, ...)
 		fprintf(fp, "{"
 			J(id)"%llu,"
 			J(ts)"%llu,"
-			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
-				"prog:\"%s\","
-				"hash:\"%s\"},"
+			J(proc)"{\"pid\":%"PRIu32",\"comm\":\"%s\","
+				"\"prog\":\"%s\","
+				"\"hash\":\"%s\"},"
 			J(event)"{\"id\":%u,\"name\":\"%s\"}}",
 			id++, (unsigned long long)now,
 			pid, j_comm, j_prog,
@@ -718,9 +718,9 @@ void dump(enum dump what, ...)
 			J(id)"%llu,"
 			J(ts)"%llu,"
 			J(event)"{\"id\":%u,\"name\":\"exit\"},"
-			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
-				"prog:\"%s\","
-				"hash:\"%s\"},"
+			J(proc)"{\"pid\":%"PRIu32",\"comm\":\"%s\","
+				"\"prog\":\"%s\","
+				"\"hash\":\"%s\"},"
 			J(code)"%d,"
 			J(stat)"{"
 				J(total)"%zu,"
@@ -759,9 +759,9 @@ void dump(enum dump what, ...)
 			J(id)"%llu,"
 			J(ts)"%llu,"
 			J(event)"{\"id\":%u,\"name\":\"sys\"},"
-			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
-				"prog:\"%s\","
-				"hash:\"%s\"},"
+			J(proc)"{\"pid\":%"PRIu32",\"comm\":\"%s\","
+				"\"prog\":\"%s\","
+				"\"hash\":\"%s\"},"
 			J(name)"\"%s\","
 			J(args)"[%ld,%ld,%ld,%ld,%ld,%ld],"
 			J(repr)"[\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"]}",
@@ -808,9 +808,9 @@ void dump(enum dump what, ...)
 			J(id)"%llu,"
 			J(ts)"%llu,"
 			J(event)"{\"id\":%u,\"name\":\"chdir\"},"
-			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
-				"prog:\"%s\","
-				"hash:\"%s\"}",
+			J(proc)"{\"pid\":%"PRIu32",\"comm\":\"%s\","
+				"\"prog\":\"%s\","
+				"\"hash\":\"%s\"}",
 			id++, (unsigned long long)now, what,
 			pid, j_comm, j_prog,
 			p ? p->hash : "?");
@@ -859,9 +859,9 @@ void dump(enum dump what, ...)
 			J(id)"%llu,"
 			J(ts)"%llu,"
 			J(event)"{\"id\":%u,\"name\":\"exec\"},"
-			J(proc)"{\"pid\":%"PRIu32",comm:\"%s\","
-				"prog:\"%s\","
-				"hash:\"%s\"},"
+			J(proc)"{\"pid\":%"PRIu32",\"comm\":\"%s\","
+				"\"prog\":\"%s\","
+				"\"hash\":\"%s\"},"
 			J(cmd)"\"%s\"}",
 			id++, (unsigned long long)now, what,
 			execve_pid, j_comm, j_cmdline,
@@ -908,12 +908,12 @@ void dump(enum dump what, ...)
 			J(ts)"%llu,"
 			J(event)"{\"id\":%u,\"name\":\"exec_mt\"},"
 			J(proc)"{"
-			J(leader)"{\"pid\":%"PRIu32",comm:\"%s\","
-				"prog:\"%s\","
-				"hash:\"%s\"},"
-			J(execve)"{\"pid\":%"PRIu32",comm:\"%s\","
-				"prog:\"%s\","
-				"hash:\"%s\"}},",
+			J(leader)"{\"pid\":%"PRIu32",\"comm\":\"%s\","
+				"\"prog\":\"%s\","
+				"\"hash\":\"%s\"},"
+			J(execve)"{\"pid\":%"PRIu32",\"comm\":\"%s\","
+				"\"prog\":\"%s\","
+				"\"hash\":\"%s\"}},",
 			id++, (unsigned long long)now, what,
 			leader,
 			j_leader_comm, j_leader_prog,
