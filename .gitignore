@@ -118,6 +118,7 @@ Makefile
 /src/sydfmt
 /src/sydbox-dump
 /src/shoebox
+/src/rc/*.tab.h
 /t/sydtest
 /t/bin-wrappers/sydbox
 /t/bin-wrappers/sydbox-dump

@@ -73,10 +73,17 @@ void set_nice(int new_nice) { nice_inc = new_nice; }
 void set_arg0(const char *new_arg0) { arg0 = new_arg0; }
 void set_root_directory(const char *root) { root_directory = root; }
 void set_working_directory(char *wd) {
+	sandbox_t *box = box_current(NULL);
+
 	if (streq(wd, "tmp")) {
 		char *tmpl, *linkpath;
-		xasprintf(&tmpl, "/tmp/syd-%u-%u-%u-XXXXXX",
-			  SYDBOX_API_VERSION, getuid(), getpid());
+		xasprintf(&tmpl, "/tmp/syd-%u-%c%c%c%c-%u-%u-XXXXXX",
+			  SYDBOX_API_VERSION,
+			  sandbox_mode_toc(box->mode.sandbox_read),
+			  sandbox_mode_toc(box->mode.sandbox_write),
+			  sandbox_mode_toc(box->mode.sandbox_exec),
+			  sandbox_mode_toc(box->mode.sandbox_network),
+			  getuid(), getpid());
 		free(wd);
 		wd = xstrdup(mkdtemp(tmpl));
 		xasprintf(&linkpath, "%s/sydbox", wd);

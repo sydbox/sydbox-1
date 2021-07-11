@@ -57,11 +57,35 @@ static unsigned os_release;
 static struct sigaction child_sa;
 
 static char *sydsh_argv[] = {
-	"/usr/bin/env",
-	"bash",
+	"/bin/bash",
 	"--rcfile",
 	DATADIR"/"PACKAGE"/sydbox.bashrc",
 	"-i",
+	"-O","autocd",
+	"-O","cdable_vars",
+	"-O","cdspell",
+	"-O","checkhash",
+	"-O","checkjobs",
+	"-O","checkwinsize",
+	"+O","cmdhist",
+	"-O","compat44",
+	"-O","direxpand",
+	"-O","dirspell",
+	"-O","dotglob",
+	"-O","execfail",
+	"-O","extglob",
+	"-O","extquote",
+	"-O","globstar",
+	"-O","gnu_errfmt",
+	"+O","histappend",
+	"+O","histreedit",
+	"+O","histverify",
+	"-O","huponexit",
+	"-O","login_shell",
+	"+O","mailwarn",
+	"-O","nullglob",
+	"+O","progcomp",
+	"+O","progcomp_alias",
 	NULL
 };
 
