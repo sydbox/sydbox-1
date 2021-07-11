@@ -75,9 +75,10 @@ static void dump_errno(int err_no)
 }
 
 static void dump_format(const char *argv0, const char *pathname,
-			const char *runas, const char *hash,
+			const char *runas,
 			const char*const*arch)
 {
+	int r;
 	char *b_argv0 = NULL;
 	char *b_runas = NULL;
 	char *b_path = NULL;
@@ -125,6 +126,20 @@ static void dump_format(const char *argv0, const char *pathname,
 	j_arch_ptr[0] = ']';
 	j_arch_ptr[1] = '\0';
 
+	/* Step 3: Calculate the SHA1 checksum of the
+	 * pathname to the command to be executed by
+	 * SydB☮x. This should be enabled with the
+	 * magic command core/trace/program_checksum
+	 * by setting it to 1 or 2.
+	 */
+	if (magic_query_trace_program_checksum(NULL) > 0) {
+		if (pathname && (r = syd_path_to_sha1_hex(pathname, sydbox->hash)) < 0) {
+			errno = -r;
+			say_errno("can't calculate checksum of file "
+				  "»%s«", pathname);
+		}
+	}
+
 	fprintf(fp, "{"
 		J(id)"%llu,"
 		J(syd)"%d,"
@@ -135,7 +150,7 @@ static void dump_format(const char *argv0, const char *pathname,
 		J(arch)"%s}",
 		id++, SYDBOX_API_VERSION,
 		j_argv0, j_path, j_runas,
-		hash, j_arch);
+		sydbox->hash, j_arch);
 
 	if (b_argv0 && j_argv0 && j_argv0[0])
 		free(b_argv0);
@@ -332,9 +347,8 @@ void dump(enum dump what, ...)
 		const char *path = va_arg(ap, const char *);
 		const char *runas = va_arg(ap, const char *);
 		const char *argv0 = va_arg(ap, const char *);
-		const char *hash = va_arg(ap, const char *);
 		const char *const*arch = va_arg(ap, const char *const*);
-		dump_format(argv0, path, runas, hash, arch);
+		dump_format(argv0, path, runas, arch);
 		dump_cycle();
 		va_end(ap);
 		setenv("SYDBOX_DUMP", "☮", 1);

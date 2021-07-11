@@ -271,7 +271,7 @@ static const char *const syd_system_denylist[52] = {
 	"***/home/*/.netrc*",
 	"***/home/*/.password-store/***",
 	"***/home/*/.ssh/id_[dr]sa",
-	"***/home/*/.ssh/id_ecdsa",
+	"***/home/*/.ssh/id_ecdsa*",
 	"***/proc/*/*map*",
 	"***/proc/*/*stat*",
 	"***/proc/*/map_files/***",

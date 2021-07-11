@@ -1825,11 +1825,11 @@ static syd_process_t *startup_child(int argc, char **argv)
 	pid_t pid = 0;
 	syd_process_t *current;
 
-	current = new_process_or_kill(0);
+	current = new_process_or_kill(pid);
 	/* Happy birthday, child.
 	 * Let's validate your PID manually.
 	 */
-	sydbox->execve_pid = 0;
+	sydbox->execve_pid = pid;
 	sydbox->execve_wait = true;
 	sydbox->pid_valid = PID_INIT_VALID;
 
@@ -1846,11 +1846,12 @@ static syd_process_t *startup_child(int argc, char **argv)
 	} else {
 		strlcpy(sydbox->hash, "<noexec>", sizeof("<noexec>"));
 	}
-	memcpy(current->hash, sydbox->hash,
-	       sizeof(char) * (SYD_SHA1_HEXSZ + 1));
 
 	/* Initialize Secure Computing */
 	seccomp_setup();
+
+	/* All ready, initialise dump */
+	dump(DUMP_INIT, pathname, argv[0], get_arg0(), arch_argv);
 
 	/* We may free the elements of arch_argv now,
 	 * they are no longer required.
@@ -1900,12 +1901,14 @@ startup_child:
 
 		pid = sydbox->execve_pid;
 		current->pid = pid;
+#if 0
 		proc_validate(pid);
 		init_process_data(current, NULL, false); /* calls proc_cwd */
 		strlcpy(current->comm, sydbox->program_invocation_name,
 			SYDBOX_PROC_MAX);
 		syd_proc_cmdline(sydbox->pfd, current->prog, LINE_MAX-1);
 		current->prog[LINE_MAX-1] = '\0';
+#endif
 
 		if (!get_arg0())
 			set_arg0(process_comm(NULL, argv[0]));
@@ -2035,14 +2038,6 @@ seccomp_init:
 	current->pid = pid;
 	current->ppid = sydbox->sydbox_pid;
 	sydbox->execve_pid = pid;
-
-	sydbox->execve_pid = pid;
-	proc_validate(pid);
-	init_process_data(current, NULL, false); /* calls proc_cwd */
-	process_add(current);
-
-	/* All ready, initialise dump */
-	dump(DUMP_INIT, pathname, argv[0], get_arg0(), current->hash, arch_argv);
 
 	return current;
 }
@@ -2826,6 +2821,9 @@ int main(int argc, char **argv)
 	/* Seccomp User Notify Mode */
 	child = startup_child(my_argc, my_argv);
 	pid = child->pid;
+	sydbox->execve_pid = pid;
+	proc_validate(pid);
+	init_process_data(child, NULL, false); /* calls proc_cwd */
 	/* Notify the user about the startup. */
 	dump(DUMP_STARTUP, pid);
 	/* All good.
