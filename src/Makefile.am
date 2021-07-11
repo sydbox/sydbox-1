@@ -1,4 +1,4 @@
-H = $(top_builddir)/misc/syd-hilite
+#H = $(top_builddir)/misc/syd-hilite
 AM_MAKEFLAGS= --no-print-directory
 CLEANFILES= \
 	    gmon.out \
