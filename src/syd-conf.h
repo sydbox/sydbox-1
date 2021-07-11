@@ -285,7 +285,7 @@ static const char *const syd_system_denylist[55] = {
 	"***/*/setgroups",
 	"***/*/syscall",
 	"***/*/task",
-	"***/config*",
+	"***/proc/config*",
 	"***/cpuinfo",
 	"***/iomem",
 	"***/kallsyms",
