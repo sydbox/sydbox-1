@@ -37,7 +37,7 @@ static int magic_query_sandbox(enum sandbox_type t, syd_process_t *current)
 		assert_not_reached();
 	}
 
-	return MAGIC_BOOL(mode != SANDBOX_OFF);
+	return MAGIC_BOOL(mode != SANDBOX_ALLOW);
 }
 
 static int magic_set_sandbox(enum sandbox_type t, const char *str, syd_process_t *current)
@@ -46,8 +46,15 @@ static int magic_set_sandbox(enum sandbox_type t, const char *str, syd_process_t
 	sandbox_t *box;
 
 	r = sandbox_mode_from_string(str);
-	if (r < 0)
+	if (r < 0) {
 		return MAGIC_RET_INVALID_VALUE;
+	} else if (r == SANDBOX_OFF) {
+		say("Sandbox mode »off« is disabled for security.");
+		say("Use »bpf« for kernel-space sandboxing.");
+		say("Use »allow« or »deny« for kernel & user-space sandboxing");
+		say("The sandbox modes »bpf« and »deny« are recommended.");
+		return MAGIC_RET_INVALID_VALUE;
+	}
 
 	box = box_current(current);
 	switch (t) {
