@@ -68,7 +68,7 @@ static const char *const syd_system_denylist[74] = {
 	"**/proc/*/map*",
 	"**/map_files/***",
 	"**/mem",
-	"**/mount*",
+	"**/mounts",
 	"**/oom*",
 	"**/setgroups",
 	"**/syscall",
