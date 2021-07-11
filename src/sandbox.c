@@ -139,9 +139,7 @@ static void box_report_violation_sock(syd_process_t *current,
 	}
 }
 
-SYD_GCC_ATTR((nonnull(3)))
-static int box_resolve_path_special(const char *abspath, pid_t tid,
-				    char **out)
+static char *box_resolve_path_special(const char *abspath, pid_t tid)
 {
 	char *p;
 	const char *tail;
@@ -162,9 +160,7 @@ static int box_resolve_path_special(const char *abspath, pid_t tid,
 		tail = abspath + STRLEN_LITERAL("/proc/self");
 		xasprintf(&p, "/proc/%u%s", tid, tail);
 	}
-
-	*out = p;
-	return 0;
+	return p;
 }
 
 static int box_resolve_path_helper(const char *abspath, pid_t tid,
@@ -175,8 +171,7 @@ static int box_resolve_path_helper(const char *abspath, pid_t tid,
 
 	if (abspath && startswith(abspath, SYDBOX_MAGIC_PREFIX))
 		return 0;
-	if ((r = box_resolve_path_special(abspath, tid, &p)) < 0)
-		return r;
+	p = box_resolve_path_special(abspath, tid);
 	r = realpath_mode(p ? p : abspath, rmode, res);
 	if (p)
 		free(p);
