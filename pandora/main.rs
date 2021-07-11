@@ -387,7 +387,7 @@ fn command_box<'a>(
         cmd.insert(0, "--export");
     }
     cmd.insert(0, bin);
-    // eprintln!("executing `{:?}'", cmd);
+    // eprintln!("executing »{:?}«", cmd);
     let cmdline: Vec<CString> = cmd
         .iter()
         .map(|c| CString::new(c.as_bytes()).unwrap())
@@ -396,11 +396,11 @@ fn command_box<'a>(
     match nix::unistd::execvp(&cmdline[0], &cmdline) {
         Ok(_) => 0,
         Err(nix::Error::Sys(errno)) => {
-            eprintln!("error executing `{:?}': {}", cmdline, errno);
+            eprintln!("error executing »{:?}«: {}", cmdline, errno);
             1
         }
         Err(error) => {
-            eprintln!("error executing `{:?}': {:?}", cmdline, error);
+            eprintln!("error executing »{:?}«: {:?}", cmdline, error);
             1
         }
     }
@@ -415,6 +415,13 @@ fn command_profile<'b>(bin: &'b str, cmd: &[&'b str], output_path: &'b str, path
         }
     };
 
+    eprintln!("syd --dry-run \
+-y core/sandbox/read:deny \
+-y core/sandbox/write:deny \
+-y core/sandbox/exec:deny \
+-y core/sandbox/network:deny \
+-y core/restrict/shared_memory_writable:0 \
+-d 2 -- {:?}", cmd);
     let mut child = Command::new(bin)
         .arg("--dry-run")
         .arg("-y")
@@ -441,7 +448,7 @@ fn command_profile<'b>(bin: &'b str, cmd: &[&'b str], output_path: &'b str, path
     let r = do_inspect(input, output_path, path_limit);
 
     child.wait().expect("failed to wait for sydb☮x");
-    eprintln!("success writing output to `{}' dump", output_path);
+    eprintln!("success writing output to »{}« dump", output_path);
     eprintln!("Edit the file ẁith your editor as necessary.");
     eprintln!("Then use 'pand☮rⒶ box -c \"{}\" <command>'", output_path);
     eprintln!("To run the command under SydB☮x.");
@@ -474,11 +481,11 @@ fn main() {
         .about(built_info::PKG_DESCRIPTION)
         .after_help(&*format!(
             "\
-If no subcommands are given, Pand☮rⒶ executes a shell with the argument `-l'.
+If no subcommands are given, Pand☮rⒶ executes a shell with the argument »-l«.
 To figure out the shell first the SHELL environment variable is checked.
-If this is not set, the default shell is `/bin/sh'.
+If this is not set, the default shell is »/bin/sh«.
 
-In login shell mode, if the file `/etc/pandora.syd-2' exists,
+In login shell mode, if the file »/etc/pandora.syd-2« exists,
 Pand☮rⒶ will tell SydB☮x to use this file as configuration.
 
 In login shell mode, SydB☮x uses the PⒶludis profile as the default set of configuration values.
@@ -701,7 +708,7 @@ Takes one extra argument which must be an __absolute__ path.
 
 # Miscellaneous commands
 - `lock`: Lock magic commands. After calling this none of the
-  `sandbox` commands will work. You don't need to call this, see
+  »sandbox` commands will work. You don«t need to call this, see
   `exec_lock`.
 - `exec_lock`: Lock magic commands upon `execve()`.
 - `wait_eldest`: By default, sydb☮x waits for all traced processes
@@ -770,7 +777,7 @@ So you may use LOOPBACK@0 instead of inet:127.0.0.0/8@0
             } else {
                 clap::Error::with_description(
                     &format!(
-                        "Invalid value `{}' for --export: use bpf, pfc",
+                        "Invalid value »{}« for --export: use bpf, pfc",
                         export_format
                     ),
                     clap::ErrorKind::InvalidValue,
@@ -805,7 +812,7 @@ So you may use LOOPBACK@0 instead of inet:127.0.0.0/8@0
             Ok(value) => value,
             Err(error) => {
                 clap::Error::with_description(
-                    &format!("Invalid value `{}' for --limit: {}", value, error),
+                    &format!("Invalid value »{}« for --limit: {}", value, error),
                     clap::ErrorKind::InvalidValue,
                 )
                 .exit();
@@ -818,7 +825,7 @@ So you may use LOOPBACK@0 instead of inet:127.0.0.0/8@0
             Ok(value) => value,
             Err(error) => {
                 clap::Error::with_description(
-                    &format!("Invalid value `{}' for --limit: {}", value, error),
+                    &format!("Invalid value »{}« for --limit: {}", value, error),
                     clap::ErrorKind::InvalidValue,
                 )
                 .exit();
@@ -945,8 +952,8 @@ allowlist/network/connect+unix:/var/lib/sss/pipes/nss
 
 ###
 # Magic entries generated for:
-# Program: `{}'
-# Command Line: `{}'
+# Program: »{}«
+# Command Line: »{}«
 ###
 ",
         built_info::PKG_VERSION,
@@ -954,7 +961,7 @@ allowlist/network/connect+unix:/var/lib/sss/pipes/nss
         program_invocation_name,
         program_command_line
     )
-    .unwrap_or_else(|_| panic!("failed to print header to output `{}'", output_path));
+    .unwrap_or_else(|_| panic!("failed to print header to output »{}«", output_path));
 
     /* Step 2: Print out magic entries */
     let mut list = Vec::from_iter(magic);
@@ -964,7 +971,7 @@ allowlist/network/connect+unix:/var/lib/sss/pipes/nss
     for entry in list {
         writeln!(&mut output, "{}+{}", entry.0, entry.1).unwrap_or_else(|_| {
             panic!(
-                "failed to print entry `{:?}' to output `{}'",
+                "failed to print entry »{:?}« to output »{}«",
                 entry, output_path
             )
         });
@@ -974,7 +981,7 @@ allowlist/network/connect+unix:/var/lib/sss/pipes/nss
         &mut output,
         "\n# Lock configuration\ncore/trace/magic_lock:on"
     )
-    .unwrap_or_else(|_| panic!("failed to lock configuration for output `{}'", output_path));
+    .unwrap_or_else(|_| panic!("failed to lock configuration for output »{}«", output_path));
 
     0
 }
@@ -1089,7 +1096,7 @@ fn spawn_sydbox_shell(env_shell: bool, magic_lock: bool, args: &[&str]) {
         .spawn()
         .unwrap_or_else(|e| {
             eprintln!("[0;1;31;91mFailed to spawn SydB☮x shell: {}[0m", e);
-            eprintln!("[0;1;31;91mIs `syd' in your PATH?[0m");
+            eprintln!("[0;1;31;91mIs »syd« in your PATH?[0m");
             std::process::exit(1);
         });
     child.wait().expect("failed to wait for shell");
@@ -1334,7 +1341,7 @@ fn parse_json_line(
     path_limit: u8,
 ) -> (Option<String>, Option<String>, Option<SystemTime>) {
     match serde_json::from_str(&serialized)
-        .unwrap_or_else(|e| panic!("failed to parse `{}': {}", serialized, e))
+        .unwrap_or_else(|e| panic!("failed to parse line: »{}«", e))
     {
         Dump::Init {
             id: 0,
@@ -1342,7 +1349,7 @@ fn parse_json_line(
             name,
             ..
         } => {
-            eprintln!("success opening input to parse `{}' dump", name);
+            eprintln!("success opening input to parse »{}« dump", name);
             return (Some(name), None, None);
         }
         Dump::StartUp { id: 1, cmd, ts, .. } => {
@@ -1451,7 +1458,7 @@ fn open_input(path_or_stdin: &str) -> Box<dyn std::io::BufRead> {
             match OpenOptions::new().read(true).open(path) {
                 Ok(file) => file,
                 Err(error) => {
-                    eprintln!("failed to open file `{}': {}", path, error);
+                    eprintln!("failed to open file »{}«: {}", path, error);
                     std::process::exit(1);
                 }
             },
@@ -1466,7 +1473,7 @@ fn open_output(path_or_stdout: &str) -> Box<dyn std::io::Write> {
             match OpenOptions::new().write(true).create_new(true).open(path) {
                 Ok(file) => file,
                 Err(error) => {
-                    eprintln!("failed to open file `{}': {}", path, error);
+                    eprintln!("failed to open file »{}«: {}", path, error);
                     std::process::exit(1);
                 }
             },
