@@ -166,6 +166,7 @@ SYD_CFLAGS_OPT="\
 -march=native \
 -mtune=native \
 -fno-omit-frame-pointer \
+-fPIE \
 -D_SYD_OPT_OK \
 "
 SYD_CFLAGS_SAFE=" \

@@ -430,12 +430,13 @@ int main(int argc, char **argv)
 		case 'o':
 			if (output_path)
 				free(output_path);
-			if (strcmp(optarg, "-"))
+			if (strcmp(optarg, "-")) {
 				output_path = strdup(optarg);
-			else
-				asprintf(&output_path, "%s/%s",
-					 home ? home : "./",
-					 SYD_SHA1_CHECK_DEF);
+			} else if (asprintf(&output_path, "%s/%s",
+					    home ? home : "./",
+					    SYD_SHA1_CHECK_DEF) < 0) {
+				output_path = NULL;
+			}
 			break;
 		default:
 			usage(stderr, 1);
