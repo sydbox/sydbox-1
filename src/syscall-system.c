@@ -52,13 +52,48 @@ struct open_info {
 	enum syd_stat syd_mode;
 };
 
+void oops(syd_process_t *current,
+	  const char *needle, const char *denymatch)
+{
+	sandbox_t *box = box_current(current);
+
+	say(ANSI_DARK_RED"💀 !!!ALERT!! 💀"
+	    ANSI_DARK_GREEN" »"
+	    ANSI_DARK_CYAN"%s"
+	    ANSI_DARK_GREEN"« matches system denylist pattern »"
+	    ANSI_DARK_YELLOW"%s"ANSI_DARK_GREEN"«!",
+	    needle, denymatch);
+	say(ANSI_DARK_RED"CⒶll: »"ANSI_DARK_CYAN
+	    "%s(%ld,%ld,%ld,%ld,%ld,%ld)"
+	    SYD_WARN"«",
+	    current->sysname,
+	    current->args[0], current->args[1], current->args[2],
+	    current->args[3], current->args[4], current->args[5]);
+	say(ANSI_DARK_RED"C☮mm: »"ANSI_DARK_CYAN"%s"SYD_WARN"«",
+	    current->comm);
+	say(ANSI_DARK_RED"Pr☮g: »"ANSI_DARK_CYAN"%s"SYD_WARN"«",
+	    current->prog);
+	say(ANSI_DARK_RED"Sb☮x: »"ANSI_DARK_GREEN"%c%c%c%c"SYD_WARN"«",
+	    sandbox_mode_toc(box->mode.sandbox_read),
+	    sandbox_mode_toc(box->mode.sandbox_write),
+	    sandbox_mode_toc(box->mode.sandbox_exec),
+	    sandbox_mode_toc(box->mode.sandbox_network));
+	say(ANSI_DARK_RED"Ⓐrch: »"ANSI_DARK_GREEN"%s"SYD_WARN"«",
+	    syd_name_arch(current->arch));
+	say(ANSI_DARK_RED"HⒶsh: »"ANSI_DARK_GREEN"%s"SYD_WARN"«", current->hash);
+	say(ANSI_DARK_RED"Pr☮c: "ANSI_DARK_YELLOW"pid »%d« tgid »%d« "
+	    "ppid »%d« exec »%d«"SYD_WARN,
+	    current->pid,
+	    current->tgid,
+	    current->ppid,
+	    sydbox->execve_pid);
+}
+
 SYD_GCC_ATTR((nonnull(1,2,3)))
 int syd_system_breach_attempt(syd_process_t *current,
 			      const char *abspath,
 			      const char *pattern)
 {
-	sandbox_t *box = box_current(current);
-
 	/*
 	 * Read program command line.
 	 */
@@ -91,61 +126,38 @@ skip_hash_calc:
 		 * EOWNERDEAD to indicate what's awaiting the user...
 		 */
 		say("hejhej :) what's up? are Y☮u alright?");
+		oops(current, abspath, pattern);
 		++sydbox->breach_attempts;
 		break;
 	case 1:
-		say(ANSI_DARK_RED"💀 !!!ALERT!! 💀"
-		    ANSI_DARK_GREEN" »"
-		    ANSI_DARK_CYAN"%s"
-		    ANSI_DARK_GREEN"« matches system denylist pattern »"
-		    ANSI_DARK_YELLOW"%s"ANSI_DARK_GREEN"«!",
-		    abspath, pattern);
-		say(ANSI_DARK_RED"CⒶll: »"ANSI_DARK_CYAN
-		    "%s(%ld,%ld,%ld,%ld,%ld,%ld)"
-		    SYD_WARN"«",
-		    current->sysname,
-		    current->args[0], current->args[1], current->args[2],
-		    current->args[3], current->args[4], current->args[5]);
-		say(ANSI_DARK_RED"C☮mm: »"ANSI_DARK_CYAN"%s"SYD_WARN"«",
-		    current->comm);
-		say(ANSI_DARK_RED"Pr☮g: »"ANSI_DARK_CYAN"%s"SYD_WARN"«",
-		    current->prog);
-		say(ANSI_DARK_RED"Sb☮x: »"ANSI_DARK_GREEN"%c%c%c%c"SYD_WARN"«",
-		    sandbox_mode_toc(box->mode.sandbox_read),
-		    sandbox_mode_toc(box->mode.sandbox_write),
-		    sandbox_mode_toc(box->mode.sandbox_exec),
-		    sandbox_mode_toc(box->mode.sandbox_network));
-		say(ANSI_DARK_RED"Ⓐrch: »"ANSI_DARK_GREEN"%s"SYD_WARN"«",
-		    syd_name_arch(current->arch));
-		say(ANSI_DARK_RED"HⒶsh: »"ANSI_DARK_GREEN"%s"SYD_WARN"«", current->hash);
-		say(ANSI_DARK_RED"Pr☮c: "ANSI_DARK_YELLOW"pid »%d« tgid »%d« "
-		    "ppid »%d« exec »%d«"SYD_WARN,
-		    current->pid,
-		    current->tgid,
-		    current->ppid,
-		    sydbox->execve_pid);
-		warn("Sending consecutive INT & KILL signals to the process with id "
-		     "»%d«...", current->pid);
+		oops(current, abspath, pattern);
+		warn("\t");
+		warn("Terminating Process with id »%d«...", current->pid);
 		kill_one(current, SIGINT);
 		++sydbox->breach_attempts;
 		break;
 	case 2:
-		warn("Alright, I am no longer going to be gentle");
-		warn("and start killing the Thread Group Id next");
-		warn("time a breach happens.");
+		oops(current, abspath, pattern);
+		warn("\t");
+		warn("Alright, I am _no longer_ going to be polite,");
+		warn("and terminate the SydB☮x Execute Process");
+		warn("next time an Attempted Security Breach happens.");
+		warn("\t");
+		warn("Please use the system responsibly.");
+		warn("\n");
 		warn("Thanks in advance,");
-		fprintf(stderr, "--sydb☮x");
+		fprintf(stderr, "-sydb☮x:");
 		++sydbox->breach_attempts;
 		break;
 	case 3:
-		warn("Sorry! Y☮u asked for it...");
-		warn("Sending the signal SIGHUP to thread group id »%d« of pid "
-		     "»%d«...", current->tgid, current->pid);
+		oops(current, abspath, pattern);
+		warn("S☮rry! Y☮u asked for it!");
+		warn("Interrupting the Thread Gr☮up Leader...");
 		kill(current->pid == current->tgid
 		     ? current->ppid
-		     : current->tgid, SIGHUP);
+		     : current->tgid, SIGINT);
 		warn("WⒶit f☮r it.");
-		sleep(7);
+		/*sleep(7);*/
 		say("When the revolution comes");
 		say("Some of us will probably catch it on TV,");
 		say("with chicken hanging from our mouths");
@@ -154,15 +166,13 @@ skip_hash_calc:
 		say("When the revolution comes");
 		say("Ⓐ!");
 		say("G☮☮dbye...");
-		warn("Sending the signal SIGKILL to SydB☮x execute process »%d« "
-		     "rather than the current process »%d«...",
-		     sydbox->execve_pid,
-		     current->pid);
-		sleep(3);
+		warn("Terminating the SydB☮x Execute Process with id »%d«",
+		     sydbox->execve_pid);
+		/*sleep(3);*/
 		kill(current->pid == current->tgid
 		     ? current->ppid
 		     : current->tgid, SIGKILL);
-		sleep(1);
+		/*sleep(1);*/
 		kill(sydbox->execve_pid, SIGKILL);
 		break;
 	default:
