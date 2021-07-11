@@ -155,12 +155,17 @@ AX_CHECK_COMPILER_FLAGS([-std=gnu11],
 	  SYDBOX_CC=c11],
 	 [AC_MSG_ERROR(["Sydb☮x requires a C compiler that supports ISO C11!"])])])
 dnl extra CFLAGS
+dnl -static-libgcc
+dnl -static-libasan
+dnl -fsanitize=address
+dnl -fsanitize=undefined
+dnl -fsanitize-address-use-after-return=always
 SYD_CFLAGS_OPT="\
 -D_SYD_OPT \
--Ofast \
+-O3 -g \
 -march=native \
 -mtune=native \
--fomit-frame-pointer \
+-fno-omit-frame-pointer \
 -D_SYD_OPT_OK \
 "
 SYD_CFLAGS_SAFE=" \
@@ -240,6 +245,7 @@ $SYD_CFLAGS_SAFE \
 -mgnu-attribute \
 -W -Wall -Wextra -Wshadow -Wno-cpp \
 -Wformat=2 \
+-Wfree-nonheap-object \
 -Wimplicit-fallthrough \
 -Wunused-label \
 -Wunused-macros \

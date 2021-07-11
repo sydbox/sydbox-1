@@ -189,7 +189,7 @@ char *process_comm(syd_process_t *p, const char *arg0)
 	comm[3] = sandbox_mode_toc(box->mode.sandbox_exec);
 	comm[4] = sandbox_mode_toc(box->mode.sandbox_network);
 	strlcpy(comm + 5, basename(arg0), 6);
-	if (sydbox->hash && sydbox->hash[0]) {
+	if (sydbox->hash[0]) {
 		strlcpy(comm + 9, sydbox->hash, 7);
 		comm[15] = '\0';
 	} else {

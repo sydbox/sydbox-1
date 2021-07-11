@@ -12,8 +12,4 @@ if [[ ! -x "$CC" ]]; then
     exit 1
 fi
 export CC
-
-CFLAGS="-D__ALIP_WAS_HERE"
-CFLAGS="${CFLAGS} -O2 -pipe -ggdb"
-CFLAGS="${CFLAGS} -D__PINK_IS_BEHIND_THE_WALL"
-export CFLAGS
+export LD=lld

@@ -943,10 +943,12 @@ static void init_signal_sets(void)
 	sigaddset(&blocked_set, SIGUSR2);
 }
 
+#if 0
 static inline void allow_signals(void)
 {
 	sigprocmask(SIG_SETMASK, &empty_set, NULL);
 }
+#endif
 static inline void allow_interrupts(void)
 {
 	sigprocmask(SIG_UNBLOCK, &interrupt_set, NULL);

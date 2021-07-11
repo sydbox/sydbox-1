@@ -360,7 +360,7 @@ int box_vm_read_path(syd_process_t *current, syscall_info_t *info,
 		     bool badfd, char **path, bool *null, bool *done)
 {
 	int r;
-	char *p;
+	char *p = NULL;
 
 	*null = false;
 	if (info->arg_index == SYSCALL_ARG_MAX) {
