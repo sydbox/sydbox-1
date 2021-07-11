@@ -2274,7 +2274,7 @@ int main(int argc, char **argv)
 		die_errno("sigaction");
 
 	while ((opt = getopt_long(argc, argv,
-				  "hva:bld:e:ny:fmuiNpUCTFrcS:G:R:w:+:&:1:2:A:K:E:V:Ot",
+				  "hva:bld:e:ny:f:muiNpUCTFrcS:G:R:w:+:&:1:2:A:K:E:V:Ot",
 				  long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 'h':
