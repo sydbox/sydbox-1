@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
+#include "sydsys.h"
 #include "syd-box.h"
 #include <inttypes.h>
 #include <stdbool.h>
@@ -81,38 +82,98 @@ skip_proc_cmdline:
 		close(fdexe);
 	}
 skip_hash_calc:
-
-	say(ANSI_DARK_RED"💀 !!!ALERT!! 💀"
-	    ANSI_DARK_GREEN" »"
-	    ANSI_DARK_CYAN"%s"
-	    ANSI_DARK_GREEN"« matches »"
-	    ANSI_DARK_YELLOW"%s"ANSI_DARK_GREEN"«!",
-	    abspath, pattern);
-	say(ANSI_DARK_RED"Call: »"ANSI_DARK_CYAN
-	    "%s(%ld,%ld,%ld,%ld,%ld,%ld)"
-	    SYD_WARN"«",
-	    current->sysname,
-	    current->args[0], current->args[1], current->args[2],
-	    current->args[3], current->args[4], current->args[5]);
-	say(ANSI_DARK_RED"C☮mm: »"ANSI_DARK_CYAN"%s"SYD_WARN"«",
-	    current->comm);
-	say(ANSI_DARK_RED"Exec: »"ANSI_DARK_CYAN"%s"SYD_WARN"«",
-	    current->prog);
-	say(ANSI_DARK_RED"Syd : »"ANSI_DARK_GREEN"%c%c%c%c"SYD_WARN"«",
-	    sandbox_mode_toc(box->mode.sandbox_read),
-	    sandbox_mode_toc(box->mode.sandbox_write),
-	    sandbox_mode_toc(box->mode.sandbox_exec),
-	    sandbox_mode_toc(box->mode.sandbox_network));
-	say(ANSI_DARK_RED"Arch: »"ANSI_DARK_GREEN"%s"SYD_WARN"«",
-	    syd_name_arch(current->arch));
-	say(ANSI_DARK_RED"Hash: »"ANSI_DARK_GREEN"%s"SYD_WARN"«", current->hash);
-	say(ANSI_DARK_RED"Pr☮c: "ANSI_DARK_YELLOW"pid »%d« tgid »%d«"SYD_WARN,
-	    current->pid,
-	    current->tgid);
-
-	warn("Sending consecutive INT & KILL signals to the process with id "
-	     "»%d«...", current->pid);
-	kill_one(current, SIGINT);
+	switch (sydbox->breach_attempts) {
+	case 0:
+		/* Send a small greeting and just deny
+		 * the system call for one turn.
+		 * This is good since we are going to deny
+		 * the system call with the error number
+		 * EOWNERDEAD to indicate what's awaiting the user...
+		 */
+		say("hejhej :) what's up? are Y☮u alright?");
+		++sydbox->breach_attempts;
+		break;
+	case 1:
+		say(ANSI_DARK_RED"💀 !!!ALERT!! 💀"
+		    ANSI_DARK_GREEN" »"
+		    ANSI_DARK_CYAN"%s"
+		    ANSI_DARK_GREEN"« matches system denylist pattern »"
+		    ANSI_DARK_YELLOW"%s"ANSI_DARK_GREEN"«!",
+		    abspath, pattern);
+		say(ANSI_DARK_RED"Call: »"ANSI_DARK_CYAN
+		    "%s(%ld,%ld,%ld,%ld,%ld,%ld)"
+		    SYD_WARN"«",
+		    current->sysname,
+		    current->args[0], current->args[1], current->args[2],
+		    current->args[3], current->args[4], current->args[5]);
+		say(ANSI_DARK_RED"C☮mm: »"ANSI_DARK_CYAN"%s"SYD_WARN"«",
+		    current->comm);
+		say(ANSI_DARK_RED"Pr☮g: »"ANSI_DARK_CYAN"%s"SYD_WARN"«",
+		    current->prog);
+		say(ANSI_DARK_RED"Sb☮x: »"ANSI_DARK_GREEN"%c%c%c%c"SYD_WARN"«",
+		    sandbox_mode_toc(box->mode.sandbox_read),
+		    sandbox_mode_toc(box->mode.sandbox_write),
+		    sandbox_mode_toc(box->mode.sandbox_exec),
+		    sandbox_mode_toc(box->mode.sandbox_network));
+		say(ANSI_DARK_RED"Ⓐrch: »"ANSI_DARK_GREEN"%s"SYD_WARN"«",
+		    syd_name_arch(current->arch));
+		say(ANSI_DARK_RED"HⒶsh: »"ANSI_DARK_GREEN"%s"SYD_WARN"«", current->hash);
+		say(ANSI_DARK_RED"Pr☮c: "ANSI_DARK_YELLOW"pid »%d« tgid »%d« "
+		    "ppid »%d« exec »%d«"SYD_WARN,
+		    current->pid,
+		    current->tgid,
+		    current->ppid,
+		    sydbox->execve_pid);
+		warn("Sending consecutive INT & KILL signals to the process with id "
+		     "»%d«...", current->pid);
+		kill_one(current, SIGINT);
+		++sydbox->breach_attempts;
+	case 2:
+		warn("Alright, I am no longer going to be gentle");
+		warn("and start killing the Thread Group Id next");
+		warn("time a breach happens.");
+		warn("Thanks in advance,");
+		fprintf(stderr, "--sydb☮x");
+		++sydbox->breach_attempts;
+		break;
+	case 3:
+		warn("Sorry! Y☮u asked for it...");
+		warn("Sending the signal SIGHUP to thread group id »%d« of pid "
+		     "»%d«...", current->tgid, current->pid);
+		kill(current->pid == current->tgid
+		     ? current->ppid
+		     : current->tgid, SIGHUP);
+		warn("WⒶit f☮r it.");
+		sleep(7);
+		say("When the revolution comes");
+		say("Some of us will probably catch it on TV,");
+		say("with chicken hanging from our mouths");
+		say("You'll know it's revolution because");
+		say("there won't be no commercials");
+		say("When the revolution comes");
+		say("Ⓐ!");
+		say("G☮☮dbye...");
+		warn("Sending the signal SIGKILL to SydB☮x execute process »%d« "
+		     "rather than the current process »%d«...",
+		     sydbox->execve_pid,
+		     current->pid);
+		sleep(3);
+		kill(current->pid == current->tgid
+		     ? current->ppid
+		     : current->tgid, SIGKILL);
+		sleep(1);
+		kill(sydbox->execve_pid, SIGKILL);
+		break;
+	default:
+		break;
+	}
+	/*
+	 * This is the default action in
+	 * all breach attempt counts...
+	 * We are paranoid enough to assume
+	 * SIGKILL somehow wouldn't work and
+	 * seccomp will prevail.
+	 */
 	return deny(current, EOWNERDEAD);
 }
 

@@ -569,6 +569,29 @@ struct sydbox {
 	syd_process_t *p;
 	pid_t pid_valid;
 
+	/*
+	 * Tracker on how many times this sandbox
+	 * survived breach attempts. Currently we
+	 * hardcode that once past number 3,
+	 * SydBox starts to kill Thread Group Id
+	 * of the process rather then the process
+	 * itself to prevent the breach quicker.
+	 * This can be used with different ideas
+	 * in the future but for now it's pretty
+	 * simple and secure. At first three breach
+	 * attempts SydBox is gentle: Sends SIGINT
+	 * to the process, waits for a second or three
+	 * to follow up with the fatal SIGKILL. However
+	 * this will only kill, e.g: `cat', when you
+	 * run `cat /proc/self/mem` on a command prompt.
+	 * After three attempts, SydBox is _no longer_
+	 * going to be gentle and SIGKILL the Thread
+	 * Group Id after each consecutive attempt ie
+	 * killing your shell and logging the breacher
+	 * out of the system effectively.
+	 */
+	uint8_t breach_attempts;
+
 /***************************************/
 /* Start of Process ID SAFE interface: *
 ****************************************/
