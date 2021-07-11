@@ -417,15 +417,15 @@ fn command_profile<'b>(bin: &'b str, cmd: &[&'b str], output_path: &'b str, path
 
     let mut child = Command::new(bin)
         .arg("--dry-run")
-        .arg("-m")
+        .arg("-y")
         .arg("core/sandbox/read:deny")
-        .arg("-m")
+        .arg("-y")
         .arg("core/sandbox/write:deny")
-        .arg("-m")
+        .arg("-y")
         .arg("core/sandbox/exec:deny")
-        .arg("-m")
+        .arg("-y")
         .arg("core/sandbox/network:deny")
-        .arg("-m")
+        .arg("-y")
         .arg("core/restrict/shared_memory_writable:0")
         .arg("-d")
         .arg(format!("{}", fd_rw))
@@ -513,18 +513,18 @@ Repository: {}
                         .env("SYDBOX_BIN"),
                 )
                 .arg(
-                    Arg::with_name("config")
+                    Arg::with_name("file")
                         .required(false)
                         .help("path spec to the configuration file, may be repeated")
-                        .short("c")
+                        .short("f")
                         .multiple(true)
                         .number_of_values(1),
                 )
                 .arg(
-                    Arg::with_name("magic")
+                    Arg::with_name("syd")
                         .required(false)
                         .help("run a magic command during init, may be repeated")
-                        .short("m")
+                        .short("y")
                         .multiple(true)
                         .number_of_values(1),
                 )
