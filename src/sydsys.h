@@ -41,7 +41,7 @@ static const char *const syd_system_denylist[74] = {
 	"**/loop*",
 	"**/autofs",
 	"**/btrfs-control",
-	"**/core*",
+	"**/proc/core*",
 	"**/dm*/***",
 	"**/fuse",
 	"**/k?mem",
