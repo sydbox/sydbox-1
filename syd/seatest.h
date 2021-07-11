@@ -26,7 +26,7 @@ typedef void (*seatest_void_string)(char*);
 /*
 Declarations
 */
-void (*seatest_simple_test_result)(int passed, char* reason, const char* function, unsigned int line);
+extern void (*seatest_simple_test_result)(int passed, char* reason, const char* function, unsigned int line);
 void seatest_test_fixture_start(char* filepath);
 void seatest_test_fixture_end( void );
 void seatest_simple_test_result_log(int passed, char* reason, const char* function, unsigned int line);
@@ -88,7 +88,8 @@ int run_tests(seatest_void_void tests);
 int seatest_testrunner(int argc, char** argv, seatest_void_void tests, seatest_void_void setup, seatest_void_void teardown);
 #endif
 
-#ifdef SEATEST_INTERNAL_TESTS 
+#undef SEATEST_INTERNAL_TESTS
+#ifdef SEATEST_INTERNAL_TESTS
 void seatest_simple_test_result_nolog(int passed, char* reason, const char* function, unsigned int line);
 void seatest_assert_last_passed();
 void seatest_assert_last_failed();

@@ -201,8 +201,6 @@ int syd_execv(const char *command,
 	      size_t argc, char **argv,
 	      struct syd_exec_opt *opt);
 
-SYD_GCC_ATTR((warn_unused_result,nonnull((3))))
-
 /* 'private' is kernel default */
 #define SYD_UNSHARE_PROPAGATION_DEFAULT  (MS_REC | MS_PRIVATE)
 SYD_GCC_ATTR((warn_unused_result))

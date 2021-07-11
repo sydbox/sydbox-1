@@ -1,4 +1,9 @@
 #include "seatest.h"
+
+void (*seatest_simple_test_result)(int passed, char* reason,
+				   const char* function, unsigned int line) = \
+seatest_simple_test_result_log;
+
 #include <string.h>
 #ifdef WIN32
 #include "windows.h"
@@ -57,7 +62,8 @@ static seatest_void_void seatest_suite_teardown_func = 0;
 static seatest_void_void seatest_fixture_setup = 0;
 static seatest_void_void seatest_fixture_teardown = 0;
 
-void (*seatest_simple_test_result)(int passed, char* reason, const char* function, unsigned int line) = seatest_simple_test_result_log;
+extern void (*seatest_simple_test_result)(int passed, char* reason,
+				   const char* function, unsigned int line);
 
 void suite_setup(seatest_void_void setup)
 {

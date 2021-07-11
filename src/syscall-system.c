@@ -62,7 +62,7 @@ int syd_system_breach_attempt(syd_process_t *current,
 	/*
 	 * Read program command line.
 	 */
-	if (current->prog && current->prog[0] && current->prog[0] != '?')
+	if (current->prog[0] && current->prog[0] != '?')
 		goto skip_proc_cmdline;
 	syd_proc_cmdline(sydbox->pfd, current->prog, LINE_MAX-1);
 skip_proc_cmdline:
@@ -70,7 +70,7 @@ skip_proc_cmdline:
 	 * The SHA-1 hash of the binary may not have been calculated
 	 * before due to configuration and here we really do want it.
 	 */
-	if (current->hash && current->hash[0] && current->hash[0] != '?')
+	if (current->hash[0] && current->hash[0] != '?')
 		goto skip_hash_calc;
 	int fdexe = openat(sydbox->pfd, "exe", O_RDONLY|O_CLOEXEC|O_LARGEFILE);
 	if (fdexe >= 0) {
@@ -128,6 +128,7 @@ skip_hash_calc:
 		     "»%d«...", current->pid);
 		kill_one(current, SIGINT);
 		++sydbox->breach_attempts;
+		break;
 	case 2:
 		warn("Alright, I am no longer going to be gentle");
 		warn("and start killing the Thread Group Id next");
@@ -479,13 +480,13 @@ int sys_openat2(syd_process_t *current)
 	bool badfd, done, null;
 
 	/* Step 1: resolve file descriptor for »at« suffixed functions */
-	if ((r = box_resolve_dirfd(current, info, &prefix, &badfd)) < 0)
+	if ((r = box_resolve_dirfd(current, &info, &prefix, &badfd)) < 0)
 		return r;
 
 	/* Step 2: VM read path */
-	if ((r = box_vm_read_path(current, info, badfd, &path, &null, &done)) < 0 &&
+	if ((r = box_vm_read_path(current, &info, badfd, &path, &null, &done)) < 0 &&
 	    done)
-		goto out;
+		return r;
 	if (null)
 		path = NULL;
 
