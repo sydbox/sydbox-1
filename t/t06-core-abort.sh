@@ -214,7 +214,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked
     test_expect_code 136 syd -- syd-abort-pthread-static 8
 '
 
-test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked multithreaded tracee is terminated with SIGSEGV' '
+test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked multithreaded tracee is terminated with SIGSEGV' '
     test_expect_code 139 syd -- syd-abort-pthread-static 11
 '
 

@@ -219,3 +219,21 @@ int violation(syd_process_t *current, const char *fmt, ...)
 		exit(128 + sydbox->config.violation_exit_code);
 	exit(128);
 }
+
+void sayv(SYD_GCC_ATTR((unused)) const char *fmt, ...)
+{
+#if SYDBOX_DUMP || SYDBOX_HAVE_DUMP_BUILTIN
+	int fd = dump_get_fd();
+	if (fd <= 0)
+		return;
+
+	va_list ap;
+
+	va_start(ap, fmt);
+	vsay(stderr, fmt, ap, 0);
+	va_end(ap);
+	fputc('\n', stderr);
+#else
+	return;
+#endif
+}

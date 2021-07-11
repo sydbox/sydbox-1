@@ -780,28 +780,11 @@ extern sydbox_t *sydbox;
 #define action_bpf_default(action) ((action) != SCMP_ACT_NOTIFY &&\
 				    (action) == sydbox->seccomp_action)
 
-static inline uint32_t process_count(void)
-{
-	return syd_map_size_64v(&sydbox->tree);
-}
-
-static inline void process_add(syd_process_t *p)
-{
-	syd_map_put_64v(&sydbox->tree, p->pid, p);
-}
-
-static inline void process_remove(syd_process_t *p)
-{
-	syd_map_del_64v(&sydbox->tree, p->pid);
-}
-
-static inline syd_process_t *process_lookup(pid_t pid)
-{
-	syd_process_t *p = syd_map_get_64v(&sydbox->tree, pid);
-	if (syd_map_found(&sydbox->tree))
-		return p;
-	return NULL;
-}
+uint32_t process_count(void);
+void process_add(syd_process_t *p);
+void process_remove(syd_process_t *p);
+syd_process_t *process_lookup(pid_t pid);
+char *process_comm(syd_process_t *p, const char *arg0);
 
 /*************************************/
 /* Security Functions */
@@ -995,140 +978,14 @@ static inline sandbox_t *box_current(syd_process_t *current)
 	return current ? P_BOX(current) : &sydbox->config.box_static;
 }
 
-static inline void init_sandbox(sandbox_t *box)
-{
-	box->mode.sandbox_exec = SANDBOX_OFF;
-	box->mode.sandbox_read = SANDBOX_OFF;
-	box->mode.sandbox_write = SANDBOX_OFF;
-	box->mode.sandbox_network = SANDBOX_OFF;
-
-	box->magic_lock = LOCK_UNSET;
-
-	ACLQ_INIT(&box->acl_exec);
-	ACLQ_INIT(&box->acl_read);
-	ACLQ_INIT(&box->acl_write);
-	ACLQ_INIT(&box->acl_network_bind);
-	ACLQ_INIT(&box->acl_network_connect);
-}
-
-static inline void copy_sandbox(sandbox_t *box_dest, sandbox_t *box_src)
-{
-	struct acl_node *node, *newnode;
-
-	if (!box_src)
-		return;
-
-	assert(box_dest);
-
-	box_dest->mode.sandbox_exec = box_src->mode.sandbox_exec;
-	box_dest->mode.sandbox_read = box_src->mode.sandbox_read;
-	box_dest->mode.sandbox_write = box_src->mode.sandbox_write;
-	box_dest->mode.sandbox_network = box_src->mode.sandbox_network;
-
-	box_dest->magic_lock = box_src->magic_lock;
-
-	ACLQ_COPY(node, &box_src->acl_exec, &box_dest->acl_exec,
-		  newnode, xstrdup);
-	ACLQ_COPY(node, &box_src->acl_read, &box_dest->acl_read,
-		  newnode, xstrdup);
-	ACLQ_COPY(node, &box_src->acl_write, &box_dest->acl_write,
-		  newnode, xstrdup);
-	ACLQ_COPY(node, &box_src->acl_network_bind,
-		  &box_dest->acl_network_bind, newnode, sockmatch_xdup);
-	ACLQ_COPY(node, &box_src->acl_network_connect,
-		  &box_dest->acl_network_connect, newnode, sockmatch_xdup);
-}
-
-static inline void reset_sandbox(sandbox_t *box)
-{
-	struct acl_node *node;
-
-	if (box->acl_exec.tqh_last)
-		ACLQ_RESET(node, &box->acl_exec, free);
-	if (box->acl_read.tqh_last)
-		ACLQ_RESET(node, &box->acl_read, free);
-	if (box->acl_write.tqh_last)
-		ACLQ_RESET(node, &box->acl_write, free);
-	if (box->acl_network_bind.tqh_last)
-		ACLQ_RESET(node, &box->acl_network_bind, free_sockmatch);
-	if (box->acl_network_connect.tqh_last)
-		ACLQ_RESET(node, &box->acl_network_connect, free_sockmatch);
-}
-
-static inline int new_sandbox(sandbox_t **box_ptr)
-{
-	sandbox_t *box;
-
-	box = syd_malloc(sizeof(sandbox_t));
-	if (!box)
-		return -errno;
-	init_sandbox(box);
-
-	*box_ptr = box;
-	return 0;
-}
-
-static inline void free_sandbox(sandbox_t *box)
-{
-	reset_sandbox(box);
-	free(box);
-}
-
-static inline char sandbox_mode_toc(enum sandbox_mode mode)
-{
-	switch (mode) {
-	case SANDBOX_OFF:
-		return '-';
-	case SANDBOX_BPF:
-		return '+';
-	case SANDBOX_DENY:
-		return '!';
-	case SANDBOX_ALLOW:
-		return '%';
-	default:
-		assert_not_reached();
-	}
-}
-
-static inline unsigned short pack_clone_flags(long clone_flags)
-{
-	unsigned short f = 0;
-
-	if (clone_flags & CLONE_THREAD)
-		f |= SYD_CLONE_THREAD;
-	if (clone_flags & CLONE_FS)
-		f |= SYD_CLONE_FS;
-	if (clone_flags & CLONE_FILES)
-		f |= SYD_CLONE_FILES;
-
-	return f;
-}
-
-static inline bool use_notify(void)
-{
-	if (sydbox->bpf_only)
-		return false;
-
-	sandbox_t *box = box_current(NULL);
-	enum sandbox_mode mode[] = {
-		box->mode.sandbox_read,
-		box->mode.sandbox_write,
-		box->mode.sandbox_exec,
-		box->mode.sandbox_network,
-	};
-
-	for (unsigned short i = 0; i < ELEMENTSOF(mode); i++) {
-		switch (mode[i]) {
-		case SANDBOX_ALLOW:
-		case SANDBOX_DENY:
-			return true;
-		default:
-			continue;
-		}
-	}
-
-	return false;
-}
+void init_sandbox(sandbox_t *box);
+void copy_sandbox(sandbox_t *box_dest, sandbox_t *box_src);
+void reset_sandbox(sandbox_t *box);
+int new_sandbox(sandbox_t **box_ptr);
+void free_sandbox(sandbox_t *box);
+char sandbox_mode_toc(enum sandbox_mode mode);
+unsigned short pack_clone_flags(long clone_flags);
+bool use_notify(void);
 
 int path_to_hex(const char *pathname);
 

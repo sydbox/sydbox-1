@@ -28,7 +28,7 @@ static size_t gid_add_index;
 static gid_t gid_add[GID_ADD_MAX];
 static int nice_inc;
 static int ionicec = -1, ioniced = 0;
-static mode_t file_mode_creation_mask;
+static mode_t file_mode_creation_mask = 077;
 static const char *root_directory;
 static const char *working_directory;
 static char *pid_env_var;

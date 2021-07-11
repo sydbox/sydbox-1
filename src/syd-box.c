@@ -90,7 +90,7 @@ static volatile sig_atomic_t interrupted, interruptid, interruptcode, interrupts
 #else
 static volatile int interrupted, interruptid, interruptcode, interruptstat;
 #endif
-static sigset_t empty_set, blocked_set;
+static sigset_t empty_set, blocked_set, interrupt_set;
 
 static bool child_block_interrupt_signals;
 struct termios old_tio, new_tio;
@@ -922,28 +922,39 @@ static void init_signal_sets(void)
 {
 	sigemptyset(&empty_set);
 	sigemptyset(&blocked_set);
+	sigemptyset(&interrupt_set);
+
+	sigaddset(&interrupt_set, SIGCHLD);
+	sigaddset(&interrupt_set, SIGINT);
+	sigaddset(&interrupt_set, SIGUSR1);
+	sigaddset(&interrupt_set, SIGUSR2);
 
 	sigaddset(&blocked_set, SIGALRM);
 	sigaddset(&blocked_set, SIGCHLD);
+	sigaddset(&blocked_set, SIGFPE);
 	sigaddset(&blocked_set, SIGHUP);
 	sigaddset(&blocked_set, SIGINT);
-	sigaddset(&blocked_set, SIGQUIT);
 	sigaddset(&blocked_set, SIGPIPE);
 	sigaddset(&blocked_set, SIGTERM);
-	sigaddset(&blocked_set, SIGUSR1);
-	sigaddset(&blocked_set, SIGUSR2);
 	sigaddset(&blocked_set, SIGTTOU);
 	sigaddset(&blocked_set, SIGTTIN);
 	sigaddset(&blocked_set, SIGTSTP);
+	sigaddset(&blocked_set, SIGUSR1);
+	sigaddset(&blocked_set, SIGUSR2);
 }
 
 static inline void allow_signals(void)
 {
 	sigprocmask(SIG_SETMASK, &empty_set, NULL);
 }
-static inline void block_signals(void)
+static inline void allow_interrupts(void)
 {
-	sigprocmask(SIG_BLOCK, &blocked_set, NULL);
+	sigprocmask(SIG_UNBLOCK, &interrupt_set, NULL);
+}
+static inline void block_signals(int on)
+{
+	if (on)
+		sigprocmask(SIG_BLOCK, &blocked_set, NULL);
 }
 
 /* Signals are blocked by default. */
@@ -951,7 +962,9 @@ static void init_signals(void)
 {
 	struct sigaction sa;
 
-	init_signal_sets(); block_signals();
+	init_signal_sets();
+
+	block_signals(1);
 
 	/* Ign */
 	sa.sa_sigaction = interrupt;
@@ -964,12 +977,15 @@ static void init_signals(void)
 	sigaction(SIGTTOU, &sa, NULL);
 	sigaction(SIGTTIN, &sa, NULL);
 	sigaction(SIGTSTP, &sa, NULL);
+	sigaction(SIGALRM, &sa, NULL);
+	sigaction(SIGFPE, &sa, NULL);
+	sigaction(SIGHUP, &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
 
 	/* Term */
 	set_sighandler(SIGALRM, interrupt, NULL);
 	set_sighandler(SIGHUP,	interrupt, NULL);
 	set_sighandler(SIGINT,	interrupt, NULL);
-	set_sighandler(SIGQUIT, interrupt, NULL);
 	set_sighandler(SIGPIPE, interrupt, NULL);
 	set_sighandler(SIGTERM, interrupt, NULL);
 	set_sighandler(SIGUSR1, interrupt, NULL);
@@ -1461,13 +1477,13 @@ static int notify_loop()
 
 notify_receive:
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
-		allow_signals();
+		allow_interrupts();
 		r = seccomp_notify_receive(sydbox->notify_fd,
 					   sydbox->request);
 		if (interrupted && (intr = handle_interrupt(interrupted)))
 			break;
 		interrupted = 0;
-		block_signals();
+		block_signals(1);
 		if (r < 0) {
 			if (r == -EINTR)
 				goto notify_receive;
@@ -1785,24 +1801,17 @@ out:
 		}
 		/* We handled quick cases, we are permitted to interrupt now. */
 		r = 0;
-		allow_signals();
+		allow_interrupts();
 		if (interrupted && (r = handle_interrupt(interrupted))) {
-			block_signals();
 			break;
 		}
 		interrupted = 0;
-		block_signals();
+		block_signals(1);
 	}
 
 	seccomp_notify_free(sydbox->request, sydbox->response);
 	close(sydbox->notify_fd);
 	sydbox->notify_fd = -1;
-
-	/*
-	 * Sandboxing is over, reset signals to
-	 * their original states.
-	 */
-	reset_signals();
 
 	return r;
 }
@@ -1829,7 +1838,7 @@ static syd_process_t *startup_child(int argc, char **argv)
 			die_errno("Path look up for »%s« failed", argv[0]);
 		if ((r = syd_path_to_sha1_hex(pathname, sydbox->hash)) < 0) {
 			errno = -r;
-			say_errno("Can't calculate SHA-1 checksum of file "
+			say_errno("Can't calculate checksum of file "
 				  "»%s«", pathname);
 		}
 	} else {
@@ -1851,9 +1860,13 @@ static syd_process_t *startup_child(int argc, char **argv)
 	*/
 
 	if (!noexec && !pathname)
-		die_errno("can't exec »%s«", argv[0]);
+		die_errno("Cannot exec »%s«", argv[0]);
 	if (pipe2(pfd, O_CLOEXEC|O_DIRECT) < 0)
-		die_errno("can't pipe");
+		die_errno("Cannot pipe");
+
+	if (prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0) < 0)
+		say_errno("Cannot set child subreaper attribute, "
+			  "continuing...");
 
 	/*
 	 * Mark SydB☮x's process id so that the seccomp filtering can
@@ -1895,26 +1908,8 @@ startup_child:
 		current->prog[LINE_MAX-1] = '\0';
 #endif
 
-		/* 16 bytes including the terminating NUL byte. */
-		char comm[16] = {0};
-
-		/* SydBox marker */
-		comm[0] = '@';
-
-		/* 4 bytes for sandboxing information */
-		sandbox_t *box = box_current(NULL);
-		comm[1] = sandbox_mode_toc(box->mode.sandbox_read);
-		comm[2] = sandbox_mode_toc(box->mode.sandbox_write);
-		comm[3] = sandbox_mode_toc(box->mode.sandbox_exec);
-		comm[4] = sandbox_mode_toc(box->mode.sandbox_network);
-		char *name = basename(argv[0]);
-		size_t len = strlen(name) + 5;
-		strlcpy(comm + 5, name, 16 - 5);
-		comm[len++] = '-';
-		strlcpy(comm + len, sydbox->hash, 16 - len);
-		comm[15] = '\0';
 		if (!get_arg0())
-			set_arg0(comm);
+			set_arg0(process_comm(NULL, argv[0]));
 
 		if (change_umask() < 0)
 			say_errno("change_umask");
@@ -1929,12 +1924,13 @@ startup_child:
 		if (!child_block_interrupt_signals)
 			goto seccomp_init;
 		ignore_signals();
+#if 0
 		new_tio = old_tio;
 		new_tio.c_cc[VINTR]    = 25; /* Ctrl-c */
 		new_tio.c_cc[VQUIT]    = 3; /* Ctrl-\ */
 		new_tio.c_cc[VERASE]   = 0; /* del */
 		new_tio.c_cc[VKILL]    = 3; /* @ */
-		new_tio.c_cc[VEOF]     = 25/*4*/; /* Ctrl-d */
+		new_tio.c_cc[VEOF]     = 4/**/; /* Ctrl-d */
 		new_tio.c_cc[VTIME]    = 0; /* inter-character timer unused */
 		new_tio.c_cc[VMIN]     = 1; /* blocking read until 1 character arrives */
 		new_tio.c_cc[VSWTC]    = 0; /* '\0' */
@@ -1947,6 +1943,7 @@ startup_child:
 		new_tio.c_cc[VWERASE]  = 0; /* Ctrl-w */
 		new_tio.c_cc[VLNEXT]   = 0; /* Ctrl-v */
 		new_tio.c_cc[VEOL2]    = 0; /* '\0' */
+#endif
 		tcsetattr(0, TCSANOW, &new_tio);
 seccomp_init:
 		if ((r = sysinit_seccomp()) < 0) {
@@ -1994,6 +1991,16 @@ seccomp_init:
 		free(pathname);
 		_exit(127);
 	}
+
+	/*
+	 * We want to be absolutely safe
+	 * against interrupts to the best
+	 * we can.
+	 * This initialises the signal sets
+	 * and blocks all signals.
+	 */
+	init_signals();
+
 	seccomp_release(sydbox->ctx);
 
 	/* write end of the pipe is not used. */
@@ -2105,6 +2112,12 @@ int main(int argc, char **argv)
 			exit(ECANCELED);
 		}
 	}
+
+	/*
+	 * Be paranoid about file mode creation mask.
+	 */
+	umask(077);
+
 	enum {
 		/* unshare options */
 		OPT_MOUNTPROC = CHAR_MAX + 1,
@@ -2769,28 +2782,53 @@ int main(int argc, char **argv)
 	int status;
 	pid_t pid;
 	syd_process_t *child;
+
+	if (!use_notify()) {
+		/*
+		 * Seccomp BPF mode:
+		 *
+		 * Apply BPF filters and wait.
+		 */
+		child = startup_child(my_argc, my_argv);
+		for (;;) {
+			errno = 0;
+			pid = waitpid(-1, &status, __WALL);
+			switch (errno) {
+			case 0:
+				if (pid == sydbox->execve_pid) {
+					if (WIFEXITED(status))
+						sydbox->exit_code = WEXITSTATUS(status);
+					else if (WIFSIGNALED(status))
+						sydbox->exit_code = 128 + WTERMSIG(status);
+				}
+				break;
+			case EINTR:
+				continue;
+			case ECHILD:
+				goto out;
+			default:
+				say_errno("waitpid");
+				goto out;
+			}
+		}
+		goto out;
+	}
+
 	if (child_block_interrupt_signals)
 		tcgetattr(0, &old_tio);
-	if (use_notify()) {
-		child = startup_child(my_argc, my_argv);
-		pid = child->pid;
-		sydbox->execve_pid = pid;
-		proc_validate(pid);
-		init_process_data(child, NULL, false); /* calls proc_cwd */
-		/* Notify the user about the startup. */
-		dump(DUMP_STARTUP, pid);
-		/* Block signals,
-		 * We want to be safe against interrupts. */
-		init_signals();
-		/* All good.
-		 * Tracing starts.
-		 * Benediximus.
-		 */
-		notify_loop();
-	} else {
-		child = startup_child(my_argc, my_argv);
-		pid = child->pid;
-	}
+	/* Seccomp User Notify Mode */
+	child = startup_child(my_argc, my_argv);
+	pid = child->pid;
+	sydbox->execve_pid = pid;
+	proc_validate(pid);
+	init_process_data(child, NULL, false); /* calls proc_cwd */
+	/* Notify the user about the startup. */
+	dump(DUMP_STARTUP, pid);
+	/* All good.
+	 * Tracing starts.
+	 * Benediximus.
+	 */
+	notify_loop();
 	for (;;) {
 		errno = 0;
 		pid = waitpid(-1, &status, __WALL);

@@ -59,7 +59,7 @@ void vsay(FILE *fp, const char *fmt, va_list ap, char level)
 	if (tty)
 		fputs(SYD_WARN, fp);
 	if (fmt[0] != ' ')
-		fputs(PACKAGE": ", fp);
+		fputs("sydb☮x: ", fp);
 	switch (level) {
 	case 'b':
 		fputs("bug: ", fp);

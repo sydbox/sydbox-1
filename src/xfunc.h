@@ -61,6 +61,8 @@ extern void say(const char *fmt, ...)
 	SYD_GCC_ATTR((format (printf, 1, 2)));
 void say_errno(const char *fmt, ...)
 	SYD_GCC_ATTR((format (printf, 1, 2)));
+void sayv(const char *fmt, ...)
+	SYD_GCC_ATTR((format (printf, 1, 2)));
 
 extern void bug_on(const char *expr,
 		   const char *func, const char *file, size_t line,

@@ -225,6 +225,7 @@ syd_SOURCES+= \
 	     pathlookup.c \
 	     pink.c \
 	     proc.c \
+	     process.c \
 	     pathdecode.c \
 	     pathmatch.c \
 	     procmatch.c \

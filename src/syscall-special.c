@@ -136,7 +136,7 @@ int sysx_chdir(syd_process_t *current)
 
 	if (magic_query_violation_raise_safe(current))
 		//say("chdir done, updating current working directory of "
-		//    "pid:%d to `%s', was `%s'",
+		//    "pid:%d to »%s«, was »%s«",
 		//    current->pid, newcwd, P_CWD(current));
 		dump(DUMP_CHDIR, current->pid, newcwd, P_CWD(current));
 	if (P_CWD(current))
@@ -243,7 +243,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 		/* resolve_path failed, deny */
 		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
-			violation(current, "%s(`%s')", current->sysname, path);
+			violation(current, "%s(»%s«)", current->sysname, path);
 		if (path)
 			free(path);
 		return r;
@@ -278,8 +278,8 @@ static int do_execve(syd_process_t *current, bool at_func)
 			current->prog[LINE_MAX-1] = '\0';
 			if ((r = syd_path_to_sha1_hex(abspath, sydbox->hash)) < 0) {
 				errno = -r;
-				say_errno("can't calculate checksum of file "
-					  "`%s'", abspath);
+				say_errno("Can't calculate checksum of file "
+					  "»%s«", abspath);
 			} else {
 				strlcpy(current->hash, sydbox->hash,
 					SYD_SHA1_HEXSZ);
@@ -317,7 +317,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 	r = deny(current, EACCES);
 
 	if (!acl_match_path(ACL_ACTION_NONE, &sydbox->config.filter_exec, abspath, NULL))
-		violation(current, "%s(`%s')", current->sysname, abspath);
+		violation(current, "%s(»%s«)", current->sysname, abspath);
 
 	free(abspath);
 	current->abspath = NULL;
@@ -327,12 +327,51 @@ static int do_execve(syd_process_t *current, bool at_func)
 
 int sys_execve(syd_process_t *current)
 {
-	return do_execve(current, false);
+	int r;
+
+	r = do_execve(current, false);
+
+#if 0
+# TODO: breaks some processes, figure out!
+	if (!r && current->abspath) {
+		int rr;
+		long addr;
+		char *comm = process_comm(current, current->abspath);
+
+		if ((rr = syd_read_vm_data(current, current->args[1],
+					   (char *)&addr,
+					   sizeof(long))) < 0) {
+			errno = -rr;
+			say_errno("syd_read_comm");
+		}
+		if ((rr = syd_write_vm_data(current, addr, comm, strlen(comm)+1)) < 0) {
+			errno = -rr;
+			say_errno("syd_write_comm");
+		}
+	}
+#endif
+
+	return r;
 }
 
 int sys_execveat(syd_process_t *current)
 {
-	return do_execve(current, true);
+	int r;
+
+	r = do_execve(current, true);
+
+#if 0
+# TODO: see comment in sys_execve
+	if (!r && current->abspath) {
+		char *comm = process_comm(current, current->abspath);
+		if ((r = syd_write_data(current, current->args[2], comm, 16)) < 0) {
+			errno = -r;
+			say_errno("syd_write_data");
+		}
+	}
+#endif
+
+	return r;
 }
 
 //#define FAKE_MODE (S_IFCHR|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
@@ -498,7 +537,7 @@ static int do_stat(syd_process_t *current, const char *path,
 		return 0;
 	} else if (MAGIC_ERROR(r)) {
 		if (r != MAGIC_RET_INVALID_KEY)
-			say("failed to cast magic=`%s': %s", path,
+			say("failed to cast magic=»%s«: %s", path,
 			    magic_strerror(r));
 		if (r == MAGIC_RET_PROCESS_TERMINATED) {
 			r = -ESRCH;
