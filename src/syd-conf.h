@@ -247,7 +247,7 @@
 	sydbox->filter_count++; } while (0)
 #endif
 
-static const char *const syd_system_denylist[53] = {
+static const char *const syd_system_denylist[55] = {
 	"***/boot/***",
 	"***/autofs",
 	"***/btrfs-control",
@@ -271,8 +271,10 @@ static const char *const syd_system_denylist[53] = {
 	"***/*/.netrc*",
 	"***/*/.password-store/***",
 	"***/*/.ssh/id_[dr]sa",
-	"***/*/.ssh/id_ecdsa*",
-	"***/*/.ssh/id_ed25519*",
+	"***/*/.ssh/id_ecdsa",
+	"***/*/.ssh/id_ecdsa-sk",
+	"***/*/.ssh/id_ed25519",
+	"***/*/.ssh/id_ed25519-sk",
 	"***/*/*map*",
 	"***/*/*stat*",
 	"***/*/map_files/***",
