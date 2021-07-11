@@ -65,7 +65,7 @@ static const char *const syd_system_denylist[74] = {
 	"**/id_ecdsa-sk",
 	"**/id_ed25519",
 	"**/id_ed25519-sk",
-	"**/*map*",
+	"**/proc/*/map*",
 	"**/map_files/***",
 	"**/mem",
 	"**/mount*",
