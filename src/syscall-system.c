@@ -100,7 +100,7 @@ skip_hash_calc:
 		    ANSI_DARK_GREEN"« matches system denylist pattern »"
 		    ANSI_DARK_YELLOW"%s"ANSI_DARK_GREEN"«!",
 		    abspath, pattern);
-		say(ANSI_DARK_RED"Call: »"ANSI_DARK_CYAN
+		say(ANSI_DARK_RED"CⒶll: »"ANSI_DARK_CYAN
 		    "%s(%ld,%ld,%ld,%ld,%ld,%ld)"
 		    SYD_WARN"«",
 		    current->sysname,
