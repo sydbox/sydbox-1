@@ -1012,6 +1012,7 @@ static void ignore_signals(void)
 	sigaction(SIGUSR2, &sa, NULL);
 }
 
+#if 0
 static void reset_signals(void)
 {
 	struct sigaction sa;
@@ -1035,6 +1036,7 @@ static void reset_signals(void)
 	sigaction(SIGUSR1, &sa, NULL);
 	sigaction(SIGUSR2, &sa, NULL);
 }
+#endif
 
 static void interrupt(int sig, siginfo_t *siginfo, void *context)
 {
