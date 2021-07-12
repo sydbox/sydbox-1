@@ -363,17 +363,18 @@ void dump(enum dump what, ...)
 	time(&now);
 
 	if (what == DUMP_OOPS) {
-		bool verbose = !!va_arg(ap, int);
-		pid_t pid = va_arg(ap, pid_t);
-		pid_t tgid = va_arg(ap, pid_t);
-		pid_t ppid = va_arg(ap, pid_t);
+		syd_process_t *p = va_arg(ap, syd_process_t *);
 		pid_t proc_tgid = va_arg(ap, pid_t);
 		pid_t proc_ppid = va_arg(ap, pid_t);
-		const char *sys = va_arg(ap, const char *);
 		const char *expr = va_arg(ap, const char *);
-		const char *cwd = va_arg(ap, const char *);
 		const char *proc_cwd = va_arg(ap, const char *);
-		syd_process_t *p = process_lookup(pid);
+		bool verbose = !!va_arg(ap, int);
+
+		pid_t pid = p->pid;
+		pid_t tgid = p->tgid;
+		pid_t ppid = p->ppid;
+		const char *cwd = P_CWD(p);
+		const char *sys = p->sysname ? p->sysname : "?";
 
 		char *b_sys = NULL;
 		char *b_expr = NULL, *b_cwd = NULL, *b_proc_cwd = NULL;
@@ -682,6 +683,8 @@ void dump(enum dump what, ...)
 			free(b_prog);
 	} else if (what == DUMP_STARTUP) {
 		pid_t pid = va_arg(ap, pid_t);
+		int yama_ptrace_scope = va_arg(ap, int);
+		int unshare_flags = va_arg(ap, int);
 
 		char cmdline[256];
 		bool cmd = syd_proc_cmdline(sydbox->pfd,
@@ -695,9 +698,12 @@ void dump(enum dump what, ...)
 			J(id)"%llu,"
 			J(ts)"%llu,"
 			J(event)"{\"id\":%u,\"name\":\"%s\"},"
+			J(sys)"{\"yama_ptrace_scope\":%d},"
+			J(opt)"{\"unshare\":%d},"
 			J(proc)"{\"pid\":%u},"
 			J(cmd)"\"%s\"}",
 			id++, (unsigned long long)now, what, "startup",
+			yama_ptrace_scope, unshare_flags,
 			pid, j_cmdline);
 
 		if (b_cmdline && j_cmdline[0]) free(b_cmdline);

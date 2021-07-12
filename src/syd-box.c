@@ -54,6 +54,7 @@
 
 sydbox_t *sydbox;
 static unsigned os_release;
+static uint8_t yama_ptrace_scope;
 static struct sigaction child_sa;
 
 static char *sydsh_argv[] = {
@@ -110,11 +111,21 @@ static uint32_t arch_native;
 static char *arch_argv[SYD_SECCOMP_ARCH_ARGV_SIZ] = { NULL };
 static size_t arch_argv_idx;
 #ifdef HAVE_SIG_ATOMIC_T
-static volatile sig_atomic_t interrupted, interruptid, interruptcode, interruptstat;
+static volatile sig_atomic_t debugger_present = -1;
+static volatile sig_atomic_t interrupted, interrupted_reload, interrupted_trap;
+static volatile sig_atomic_t interruptid, interruptcode, interruptstat;
 #else
-static volatile int interrupted, interruptid, interruptcode, interruptstat;
+static volatile int debugger_present = -1;
+static volatile int interrupted, interrupted_reload, interrupted_trap;
+static volatile int interruptid, interruptcode, interruptstat;
 #endif
 static sigset_t empty_set, blocked_set, interrupt_set;
+static bool debugger_killed;
+
+static pid_t child_pidfd = -1;
+static int pidfd_send_signal = -1;
+
+static const char *config_file;
 
 static bool child_block_interrupt_signals;
 struct termios old_tio, new_tio;
@@ -149,6 +160,9 @@ static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
 
 static void interrupt(int sig, siginfo_t *siginfo, void *context);
+static void interrupt_reload(int sig, siginfo_t *siginfo, void *context);
+static void interrupt_rescue(int sig, siginfo_t *siginfo, void *context);
+static void interrupt_trap(int sig, siginfo_t *siginfo, void *context);
 static void reap_zombies(void);
 #if 0
 static inline bool process_is_alive(pid_t pid);
@@ -455,6 +469,7 @@ void reset_process(syd_process_t *p)
 
 	p->sysnum = 0;
 	p->subcall = 0;
+	p->sysnum = __NR_SCMP_ERROR;
 	p->sysname = NULL;
 	p->retval = 0;
 #if ENABLE_PSYSCALL
@@ -953,18 +968,31 @@ static void init_signal_sets(void)
 	sigaddset(&interrupt_set, SIGUSR1);
 	sigaddset(&interrupt_set, SIGUSR2);
 
+	sigaddset(&blocked_set, SIGABRT);
 	sigaddset(&blocked_set, SIGALRM);
+	sigaddset(&blocked_set, SIGBUS);
 	sigaddset(&blocked_set, SIGCHLD);
 	sigaddset(&blocked_set, SIGFPE);
 	sigaddset(&blocked_set, SIGHUP);
 	sigaddset(&blocked_set, SIGINT);
+	sigaddset(&blocked_set, SIGILL);
+	sigaddset(&blocked_set, SIGIO);
+	sigaddset(&blocked_set, SIGIOT);
+	sigaddset(&blocked_set, SIGLOST);
 	sigaddset(&blocked_set, SIGPIPE);
+	sigaddset(&blocked_set, SIGPROF);
+	sigaddset(&blocked_set, SIGPWR);
+	sigaddset(&blocked_set, SIGSEGV);
+	sigaddset(&blocked_set, SIGSTKFLT);
 	sigaddset(&blocked_set, SIGTERM);
 	sigaddset(&blocked_set, SIGTTOU);
 	sigaddset(&blocked_set, SIGTTIN);
+	sigaddset(&blocked_set, SIGTRAP);
 	sigaddset(&blocked_set, SIGTSTP);
 	sigaddset(&blocked_set, SIGUSR1);
 	sigaddset(&blocked_set, SIGUSR2);
+	sigaddset(&blocked_set, SIGXCPU);
+	sigaddset(&blocked_set, SIGXFSZ);
 }
 
 #if 0
@@ -1008,14 +1036,37 @@ static void init_signals(void)
 	sigaction(SIGHUP, &sa, NULL);
 	sigaction(SIGQUIT, &sa, NULL);
 
-	/* Term */
-	set_sighandler(SIGALRM, interrupt, NULL);
-	set_sighandler(SIGHUP,	interrupt, NULL);
-	set_sighandler(SIGINT,	interrupt, NULL);
-	set_sighandler(SIGPIPE, interrupt, NULL);
-	set_sighandler(SIGTERM, interrupt, NULL);
+	/* Interrupt */
 	set_sighandler(SIGUSR1, interrupt, NULL);
 	set_sighandler(SIGUSR2, interrupt, NULL);
+
+	/* Reload */
+	set_sighandler(SIGHUP, interrupt_reload, NULL);
+
+	/* Trap */
+	set_sighandler(SIGTRAP, interrupt_rescue, NULL);
+	set_sighandler(SIGTSTP, interrupt_rescue, NULL);
+
+	/* Term */
+	set_sighandler(SIGALRM, interrupt_rescue, NULL);
+	set_sighandler(SIGVTALRM, interrupt_rescue, NULL);
+	set_sighandler(SIGBUS,	interrupt_rescue, NULL);
+	set_sighandler(SIGINT,	interrupt_rescue, NULL);
+	set_sighandler(SIGPIPE, interrupt_rescue, NULL);
+	set_sighandler(SIGTERM, interrupt_rescue, NULL);
+	set_sighandler(SIGABRT, interrupt_rescue, NULL);
+	set_sighandler(SIGFPE, interrupt_rescue, NULL);
+	set_sighandler(SIGSEGV, interrupt_rescue, NULL);
+	set_sighandler(SIGSTKFLT, interrupt_rescue, NULL);
+	set_sighandler(SIGILL, interrupt_rescue, NULL);
+	set_sighandler(SIGLOST, interrupt_rescue, NULL);
+	set_sighandler(SIGIO, interrupt_rescue, NULL);
+	set_sighandler(SIGIOT, interrupt_rescue, NULL);
+	set_sighandler(SIGQUIT, interrupt_rescue, NULL);
+	set_sighandler(SIGPROF, interrupt_rescue, NULL);
+	set_sighandler(SIGPWR, interrupt_rescue, NULL);
+	set_sighandler(SIGXCPU,	interrupt_rescue, NULL);
+	set_sighandler(SIGXFSZ,	interrupt_rescue, NULL);
 }
 
 static void ignore_signals(void)
@@ -1072,6 +1123,47 @@ static void interrupt(int sig, siginfo_t *siginfo, void *context)
 		interruptstat = siginfo->si_status;
 	}
 	interrupted = sig;
+}
+
+static void interrupt_reload(int sig, siginfo_t *siginfo, void *context)
+{
+	/*
+	 * Reload configuration file on next interrupt cycle.
+	 */
+	if (siginfo) {
+		interruptid = siginfo->si_pid;
+		interruptcode = siginfo->si_code;
+		interruptstat = siginfo->si_status;
+	}
+	interrupted_reload = sig;
+}
+
+static void interrupt_trap(int sig, siginfo_t *siginfo, void *context)
+{
+	if (siginfo) {
+		interruptid = siginfo->si_pid;
+		interruptcode = siginfo->si_code;
+		interruptstat = siginfo->si_status;
+	}
+	debugger_present = 1;
+	interrupted_trap = sig;
+}
+
+static int kill_child(void)
+{
+	if (child_pidfd == -1)
+		return 0;
+	return syscall(pidfd_send_signal, child_pidfd, SIGKILL, NULL, 0);
+}
+
+static void interrupt_rescue(int sig, siginfo_t *siginfo, void *context)
+{
+	/*
+	 * Rescue interrupt handler.
+	 * Kills the SydB☮x Execute Process safely using their Pid File Descriptor.
+	 */
+	kill_child();
+	interrupt(sig, siginfo, context);
 }
 
 static int sig_child(void)
@@ -1153,6 +1245,72 @@ static int handle_interrupt(int sig)
 		kill_all(sig);
 		return 128 + sig;
 	}
+}
+
+static int handle_interrupt_reload(int sig)
+{
+	syd_process_t *current = process_lookup(sydbox->execve_pid);
+
+	if (!current || !P_BOX(current))
+		return 0;
+	enum lock_state magic_lock = P_BOX(current)->magic_lock;
+
+	switch (magic_lock) {
+	case LOCK_SET:
+		warn("SydB☮x Sandbox Lock is set, can not reload configuration.");
+		break;
+	case LOCK_PENDING:
+		warn("SydB☮x Sandbox Lock is pending on next process execution.");
+		warn("Can not reload configuration.");
+		break;
+	case LOCK_UNSET:
+		say("Reloading SydB☮x Configuration File »%s«", config_file);
+		config_parse_spec(config_file);
+		break;
+	}
+
+	return 0;
+}
+
+static int handle_interrupt_trap(int sig)
+{
+	bool need_child_kill = false;
+	syd_process_t *current = process_lookup(sydbox->execve_pid);
+
+	if (!current || !P_BOX(current))
+		return 0;
+	enum lock_state magic_lock = P_BOX(current)->magic_lock;
+
+	/*
+	 * Check whether magic lock is on and exit if this is the case.
+	 * This is to provide integrity for the sandbox.
+	 */
+	switch (magic_lock) {
+	case LOCK_SET:
+		need_child_kill = true;
+		warn("SydB☮x Sandbox Lock is set.");
+		warn("Refusing Trap Request to protect Sandbox Integrity.");
+		break;
+	case LOCK_PENDING:
+		need_child_kill = true;
+		warn("SydB☮x Sandbox Lock is pending on next process execution.");
+		warn("Refusing Trap Request to protect Sandbox Integrity.");
+		break;
+	default:
+		break;
+	}
+
+	int r = 0;
+	if (need_child_kill)
+		r = kill_child();
+
+	if (debugger_present == -1) {
+		debugger_present = 1;
+		set_sighandler(SIGTRAP, interrupt_trap, NULL);
+		//raise(SIGTRAP);
+	}
+
+	return r;
 }
 
 static void sig_usr(int sig)
@@ -1683,6 +1841,28 @@ pid_validate:
 			}
 		}
 
+		if (current) {
+			/*
+			 * Check for Tracer (such as Gnu Debugger or Strace)
+			 * and the magic SydB☮x sandbox lock to ensure the
+			 * integrity of the Sandbox.
+			 *
+			 * Note: Since we can not distinguish if the EPERM
+			 * is due to we being traced or ptrace being unavailable
+			 * we only exit the Seccomp Notification loop in case
+			 * the Yama Scope is set to 0, ie how ptrace()
+			 * traditionally works.
+			 */
+			if (P_BOX(current)->magic_lock != LOCK_UNSET &&
+			    yama_ptrace_scope < 1 &&
+			    ptrace(PTRACE_TRACEME, 0, NULL, NULL) == -1 &&
+			    errno == EPERM) {
+				kill_child();
+				debugger_killed = true;
+				break;
+			}
+		}
+
 		bool not_clone = true;
 		bool not_exec = true;
 		if (!name) {
@@ -1834,12 +2014,28 @@ out:
 			break;
 		}
 		interrupted = 0;
+		if (interrupted_trap) {
+			handle_interrupt_trap(interrupted_trap);
+			//signal(SIGTRAP, SIG_DFL);
+		}
+		interrupted_trap = 0;
 		block_signals(1);
+		if (interrupted_reload)
+			handle_interrupt_reload(interrupted_reload);
+		interrupted_reload = 0;
 	}
 
 	seccomp_notify_free(sydbox->request, sydbox->response);
 	close(sydbox->notify_fd);
 	sydbox->notify_fd = -1;
+
+	/* Tracing ends, kill any remaining processes,
+	 * as otherwise they're going to get »ENOSYS«,
+	 * ie. function not implemented, on any call
+	 * that SydB☮x is sandboxing such as fork, clone,
+	 * vfork et al.
+	 */
+	kill_all(SIGLOST);
 
 	return r;
 }
@@ -1904,15 +2100,16 @@ static syd_process_t *startup_child(int argc, char **argv)
 	sydbox->sydbox_pid = getpid();
 #define SYD_CLONE_FLAGS CLONE_CLEAR_SIGHAND
 startup_child:
-	pid = syd_clone(SYD_CLONE_FLAGS | unshare_flags,
-			SIGCHLD, &sydbox->execve_pidfd,
+	pid = syd_clone(SYD_CLONE_FLAGS,
+			SIGCHLD, &child_pidfd,
 			NULL, NULL);
+	sydbox->execve_pidfd = child_pidfd;
 	if (pid < 0) {
 		if (errno == EINVAL) {
 			/* Filter out unsupported clone flags and retry... */
 			for (uint8_t i = 0; i < SYD_UNSHARE_FLAGS_MAX; i++) {
 				if (unshare_flags & syd_unshare_flags[i]) {
-					say("clone3 failed, retrying without "
+					sayv("clone3 failed, retrying without "
 					    "flag:%d", syd_unshare_flags[i]);
 					unshare_flags &= ~syd_unshare_flags[i];
 					goto startup_child;
@@ -1952,8 +2149,12 @@ startup_child:
 		if (!child_block_interrupt_signals)
 			goto seccomp_init;
 		ignore_signals();
-#if 0
 		new_tio = old_tio;
+		new_tio.c_cc[VEOF]  = 3; // ^C
+		new_tio.c_cc[VINTR] = 4; // ^D
+		new_tio.c_lflag &= ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL |
+				     ECHOPRT | ECHOKE | ISIG | ICRNL);
+#if 0
 		new_tio.c_cc[VINTR]    = 25; /* Ctrl-c */
 		new_tio.c_cc[VQUIT]    = 3; /* Ctrl-\ */
 		new_tio.c_cc[VERASE]   = 0; /* del */
@@ -2126,6 +2327,23 @@ void cleanup_for_sydbox(void)
 int main(int argc, char **argv)
 {
 	/*
+	 * Resolve pidfd_send_signal system call number.
+	 * We use it in rescue interrupt handler so as
+	 * not to let the children run unsandboxed.
+	 */
+	pidfd_send_signal = seccomp_syscall_resolve_name("pidfd_send_signal");
+	if (pidfd_send_signal == __NR_SCMP_ERROR ||
+	    pidfd_send_signal < 0) {
+		if (!errno)
+			errno = ENOSYS;
+		int save_errno = errno;
+		say("pidfd_send_signal system call not available.");
+		warn("Can not reliably send signals, exiting...");
+		errno = save_errno;
+		die_errno("pidfd_send_signal");
+	}
+
+	/*
 	 * Act as a multicall binary for
 	 * the Syd family of commands.
 	 */
@@ -2184,6 +2402,13 @@ int main(int argc, char **argv)
 
 	/* Early initialisations */
 	dump_set_fd(-3); init_early();
+
+	if ((r = syd_proc_yama_ptrace_scope(&yama_ptrace_scope)) < 0) {
+		errno = -r;
+		say_errno("syd_proc_yama_ptrace_scope");
+		warn("Assuming YAMA Ptrace Scope is 3.");
+		yama_ptrace_scope = 3;
+	}
 
 	arch_native = seccomp_arch_native();
 
@@ -2389,6 +2614,7 @@ int main(int argc, char **argv)
 			sydbox->permissive = true;
 			break;
 		case 'f':
+			config_file = optarg;
 			config_parse_spec(optarg);
 			break;
 		case 'y':
@@ -2925,8 +3151,7 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	if (child_block_interrupt_signals)
-		tcgetattr(0, &old_tio);
+	tcgetattr(0, &old_tio);
 	/* Seccomp User Notify Mode */
 	child = startup_child(my_argc, my_argv);
 	pid = child->pid;
@@ -2934,12 +3159,16 @@ int main(int argc, char **argv)
 	proc_validate(pid);
 	init_process_data(child, NULL, false); /* calls proc_cwd */
 	/* Notify the user about the startup. */
-	dump(DUMP_STARTUP, pid);
+	dump(DUMP_STARTUP, pid, yama_ptrace_scope, unshare_flags);
 	/* All good.
 	 * Tracing starts.
 	 * Benediximus.
 	 */
 	notify_loop();
+	if (debugger_killed) {
+		say("G☮☮dbye TrⒶcer!");
+		exit(128);
+	}
 	for (;;) {
 		errno = 0;
 		pid = waitpid(-1, &status, __WALL);
@@ -2994,7 +3223,6 @@ out:
 			sydbox->exit_code = 128 /* + sydbox->exit_code */;
 	}
 	//free(sydbox);
-	if (child_block_interrupt_signals)
-		tcsetattr(0, TCSANOW, &old_tio);
+	tcsetattr(0, TCSANOW, &old_tio);
 	return sydbox->exit_code;
 }
