@@ -7,8 +7,8 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include "sydsys.h"
 #include "syd-box.h"
+#include "syd-sys.h"
 #include <inttypes.h>
 #include <stdbool.h>
 #include <unistd.h>
