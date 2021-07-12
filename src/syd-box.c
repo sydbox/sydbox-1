@@ -127,8 +127,8 @@ static uint32_t close_fds[2];
 /* unshare option defaults */
 int setgrpcmd = SYD_SETGROUPS_NONE;
 int unshare_flags = 0;
-uid_t mapuser = -1;
-gid_t mapgroup = -1;
+long mapuser = -1;
+long mapgroup = -1;
 long mapuser_opt = -1;
 long mapgroup_opt = -1;
 // int kill_child_signo = 0; /* 0 means --kill-child was not used */
@@ -2724,6 +2724,10 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if ((force_monotonic || force_boottime) && !(unshare_flags & CLONE_NEWTIME))
+		die("options --monotonic and --boottime require "
+		    "unsharing of a time namespace (-t)");
+
 #if 0
 	const char *env;
 	if ((env = getenv(SYDBOX_CONFIG_ENV)))
@@ -2753,6 +2757,10 @@ int main(int argc, char **argv)
 	if (optind == argc) {
 		config_parse_spec(DATADIR "/" PACKAGE
 				  "/default.syd-" STRINGIFY(SYDBOX_API_VERSION));
+		mapuser = 0;
+		mapgroup = 0;
+		set_uid(0);
+		set_gid(0);
 		set_arg0("syd-sh");
 		set_working_directory(xstrdup("tmp"));
 		close_fds[0] = 3;
@@ -2810,6 +2818,81 @@ int main(int argc, char **argv)
 	int status;
 	pid_t pid;
 	syd_process_t *child;
+
+	if (unshare(unshare_flags) == -1)
+		die_errno("unshare");
+
+	if (force_boottime)
+		syd_settime(boottime, CLOCK_BOOTTIME);
+
+	if (force_monotonic)
+		syd_settime(monotonic, CLOCK_MONOTONIC);
+
+	int death_sig;
+	switch (parent_death_signal) {
+	case 0: /* Default is SIGKILL. */
+		death_sig = SIGKILL;
+		break;
+	default:
+		death_sig = abs(parent_death_signal);
+		break;
+	}
+
+	if ((r = syd_set_death_sig(death_sig)) < 0) {
+		errno = -r;
+		syd_say_errno("Error setting parent death signal to »%d«", death_sig);
+		/* Continue */
+	}
+
+	if (mapuser != -1 &&
+	    syd_map_id(SYD_PATH_PROC_UIDMAP,
+		       mapuser,
+		       real_euid) < 0) {
+		int save_errno = errno;
+		say_errno("Error mapping current user »%d« to root user.", real_euid);
+		return -save_errno;
+	}
+
+	/* Since Linux 3.19 unprivileged writing of /proc/self/gid_map
+	 * has been disabled unless /proc/self/setgroups is written
+	 * first to permanently disable the ability to call setgroups
+	 * in that user namespace. */
+	if (mapgroup != (gid_t) -1) {
+		if (setgrpcmd == SYD_SETGROUPS_ALLOW) {
+			errno = EINVAL;
+			say_errno("options setgroups=allow and "
+				      "map-group are mutually exclusive.");
+			return -EINVAL;
+		}
+		syd_setgroups_control(SYD_SETGROUPS_DENY);
+		syd_map_id(SYD_PATH_PROC_GIDMAP, mapgroup, real_egid);
+	}
+
+	if (setgrpcmd != SYD_SETGROUPS_NONE &&
+	    (r = syd_setgroups_control(setgrpcmd)) < 0) {
+		errno = -r;
+		switch (setgrpcmd) {
+		case SYD_SETGROUPS_ALLOW:
+			say_errno("Error allowing the »setgroups(2)« system "
+				      "call in the user namespace.");
+			break;
+		case SYD_SETGROUPS_DENY:
+			say_errno("Error denying the »setgroups(2)« system "
+				      "call in the user namespace.");
+			break;
+		default:
+			abort();
+		}
+		/* fall through */
+	}
+
+	if ((unshare_flags & CLONE_NEWNS) && propagation &&
+	    (r = syd_set_propagation(propagation)) < 0) {
+		errno = -r;
+		say_errno("Error recursively setting the mount propagation "
+			      "flag in the new mount namespace.");
+		/* fall through */
+	}
 
 	if (!use_notify()) {
 		/*
