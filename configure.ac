@@ -671,6 +671,7 @@ AC_CHECK_HEADERS(m4_flatten([
 	libgen.h
 	limits.h
 	memory.h
+	paths.h
 	pthread.h
 	pwd.h
 	siginfo.h
