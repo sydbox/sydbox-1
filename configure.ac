@@ -142,8 +142,8 @@ AC_PROG_EGREP
 AC_PROG_SED
 AC_PROG_AWK
 AC_PATH_PROG([SORT], [sort])
-dnl AC_PROG_YACC
-dnl AM_PROG_LEX
+AC_PROG_YACC
+AM_PROG_LEX
 
 dnl compiler checks
 SYDBOX_CC=
@@ -1131,6 +1131,7 @@ dnl output
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_CONFIG_FILES([Makefile
 		 pandora/Makefile
+		 rc/Makefile
 		 misc/Makefile
 		 src/Makefile
 		 syd/Makefile

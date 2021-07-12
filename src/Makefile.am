@@ -1,5 +1,5 @@
 #H = $(top_builddir)/misc/syd-hilite
-SUBDIRS= rc .
+SUBDIRS= .
 AM_MAKEFLAGS= --no-print-directory
 CLEANFILES= \
 	    gmon.out \
