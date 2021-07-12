@@ -5,7 +5,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 # TODO: add esandbox function!
-unalias s
 s() {
     if test $# -eq 0; then
         stat /dev/sydbox
@@ -13,6 +12,11 @@ s() {
         stat "/dev/sydbox/$(echo "$@" | tr ' ' '/')"
     fi
 }
+
+# Set home to the working directory which is
+# the temporary directory which SydB☮x changed to.
+HOME="$PWD"
+export HOME
 
 # Don't run anything here unless we have an interactive shell.
 if [[ $- != *i* ]] ; then
@@ -87,23 +91,31 @@ unset _f _match_lhs _safe_term _use_color _used_default_dircolors
 # Make bash check if the window has been resized
 shopt -s checkwinsize
 
+# Reset things.
+# TODO: Why is this necessary?
+reset >/dev/null 2>/dev/null
+
 # Check magic command status.
 if test -e '/dev/sydbox'; then
-    stat /dev/sydbox
-    echo "/dev/sydbox: [0;1;32;92mOK[0m"
+    echo >&2 "[0;1;33;93m"
+    stat /dev/sydbox 1>&2
+    echo >&2 "[0m"
+    echo >&2 "[0;1;36;96mMagic commands are enabled.[0m"
+    echo >&2 "[0;1;36;96mYou may configure Sydb☮x using the »/dev/sydbox« virtual device node.[0m"
+    echo >&2 "[0;1;36;96mWhen you're done lock the Sydb☮x sandbox with the command:[0m"
+    echo -e >&2 "\t[0;1;31;91m»stat /dev/sydbox/core/trace/magic_lock:on«[0m"
+    echo -e >&2 "\t/dev/sydbox: [0;1;32;92mOK[0m"
 else
-    echo "/dev/sydbox: [0;1;31;91mLOCKED[0m"
+    echo -e >&2 "\t/dev/sydbox: [0;1;31;91mLOCKED[0m"
 fi
-
-# Disable shell history.
-unset HISTFILE
 
 # Greet the user.
 test -n "$SYDBOX" && echo "$SYDBOX"
-echo >&2 ""
-echo >&2 "Welcome to Sydb☮x shell. Have fun."
-echo >&2 "Type \`exit' to exit."
-echo >&2 ""
+echo >&2 "Welcome to the Sydb☮x shell."
+echo >&2 "Have fun, type »exit« to exit."
+
+# Check uname which is intercepted by Sydb☮x.
+uname -a
 
 sig_ign() {
     :
@@ -235,11 +247,16 @@ export COMP_WORDBREAKS=${COMP_WORDBREAKS/:/}
 
 export FIGNORE='~'
 
+# Disable shell history.
+#unset HISTFILE
+export HISTSIZE=42000
+export HISTFILESIZE=64000
 export HISTCONTROL=ignorespace:ignoredups
-export HISTFILESIZE=50000
-export HISTSIZE=50000
-
 shopt -s histverify
+
+# Disable TAB completion (generates access violations, unusable atm.)
+# bind -u complete
+
 # }}}
 
 grab() {
