@@ -178,11 +178,6 @@ struct syd_exec_opt {
 	bool verbose;
 	uid_t uid;
 	gid_t gid;
-	uid_t map_user;
-	gid_t map_group;
-	uid_t real_euid;
-	gid_t real_egid;
-	int setgrpcmd;
 	const char *chroot;
 	const char *new_root;
 	const char *put_old;

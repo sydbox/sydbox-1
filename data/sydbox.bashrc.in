@@ -103,10 +103,11 @@ if test -e '/dev/sydbox'; then
     echo >&2 "[0;1;36;96mMagic commands are enabled.[0m"
     echo >&2 "[0;1;36;96mYou may configure Sydb☮x using the »/dev/sydbox« virtual device node.[0m"
     echo >&2 "[0;1;36;96mWhen you're done lock the Sydb☮x sandbox with the command:[0m"
-    echo -e >&2 "\t[0;1;31;91m»stat /dev/sydbox/core/trace/magic_lock:on«[0m"
-    echo -e >&2 "\t/dev/sydbox: [0;1;32;92mOK[0m"
+    echo -e >&2 "[0;1;31;91m»stat /dev/sydbox/core/trace/magic_lock:on«[0m"
+    echo -e >&2 "/dev/sydbox: [0;1;32;92mOK[0m"
 else
-    echo -e >&2 "\t/dev/sydbox: [0;1;31;91mLOCKED[0m"
+    :
+    #echo -e >&2 "/dev/sydbox: [0;1;31;91mLOCKED[0m"
 fi
 
 # Greet the user.
