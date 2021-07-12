@@ -78,7 +78,7 @@ int syd_setgroups_control(int action)
 		if (errno == ENOENT)
 			return -ENOENT;
 		int save_errno = errno;
-		syd_dsay("cannot open »%s«", file);
+		syd_say("cannot open »%s«", file);
 		return -save_errno;
 	}
 

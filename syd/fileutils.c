@@ -18,7 +18,7 @@
 #include "all-io.h"
 #include "confname.h"
 #include "fileutils.h"
-#include "pathnames.h"
+#include "syd.h"
 
 int mkstemp_cloexec(char *template)
 {
@@ -62,7 +62,7 @@ int xmkstemp(char **tmpname, const char *dir, const char *prefix)
 	 * with rename(2), which is the reason why dir is here.  */
 	tmpenv = dir ? dir : getenv("TMPDIR");
 	if (!tmpenv)
-		tmpenv = _PATH_TMP;
+		tmpenv = SYD_PATH_TMP;
 
 	rc = asprintf(&localtmp, "%s/%s.XXXXXX", tmpenv, prefix);
 	if (rc < 0)
@@ -137,7 +137,7 @@ void ul_close_all_fds(unsigned int first, unsigned int last)
 	struct dirent *d;
 	DIR *dir;
 
-	dir = opendir(_PATH_PROC_FDDIR);
+	dir = opendir(SYD_PATH_PROC_FDDIR);
 	if (dir) {
 		while ((d = xreaddir(dir))) {
 			char *end;

@@ -23,7 +23,7 @@
 #include "c.h"
 #include "caputils.h"
 #include "procutils.h"
-#include "pathnames.h"
+#include "syd.h"
 
 static int test_cap(unsigned int cap)
 {
@@ -53,7 +53,7 @@ static int cap_last_by_bsearch(int *ret)
 
 static int cap_last_by_procfs(int *ret)
 {
-	FILE *f = fopen(_PATH_PROC_CAPLASTCAP, "r");
+	FILE *f = fopen(SYD_PATH_PROC_CAPLASTCAP, "r");
 	int rc = -EINVAL;
 
 	*ret = 0;

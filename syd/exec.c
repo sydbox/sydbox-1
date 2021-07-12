@@ -62,7 +62,7 @@ int syd_execv(const char *command,
 
 	if ((r = syd_set_death_sig(death_sig)) < 0) {
 		errno = -r;
-		syd_say_errno("Error setting parent death signal to `%d'",
+		syd_say_errno("Error setting parent death signal to »%d«",
 			      death_sig);
 		/* Continue */
 	}
@@ -106,6 +106,56 @@ int syd_execv(const char *command,
 		int save_errno = errno;
 		syd_say_errno("Error changing working directory");
 		return -save_errno;
+	}
+
+	if (opt->map_user != -1 &&
+	    syd_map_id(SYD_PATH_PROC_UIDMAP,
+		       opt->map_user,
+		       opt->real_euid) < 0) {
+		int save_errno = errno;
+		syd_say_errno("Error mapping current user »%d« to root user.", opt->real_euid);
+		return -save_errno;
+	}
+
+	/* Since Linux 3.19 unprivileged writing of /proc/self/gid_map
+	 * has been disabled unless /proc/self/setgroups is written
+	 * first to permanently disable the ability to call setgroups
+	 * in that user namespace. */
+	if (opt->map_group != (gid_t) -1) {
+		if (opt->setgrpcmd == SYD_SETGROUPS_ALLOW) {
+			errno = EINVAL;
+			syd_say_errno("options setgroups=allow and "
+				      "map-group are mutually exclusive.");
+			return -EINVAL;
+		}
+		syd_setgroups_control(SYD_SETGROUPS_DENY);
+		syd_map_id(SYD_PATH_PROC_GIDMAP, opt->map_group, opt->real_egid);
+	}
+
+	if (opt->setgrpcmd != SYD_SETGROUPS_NONE &&
+	    (r = syd_setgroups_control(opt->setgrpcmd)) < 0) {
+		errno = -r;
+		switch (opt->setgrpcmd) {
+		case SYD_SETGROUPS_ALLOW:
+			syd_say_errno("Error allowing the »setgroups(2)« system "
+				      "call in the user namespace.");
+			break;
+		case SYD_SETGROUPS_DENY:
+			syd_say_errno("Error denying the »setgroups(2)« system "
+				      "call in the user namespace.");
+			break;
+		default:
+			abort();
+		}
+		/* fall through */
+	}
+
+	if ((opt->unshare_flags & CLONE_NEWNS) && opt->propagation &&
+	    (r = syd_set_propagation(opt->propagation)) < 0) {
+		errno = -r;
+		syd_say_errno("Error recursively setting the mount propagation "
+			      "flag in the new mount namespace.");
+		/* fall through */
 	}
 
 	if (opt->gid != -1 && setgid(opt->gid) < 0) {

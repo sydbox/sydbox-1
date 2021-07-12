@@ -176,12 +176,18 @@ struct syd_exec_opt {
 	const char *alias;
 	const char *workdir;
 	bool verbose;
-	uint32_t uid;
-	uint32_t gid;
+	uid_t uid;
+	gid_t gid;
+	uid_t map_user;
+	gid_t map_group;
+	uid_t real_euid;
+	gid_t real_egid;
+	int setgrpcmd;
 	const char *chroot;
 	const char *new_root;
 	const char *put_old;
 	int unshare_flags;
+	unsigned long propagation;
 	int32_t close_fds_beg;
 	int32_t close_fds_end;
 	bool reset_fds;
@@ -538,5 +544,208 @@ size_t syd_strlcat(char *restrict dst, const char *restrict src, size_t siz);
 size_t syd_strlcpy(char *restrict dst, const char *restrict src, size_t siz);
 
 int syd_str_startswith(const char *s, const char *prefix, bool *ret_bool);
+
+/***
+ * Syd's Path Names for Linux Systems
+ ***/
+#include <paths.h>
+
+/* used by kernel in /proc (e.g. /proc/swaps) for deleted files */
+#define SYD_PATH_DELETED_SUFFIX	" (deleted)"
+
+/* DEFPATHs from <paths.h> don't include /usr/local */
+#undef _PATH_DEFPATH
+
+#ifdef USE_USRDIR_PATHS_ONLY
+# define SYD_PATH_DEFPATH	        "/usr/local/bin:/usr/bin"
+#else
+# define SYD_PATH_DEFPATH	        "/usr/local/bin:/bin:/usr/bin"
+#endif
+
+#undef _PATH_DEFPATH_ROOT
+
+#ifdef USE_USRDIR_PATHS_ONLY
+# define SYD_PATH_DEFPATH_ROOT	"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+#else
+# define SYD_PATH_DEFPATH_ROOT	"/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+#endif
+
+#define SYD_PATH_HUSHLOGIN	".hushlogin"
+#define SYD_PATH_HUSHLOGINS	"/etc/hushlogins"
+
+#define SYD_PATH_NOLOGIN_TXT	"/etc/nologin.txt"
+
+# define SYD_PATH_MAILDIR	"/var/spool/mail"
+#define SYD_PATH_MOTDFILE	"/usr/share/misc/motd:/run/motd:/etc/motd"
+# define SYD_PATH_NOLOGIN	"/etc/nologin"
+#define SYD_PATH_VAR_NOLOGIN	"/var/run/nologin"
+
+#define SYD_PATH_LOGIN		"/bin/login"
+#define SYD_PATH_SHUTDOWN	"/sbin/shutdown"
+#define SYD_PATH_POWEROFF	"/sbin/poweroff"
+
+#define SYD_PATH_TERMCOLORS_DIRNAME "terminal-colors.d"
+#define SYD_PATH_TERMCOLORS_DIR	"/etc/" _PATH_TERMCOLORS_DIRNAME
+
+/* login paths */
+#define SYD_PATH_PASSWD		"/etc/passwd"
+#define SYD_PATH_GSHADOW	"/etc/gshadow"
+#define SYD_PATH_GROUP		"/etc/group"
+#define SYD_PATH_SHADOW_PASSWD	"/etc/shadow"
+#define SYD_PATH_SHELLS		"/etc/shells"
+
+#ifdef _PATH_TMP
+# define SYD_PATH_TMP	_PATH_TMP
+#else
+# define SYD_PATH_TMP	"/tmp/"
+#endif
+
+#ifndef _PATH_BTMP
+# define SYD_PATH_BTMP		"/var/log/btmp"
+#endif
+
+#define SYD_PATH_ISSUE_FILENAME	"issue"
+#define SYD_PATH_ISSUE_DIRNAME	_PATH_ISSUE_FILENAME ".d"
+
+#define SYD_PATH_ISSUE		"/etc/" _PATH_ISSUE_FILENAME
+#define SYD_PATH_ISSUEDIR	"/etc/" _PATH_ISSUE_DIRNAME
+
+#define SYD_PATH_OS_RELEASE_ETC	"/etc/os-release"
+#define SYD_PATH_OS_RELEASE_USR	"/usr/lib/os-release"
+#define SYD_PATH_NUMLOCK_ON	_PATH_RUNSTATEDIR "/numlock-on"
+#define SYD_PATH_LOGINDEFS	"/etc/login.defs"
+
+/* misc paths */
+#define SYD_PATH_WORDS             "/usr/share/dict/words"
+#define SYD_PATH_WORDS_ALT         "/usr/share/dict/web2"
+
+/* mount paths */
+#define SYD_PATH_FILESYSTEMS	"/etc/filesystems"
+#define SYD_PATH_PROC_SWAPS	"/proc/swaps"
+#define SYD_PATH_PROC_FILESYSTEMS	"/proc/filesystems"
+#define SYD_PATH_PROC_MOUNTS	"/proc/mounts"
+#define SYD_PATH_PROC_PARTITIONS	"/proc/partitions"
+#define SYD_PATH_PROC_DEVICES	"/proc/devices"
+#define SYD_PATH_PROC_MOUNTINFO	"/proc/self/mountinfo"
+#define SYD_PATH_PROC_LOCKS        "/proc/locks"
+#define SYD_PATH_PROC_CDROMINFO	"/proc/sys/dev/cdrom/info"
+
+#define SYD_PATH_PROC_UIDMAP	"/proc/self/uid_map"
+#define SYD_PATH_PROC_GIDMAP	"/proc/self/gid_map"
+#define SYD_PATH_PROC_SETGROUPS	"/proc/self/setgroups"
+
+#define SYD_PATH_PROC_FDDIR	"/proc/self/fd"
+
+#define SYD_PATH_PROC_ATTR_CURRENT	"/proc/self/attr/current"
+#define SYD_PATH_PROC_ATTR_EXEC	"/proc/self/attr/exec"
+#define SYD_PATH_PROC_CAPLASTCAP	"/proc/sys/kernel/cap_last_cap"
+
+
+#define SYD_PATH_SYS_BLOCK	"/sys/block"
+#define SYD_PATH_SYS_DEVBLOCK	"/sys/dev/block"
+#define SYD_PATH_SYS_DEVCHAR	"/sys/dev/char"
+#define SYD_PATH_SYS_CLASS	"/sys/class"
+#define SYD_PATH_SYS_SCSI	"/sys/bus/scsi"
+
+#define SYD_PATH_SYS_SELINUX	"/sys/fs/selinux"
+#define SYD_PATH_SYS_APPARMOR	"/sys/kernel/security/apparmor"
+
+#ifndef _PATH_MOUNTED
+# ifdef MOUNTED			/* deprecated */
+#  define SYD_PATH_MOUNTED	MOUNTED
+# else
+#  define SYD_PATH_MOUNTED	"/etc/mtab"
+# endif
+#endif
+
+# ifdef MNTTAB			/* deprecated */
+#  define SYD_PATH_MNTTAB	MNTTAB
+# elif defined(_PATH_MNTTAB)
+#  define SYD_PATH_MNTTAB	_PATH_MNTTAB
+# else
+#  define SYD_PATH_MNTTAB	"/etc/fstab"
+#endif
+
+#ifdef _PATH_DEV
+  /*
+   * The tailing '/' in _PATH_DEV is there for compatibility with libc.
+   */
+# define SYD_PATH_DEV	_PATH_DEV
+#else
+# define SYD_PATH_DEV	"/dev/"
+#endif
+
+#define SYD_PATH_DEV_MAPPER	"/dev/mapper"
+
+#define SYD_PATH_DEV_MEM	"/dev/mem"
+
+#define SYD_PATH_DEV_LOOP	"/dev/loop"
+#define SYD_PATH_DEV_LOOPCTL	"/dev/loop-control"
+
+/* udev paths */
+#define SYD_PATH_DEV_BYLABEL	"/dev/disk/by-label"
+#define SYD_PATH_DEV_BYUUID	"/dev/disk/by-uuid"
+#define SYD_PATH_DEV_BYID	"/dev/disk/by-id"
+#define SYD_PATH_DEV_BYPATH	"/dev/disk/by-path"
+#define SYD_PATH_DEV_BYPARTLABEL	"/dev/disk/by-partlabel"
+#define SYD_PATH_DEV_BYPARTUUID	"/dev/disk/by-partuuid"
+
+/* hwclock paths */
+#ifdef CONFIG_ADJTIME_PATH
+# define SYD_PATH_ADJTIME	CONFIG_ADJTIME_PATH
+#else
+# define SYD_PATH_ADJTIME	"/etc/adjtime"
+#endif
+
+#ifdef __ia64__
+# define SYD_PATH_RTC_DEV	"/dev/efirtc"
+#else
+# define SYD_PATH_RTC_DEV	"/dev/rtc0"
+#endif
+
+/* raw paths*/
+#define SYD_PATH_RAWDEVDIR	"/dev/raw/"
+#define SYD_PATH_RAWDEVCTL	_PATH_RAWDEVDIR "rawctl"
+/* deprecated */
+#define SYD_PATH_RAWDEVCTL_OLD	"/dev/rawctl"
+
+#define SYD_PATH_PROC_KERNEL	"/proc/sys/kernel"
+
+/* ipc paths */
+#define SYD_PATH_PROC_SYSV_MSG	"/proc/sysvipc/msg"
+#define SYD_PATH_PROC_SYSV_SEM	"/proc/sysvipc/sem"
+#define SYD_PATH_PROC_SYSV_SHM	"/proc/sysvipc/shm"
+#define SYD_PATH_PROC_IPC_MSGMAX	_PATH_PROC_KERNEL "/msgmax"
+#define SYD_PATH_PROC_IPC_MSGMNB	_PATH_PROC_KERNEL "/msgmnb"
+#define SYD_PATH_PROC_IPC_MSGMNI	_PATH_PROC_KERNEL "/msgmni"
+#define SYD_PATH_PROC_IPC_SEM		_PATH_PROC_KERNEL "/sem"
+#define SYD_PATH_PROC_IPC_SHMALL	_PATH_PROC_KERNEL "/shmall"
+#define SYD_PATH_PROC_IPC_SHMMAX	_PATH_PROC_KERNEL "/shmmax"
+#define SYD_PATH_PROC_IPC_SHMMNI	_PATH_PROC_KERNEL "/shmmni"
+
+/* util clamp */
+#define SYD_PATH_PROC_UCLAMP_MIN	_PATH_PROC_KERNEL "/sched_util_clamp_min"
+#define SYD_PATH_PROC_UCLAMP_MAX	_PATH_PROC_KERNEL "/sched_util_clamp_max"
+
+/* irqtop paths */
+#define SYD_PATH_PROC_INTERRUPTS	"/proc/interrupts"
+#define SYD_PATH_PROC_SOFTIRQS		"/proc/softirqs"
+#define SYD_PATH_PROC_UPTIME		"/proc/uptime"
+
+/* kernel command line */
+#define SYD_PATH_PROC_CMDLINE	"/proc/cmdline"
+
+/* logger paths */
+#define SYD_PATH_DEVLOG		"/dev/log"
+
+/* ctrlaltdel paths */
+#define SYD_PATH_PROC_CTRL_ALT_DEL	"/proc/sys/kernel/ctrl-alt-del"
+
+/* lscpu paths */
+#define SYD_PATH_PROC_CPUINFO	"/proc/cpuinfo"
+
+/* rfkill paths */
+#define SYD_PATH_DEV_RFKILL	"/dev/rfkill"
+#define SYD_PATH_SYS_RFKILL	"/sys/class/rfkill"
 
 #endif
