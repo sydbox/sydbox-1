@@ -1,10 +1,10 @@
 #!/bin/sh -x
 
-CFLAGS="-D__ALIP_WAS_HERE"
+#CFLAGS="-D__ALIP_WAS_HERE"
 #CFLAGS="${CFLAGS} -O0 -pipe -ggdb"
-CFLAGS="${CFLAGS} -Ofast -march=native -mtune=native"
-CFLAGS="${CFLAGS} -D__PINK_IS_BEHIND_THE_WALL"
-export CFLAGS
+#CFLAGS="${CFLAGS} -Ofast -march=native -mtune=native"
+#CFLAGS="${CFLAGS} -D__PINK_IS_BEHIND_THE_WALL"
+#export CFLAGS
 
 if ! [ -e /etc/exherbo-release ]; then
     PKG_CONFIG_PATH="$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH"
