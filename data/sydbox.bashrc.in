@@ -4,6 +4,16 @@
 # Copyright (c) 2021 Ali Polatel <alip@exherbo.org>
 # SPDX-License-Identifier: GPL-2.0-only
 
+# TODO: add esandbox function!
+unalias s
+s() {
+    if test $# -eq 0; then
+        stat /dev/sydbox
+    else
+        stat "/dev/sydbox/$(echo "$@" | tr ' ' '/')"
+    fi
+}
+
 # Don't run anything here unless we have an interactive shell.
 if [[ $- != *i* ]] ; then
 	return
