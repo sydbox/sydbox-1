@@ -208,7 +208,11 @@ int change_working_directory(void)
 	errno = 0;
 	int r_unused SYD_GCC_ATTR((unused));
 	r_unused = chdir(working_directory);
-	return -errno;
+
+	int save_errno = errno;
+	setenv("HOME", working_directory, 1);
+
+	return -save_errno;
 }
 
 int change_background(void)
