@@ -26,6 +26,7 @@
 #ifdef HAVE_LINUX_FS_H
 # include <linux/fs.h>
 #endif
+
 #define SYDBOX_BPF_EXPORT_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT|O_EXCL)
 #define SYDBOX_BPF_EXPORT_MODE 0600
 #define SYDBOX_BPF_DUMP_FLAGS (O_WRONLY|O_NOFOLLOW|O_CREAT|O_EXCL)
@@ -36,6 +37,7 @@
 #define SYDBOX_DUMP_MODE 0600
 
 #define SYSCALL_ARG_MAX 6
+#define SYD_UNIT_SEP 037
 
 #include <limits.h>
 #define UID_MAX INT_MAX

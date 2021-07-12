@@ -80,7 +80,7 @@ static int puts_exec(char **argv)
 	for (;argv[i]; i++) {
 		printf("%s", argv[i]);
 		if (argv[i+1] != NULL)
-			fputc(037, stdout); /* unit separator */
+			fputc(SYD_UNIT_SEP, stdout); /* unit separator */
 	}
 
 	return EXIT_SUCCESS;
