@@ -53,16 +53,13 @@ core/match/no_wildcard:literal
 # exec/kill_if_match+/home/***
 
 # Use binaries under well-known locations.
-# Leave out HOME for now till we have support
-# to substitute environment variables in
-# configuration.
 denylist/exec+/dev/***
 denylist/exec+/proc/***
 denylist/exec+/run/***
 denylist/exec+/sys/***
 denylist/exec+/var/***
 denylist/exec+/tmp/***
-#denylist/exec+/home/***
+denylist/exec+/home/***
 
 # Deny access to potentially dangerous paths.
 denylist/read+/boot/***
@@ -89,35 +86,6 @@ denylist/read+/etc/cron*/***
 denylist/read+/etc/crypttab
 denylist/read+/etc/securetty
 denylist/read+/etc/pam*/***
-
-# Disable /dev/mem /dev/kmem, /dev/port and /proc/kcore.
-denylist/read+/dev/k?mem
-denylist/read+/dev/port
-denylist/read+/dev/autofs
-denylist/read+/dev/btrfs-control
-denylist/read+/dev/ram*
-# /dev/core -> /proc/kcore
-denylist/read+/dev/core
-denylist/read+/proc/kcore
-denylist/read+/dev/usb*
-denylist/read+/dev/vga_arbiter
-denylist/read+/dev/watchdog*
-denylist/read+/dev/zram*
-
-# /proc/kallsyms exposes the kernel memory space address of many kernel symbols
-# (functions, variables, etc...). This information is useful to attackers in
-# identifying kernel versions/configurations and in preparing payloads for the
-# exploits of kernel space.
-denylist/read+/proc/kallsyms
-
-# Disable process memory attach.
-denylist/read+/proc/*/mem
-denylist/read+/proc/*/*map*
-denylist/read+/proc/*/map_files/***
-denylist/read+/proc/*/syscall
-
-# More critical paths under proc:
-denylist/read+/proc/*/root/***
 
 # No access to system logs
 denylist/read+/var/log/***
@@ -240,6 +208,22 @@ allowlist/network/connect+unix-abstract:userdb-*
 allowlist/write+/etc/bash_completion.d/***
 allowlist/write+/home/*/.bash_history*
 allowlist/write+/home/*/.history*
+
+# Allow tab completion for system paths.
+# Note we have `core/match/no_wildcard:literal' set,
+# with the alternative `core/match/no_wildcard:prefix`,
+# the rules below would allow write access to the whole system,
+# however with `literal', they just match the directories themselves,
+# and not the files beneath them which allows tab completion to work.
+allowlist/write+/
+allowlist/write+/dev
+allowlist/write+/proc
+allowlist/write+/run
+allowlist/write+/sys
+allowlist/write+/var
+allowlist/write+/usr/share/doc*/***
+allowlist/write+/usr/share/man*/***
+allowlist/write+/tmp
 
 # Allow access to Tor via IPv{4,6}
 allowlist/network/connect+LOOPBACK@9050
