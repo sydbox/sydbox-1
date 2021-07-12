@@ -700,7 +700,6 @@ AC_CHECK_HEADERS(m4_flatten([
 	sys/wait.h
 	sys/syscall.h
 	asm/fcntl.h
-	asm/signal.h
 	linux/fcntl.h
 	linux/fs.h
 	linux/mount.h
