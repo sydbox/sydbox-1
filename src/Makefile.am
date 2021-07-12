@@ -212,6 +212,7 @@ noinst_HEADERS+= \
 		 util.h \
 		 xfunc.h \
 		 syd-conf.h \
+		 syd-sys.h \
 		 syd-box.h
 syd_SOURCES+= \
 	     syd-box.c \
