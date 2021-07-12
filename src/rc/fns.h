@@ -1,3 +1,6 @@
+#ifndef SYD_RC_FNS_H
+#define SYD_RC_FNS_H
+
 void	Abort(void);
 void	Closedir(int);
 int	Creat(char*);
@@ -66,3 +69,5 @@ void	yyerror(char*);
 int	yylex(void);
 int	yyparse(void);
 int octal(char*);
+
+#endif /* !SYD_RC_FNS_H */

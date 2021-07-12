@@ -3,6 +3,7 @@
 #include "exec.h"
 #include "io.h"
 #include "fns.h"
+io *err;
 int pfmtnest = 0;
 
 void

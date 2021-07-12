@@ -1,4 +1,5 @@
-
+#ifndef SYD_RC_UNIX_H
+#define SYD_RC_UNIX_H
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -54,3 +55,4 @@ extern void errstr(char *, int);
 
 extern void exechistory(void);
 
+#endif /* !SYD_RC_UNIX_H */

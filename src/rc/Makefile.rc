@@ -37,7 +37,7 @@ $(TARG): $(OFILES)
 	$(CC) $(ARCHS) -o $(TARG) $(OFILES) $(LFLAGS)
 
 %.$O: %.c $(HFILES)
-	$(CC) $(ARCHS) $(CFLAGS) -c $*.c
+	$(CC) $(ARCHS) $(CFLAGS) -fPIE -c $*.c
 
 y.tab.h y.tab.c: $(YFILES)
 	$(YACC) $(YFLAGS) $(YFILES)
@@ -51,7 +51,7 @@ install: all rcmain.unix rc.1
 	install -m 644 rc.1 $(PREFIX)/share/man/man1
 
 %: %.c $(HFILES)
-	$(CC) $(ARCHS) -o $@ $< $(LFLAGS)
+	$(CC) $(ARCHS) -fPIE -o $@ $< $(LFLAGS)
 
 clean:
 	rm -f $(TARG) *.$O $(CLEANFILES)

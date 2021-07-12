@@ -1,3 +1,6 @@
+#ifndef SYD_RC_IO_H
+#define SYD_RC_IO_H
+
 /*
  * on Mac OS X, err is something else,
  * and assigning to it causes a bus error.
@@ -10,7 +13,7 @@ struct io{
 	int fd;
 	char *bufp, *ebuf, *strp, buf[NBUF];
 };
-io *err;
+extern io *err;
 io *openfd(int), *openstr(void), *opencore(char *, int);
 int emptybuf(io*);
 void pchr(io*, int);
@@ -28,3 +31,5 @@ void pcmd(io*, tree*);
 void pval(io*, word*);
 void pfnc(io*, thread*);
 void pfmt(io*, char*, ...);
+
+#endif /* !SYD_RC_IO_H */

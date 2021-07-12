@@ -1,3 +1,6 @@
+#ifndef SYD_RC_EXEC_H
+#define SYD_RC_EXEC_H 1
+
 /*
  * Definitions used in the interpreter
  */
@@ -56,21 +59,23 @@ struct thread{
 	tree *treenodes;		/* tree nodes created by this process */
 	thread *ret;		/* who continues when this finishes */
 };
-thread *runq;
+extern thread *runq;
 code *codecopy(code*);
-code *codebuf;				/* compiler output */
-int ntrap;				/* number of outstanding traps */
-int trap[NSIG];				/* number of outstanding traps per type */
+extern code *codebuf;				/* compiler output */
+extern int ntrap;				/* number of outstanding traps */
+extern int trap[NSIG];				/* number of outstanding traps per type */
 struct builtin{
 	char *name;
 	void (*fnc)(void);
 };
 extern struct builtin Builtin[];
-int eflagok;			/* kludge flag so that -e doesn't exit in startup */
-int havefork;
+extern int eflagok;			/* kludge flag so that -e doesn't exit in startup */
+extern int havefork;
 
 void execcd(void), execwhatis(void), execeval(void), execexec(void);
 int execforkexec(void);
 void execexit(void), execshift(void);
 void execwait(void), execumask(void), execdot(void), execflag(void);
 void execfunc(var*), execcmds(io *);
+
+#endif /* !SYD_RC_EXEC_H */

@@ -5,6 +5,9 @@
  * Please don't litter the code with ifdefs.  The three below (and one in
  * getflags) should be enough.
  */
+#ifndef SYD_RC_H
+#define SYD_RC_H 1
+
 #ifdef	Plan9
 #include <u.h>
 #include <libc.h>
@@ -53,7 +56,7 @@ tree *mung1(tree*, tree*), *mung2(tree*, tree*, tree*);
 tree *mung3(tree*, tree*, tree*, tree*), *epimung(tree*, tree*);
 tree *simplemung(tree*), *heredoc(tree*);
 void freetree(tree*);
-tree *cmdtree;
+extern tree *cmdtree;
 /*
  * The first word of any code vector is a reference count.
  * Always create a new reference to a code vector by calling codecopy(.).
@@ -64,10 +67,10 @@ union code{
 	int i;
 	char *s;
 };
-char *promptstr;
-int doprompt;
+extern char *promptstr;
+extern int doprompt;
 #define	NTOK	8192
-char tok[NTOK];
+extern char tok[NTOK];
 #define	APPEND	1
 #define	WRITE	2
 #define	READ	3
@@ -87,7 +90,7 @@ struct var{
 };
 var *vlook(char*), *gvlook(char*), *newvar(char*, var*);
 #define	NVAR	521
-var *gvar[NVAR];				/* hash for globals */
+extern var *gvar[NVAR];				/* hash for globals */
 #define	new(type)	((type *)emalloc(sizeof(type)))
 void *emalloc(long);
 void *Malloc(ulong);
@@ -98,7 +101,7 @@ struct here{
 	char *name;
 	struct here *next;
 };
-int mypid;
+extern int mypid;
 /*
  * Glob character escape in strings:
  *	In a string, GLOB must be followed by *?[ or GLOB.
@@ -117,10 +120,10 @@ int mypid;
 #define	threebyte(c)	((c&0xf0)==0xe0)
 #define	fourbyte(c)	((c&0xf8)==0xf0)
 
-char **argp;
-char **args;
-int nerror;		/* number of errors encountered during compilation */
-int doprompt;		/* is it time for a prompt? */
+extern char **argp;
+extern char **args;
+extern int nerror;		/* number of errors encountered during compilation */
+extern int doprompt;		/* is it time for a prompt? */
 /*
  * Which fds are the reading/writing end of a pipe?
  * Unfortunately, this can vary from system to system.
@@ -129,14 +132,19 @@ int doprompt;		/* is it time for a prompt? */
  */
 #define	PRD	0
 #define	PWR	1
-char *Rcmain, *Fdprefix;
+extern char *Rcmain, *Fdprefix;
 #define	register
 /*
  * How many dot commands have we executed?
  * Used to ensure that -v flag doesn't print rcmain.
  */
-int ndot;
-char *getstatus(void);
-int lastc;
-int lastword;
-int kidpid;
+extern int ndot;
+extern char *getstatus(void);
+extern int lastc;
+extern int lastword;
+extern int kidpid;
+
+int
+syd_rc_main(int argc, char *argv[]);
+
+#endif /* !SYD_RC_H */

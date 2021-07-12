@@ -4,6 +4,32 @@
 #include "io.h"
 #include "fns.h"
 /*
+ * rc.h global variables, added by alïp.
+ * To fix linker errors with lld.
+ */
+//tree *cmdtree;
+//code *codebuf;				/* compiler output */
+//int ntrap;				/* number of outstanding traps */
+int trap[NSIG];				/* number of outstanding traps per type */
+//var *gvar[NVAR];				/* hash for globals */
+char *promptstr;
+char tok[NTOK];
+int mypid;
+char **argp;
+char **args;
+int nerror;		/* number of errors encountered during compilation */
+/*
+ * How many dot commands have we executed?
+ * Used to ensure that -v flag doesn't print rcmain.
+ */
+int ndot;
+char *getstatus(void);
+int lastc;
+int kidpid;
+//thread *runq;
+
+
+/*
  * Start executing the given code at the given pc with the given redirection
  */
 char *argv0="rc";
@@ -130,7 +156,7 @@ newvar(char *name, var *next)
  * start interpreting code
  */
 int
-main(int argc, char *argv[])
+syd_rc_main(int argc, char *argv[])
 {
 	code bootstrap[32];
 	char num[12], *rcmain;
