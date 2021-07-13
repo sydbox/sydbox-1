@@ -2956,7 +2956,7 @@ int main(int argc, char **argv)
 
 #if 0
 	const char *env;
-	if ((env = getenv(SYDBOX_CONFIG_ENV)))
+	if ((env = secure_getenv(SYDBOX_CONFIG_ENV)))
 		config_parse_spec(env);
 #endif
 
