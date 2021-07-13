@@ -2960,6 +2960,30 @@ int main(int argc, char **argv)
 	if ((env = secure_getenv(SYDBOX_CONFIG_ENV)))
 		config_parse_spec(env);
 #endif
+	/*
+	 * Sanitise the environment for security.
+	 */
+	const char *user_dbus = secure_getenv("DBUS_SESSION_BUS_ADDRESS");
+	const char *user_home = secure_getenv("HOME");
+	const char *user_path = secure_getenv("PATH");
+	const char *user_shell = secure_getenv("SHELL");
+	const char *user_term = secure_getenv("TERM");
+	clearenv();
+	setenv("ID", SYD_RELEASE_KEY, 1);
+	if (user_dbus)
+		setenv("DBUS_SESSION_BUS_ADDRESS", user_dbus, 1);
+	if (user_home)
+		setenv("HOME", user_home, 1);
+	setenv("BROWSER", "firefox", 1);
+	if (user_path)
+		setenv("PATH", user_path, 1);
+	if (user_shell)
+		setenv("SHELL", user_shell, 1);
+	if (user_term)
+		setenv("TERM", user_term, 1);
+	setenv("TZ", "UTC", 1);
+	unsetenv("XAUTHORITY");
+	unsetenv("WINDOWID");
 
 	if (opt_export_mode != SYDBOX_EXPORT_NUL)
 		sydbox->export_mode = opt_export_mode;
@@ -2982,6 +3006,7 @@ int main(int argc, char **argv)
 	int my_argc;
 	char **my_argv;
 	if (optind == argc) {
+		setenv("SHELL", "/bin/bash", 1);
 		config_parse_spec(DATADIR "/" PACKAGE
 				  "/default.syd-" STRINGIFY(SYDBOX_API_VERSION));
 		mapuser = 0;
