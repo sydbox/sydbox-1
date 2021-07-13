@@ -411,7 +411,7 @@ int main(int argc, char **argv)
 
 	int options_index, r = 0;
 	char *opt_check = NULL;
-	const char *home = getenv("HOME");
+	const char *home = secure_getenv("HOME");
 	while ((opt = getopt_long(argc, argv, "hvc:o:", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
