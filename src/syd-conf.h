@@ -16,6 +16,14 @@
 #define SYDCONF_H
 
 #include "HELPME.h"
+
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif /* !_GNU_SOURCE */
+
 #ifndef IN_SYDBOX
 # define IN_SYDBOX 0
 # endif
@@ -37,6 +45,7 @@
 #define SYDBOX_DUMP_MODE 0600
 
 #define SYSCALL_ARG_MAX 6
+#define SYD_ARG_SEP 040
 #define SYD_UNIT_SEP 037
 
 #include <limits.h>
@@ -110,15 +119,27 @@
 #endif
 
 /* Configuration */
+/*
 #ifndef SYDBOX_PATH_MAX
 # if defined(PATH_MAX)
-#  define SYDBOX_PATH_MAX (PATH_MAX+1)
+#  define SYDBOX_PATH_MAX ((PATH_MAX*4)+1)
 # elif defined(MAXPATHLEN)
-#  define SYDBOX_PATH_MAX (MAXPATHLEN+1)
+#  define SYDBOX_PATH_MAX ((MAXPATHLEN*4)+1)
 # else
-#  define SYDBOX_PATH_MAX (256+1)
+#  define SYDBOX_PATH_MAX (4096+1)
 # endif
 #endif
+*/
+/* When you update these variables,
+ * update the asprintf invocation in
+ * path_make_absolute() too!
+ */
+#define SYDBOX_NAME_MAX 1025
+#define SYDBOX_PATH_MAX (4096+1)
+#define SYDBOX_NDIR_MAX (4096-SYDBOX_NAME_MAX+1)
+#define SYDBOX_NAME_MAX_STR STRINGIFY(SYDBOX_NAME_MAX)
+#define SYDBOX_PATH_MAX_STR STRINGIFY(SYDBOX_PATH_MAX)
+#define SYDBOX_NDIR_MAX_STR STRINGIFY(SYDBOX_NDIR_MAX)
 
 #ifndef SYDBOX_MAXSYMLINKS
 # if defined(SYMLOOP_MAX)
