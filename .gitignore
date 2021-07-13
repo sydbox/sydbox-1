@@ -112,15 +112,17 @@ Makefile
 /man/*.html
 /man/*.ent
 
+# Plan9 Rc
+/rc/*.tab.h
+/rc/*.tab.c
+/rc/syn.c
+
 # Sydb☮x-1
 /misc/syd-hilite
 /src/sydbox
 /src/sydfmt
 /src/sydbox-dump
 /src/shoebox
-/src/rc/*.tab.h
-/src/rc/*.tab.c
-/src/rc/syn.c
 /t/sydtest
 /t/bin-wrappers/sydbox
 /t/bin-wrappers/sydbox-dump
