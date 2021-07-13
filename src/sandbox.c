@@ -163,7 +163,8 @@ static char *box_resolve_path_special(const char *abspath, pid_t tid)
 	return p;
 }
 
-static int box_resolve_path_helper(const char *abspath, pid_t tid,
+static int box_resolve_path_helper(const char *restrict abspath,
+				   pid_t tid,
 				   unsigned rmode, char **res)
 {
 	int r;
@@ -323,18 +324,20 @@ static int box_check_ftype(const char *path, syscall_info_t *info)
 	return deny_errno;
 }
 
-SYD_GCC_ATTR((nonnull(1,2,3,4)))
+SYD_GCC_ATTR((nonnull(1,2,3,4,5)))
 int box_resolve_dirfd(syd_process_t *current, syscall_info_t *info,
-		      char **prefix, bool *badfd)
+		      char **prefix, int *dirfd, bool *badfd)
 {
 	int r;
 
+	*dirfd = AT_FDCWD;
 	if (info->at_func) {
 		uint8_t fd_index;
 		if (info->arg_index == SYSCALL_ARG_MAX)
 			fd_index = 0;
 		else
 			fd_index = info->arg_index - 1;
+		*dirfd = current->args[fd_index];
 		r = path_prefix(current, fd_index, prefix);
 		if (r == -ESRCH) {
 			return -ESRCH;
@@ -355,9 +358,10 @@ int box_resolve_dirfd(syd_process_t *current, syscall_info_t *info,
 	return 0;
 }
 
-SYD_GCC_ATTR((nonnull(1,2,4,5,6)))
+SYD_GCC_ATTR((nonnull(1,2,5,6,7)))
 int box_vm_read_path(syd_process_t *current, syscall_info_t *info,
-		     bool badfd, char **path, bool *null, bool *done)
+		     int dirfd, bool badfd,
+		     char **path, bool *null, bool *done)
 {
 	int r;
 	char *p = NULL;
@@ -383,15 +387,22 @@ int box_vm_read_path(syd_process_t *current, syscall_info_t *info,
 			return r;
 		}
 	} else { /* r == 0 */
-		/* Careful, we may both have a bad fd and the path may be either
-		 * NULL or empty string! */
-		if (badfd && (!p || !*p || !path_is_absolute(p))) {
+		/*
+		 * 1. Handle `.' as argument.
+		 * 2. Careful, we may both have a bad fd and the path may be either
+		 * NULL or empty string!
+		 * */
+		if (p && streq(p, ".")) {
+			free(p);
+			p = xstrdup(P_CWD(current));
+		} else if (badfd && (!p || !*p || !path_is_absolute(p)) &&
+			   dirfd != AT_FDCWD) {
 			/* Bad directory for non-absolute path! */
 			r = deny(current, EBADF);
 			if (sydbox->config.violation_raise_fail)
-				violation(current, "%s(»%s«)",
+				violation(current, "%s(%d,»%s«)",
 					  current->sysname,
-					  p);
+					  dirfd, p);
 			*done = true;
 			return r;
 		}
@@ -404,9 +415,10 @@ int box_vm_read_path(syd_process_t *current, syscall_info_t *info,
 int box_check_path(syd_process_t *current, syscall_info_t *info)
 {
 	bool badfd;
-	int r, deny_errno, stat_errno;
+	int r = 0, dirfd, deny_errno, stat_errno;
 	pid_t pid;
 	char *prefix, *path, *abspath;
+	const char *resolve_prefix = NULL;
 
 	assert(current);
 	assert(info);
@@ -424,12 +436,12 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 	}
 
 	/* Step 1: resolve file descriptor for »at« suffixed functions */
-	if ((r = box_resolve_dirfd(current, info, &prefix, &badfd)) < 0)
+	if ((r = box_resolve_dirfd(current, info, &prefix, &dirfd, &badfd)) < 0)
 		return r;
 
 	/* Step 2: VM read path */
 	bool done, null;
-	if ((r = box_vm_read_path(current, info, badfd, &path, &null, &done)) < 0 &&
+	if ((r = box_vm_read_path(current, info, dirfd, badfd, &path, &null, &done)) < 0 &&
 	    done)
 		goto out;
 	if (null)
@@ -437,7 +449,12 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 
 	/* Step 3: resolve path */
 resolve_path:
-	if ((r = box_resolve_path(path, prefix ? prefix : P_CWD(current),
+	if (prefix)
+		resolve_prefix = prefix;
+	if ((r = box_resolve_path(path,
+				  resolve_prefix
+					? resolve_prefix
+					: P_CWD(current),
 				  pid, info->rmode, &abspath)) < 0) {
 		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
@@ -501,6 +518,8 @@ check_access:
 			goto resolve_path;
 		}
 	}
+	if (!prefix && !path)
+		goto out;
 
 	if (info->safe && !sydbox->config.violation_raise_safe) {
 		/* ignore safe system call */
