@@ -69,8 +69,6 @@ pid_t syd_clone3(struct clone_args *args);
 #define SYD_SHA1_BLKSZ 64
 #define SYD_MAX_HEXSZ SYD_SHA1_HEXSZ
 
-void syd_hash_sha1_init(void);
-
 char *syd_hash_to_hex_r(char *buffer, const unsigned char *hash);
 char *syd_hash_to_hex(const unsigned char *hash); /* static buffer result! */
 int syd_hex_to_bytes(unsigned char *binary, const char *hex, size_t len);
@@ -84,11 +82,6 @@ int syd_path_to_sha1_hex(const char *pathname, char *hex);
 #define SYD_XXH32_HEXSZ 8
 #define SYD_XXH64_HEXSZ 16
 #define SYD_XXH128_HEXSZ 32
-
-/* Call these functions before interfacing or you'll get ECANCELED.
- */
-void syd_hash_xxh32_init(void);
-void syd_hash_xxh64_init(void);
 
 uint32_t syd_name_to_xxh32_hex(const void *restrict buffer, size_t size,
 			       uint32_t seed, char *hex);

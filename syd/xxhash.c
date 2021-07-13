@@ -37,8 +37,12 @@
 #define XSUM_NO_MAIN
 # include "cli/xsum_os_specific.c"
 
+static void syd_hash_xxh64_init(void);
+static void syd_hash_xxh32_init(void);
 static XXH64_state_t *state64;
 static XXH32_state_t *state32;
+static bool state64_init;
+static bool state32_init;
 
 #define SYD_PATH_TO_HEX_BUFSZ (65536) /* best so far goes over 2G/s with xxh64. */
 static char glob_buf[SYD_PATH_TO_HEX_BUFSZ];
@@ -50,12 +54,20 @@ static unsigned syd_isLittleEndian(void)
     return one.c[0];
 }
 #endif
+#define SYD_HASH_SALT "1984GogoL1984"
 
 SYD_GCC_ATTR((nonnull(1,4)))
 uint32_t syd_name_to_xxh32_hex(const void *restrict buffer, size_t size,
 			       uint32_t seed, char *hex)
 {
-	XXH32_hash_t hash = XXH32(buffer, size, seed);
+	char *buffer_salted;
+
+	if (asprintf(&buffer_salted, SYD_HASH_SALT"%s"SYD_HASH_SALT, (const char*)buffer) == -1)
+		return 0;
+
+	XXH32_hash_t hash = XXH32(buffer_salted, size, seed);
+
+	free(buffer_salted);
 
 	hex[0] = '\0';
 	sprintf(hex, "%" syd_str(SYD_XXH32_HEXSZ)"x", hash);
@@ -90,7 +102,14 @@ SYD_GCC_ATTR((nonnull(1,4)))
 uint64_t syd_name_to_xxh64_hex(const void *restrict buffer, size_t size,
 			       uint64_t seed, char *hex)
 {
-	XXH64_hash_t hash = XXH64(buffer, size, seed);
+	char *buffer_salted;
+
+	if (asprintf(&buffer_salted, SYD_HASH_SALT "%s" SYD_HASH_SALT, (const char *)(const char *)buffer) == -1)
+		return 0;
+
+	XXH64_hash_t hash = XXH64(buffer_salted, size, seed);
+
+	free(buffer_salted);
 
 	hex[0] = '\0';
 	sprintf(hex, "%" syd_str(SYD_XXH64_HEXSZ)"lx", hash);
@@ -132,6 +151,10 @@ int syd_file_to_xxh64_hex(FILE *file, uint64_t *digest, char *hex)
 {
 	int r = 0;
 
+	if (!state64_init) {
+		syd_hash_xxh64_init();
+		state64_init = true;
+	}
 	if (!state64)
 		return -ECANCELED;
 
@@ -170,6 +193,10 @@ int syd_file_to_xxh32_hex(FILE *file, uint32_t *digest, char *hex)
 {
 	int r = 0;
 
+	if (!state32_init) {
+		syd_hash_xxh32_init();
+		state32_init = true;
+	}
 	if (!state32)
 		return -ECANCELED;
 
@@ -240,7 +267,7 @@ int syd_path_to_xxh32_hex(const char *restrict pathname, uint32_t *digest, char 
 }
 
 /*************** CHECKSUM CALCULATION *****************************************/
-void syd_hash_xxh64_init(void)
+static void syd_hash_xxh64_init(void)
 {
 	/* create a hash state, once.
 	 * this is *not* thread safe.
@@ -249,7 +276,7 @@ void syd_hash_xxh64_init(void)
 		state64 = XXH64_createState();
 }
 
-void syd_hash_xxh32_init(void)
+static void syd_hash_xxh32_init(void)
 {
 	/* create a hash state, once.
 	 * this is *not* thread safe.

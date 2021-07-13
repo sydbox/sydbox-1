@@ -18,6 +18,13 @@
 #include <syd/syd.h>
 #include <syd/sha1dc_syd.h>
 
+static void syd_hash_sha1_init(void);
+static void syd_hash_sha1_update(syd_SHA_CTX *ctx, const void *data,
+				 size_t len);
+SYD_GCC_ATTR((warn_unused_result))
+static int syd_hash_sha1_final(syd_SHA_CTX *ctx, unsigned char *hash);
+
+static int syd_sha1_initialised;
 static syd_SHA_CTX glob_ctx;
 static unsigned char glob_hash[SYD_SHA1_RAWSZ];
 static char glob_hex[SYD_SHA1_HEXSZ + 1];
@@ -28,6 +35,10 @@ static char glob_buf[SYD_PATH_TO_HEX_BUFSIZ];
 
 int syd_file_to_sha1_hex(FILE *file, char *hex)
 {
+	if (!syd_sha1_initialised) {
+		syd_hash_sha1_init();
+		syd_sha1_initialised = 1;
+	}
 	int r = 0;
 	for (;;) {
 		errno = 0;
@@ -71,19 +82,19 @@ void syd_hash_sha1_init_ctx(syd_SHA_CTX *ctx)
 	SHA1DCSetDetectReducedRoundCollision(ctx, 1);
 }
 
-void syd_hash_sha1_init(void)
+static void syd_hash_sha1_init(void)
 {
 	syd_hash_sha1_init_ctx(&glob_ctx);
 }
 
-void syd_hash_sha1_update(syd_SHA_CTX *ctx, const void *data,
+static void syd_hash_sha1_update(syd_SHA_CTX *ctx, const void *data,
 				 size_t len)
 {
 	syd_SHA1_Update(ctx, data, len);
 }
 
 SYD_GCC_ATTR((warn_unused_result))
-int syd_hash_sha1_final(syd_SHA_CTX *ctx, unsigned char *hash)
+static int syd_hash_sha1_final(syd_SHA_CTX *ctx, unsigned char *hash)
 {
 	return syd_SHA1_Final(hash, ctx) ? 0 : -EKEYREVOKED;
 }

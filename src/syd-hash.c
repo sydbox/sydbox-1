@@ -517,17 +517,14 @@ int main(int argc, char **argv)
 	case SYD_HASH_XXH64:
 		hex = hex_xxh64;
 		f2h = f2h_xxh64;
-		syd_hash_xxh64_init();
 		break;
 	case SYD_HASH_SHA1DC_PARTIALCOLL:
 		hex = hex_sha1;
 		f2h = f2h_sha1;
-		syd_hash_sha1_init();
 		break;
 	case SYD_HASH_XXH32:
 		hex = hex_xxh32;
 		f2h = f2h_xxh32;
-		syd_hash_xxh32_init();
 		break;
 	}
 
