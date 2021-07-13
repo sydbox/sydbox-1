@@ -162,7 +162,6 @@ dnl -fsanitize=undefined
 dnl -fsanitize-address-use-after-return=always
 SYD_CFLAGS_OPT="\
 -D_SYD_OPT \
--std=gnu11 \
 -O3 -g \
 -march=native \
 -mtune=native \
