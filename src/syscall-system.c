@@ -577,7 +577,7 @@ int sys_openat2(syd_process_t *current)
 			log_fd = sydbox->config.fd_log_read;
 			log_acl = sydbox->config.log_read;
 		}
-		log_path(current, log_fd, log_acl, 1, abspath);
+		log_path(current, log_fd, &log_acl, 1, abspath);
 	}
 
 	/* Step 5: check for security breach */

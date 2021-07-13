@@ -38,9 +38,9 @@ static enum syd_hash_type {
 } hash_type;
 
 static char *hex;
-static char hex_sha1[SYD_SHA1_HEXSZ];
-static char hex_xxh64[SYD_XXH64_HEXSZ];
-static char hex_xxh32[SYD_XXH32_HEXSZ];
+static char hex_sha1[SYD_SHA1_HEXSZ+1];
+static char hex_xxh64[SYD_XXH64_HEXSZ+1];
+static char hex_xxh32[SYD_XXH32_HEXSZ+1];
 
 /* Make xxHash interface similar to Sha1DcPartialColl:
  * We write wrappers to pass the second argument as Null.
