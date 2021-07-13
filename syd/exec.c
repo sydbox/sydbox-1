@@ -21,7 +21,8 @@ pid_t syd_clone3(struct clone_args *args)
 }
 
 SYD_GCC_ATTR((warn_unused_result))
-pid_t syd_clone(int flags, int exit_signal,
+pid_t syd_clone(unsigned long long flags,
+		int exit_signal,
 		int *pidfd_out,
 		pid_t *ptid_out,
 		pid_t *ctid_out)

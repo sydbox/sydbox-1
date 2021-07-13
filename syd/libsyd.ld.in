@@ -56,6 +56,7 @@ global:
 	syd_proc_task_open;
 	syd_proc_task_next;
 	syd_proc_pid_next;
+	syd_proc_yama_ptrace_scope;
 	syd_pidfd_open;
 	syd_pidfd_getfd;
 	syd_pidfd_send_signal;

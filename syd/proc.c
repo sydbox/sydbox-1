@@ -560,3 +560,47 @@ int syd_proc_pid_next(DIR *proc, pid_t *pid_task)
 {
 	return syd_proc_task_next(proc, pid_task);
 }
+
+int syd_proc_yama_ptrace_scope(uint8_t *yama_ptrace_scope)
+{
+	int fd, save_errno;
+	int ptrace_scope;
+	FILE *f;
+
+	if (yama_ptrace_scope == NULL)
+		return -EINVAL;
+
+	fd = openat(AT_FDCWD, "/proc/sys/kernel/yama/ptrace_scope", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	save_errno = errno;
+	if (fd < 0) {
+		syd_say_errno("openat");
+		return -save_errno;
+	}
+	f = fdopen(fd, "r");
+	if (!f) {
+		syd_say_errno("fdopen");
+		save_errno = errno;
+		close(fd);
+		return -save_errno;
+	}
+
+	char l[sizeof(uint8_t)+1] = {0};
+	errno = 0;
+	if (fgets(l, sizeof(uint8_t)+1, f) == NULL) {
+		if (errno != 0) {
+			syd_say_errno("fclose");
+			fclose(f);
+			return -EINVAL;
+		}
+	}
+
+	if (sscanf(l, "%"PRIu8, &ptrace_scope) != 1) {
+		fclose(f);
+		return -EINVAL;
+	}
+
+	fclose(f);
+	*yama_ptrace_scope = ptrace_scope;
+
+	return 0;
+}

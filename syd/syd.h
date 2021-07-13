@@ -205,7 +205,8 @@ int syd_execv(const char *command,
 /* 'private' is kernel default */
 #define SYD_UNSHARE_PROPAGATION_DEFAULT  (MS_REC | MS_PRIVATE)
 SYD_GCC_ATTR((warn_unused_result))
-pid_t syd_clone(int flags, int exit_signal,
+pid_t syd_clone(unsigned long long flags,
+		int exit_signal,
 		int *pidfd_out,
 		pid_t *ptid_out,
 		pid_t *ctid_out);;
@@ -410,6 +411,11 @@ int syd_proc_task_next(DIR *task_dir, pid_t *task_pid);
  */
 int syd_proc_pid_next(DIR *proc, pid_t *pid_task);
 
+/*
+ * Check value of the setting YAMA Ptrace Scope.
+ */
+int syd_proc_yama_ptrace_scope(uint8_t *yama_ptrace_scope);
+
 /* Wrappers for pidfd utilities */
 int syd_pidfd_open(pid_t pid, unsigned int flags);
 int syd_pidfd_getfd(int pidfd, int targetfd, unsigned int flags);
@@ -595,7 +601,9 @@ int syd_str_startswith(const char *s, const char *prefix, bool *ret_bool);
 # define SYD_PATH_TMP	"/tmp/"
 #endif
 
-#ifndef _PATH_BTMP
+#ifdef _PATH_BTMP
+# define SYD_PATH_BTMP		_PATH_BTMP
+# else
 # define SYD_PATH_BTMP		"/var/log/btmp"
 #endif
 
@@ -645,12 +653,14 @@ int syd_str_startswith(const char *s, const char *prefix, bool *ret_bool);
 #define SYD_PATH_SYS_SELINUX	"/sys/fs/selinux"
 #define SYD_PATH_SYS_APPARMOR	"/sys/kernel/security/apparmor"
 
-#ifndef _PATH_MOUNTED
+#ifdef _PATH_MOUNTED
 # ifdef MOUNTED			/* deprecated */
 #  define SYD_PATH_MOUNTED	MOUNTED
 # else
-#  define SYD_PATH_MOUNTED	"/etc/mtab"
+#  define SYD_PATH_MOUNTED	_PATH_MOUNTED
 # endif
+#else
+# define SYD_PATH_MOUNTED	"/etc/mtab"
 #endif
 
 # ifdef MNTTAB			/* deprecated */
@@ -710,8 +720,8 @@ int syd_str_startswith(const char *s, const char *prefix, bool *ret_bool);
 #define SYD_PATH_PROC_SYSV_MSG	"/proc/sysvipc/msg"
 #define SYD_PATH_PROC_SYSV_SEM	"/proc/sysvipc/sem"
 #define SYD_PATH_PROC_SYSV_SHM	"/proc/sysvipc/shm"
-#define SYD_PATH_PROC_IPC_MSGMAX	_PATH_PROC_KERNEL "/msgmax"
-#define SYD_PATH_PROC_IPC_MSGMNB	_PATH_PROC_KERNEL "/msgmnb"
+#define SYD_PATH_PROC_IPC_MSGMAX	SYD_PATH_PROC_KERNEL "/msgmax"
+#define SYD_PATH_PROC_IPC_MSGMNB	SYD_PATH_PROC_KERNEL "/msgmnb"
 #define SYD_PATH_PROC_IPC_MSGMNI	_PATH_PROC_KERNEL "/msgmni"
 #define SYD_PATH_PROC_IPC_SEM		_PATH_PROC_KERNEL "/sem"
 #define SYD_PATH_PROC_IPC_SHMALL	_PATH_PROC_KERNEL "/shmall"
