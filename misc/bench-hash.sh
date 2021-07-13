@@ -25,7 +25,7 @@ fi
 # Benchmark Sha1, Xxh32 and Xxh64 hashes:
 # 1. 10G file with all zeroes.
 # 2. 4G file with random data.
-sudo nice -n -20 ionice -c3 "$HOME"/.cargo/bin/hyperfine \
+hyperfine \
     --warmup 3 \
     --export-asciidoc "$out".asciidoc \
     --export-csv "$out".csv \
@@ -37,7 +37,7 @@ sudo nice -n -20 ionice -c3 "$HOME"/.cargo/bin/hyperfine \
     'dd if=/dev/zero bs=1M count=10240 | syd hash -3o-' \
     | tee "§out".log
 
-#sudo nice -n -20 ionice -c3 "$HOME"/.cargo/bin/hyperfine \
+#hyperfine \
 #    --warmup 3 \
 #    --export-asciidoc bench-r.asciidoc \
 #    --export-csv bench-r.csv \
