@@ -34,7 +34,7 @@ static inline unsigned acl_check(enum acl_action defaction,
 	return acl_default(defaction, match_ptr);
 }
 
-unsigned acl_pathmatch(enum acl_action defaction, const aclq_t *aclq,
+unsigned acl_pathmatch(enum acl_action defaction, const aclq_t *restrict aclq,
 		       const void *needle, struct acl_node **match)
 {
 	struct acl_node *node, *node_match;
@@ -47,21 +47,17 @@ unsigned acl_pathmatch(enum acl_action defaction, const aclq_t *aclq,
 	node_match = NULL;
 	ACLQ_FOREACH(node, aclq) {
 		if (pathmatch(node->match, path)) {
-			//say("match: %s ⊆ %s", (const char *)node->match, path);
+			/*sayv("match: %s ⊆ %s", (const char *)node->match, path);*/
 			node_match = node;
-		}
-#if 0
-		} else {
-			say("nomatch: %s ⨂ %s", (const char *)node->match,
-			    path);
-		}
-#endif
+		} /*else {
+			sayv("nomatch: %s ⨂ %s", (const char *)node->match, path);
+		} */
 	}
 
 	return acl_check(defaction, node_match, match);
 }
 
-unsigned acl_sockmatch(enum acl_action defaction, const aclq_t *aclq,
+unsigned acl_sockmatch(enum acl_action defaction, const aclq_t *restrict aclq,
 		       const void *needle, struct acl_node **match)
 {
 	struct acl_node *node, *node_match;
@@ -80,7 +76,7 @@ unsigned acl_sockmatch(enum acl_action defaction, const aclq_t *aclq,
 	return acl_check(defaction, node_match, match);
 }
 
-unsigned acl_sockmatch_saun(enum acl_action defaction, const aclq_t *aclq,
+unsigned acl_sockmatch_saun(enum acl_action defaction, const aclq_t *restrict aclq,
 			    const void *needle, struct acl_node **match)
 {
 	struct acl_node *node, *node_match;
@@ -102,7 +98,7 @@ unsigned acl_sockmatch_saun(enum acl_action defaction, const aclq_t *aclq,
 	return acl_check(defaction, node_match, match);
 }
 
-bool acl_match_path(enum acl_action defaction, const aclq_t *aclq,
+bool acl_match_path(enum acl_action defaction, const aclq_t *restrict aclq,
 		    const char *path, const char **match)
 {
 	unsigned r;
@@ -120,7 +116,7 @@ bool acl_match_path(enum acl_action defaction, const aclq_t *aclq,
 	return false;
 }
 
-bool acl_match_sock(enum acl_action defaction, const aclq_t *aclq,
+bool acl_match_sock(enum acl_action defaction, const aclq_t *restrict aclq,
 		    const struct pink_sockaddr *psa, struct sockmatch **match)
 {
 	unsigned r;
@@ -138,7 +134,7 @@ bool acl_match_sock(enum acl_action defaction, const aclq_t *aclq,
 	return false;
 }
 
-bool acl_match_saun(enum acl_action defaction, const aclq_t *aclq,
+bool acl_match_saun(enum acl_action defaction, const aclq_t *restrict aclq,
 		    const char *abspath, struct sockmatch **match)
 {
 	enum acl_action r;

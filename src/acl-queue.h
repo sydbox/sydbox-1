@@ -41,17 +41,17 @@ struct acl_node {
 TAILQ_HEAD(acl_queue, acl_node);
 typedef struct acl_queue aclq_t;
 
-unsigned acl_pathmatch(enum acl_action defaction, const aclq_t *aclq,
+unsigned acl_pathmatch(enum acl_action defaction, const aclq_t *restrict aclq,
 		       const void *needle, struct acl_node **match);
-unsigned acl_sockmatch(enum acl_action defaction, const aclq_t *aclq,
+unsigned acl_sockmatch(enum acl_action defaction, const aclq_t *restrict aclq,
 		       const void *needle, struct acl_node **match);
-unsigned acl_sockmatch_saun(enum acl_action defaction, const aclq_t *aclq,
+unsigned acl_sockmatch_saun(enum acl_action defaction, const aclq_t *restrict aclq,
 			    const void *needle, struct acl_node **match);
-bool acl_match_path(enum acl_action defaction, const aclq_t *aclq,
+bool acl_match_path(enum acl_action defaction, const aclq_t *restrict aclq,
 		    const char *path, const char **match);
-bool acl_match_sock(enum acl_action defaction, const aclq_t *aclq,
+bool acl_match_sock(enum acl_action defaction, const aclq_t *restrict aclq,
 		    const struct pink_sockaddr *psa, struct sockmatch **match);
-bool acl_match_saun(enum acl_action defaction, const aclq_t *aclq,
+bool acl_match_saun(enum acl_action defaction, const aclq_t *restrict aclq,
 		    const char *abspath, struct sockmatch **match);
 int acl_append_pathmatch(enum acl_action action, const char *pattern, aclq_t *aclq);
 int acl_remove_pathmatch(enum acl_action action, const char *pattern, aclq_t *aclq);
