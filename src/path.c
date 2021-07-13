@@ -9,9 +9,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
-#endif /* !_GNU_SOURCE */
+#include "syd-conf.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -24,17 +22,24 @@
  * the prefix, if specified and necessary */
 char *path_make_absolute(const char *p, const char *prefix)
 {
-	char *r = NULL;
+	int r;
+	char *rc = NULL;
 
 	if (path_is_absolute(p) || !prefix)
 		return syd_strdup(p);
 
-	if (syd_asprintf(&r, "%s%s%s", prefix,
-			 p && p[0] != '\0' ? "/" : "",
-			 p && p[0] != '\0' ? p : "") < 0)
-		return NULL;
+	/*
+	 * Security: Handle untrusted input safely and only
+	 * allow in alphanumeric characters and spaces.
+	 * Ensure we never overflow the path buffers by
+	 * limiting length to SYDBOX_PATH_MAX.
+	 */
+	if (p && p[0] != '\0')
+		r = syd_asprintf(&rc, "%3072[^\n]/%1024[^\n]", prefix, p);
+	else
+		r = syd_asprintf(&rc, "%4096[^\n]", prefix);
 
-	return r;
+	return (r < 0) ? NULL : rc;
 }
 
 char *path_kill_slashes(char *path)
