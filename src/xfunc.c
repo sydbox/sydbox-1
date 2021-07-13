@@ -97,7 +97,7 @@ void say(const char *fmt, ...)
 	va_end(ap);
 	fputc('\n', stderr);
 
-	if (getenv("DEBUG")) {
+	if (secure_getenv("DEBUG")) {
 		FILE *f = fopen("sydbox.out", "w");
 		if (!f)
 			return;
