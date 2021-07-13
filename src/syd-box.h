@@ -277,6 +277,22 @@ enum magic_key {
 	MAGIC_KEY_FILTER_WRITE,
 	MAGIC_KEY_FILTER_NETWORK,
 
+	MAGIC_KEY_LOG,
+	MAGIC_KEY_LOG_EXEC,
+	MAGIC_KEY_LOG_READ,
+	MAGIC_KEY_LOG_WRITE,
+	MAGIC_KEY_LOG_NETWORK,
+	MAGIC_KEY_LOG_NETWORK_BIND,
+	MAGIC_KEY_LOG_NETWORK_CONNECT,
+
+	MAGIC_KEY_LOG_FILE,
+	MAGIC_KEY_LOG_FILE_EXEC,
+	MAGIC_KEY_LOG_FILE_READ,
+	MAGIC_KEY_LOG_FILE_WRITE,
+	MAGIC_KEY_LOG_FILE_NETWORK,
+	MAGIC_KEY_LOG_FILE_NETWORK_BIND,
+	MAGIC_KEY_LOG_FILE_NETWORK_CONNECT,
+
 	MAGIC_KEY_CMD,
 	MAGIC_KEY_CMD_EXEC,
 
@@ -524,6 +540,19 @@ struct config {
 	aclq_t filter_read;
 	aclq_t filter_write;
 	aclq_t filter_network;
+
+	int fd_log_exec;
+	int fd_log_exec_read;
+	int fd_log_read;
+	int fd_log_write;
+	int fd_log_network_bind;
+	int fd_log_network_connect;
+
+	aclq_t log_exec;
+	aclq_t log_read;
+	aclq_t log_write;
+	aclq_t log_network_bind;
+	aclq_t log_network_connect;
 
 	struct syd_map_64s proc_pid_auto;
 	aclq_t acl_network_connect_auto;
@@ -984,6 +1013,12 @@ int filter_init(void);
 int filter_free(void);
 int filter_push(struct filter filter);
 
+SYD_GCC_ATTR((nonnull(1)))
+int log_path(const syd_process_t *restrict current,
+	     int fd, const aclq_t *restrict acl,
+	     uint8_t arg_index,
+	     const char *restrict abspath);
+
 void config_init(void);
 void config_done(void);
 void config_parse_file(const char *filename) SYD_GCC_ATTR((nonnull(1)));
@@ -1093,6 +1128,21 @@ int magic_append_denylist_network_connect(const void *val, syd_process_t *curren
 int magic_remove_denylist_network_connect(const void *val, syd_process_t *current);
 int magic_append_filter_network(const void *val, syd_process_t *current);
 int magic_remove_filter_network(const void *val, syd_process_t *current);
+int magic_set_log_exec_fd(const void *restrict val, syd_process_t *current);
+int magic_set_log_read_fd(const void *restrict val, syd_process_t *current);
+int magic_set_log_write_fd(const void *restrict val, syd_process_t *current);
+int magic_set_log_network_bind_fd(const void *restrict val, syd_process_t *current);
+int magic_set_log_network_connect_fd(const void *restrict val, syd_process_t *current);
+int magic_append_log_exec(const void *val, syd_process_t *current);
+int magic_remove_log_exec(const void *val, syd_process_t *current);
+int magic_append_log_read(const void *val, syd_process_t *current);
+int magic_remove_log_read(const void *val, syd_process_t *current);
+int magic_append_log_write(const void *val, syd_process_t *current);
+int magic_remove_log_write(const void *val, syd_process_t *current);
+int magic_append_log_network_bind(const void *val, syd_process_t *current);
+int magic_remove_log_network_bind(const void *val, syd_process_t *current);
+int magic_append_log_network_connect(const void *val, syd_process_t *current);
+int magic_remove_log_network_connect(const void *val, syd_process_t *current);
 int magic_set_violation_decision(const void *val, syd_process_t *current);
 int magic_set_trace_magic_lock(const void *val, syd_process_t *current);
 int magic_query_sandbox_exec(syd_process_t *current);

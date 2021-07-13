@@ -60,6 +60,18 @@ int magic_remove_filter_exec(const void *val, syd_process_t *current)
 			      &sydbox->config.filter_exec);
 }
 
+int magic_append_log_exec(const void *val, syd_process_t *current)
+{
+	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_NONE, val,
+			      &sydbox->config.log_exec);
+}
+
+int magic_remove_log_exec(const void *val, syd_process_t *current)
+{
+	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_NONE, val,
+			      &sydbox->config.log_exec);
+}
+
 int magic_append_allowlist_read(const void *val, syd_process_t *current)
 {
 	sandbox_t *box = box_current(current);
@@ -98,6 +110,18 @@ int magic_remove_filter_read(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_NONE, val,
 			      &sydbox->config.filter_read);
+}
+
+int magic_append_log_read(const void *val, syd_process_t *current)
+{
+	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_NONE, val,
+			      &sydbox->config.log_read);
+}
+
+int magic_remove_log_read(const void *val, syd_process_t *current)
+{
+	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_NONE, val,
+			      &sydbox->config.log_read);
 }
 
 int magic_append_allowlist_write(const void *val, syd_process_t *current)
@@ -144,6 +168,18 @@ int magic_remove_filter_write(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_NONE, val,
 			      &sydbox->config.filter_write);
+}
+
+int magic_append_log_write(const void *val, syd_process_t *current)
+{
+	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_NONE, val,
+			      &sydbox->config.log_write);
+}
+
+int magic_remove_log_write(const void *val, syd_process_t *current)
+{
+	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_NONE, val,
+			      &sydbox->config.log_write);
 }
 
 int magic_append_allowlist_network_bind(const void *val, syd_process_t *current)
@@ -206,6 +242,30 @@ int magic_remove_filter_network(const void *val, syd_process_t *current)
 {
 	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_NONE, val,
 			      &sydbox->config.filter_network);
+}
+
+int magic_append_log_network_bind(const void *val, syd_process_t *current)
+{
+	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_NONE, val,
+			      &sydbox->config.log_network_bind);
+}
+
+int magic_remove_log_network_bind(const void *val, syd_process_t *current)
+{
+	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_NONE, val,
+			      &sydbox->config.log_network_bind);
+}
+
+int magic_append_log_network_connect(const void *val, syd_process_t *current)
+{
+	return magic_edit_acl(acl_append_sockmatch, ACL_ACTION_NONE, val,
+			      &sydbox->config.log_network_connect);
+}
+
+int magic_remove_log_network_connect(const void *val, syd_process_t *current)
+{
+	return magic_edit_acl(acl_remove_sockmatch, ACL_ACTION_NONE, val,
+			      &sydbox->config.log_network_connect);
 }
 
 int magic_append_exec_kill_if_match(const void *val, syd_process_t *current)

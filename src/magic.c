@@ -15,11 +15,11 @@ struct key {
 	const char *lname;
 	unsigned parent;
 	enum magic_type type;
-	int (*set) (const void *val, syd_process_t *current);
-	int (*append) (const void *val, syd_process_t *current);
-	int (*remove) (const void *val, syd_process_t *current);
+	int (*set) (const void *restrict val, syd_process_t *current);
+	int (*append) (const void *restrict val, syd_process_t *current);
+	int (*remove) (const void *restrict val, syd_process_t *current);
 	int (*query) (syd_process_t *current);
-	int (*cmd) (const void *val, syd_process_t *current);
+	int (*cmd) (const void *restrict val, syd_process_t *current);
 };
 
 static const struct key key_table[] = {
@@ -90,6 +90,31 @@ static const struct key key_table[] = {
 		.name   = "filter",
 		.lname  = "filter",
 		.parent = MAGIC_KEY_NONE,
+		.type   = MAGIC_TYPE_OBJECT,
+	},
+
+	[MAGIC_KEY_LOG] = {
+		.name   = "log",
+		.lname  = "log",
+		.parent = MAGIC_KEY_NONE,
+		.type   = MAGIC_TYPE_OBJECT,
+	},
+	[MAGIC_KEY_LOG_NETWORK] = {
+		.name   = "network",
+		.lname  = "log.network",
+		.parent = MAGIC_KEY_LOG,
+		.type   = MAGIC_TYPE_OBJECT,
+	},
+	[MAGIC_KEY_LOG_FILE] = {
+		.name   = "file",
+		.lname  = "log.file",
+		.parent = MAGIC_KEY_LOG,
+		.type   = MAGIC_TYPE_OBJECT,
+	},
+	[MAGIC_KEY_LOG_FILE_NETWORK] = {
+		.name   = "network",
+		.lname  = "log.file.network",
+		.parent = MAGIC_KEY_LOG_FILE,
 		.type   = MAGIC_TYPE_OBJECT,
 	},
 
@@ -435,6 +460,83 @@ static const struct key key_table[] = {
 		.type   = MAGIC_TYPE_STRING_ARRAY,
 		.append = magic_append_filter_network,
 		.remove = magic_remove_filter_network,
+	},
+
+	[MAGIC_KEY_LOG_EXEC] = {
+		.name   = "exec",
+		.lname  = "log.exec",
+		.parent = MAGIC_KEY_LOG,
+		.type   = MAGIC_TYPE_STRING_ARRAY,
+		.append = magic_append_log_exec,
+		.remove = magic_remove_log_exec,
+	},
+	[MAGIC_KEY_LOG_READ] = {
+		.name   = "read",
+		.lname  = "log.read",
+		.parent = MAGIC_KEY_LOG,
+		.type   = MAGIC_TYPE_STRING_ARRAY,
+		.append = magic_append_log_read,
+		.remove = magic_remove_log_read,
+	},
+	[MAGIC_KEY_LOG_WRITE] = {
+		.name   = "write",
+		.lname  = "log.write",
+		.parent = MAGIC_KEY_LOG,
+		.type   = MAGIC_TYPE_STRING_ARRAY,
+		.append = magic_append_log_write,
+		.remove = magic_remove_log_write,
+	},
+	[MAGIC_KEY_LOG_NETWORK_BIND] = {
+		.name   = "bind",
+		.lname  = "log.network.bind",
+		.parent = MAGIC_KEY_LOG_NETWORK,
+		.type   = MAGIC_TYPE_STRING_ARRAY,
+		.append = magic_append_log_network_bind,
+		.remove = magic_remove_log_network_bind,
+	},
+	[MAGIC_KEY_LOG_NETWORK_CONNECT] = {
+		.name   = "connect",
+		.lname  = "log.network.connect",
+		.parent = MAGIC_KEY_LOG_NETWORK,
+		.type   = MAGIC_TYPE_STRING_ARRAY,
+		.append = magic_append_log_network_connect,
+		.remove = magic_remove_log_network_connect,
+	},
+
+	[MAGIC_KEY_LOG_FILE_EXEC] = {
+		.name   = "exec",
+		.lname  = "log.file.exec",
+		.parent = MAGIC_KEY_LOG_FILE,
+		.type   = MAGIC_TYPE_STRING,
+		.set    = magic_set_log_exec_fd,
+	},
+	[MAGIC_KEY_LOG_FILE_READ] = {
+		.name   = "read",
+		.lname  = "log.file.read",
+		.parent = MAGIC_KEY_LOG_FILE,
+		.type   = MAGIC_TYPE_STRING,
+		.set    = magic_set_log_read_fd,
+	},
+	[MAGIC_KEY_LOG_FILE_WRITE] = {
+		.name   = "write",
+		.lname  = "log.file.write",
+		.parent = MAGIC_KEY_LOG_FILE,
+		.type   = MAGIC_TYPE_STRING,
+		.set    = magic_set_log_write_fd,
+	},
+	[MAGIC_KEY_LOG_FILE_NETWORK_BIND] = {
+		.name   = "bind",
+		.lname  = "log.file.network.bind",
+		.parent = MAGIC_KEY_LOG_FILE_NETWORK,
+		.type   = MAGIC_TYPE_STRING,
+		.set    = magic_set_log_network_bind_fd,
+	},
+	[MAGIC_KEY_LOG_FILE_NETWORK_CONNECT] = {
+		.name   = "connect",
+		.lname  = "loga.file.network.connect",
+		.parent = MAGIC_KEY_LOG_FILE_NETWORK,
+		.type   = MAGIC_TYPE_STRING,
+		.set    = magic_set_log_network_connect_fd,
 	},
 
 	[MAGIC_KEY_CMD_EXEC] = {

@@ -233,3 +233,48 @@ void sayv(SYD_GCC_ATTR((unused)) const char *fmt, ...)
 	return;
 #endif
 }
+
+SYD_GCC_ATTR((nonnull(1)))
+int log_path(const syd_process_t *restrict current,
+	     int fd,
+	     const aclq_t *restrict acl,
+	     uint8_t arg_index,
+	     const char *restrict abspath)
+{
+	if (fd == -1)
+		return -EBADF;
+	if (!acl_match_path(ACL_ACTION_NONE, acl, abspath, NULL))
+		return -ENOENT;
+
+	time_t now = time(NULL);
+	switch (arg_index) {
+	case 0:
+		return dprintf(fd,
+			       "%s=%"PRIu64"@%ld%c%#x=»%s«%c%#x%c%#x%c%#x%c%#x%c%#x\n",
+			       current->sysname, current->sysnum, now,
+			       SYD_ARG_SEP,
+			       (unsigned int)current->args[0],
+			       abspath,
+			       SYD_ARG_SEP,
+			       (unsigned int)current->args[1], SYD_ARG_SEP,
+			       (unsigned int)current->args[2], SYD_ARG_SEP,
+			       (unsigned int)current->args[3], SYD_ARG_SEP,
+			       (unsigned int)current->args[4], SYD_ARG_SEP,
+			       (unsigned int)current->args[5]);
+	case 1:
+		return dprintf(fd,
+			       "%s=%"PRIu64"@%ld%c%#x%c%#x=»%s«%c%#x%c%#x%c%#x%c%#x\n",
+			       current->sysname, current->sysnum, now,
+			       SYD_ARG_SEP,
+			       (unsigned int)current->args[0], SYD_ARG_SEP,
+			       (unsigned int)current->args[1],
+			       abspath,
+			       SYD_ARG_SEP,
+			       (unsigned int)current->args[2], SYD_ARG_SEP,
+			       (unsigned int)current->args[3], SYD_ARG_SEP,
+			       (unsigned int)current->args[4], SYD_ARG_SEP,
+			       (unsigned int)current->args[5]);
+	default:
+		return -EOPNOTSUPP;
+	}
+}

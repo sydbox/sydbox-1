@@ -242,6 +242,7 @@ syd_SOURCES+= \
 	     magic-restrict.c \
 	     magic-allowlist.c \
 	     magic-acl.c \
+	     magic-log.c \
 	     magic-match.c \
 	     magic-cmd.c \
 	     magic.c \

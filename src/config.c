@@ -61,12 +61,30 @@ void config_init(void)
 	ACLQ_INIT(&sydbox->config.filter_read);
 	ACLQ_INIT(&sydbox->config.filter_write);
 	ACLQ_INIT(&sydbox->config.filter_network);
+	ACLQ_INIT(&sydbox->config.log_exec);
+	ACLQ_INIT(&sydbox->config.log_read);
+	ACLQ_INIT(&sydbox->config.log_write);
+	ACLQ_INIT(&sydbox->config.log_network_bind);
+	ACLQ_INIT(&sydbox->config.log_network_connect);
 	ACLQ_INIT(&sydbox->config.acl_network_connect_auto);
 	ACLQ_INIT(&sydbox->config.box_static.acl_exec);
 	ACLQ_INIT(&sydbox->config.box_static.acl_read);
 	ACLQ_INIT(&sydbox->config.box_static.acl_write);
 	ACLQ_INIT(&sydbox->config.box_static.acl_network_bind);
 	ACLQ_INIT(&sydbox->config.box_static.acl_network_connect);
+
+	magic_append_log_read("**/dev/***", NULL);
+	magic_append_log_write("**/dev/***", NULL);
+	magic_append_log_read("**/proc/***", NULL);
+	magic_append_log_write("**/proc/***", NULL);
+	magic_append_log_read("**/run/***", NULL);
+	magic_append_log_write("**/run/***", NULL);
+	magic_append_log_read("**/sys/***", NULL);
+	magic_append_log_write("**/sys/***", NULL);
+	magic_append_log_read("**/var/***", NULL);
+	magic_append_log_write("**/var/***", NULL);
+	magic_append_log_read("**/tmp/***", NULL);
+	magic_append_log_write("**/tmp/***", NULL);
 }
 
 void config_done(void)

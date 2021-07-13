@@ -359,26 +359,47 @@ int sys_open(syd_process_t *current)
 	char *abspath = NULL;
 	bool done, null;
 
-	if ((r = box_vm_read_path(current, &info, false, &path, &null, &done)) < 0 &&
+	if ((r = box_vm_read_path(current, &info, AT_FDCWD, false, &path, &null, &done)) < 0 &&
 	    done)
 		return r;
-	if (null)
+	if (null) {
 		path = NULL;
+		return 0;
+	}
 	if ((r = box_resolve_path(path, P_CWD(current),
 				  current->pid, info.rmode, &abspath)) < 0) {
 		/* Continue here if resolve fails,
 		 * let the main checker handle it as necessary.
 		 */
 		;
-	} else if ((r = syd_system_check(current, abspath)) < 0) {
-		if (path)
-			free(path);
+	}
+
+	if (path)
+		free(path);
+
+	/* Step 4: log path if requested. */
+	if (abspath) {
+		int log_fd = -1;
+		const aclq_t *restrict log_acl;
+		if ((current->args[2] & O_WRONLY) ||
+		    (current->args[2] & O_RDWR) ||
+		    (current->args[2] & O_CREAT)) {
+			log_fd = sydbox->config.fd_log_write;
+			log_acl = &sydbox->config.log_write;
+		} else {
+			log_fd = sydbox->config.fd_log_read;
+			log_acl = &sydbox->config.log_read;
+		}
+		log_path(current, log_fd, log_acl, 0, abspath);
+	}
+
+
+	/* Step 5: check for security breach */
+	if (abspath && (r = syd_system_check(current, abspath)) < 0) {
 		if (abspath)
 			free(abspath);
 		return r;
 	}
-	if (path)
-		free(path);
 
 	if (sandbox_off_read(current) && sandbox_off_write(current)) {
 		if (abspath)
@@ -416,42 +437,64 @@ int sys_openat(syd_process_t *current)
 	info.arg_index = 1;
 
 	/* Check for System Access */
+	bool badfd, done, null;
+	int dirfd;
 	char *prefix = NULL;
 	char *path = NULL;
 	char *abspath = NULL;
-	bool badfd, done, null;
 
 	/* Step 1: resolve file descriptor for »at« suffixed functions */
-	if ((r = box_resolve_dirfd(current, &info, &prefix, &badfd)) < 0)
+	if ((r = box_resolve_dirfd(current, &info, &prefix, &dirfd, &badfd)) < 0)
 		return r;
 
 	/* Step 2: VM read path */
-	if ((r = box_vm_read_path(current, &info, badfd, &path, &null, &done)) < 0 &&
+	if ((r = box_vm_read_path(current, &info, dirfd, badfd, &path, &null, &done)) < 0 &&
 	    done)
 		return r;
 	if (null)
 		path = NULL;
 
-	/* Step 3: resolve path */
+	/* Step 3: Allow both NULL as they're safe by definition. */
+	if ((!abspath && !path))
+		return 0;
+	current->abspath = abspath;
+
+	/* Step 4: resolve path */
 	if ((r = box_resolve_path(path, prefix ? prefix : P_CWD(current),
 				  current->pid, info.rmode, &abspath)) < 0) {
 		/* Continue here if resolve fails,
 		 * let the main checker handle it as necessary.
 		 */
 		;
-	} else if ((r = syd_system_check(current, abspath)) < 0) {
-		if (path)
-			free(path);
-		if (prefix)
-			free(prefix);
-		if (abspath)
-			free(abspath);
-		return r;
 	}
+
 	if (path)
 		free(path);
 	if (prefix)
 		free(prefix);
+
+	/* Step 4: log path if requested. */
+	if (abspath) {
+		int log_fd = -1;
+		const aclq_t *restrict log_acl;
+		if ((current->args[2] & O_WRONLY) ||
+		    (current->args[2] & O_RDWR) ||
+		    (current->args[2] & O_CREAT)) {
+			log_fd = sydbox->config.fd_log_write;
+			log_acl = &sydbox->config.log_write;
+		} else {
+			log_fd = sydbox->config.fd_log_read;
+			log_acl = &sydbox->config.log_read;
+		}
+		log_path(current, log_fd, log_acl, 1, abspath);
+	}
+
+	/* Step 5: check for security breach */
+	if (abspath && (r = syd_system_check(current, abspath)) < 0) {
+		if (abspath)
+			free(abspath);
+		return r;
+	}
 
 	if (sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
@@ -486,42 +529,63 @@ int sys_openat2(syd_process_t *current)
 	info.arg_index = 1;
 
 	/* Check for System Access */
+	bool badfd, done, null;
+	int dirfd;
 	char *prefix = NULL;
 	char *path = NULL;
 	char *abspath = NULL;
-	bool badfd, done, null;
 
 	/* Step 1: resolve file descriptor for »at« suffixed functions */
-	if ((r = box_resolve_dirfd(current, &info, &prefix, &badfd)) < 0)
+	if ((r = box_resolve_dirfd(current, &info, &prefix, &dirfd, &badfd)) < 0)
 		return r;
 
 	/* Step 2: VM read path */
-	if ((r = box_vm_read_path(current, &info, badfd, &path, &null, &done)) < 0 &&
+	if ((r = box_vm_read_path(current, &info, dirfd, badfd, &path, &null, &done)) < 0 &&
 	    done)
 		return r;
 	if (null)
 		path = NULL;
 
-	/* Step 3: resolve path */
+	/* Step 3: Allow both NULL as they're safe by definition. */
+	if ((!abspath && !path))
+		return 0;
+
+	/* Step 4: resolve path */
 	if ((r = box_resolve_path(path, prefix ? prefix : P_CWD(current),
 				  current->pid, info.rmode, &abspath)) < 0) {
 		/* Continue here if resolve fails,
 		 * let the main checker handle it as necessary.
 		 */
 		;
-	} else if ((r = syd_system_check(current, abspath)) < 0) {
-		if (path)
-			free(path);
-		if (prefix)
-			free(prefix);
-		if (abspath)
-			free(abspath);
-		return r;
 	}
+
 	if (path)
 		free(path);
 	if (prefix)
 		free(prefix);
+
+	/* Step 4: log path if requested. */
+	if (abspath) {
+		int log_fd = -1;
+		aclq_t log_acl;
+		if ((current->args[2] & O_WRONLY) ||
+		    (current->args[2] & O_RDWR) ||
+		    (current->args[2] & O_CREAT)) {
+			log_fd = sydbox->config.fd_log_write;
+			log_acl = sydbox->config.log_write;
+		} else {
+			log_fd = sydbox->config.fd_log_read;
+			log_acl = sydbox->config.log_read;
+		}
+		log_path(current, log_fd, log_acl, 1, abspath);
+	}
+
+	/* Step 5: check for security breach */
+	if (abspath && (r = syd_system_check(current, abspath)) < 0) {
+		if (abspath)
+			free(abspath);
+		return r;
+	}
 
 	if (sandbox_off_read(current) && sandbox_off_write(current)) {
 		if (abspath)
