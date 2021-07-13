@@ -69,7 +69,7 @@ int path_prefix(syd_process_t *current, uint8_t arg_index, char **buf)
 
 	r = 0;
 	if (fd == AT_FDCWD) {
-		*buf = NULL;
+		*buf = xstrdup(P_CWD(current));
 	} else if (fd < 0) {
 		*buf = NULL;
 		r = -EBADF;
