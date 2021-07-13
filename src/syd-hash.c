@@ -490,25 +490,25 @@ int main(int argc, char **argv)
 	if (opt_hash_arg) {
 		if (opt_xxh32)
 			syd_name_to_xxh32_hex(optarg, strlen(optarg),
-					      syd_seed_name
+					      syd_seed_name,
 					      hash);
 		else
 			syd_name_to_xxh64_hex(optarg, strlen(optarg),
-					      syd_seed_name
+					      syd_seed_name,
 					      hash);
 		printf("%s\n", hash);
 		return EXIT_SUCCESS;
 	} else if (opt_verify && fgets(line, LINE_MAX, stdin) != NULL) {
 		char *c = strrchr(line, '\n');
 		if (c) *c = '\0';
-		bool r = opt_xxh32
+		bool rv = opt_xxh32
 			? syd_vrfy_xxh32_hex(line, strlen(line),
 					     syd_seed_name,
 					     optarg)
 			: syd_vrfy_xxh64_hex(line, strlen(line),
 					     syd_seed_name,
 					     optarg);
-		return r ? EXIT_SUCCESS :: EXIT_FAILURE;
+		return rv ? EXIT_SUCCESS : EXIT_FAILURE;
 	}
 
 	if (output_path) {
