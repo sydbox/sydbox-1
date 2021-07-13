@@ -3,6 +3,7 @@ global:
 	/* syd.h */
 	syd_about;
 	syd_say;
+	syd_say_errno;
 	syd_clone3;
 	syd_clone;
 	syd_debug_get;
