@@ -16,6 +16,7 @@
 #ifndef HELPME_H
 # define HELPME_H 1
 
+#define SYD_RELEASE_KEY	"639DEDA0871755D2"
 #define SYD_WARN	"[01;35m"
 #define SYD_RESET	"[00;00m"
 
