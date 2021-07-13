@@ -3094,7 +3094,7 @@ int main(int argc, char **argv)
 
 	if ((r = syd_set_death_sig(death_sig)) < 0) {
 		errno = -r;
-		syd_say_errno("Error setting parent death signal to »%d«", death_sig);
+		say_errno("Error setting parent death signal to »%d«", death_sig);
 		/* Continue */
 	}
 
