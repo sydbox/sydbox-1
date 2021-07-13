@@ -53,7 +53,8 @@ struct open_info {
 };
 
 void oops(syd_process_t *current,
-	  const char *needle, const char *denymatch)
+	  const char *needle,
+	  const char *denymatch)
 {
 	sandbox_t *box = box_current(current);
 
@@ -131,20 +132,20 @@ skip_hash_calc:
 		break;
 	case 1:
 		oops(current, abspath, pattern);
-		warn("\t");
+		say("\t");
 		warn("Terminating Process with id »%d«...", current->pid);
 		kill_one(current, SIGINT);
 		++sydbox->breach_attempts;
 		break;
 	case 2:
 		oops(current, abspath, pattern);
-		warn("\t");
+		say("\t");
 		warn("Alright, I am _no longer_ going to be polite,");
 		warn("and terminate the SydB☮x Execute Process");
 		warn("next time an Attempted Security Breach happens.");
-		warn("\t");
+		say("\t");
 		warn("Please use the system responsibly.");
-		warn("\n");
+		say("\n");
 		warn("Thanks in advance,");
 		fprintf(stderr, "-sydb☮x:");
 		++sydbox->breach_attempts;
@@ -185,6 +186,7 @@ skip_hash_calc:
 	 * SIGKILL somehow wouldn't work and
 	 * seccomp will prevail.
 	 */
+	say("denying with EOWNERDEAD");
 	return deny(current, EOWNERDEAD);
 }
 
