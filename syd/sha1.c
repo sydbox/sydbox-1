@@ -22,13 +22,13 @@ static syd_SHA_CTX glob_ctx;
 static unsigned char glob_hash[SYD_SHA1_RAWSZ];
 static char glob_hex[SYD_SHA1_HEXSZ + 1];
 
-#define SYD_PATH_TO_HEX_BUFSIZ (1024*1024)
+//#define SYD_PATH_TO_HEX_BUFSIZ (1024*1024) /* not bad, git's default. */
+#define SYD_PATH_TO_HEX_BUFSIZ (65536) /* better, sha1dc's default. */
 static char glob_buf[SYD_PATH_TO_HEX_BUFSIZ];
 
 int syd_file_to_sha1_hex(FILE *file, char *hex)
 {
 	int r = 0;
-	syd_hash_sha1_init(&glob_ctx);
 	for (;;) {
 		errno = 0;
 		ssize_t nread = fread(glob_buf, 1, SYD_PATH_TO_HEX_BUFSIZ, file);
@@ -62,13 +62,18 @@ int syd_path_to_sha1_hex(const char *pathname, char *hex)
 }
 
 /*************** CHECKSUM CALCULATION *****************************************/
-void syd_hash_sha1_init(syd_SHA_CTX *ctx)
+void syd_hash_sha1_init_ctx(syd_SHA_CTX *ctx)
 {
 	syd_SHA1_Init(ctx);
 	SHA1DCSetSafeHash(ctx, 1);
 	SHA1DCSetUseUBC(ctx, 1);
 	SHA1DCSetUseDetectColl(ctx, 1);
 	SHA1DCSetDetectReducedRoundCollision(ctx, 1);
+}
+
+void syd_hash_sha1_init(void)
+{
+	syd_hash_sha1_init_ctx(&glob_ctx);
 }
 
 void syd_hash_sha1_update(syd_SHA_CTX *ctx, const void *data,

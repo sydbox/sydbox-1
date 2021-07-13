@@ -40,7 +40,7 @@
 static XXH64_state_t *state64;
 static XXH32_state_t *state32;
 
-#define SYD_PATH_TO_HEX_BUFSZ (1024*1024)
+#define SYD_PATH_TO_HEX_BUFSZ (65536) /* best so far goes over 2G/s with xxh64. */
 static char glob_buf[SYD_PATH_TO_HEX_BUFSZ];
 
 #if 0

@@ -69,6 +69,8 @@ pid_t syd_clone3(struct clone_args *args);
 #define SYD_SHA1_BLKSZ 64
 #define SYD_MAX_HEXSZ SYD_SHA1_HEXSZ
 
+void syd_hash_sha1_init(void);
+
 char *syd_hash_to_hex_r(char *buffer, const unsigned char *hash);
 char *syd_hash_to_hex(const unsigned char *hash); /* static buffer result! */
 int syd_hex_to_bytes(unsigned char *binary, const char *hex, size_t len);
@@ -118,7 +120,7 @@ int syd_path_to_xxh128_hex(FILE *file, char *hex);
 #define syd_ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
 #define syd_str2(x) #x
 #define syd_str(X) syd_str2(X)
-#define syd_algo_name SYD_XXH32_HEXSIZ
+#define syd_algo_name SYD_XXH32_HEXSZ
 #define syd_seed_orig 12345698
 #define syd_seed_name 19430419
 #define syd_seed_uid 1000

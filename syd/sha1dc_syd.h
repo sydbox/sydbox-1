@@ -24,7 +24,7 @@ void syd_SHA1DCUpdate(SHA1_CTX *ctx, const void *data, unsigned long len);
 #define syd_SHA1_Update		platform_SHA1_Update
 #define syd_SHA1_Final		platform_SHA1_Final
 
-void syd_hash_sha1_init(syd_SHA_CTX *ctx);
+void syd_hash_sha1_init_ctx(syd_SHA_CTX *ctx);
 void syd_hash_sha1_update(syd_SHA_CTX *ctx, const void *data, size_t len);
 int syd_hash_sha1_final(syd_SHA_CTX *ctx, unsigned char *hash)
 	SYD_GCC_ATTR((warn_unused_result));
