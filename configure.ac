@@ -639,6 +639,7 @@ AC_CHECK_HEADER([limits.h],      [], AC_MSG_ERROR([SydB☮x requires the header 
 AC_CHECK_HEADER([signal.h],      [], AC_MSG_ERROR([SydB☮x requires the header signal.h]))
 AC_CHECK_HEADER([sys/utsname.h], [], AC_MSG_ERROR([SydB☮x requires the header sys/utsname.h]))
 AC_CHECK_HEADER([sys/socket.h],  [], AC_MSG_ERROR([SydB☮x requires the header sys/socket.h]))
+AC_CHECK_HEADER([sys/ptrace.h], [], AC_MSG_ERROR([SydB☮x requires the header sys/ptrace.h]))
 AC_CHECK_HEADER([ctype.h],       [], AC_MSG_ERROR([SydB☮x requires the header ctype.h]))
 AC_CHECK_HEADER([arpa/inet.h],   [], AC_MSG_ERROR([SydB☮x requires the header arpa/inet.h]))
 AC_CHECK_HEADER([netdb.h],       [], AC_MSG_ERROR([SydB☮x requires the header netdb.h]))
