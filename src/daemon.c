@@ -175,7 +175,23 @@ int change_user(void)
 	errno = 0;
 	int r_unused SYD_GCC_ATTR((unused));
 	r_unused = setuid(uid);
-	return -errno;
+
+	int save_errno = errno;
+	switch (uid) {
+	case 0:
+		setenv("USER", "root", 1);
+		setenv("LOGNAME", "root", 1);
+		break;
+	case 65534:
+		setenv("USER", "nobody", 1);
+		setenv("LOGNAME", "nobody", 1);
+		break;
+	default:
+		setenv("USER", "syd", 1);
+		setenv("LOGNAME", "syd", 1);
+		break;
+	}
+	return -save_errno;
 }
 
 int change_group(void)
@@ -211,6 +227,8 @@ int change_working_directory(void)
 
 	int save_errno = errno;
 	setenv("HOME", working_directory, 1);
+	setenv("PWD", working_directory, 1);
+	setenv("OLDPWD", "/", 1);
 
 	return -save_errno;
 }
