@@ -426,13 +426,19 @@ int main(int argc, char **argv)
 		{"version",	no_argument,		NULL,	'v'},
 		{"check",	required_argument,	NULL,	'c'},
 		{"output",	required_argument,	NULL,	'o'},
+		{"secure",	no_argument,		NULL,	's'},
+		{"sha1",	no_argument,		NULL,	's'},
+		{"sha1dc_partialcoll", no_argument,	NULL,	's'},
+		{"xxh32",	no_argument,		NULL,	'3'},
 	};
 
 	int options_index, r = 0;
+	bool opt_hash_arg = false, opt_secure = true, opt_verify = false, opt_xxh32 = false;
 	char *opt_check = NULL;
 	const char *home = secure_getenv("HOME");
 	char hash[syd_algo_name+1] = {0};
-	while ((opt = getopt_long(argc, argv, "hsn:vc:o:", long_options,
+	char line[LINE_MAX] = {0};
+	while ((opt = getopt_long(argc, argv, "hsC:H:vc:o:", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
 		case 'h':
@@ -442,13 +448,18 @@ int main(int argc, char **argv)
 			about();
 			syd_about(stdout);
 			return 0;
-		case 'n':
-			syd_name_to_xxh32_hex(optarg, strlen(optarg),
-					      getuid() == syd_seed_uid
-						? syd_seed_name
-						: syd_seed_orig, hash);
-			printf("%s\n", hash);
-			return 0;
+		case '3':
+			opt_xxh32 = true;
+			break;
+		case 's':
+			opt_secure = true;
+			break;
+		case 'C':
+			opt_verify = true;
+			break;
+		case 'H':
+			opt_hash_arg = true;
+			break;
 		case 'c':
 			if (opt_check)
 				free(opt_check);
@@ -473,11 +484,38 @@ int main(int argc, char **argv)
 	if (!opt_check && argc == optind)
 		usage(stderr, 1);
 
+	/*
+	 * Quick Interface to calculate/verify the hash of an argument.
+	 */
+	if (opt_hash_arg) {
+		if (opt_xxh32)
+			syd_name_to_xxh32_hex(optarg, strlen(optarg),
+					      syd_seed_name
+					      hash);
+		else
+			syd_name_to_xxh64_hex(optarg, strlen(optarg),
+					      syd_seed_name
+					      hash);
+		printf("%s\n", hash);
+		return EXIT_SUCCESS;
+	} else if (opt_verify && fgets(line, LINE_MAX, stdin) != NULL) {
+		char *c = strrchr(line, '\n');
+		if (c) *c = '\0';
+		bool r = opt_xxh32
+			? syd_vrfy_xxh32_hex(line, strlen(line),
+					     syd_seed_name,
+					     optarg)
+			: syd_vrfy_xxh64_hex(line, strlen(line),
+					     syd_seed_name,
+					     optarg);
+		return r ? EXIT_SUCCESS :: EXIT_FAILURE;
+	}
+
 	if (output_path) {
 		check_file_init(output_path);
 		output_file = fopen(output_path, "a");
 		if (!output_file)
-			say_errno("Error opening SHA-1 output file »%s« for "
+			say_errno("Error opening Hash output file »%s« for "
 				  "appending.", output_path);
 	}
 
