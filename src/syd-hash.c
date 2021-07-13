@@ -29,6 +29,36 @@
 #endif
 #define PACKAGE "syd-hash"
 
+/* #define SYD_HASH_DEF SYD_HASH_XXH64 */
+#define SYD_HASH_SEC SYD_HASH_SHA1DC_PARTIALCOLL
+static enum syd_hash_type {
+	SYD_HASH_XXH64,
+	SYD_HASH_XXH32,
+	SYD_HASH_SHA1DC_PARTIALCOLL,
+} hash_type;
+
+static char *hex;
+static char hex_sha1[SYD_SHA1_HEXSZ];
+static char hex_xxh64[SYD_XXH64_HEXSZ];
+static char hex_xxh32[SYD_XXH32_HEXSZ];
+
+/* Make xxHash interface similar to Sha1DcPartialColl:
+ * We write wrappers to pass the second argument as Null.
+ */
+#define f2h_sha1 syd_file_to_sha1_hex
+#define p2h_sha1 syd_path_to_sha1_hex
+SYD_GCC_ATTR((nonnull(1,2)))
+static inline int f2h_xxh64(FILE *f, char *h) { return syd_file_to_xxh64_hex(f, NULL, h); }
+SYD_GCC_ATTR((nonnull(1,2)))
+static inline int p2h_xxh64(const char *p, char *h) { return syd_path_to_xxh64_hex(p, NULL, h); }
+SYD_GCC_ATTR((nonnull(1,2)))
+static inline int f2h_xxh32(FILE *f, char *h) { return syd_file_to_xxh32_hex(f, NULL, h); }
+SYD_GCC_ATTR((nonnull(1,2)))
+static inline int p2h_xxh32(const char *p, char *h) { return syd_path_to_xxh32_hex(p, NULL, h); }
+
+static int (*f2h)(FILE *f, char *h);
+static int (*p2h)(const char *pathname, char *h);
+
 static void about(void)
 {
 	printf(SYD_WARN PACKAGE"-"VERSION GITVERSION SYD_RESET "\n");
@@ -47,7 +77,7 @@ usage: "PACKAGE" [-hv]\n\
 -h          -- Show usage and exit.\n\
 -v          -- Show version and exit.\n\
 -c          -- Read XXH64 sums from the FILEs and check them.\n\
-               If argument is `-', read XXH64 sums from file »~/.syd.xxh64sum«,\n\
+               If argument is »-«, read XXH64 sums from file »~/.syd.xxh64sum«,\n\
                and check them.\n\
 -o          -- Write XXH64 sums to the given file, or to »~/.syd.xxh64sum«,\n\
                if the given argument is »-«.\n\
@@ -170,7 +200,7 @@ static void die_errno(const char *fmt, ...)
 	exit(EXIT_FAILURE);
 }
 
-void say_sha1sum(FILE *check_file, const char *name, const char *checksum, char check)
+void say_checksum(FILE *check_file, const char *name, const char *checksum, char check)
 {
 	char *colour;
 	char *verify;
@@ -248,12 +278,27 @@ int check_file_done(const char *check)
 	    errno != ENOENT)
 		say_errno("setxattr(»%s«, »user.syd.api«, %d)",
 			  check, SYDBOX_API_VERSION);
-	if (setxattr(check, "user.syd.hash", "sha1dc",
-		     strlen("sha1dc"), 0) < 0 &&
+
+	const char *type;
+	switch (hash_type) {
+	case SYD_HASH_XXH64:
+		type = "xxh64";
+		break;
+	case SYD_HASH_SHA1DC_PARTIALCOLL:
+		type = "sha1dc_partialcoll";
+		break;
+	case SYD_HASH_XXH32:
+		type = "xxh32";
+		break;
+	default:
+		abort();
+	}
+	if (setxattr(check, "user.syd.hash", type,
+		     strlen(type), 0) < 0 &&
 	    errno != EOPNOTSUPP &&
 	    errno != ENOENT)
-		say_errno("setxattr(»%s«, »user.syd.hash«, »sha1dc«)",
-			  check);
+		say_errno("setxattr(»%s«, »user.syd.hash«, »%s«)",
+			  check, type);
 
 	/* Step 2: Write Last Modified Timestamp */
 	char *xattr_val;
@@ -307,12 +352,10 @@ int check_file_done(const char *check)
 	return 0;
 }
 
-int check_sha1sum(const char *check)
+SYD_GCC_ATTR((nonnull(1)))
+static int check_checksum(const char *restrict check)
 {
 	int r;
-
-	if (!check)
-		return -EINVAL;
 
 	if (access(check, R_OK) < 0) {
 		int save_errno = errno;
@@ -326,9 +369,31 @@ int check_sha1sum(const char *check)
 
 	size_t i = 0;
 	char buf[LINE_MAX];
+	size_t len;
 	while (fgets(buf, LINE_MAX, f) != NULL) {
 		char *hash, *path;
-		char hex[SYD_SHA1_HEXSZ] = {0};
+		switch (hash_type) {
+		case SYD_HASH_XXH64:
+			hex = hex_xxh64;
+			len = SYD_XXH64_HEXSZ;
+			f2h = f2h_xxh64;
+			p2h = p2h_xxh64;
+			break;
+		case SYD_HASH_SHA1DC_PARTIALCOLL:
+			hex = hex_sha1;
+			len = SYD_SHA1_HEXSZ;
+			f2h = f2h_sha1;
+			p2h = p2h_sha1;
+			break;
+		case SYD_HASH_XXH32:
+			hex = hex_xxh32;
+			len = SYD_XXH32_HEXSZ;
+			f2h = f2h_xxh32;
+			p2h = p2h_xxh32;
+			break;
+		default:
+			abort();
+		}
 
 		++i;
 		r = sscanf(buf, "%ms %ms\n", &hash, &path);
@@ -344,27 +409,16 @@ int check_sha1sum(const char *check)
 		char *name;
 		if (!strcmp(path, "-") ||
 		    !strcmp(path, "☮")) {
-			r = syd_file_to_sha1_hex(stderr, hex);
+			r = f2h(stderr, hex);
 			name = "☮";
 		} else {
-			r = syd_path_to_sha1_hex(path, hex);
+			r = p2h(path, hex);
 			name = path;
 		}
 
 		if (r == -ENOMEM) {
 			errno = -r;
 			die_errno("Unable to allocate memory");
-		}
-
-		char *xattr_key;
-		if (i <= SYD_SHA1_XATTR_MAX &&
-		    asprintf(&xattr_key, "user.syd.hash.%zu.path", i) > 0) {
-			if (setxattr(check, xattr_key, name,
-				     strlen(name), 0) < 0 &&
-			    errno != ENOENT)
-				say_errno("setxattr(»%s«, »%s«, »%s«)",
-					  xattr_key, name);
-			free(xattr_key);
 		}
 
 		char op;
@@ -380,27 +434,7 @@ int check_sha1sum(const char *check)
 			op_name = "💀";
 		}
 
-		if (i <= SYD_SHA1_XATTR_MAX &&
-		    asprintf(&xattr_key, "user.syd.hash.%zu", i) > 0) {
-			if (setxattr(check, xattr_key, hex,
-				     strlen(hex), 0) < 0 &&
-			    errno != EOPNOTSUPP &&
-			    errno != ENOENT)
-				say_errno("setxattr(»%s«, »%s«, »%s«)",
-					  xattr_key, hex);
-			free(xattr_key);
-		}
-		if (i <= SYD_SHA1_XATTR_MAX &&
-		    asprintf(&xattr_key, "user.syd.hash.chk.%zu", i) > 0) {
-			if (setxattr(check, xattr_key, op_name,
-				     strlen(op_name), 0) < 0 &&
-			    errno != EOPNOTSUPP &&
-			    errno != ENOENT)
-				say_errno("setxattr(»%s«, »%s«, »%s«)",
-					  xattr_key, op_name);
-			free(xattr_key);
-		}
-		say_sha1sum(NULL, name, hex, op);
+		say_checksum(NULL, name, hex, op);
 		free(hash); free(path);
 	}
 
@@ -409,14 +443,6 @@ int check_sha1sum(const char *check)
 
 int main(int argc, char **argv)
 {
-	char hex[SYD_SHA1_HEXSZ];
-
-	if (argc < 2) {
-		syd_file_to_sha1_hex(stdin, hex);
-		say_sha1sum(NULL, "☮", hex, 0);
-		return 0;
-	}
-
 	int opt;
 	char *output_path = NULL;
 	FILE *output_file = NULL;
@@ -430,6 +456,7 @@ int main(int argc, char **argv)
 		{"sha1",	no_argument,		NULL,	's'},
 		{"sha1dc_partialcoll", no_argument,	NULL,	's'},
 		{"xxh32",	no_argument,		NULL,	'3'},
+		{"xxh64",	no_argument,		NULL,	'6'},
 	};
 
 	int options_index, r = 0;
@@ -438,7 +465,7 @@ int main(int argc, char **argv)
 	const char *home = secure_getenv("HOME");
 	char hash[syd_algo_name+1] = {0};
 	char line[LINE_MAX] = {0};
-	while ((opt = getopt_long(argc, argv, "hsC:H:vc:o:", long_options,
+	while ((opt = getopt_long(argc, argv, "hs63sC:H:vc:o:", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
 		case 'h':
@@ -448,11 +475,16 @@ int main(int argc, char **argv)
 			about();
 			syd_about(stdout);
 			return 0;
+		case '6':
+			hash_type = SYD_HASH_XXH64;
+			break;
 		case '3':
 			opt_xxh32 = true;
+			hash_type = SYD_HASH_XXH32;
 			break;
 		case 's':
 			opt_secure = true;
+			hash_type = SYD_HASH_SEC;
 			break;
 		case 'C':
 			opt_verify = true;
@@ -481,8 +513,29 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!opt_check && argc == optind)
-		usage(stderr, 1);
+	switch (hash_type) {
+	case SYD_HASH_XXH64:
+		hex = hex_xxh64;
+		f2h = f2h_xxh64;
+		syd_hash_xxh64_init();
+		break;
+	case SYD_HASH_SHA1DC_PARTIALCOLL:
+		hex = hex_sha1;
+		f2h = f2h_sha1;
+		syd_hash_sha1_init();
+		break;
+	case SYD_HASH_XXH32:
+		hex = hex_xxh32;
+		f2h = f2h_xxh32;
+		syd_hash_xxh32_init();
+		break;
+	}
+
+	if (argc == optind && !opt_check) {
+		f2h(stdin, hex);
+		say_checksum(NULL, "☮", hex, 0);
+		return EXIT_SUCCESS;
+	}
 
 	/*
 	 * Quick Interface to calculate/verify the hash of an argument.
@@ -528,19 +581,19 @@ int main(int argc, char **argv)
 				die_errno("asprintf");
 		}
 		check_file_init(opt_check);
-		r = check_sha1sum(opt_check);
+		r = check_checksum(opt_check);
 		if (r < 0)
-			say_errno("check_sha1sum(`%s')", opt_check);
+			say_errno("check_checksum(»%s«)", opt_check);
 		check_file_done(opt_check);
 	}
 
 	for (int i = optind; argv[i] != NULL; i++) {
 		if (opt_check) {
 			check_file_init(argv[i]);
-			r = check_sha1sum(argv[i]);
+			r = check_checksum(argv[i]);
 			if (r < 0) {
 				errno = -r;
-				say_errno("check_sha1sum(`%s')", argv[i]);
+				say_errno("check_checksum(»%s«)", argv[i]);
 			}
 			check_file_done(argv[i]);
 			continue;
@@ -549,33 +602,30 @@ int main(int argc, char **argv)
 			name = "☮";
 		} else {
 			name = argv[i];
-			if ((r = syd_path_to_sha1_hex(name, hex)) < 0) {
-				say_errno("Error calculating SHA1 of file »%s«",
+			switch (hash_type) {
+			case SYD_HASH_XXH64:
+				hex = hex_xxh64;
+				p2h = p2h_xxh64;
+				break;
+			case SYD_HASH_SHA1DC_PARTIALCOLL:
+				hex = hex_sha1;
+				p2h = p2h_sha1;
+				break;
+			case SYD_HASH_XXH32:
+				hex = hex_xxh32;
+				p2h = p2h_xxh32;
+				break;
+			default:
+				abort();
+			}
+			if ((r = p2h(name, hex)) < 0) {
+				say_errno("Error calculating Checksum of file »%s«",
 					  name);
 				continue;
 			}
 		}
 
-		say_sha1sum(output_file, name, hex, 0);
-		if (i <= SYD_SHA1_XATTR_MAX && output_path) {
-			char *xattr_key;
-			if (asprintf(&xattr_key, "user.syd.hash.%d.path", i) > 0) {
-				if (setxattr(output_path, xattr_key,
-					     name, strlen(name), 0) < 0 &&
-				    errno != ENOENT)
-					say_errno("setxattr(»%s«, »%s«)",
-						  xattr_key, name);
-				free(xattr_key);
-			}
-			if (asprintf(&xattr_key, "user.syd.hash.%d", i) > 0) {
-				if (setxattr(output_path, xattr_key, hex, strlen(hex), 0) < 0 &&
-				    errno != EOPNOTSUPP &&
-				    errno != ENOENT)
-					say_errno("setxattr(»%s«, »%s«)",
-						  xattr_key, hex);
-				free(xattr_key);
-			}
-		}
+		say_checksum(output_file, name, hex, 0);
 	}
 
 	if (output_file) {
