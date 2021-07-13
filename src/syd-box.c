@@ -45,7 +45,7 @@
 #include "util.h"
 
 #include <syd.h>
-#if SYDBOX_DEBUG
+#ifdef SYDBOX_DEBUG
 # define UNW_LOCAL_ONLY
 # include <libunwind.h>
 #endif
@@ -224,7 +224,7 @@ usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
 	exit(code);
 }
 
-#if SYDBOX_DEBUG
+#ifdef SYDBOX_DEBUG
 static void print_addr_info(FILE *f, unw_word_t ip)
 {
 	char cmd[256];
@@ -1326,7 +1326,7 @@ static void sig_usr(int sig)
 
 	fprintf(stderr, "\nsydbox: Received SIGUSR%s\n", complete_dump ? "2" : "1");
 
-#if SYDBOX_DEBUG
+#ifdef SYDBOX_DEBUG
 	fprintf(stderr, "sydbox: Debug enabled, printing backtrace\n");
 	print_backtrace(stderr);
 #endif
