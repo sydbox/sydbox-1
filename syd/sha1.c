@@ -8,6 +8,7 @@
  */
 
 #include "HELPME.h"
+#include <limits.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -21,7 +22,7 @@ static syd_SHA_CTX glob_ctx;
 static unsigned char glob_hash[SYD_SHA1_RAWSZ];
 static char glob_hex[SYD_SHA1_HEXSZ + 1];
 
-#define SYD_PATH_TO_HEX_BUFSIZ (65536)
+#define SYD_PATH_TO_HEX_BUFSIZ (1024*1024)
 static char glob_buf[SYD_PATH_TO_HEX_BUFSIZ];
 
 int syd_file_to_sha1_hex(FILE *file, char *hex)
