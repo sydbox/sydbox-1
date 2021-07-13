@@ -145,8 +145,10 @@ dochdir(char *word)
 	if(flag['i']!=0){
 		if(wdirfd==-2)	/* try only once */
 			wdirfd = open("/dev/wdir", OWRITE|OCEXEC);
-		if(wdirfd>=0)
-			write(wdirfd, word, strlen(word));
+		if(wdirfd>=0) {
+			int r_unused __attribute__((unused));
+			r_unused = write(wdirfd, word, strlen(word));
+		}
 	}
 	return 1;
 }
