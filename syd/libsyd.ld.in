@@ -197,11 +197,17 @@ global:
 	sc_map_del_64v;
 	sc_map_init_64v;
 	/* sha1dc */
+	syd_hash_sha1_init;
+	syd_hash_sha1_update;
+	syd_hash_sha1_final;
 	syd_hash_to_hex;
 	syd_hash_to_hex_r;
 	syd_hex_to_bytes;
 	syd_file_to_sha1_hex;
 	syd_path_to_sha1_hex;
+	/* xxHash */
+	syd_hash_xxh32_init
+	syd_hash_xxh64_init;
 	syd_file_to_xxh64_hex;
 	syd_path_to_xxh64_hex;
 	syd_file_to_xxh32_hex;
