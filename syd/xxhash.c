@@ -40,8 +40,8 @@
 static XXH64_state_t *state64;
 static XXH32_state_t *state32;
 
-#define SYD_PATH_TO_HEX_BUFSIZ (1024*1024)
-static char glob_buf[SYD_PATH_TO_HEX_BUFSIZ];
+#define SYD_PATH_TO_HEX_BUFSZ (1024*1024)
+static char glob_buf[SYD_PATH_TO_HEX_BUFSZ];
 
 #if 0
 static unsigned syd_isLittleEndian(void)
@@ -58,7 +58,7 @@ uint32_t syd_name_to_xxh32_hex(const void *restrict buffer, size_t size,
 	XXH32_hash_t hash = XXH32(buffer, size, seed);
 
 	hex[0] = '\0';
-	sprintf(hex, "%" syd_str(SYD_XXH32_HEXSIZ)"x", hash);
+	sprintf(hex, "%" syd_str(SYD_XXH32_HEXSZ)"x", hash);
 
 	return hash;
 }
@@ -68,16 +68,16 @@ bool syd_vrfy_xxh32_hex(const void *restrict buffer, size_t size,
 			uint32_t seed, const char *hex)
 {
 	size_t len = strlen(hex);
-	if (len != SYD_XXH32_HEXSIZ) {
+	if (len != SYD_XXH32_HEXSZ) {
 		errno = EINVAL;
 		syd_say_errno("strlen(»%s«)=%zu != %d", hex, len,
-			      SYD_XXH32_HEXSIZ);
+			      SYD_XXH32_HEXSZ);
 		return false;
 	}
 
-	char hex_real[SYD_XXH32_HEXSIZ+1] = {0};
+	char hex_real[SYD_XXH32_HEXSZ+1] = {0};
 	uint32_t hash = syd_name_to_xxh32_hex(buffer, size, seed, hex_real);
-	if (!strncmp(hex_real, hex, SYD_XXH32_HEXSIZ)) {
+	if (!strncmp(hex_real, hex, SYD_XXH32_HEXSZ)) {
 		syd_say("match: »%s« ⊆ »%s«", (const char *)hex_real, hex);
 		return true;
 	} else {
@@ -93,7 +93,7 @@ uint64_t syd_name_to_xxh64_hex(const void *restrict buffer, size_t size,
 	XXH64_hash_t hash = XXH64(buffer, size, seed);
 
 	hex[0] = '\0';
-	sprintf(hex, "%" syd_str(SYD_XXH64_HEXSIZ)"lx", hash);
+	sprintf(hex, "%" syd_str(SYD_XXH64_HEXSZ)"lx", hash);
 
 	return hash;
 }
@@ -103,17 +103,17 @@ bool syd_vrfy_xxh64_hex(const void *restrict buffer, size_t size,
 			uint64_t seed, const char *hex)
 {
 	size_t len = strlen(hex);
-	if (len != SYD_XXH64_HEXSIZ) {
+	if (len != SYD_XXH64_HEXSZ) {
 		errno = EINVAL;
 		syd_say_errno("strlen(»%s«)=%zu != %d", hex, len,
-			      SYD_XXH64_HEXSIZ);
+			      SYD_XXH64_HEXSZ);
 		return false;
 	}
 
-	char hex_real[SYD_XXH64_BUFSIZ] = {0};
+	char hex_real[SYD_XXH64_BUFSZ] = {0};
 	uint64_t hash = syd_name_to_xxh64_hex(buffer, size, seed, hex_real);
 	uint64_t hash_vrfy;
-	if (sscanf(hex, "%" syd_str(SYD_XXH64_HEXSIZ) "lx", &hash_vrfy) == 1) {
+	if (sscanf(hex, "%" syd_str(SYD_XXH64_HEXSZ) "lx", &hash_vrfy) == 1) {
 		errno = EINVAL;
 		syd_say_errno("sscanf(»%s«)", hex);
 		return false;
@@ -127,85 +127,83 @@ bool syd_vrfy_xxh64_hex(const void *restrict buffer, size_t size,
 	}
 }
 
-SYD_GCC_ATTR((nonnull(1,2,3)))
+SYD_GCC_ATTR((nonnull(1)))
 int syd_file_to_xxh64_hex(FILE *file, uint64_t *digest, char *hex)
 {
 	int r = 0;
 
-	/* create a hash state, once.
-	 * this is *not* thread safe.
-	 */
 	if (!state64)
-		state64 = XXH64_createState();
-	if (!state64)
-		return -ENOMEM;
+		return -ECANCELED;
 
 	/* Initialize state with selected seed */
-	XXH64_hash_t const seed = 0;   /* or any other value */
+	XXH64_hash_t const seed = 1984;
 	if (XXH64_reset(state64, seed) == XXH_ERROR)
 		return -ENOTRECOVERABLE;
 
 	/* Feed the state with input data, any size, any number of times */
 	for (;;) {
 		errno = 0;
-		ssize_t nread = fread(glob_buf, 1, SYD_PATH_TO_HEX_BUFSIZ, file);
+		ssize_t nread = fread(glob_buf, 1, SYD_PATH_TO_HEX_BUFSZ, file);
 		if (XXH64_update(state64, glob_buf,
 				 (unsigned)nread) == XXH_ERROR)
 			return -ECANCELED;
-		if (nread != SYD_PATH_TO_HEX_BUFSIZ)
+		if (nread != SYD_PATH_TO_HEX_BUFSZ)
 			break;
 	}
 
 	/* Produce the final hash value */
 	XXH64_hash_t const hash = XXH64_digest(state64);
-	*digest = hash;
 
-	hex[0] = '\0';
-	sprintf(hex, "%" syd_str(SYD_XXH64_HEXSIZ)"lx", hash);
+	/* Fill in output parameters */
+	if (digest)
+		*digest = hash;
+	if (hex) {
+		hex[0] = '\0';
+		sprintf(hex, "%" syd_str(SYD_XXH64_HEXSZ)"lx", hash);
+	}
 
 	return 0;
 }
 
-SYD_GCC_ATTR((nonnull(1,2,3)))
+SYD_GCC_ATTR((nonnull(1)))
 int syd_file_to_xxh32_hex(FILE *file, uint32_t *digest, char *hex)
 {
 	int r = 0;
 
-	/* create a hash state, once.
-	 * this is *not* thread safe.
-	 */
 	if (!state32)
-		state32 = XXH32_createState();
-	if (!state32)
-		return -ENOMEM;
+		return -ECANCELED;
 
 	/* Initialize state with selected seed */
-	XXH32_hash_t const seed = 0;   /* or any other value */
+	XXH32_hash_t const seed = 2525;
 	if (XXH32_reset(state32, seed) == XXH_ERROR)
 		return -ENOTRECOVERABLE;
 
 	/* Feed the state with input data, any size, any number of times */
 	for (;;) {
 		errno = 0;
-		ssize_t nread = fread(glob_buf, 1, SYD_PATH_TO_HEX_BUFSIZ, file);
+		ssize_t nread = fread(glob_buf, 1, SYD_PATH_TO_HEX_BUFSZ, file);
 		if (XXH32_update(state32, glob_buf,
 				 (unsigned)nread) == XXH_ERROR)
 			return -ECANCELED;
-		if (nread != SYD_PATH_TO_HEX_BUFSIZ)
+		if (nread != SYD_PATH_TO_HEX_BUFSZ)
 			break;
 	}
 
 	/* Produce the final hash value */
 	XXH32_hash_t const hash = XXH32_digest(state32);
-	*digest = hash;
 
-	hex[0] = '\0';
-	sprintf(hex, "%" syd_str(SYD_XXH32_HEXSIZ)"x", hash);
+	/* Fill in output parameters */
+	if (digest)
+		*digest = hash;
+	if (hex) {
+		hex[0] = '\0';
+		sprintf(hex, "%" syd_str(SYD_XXH32_HEXSZ)"x", hash);
+	}
 
 	return 0;
 }
 
-SYD_GCC_ATTR((nonnull(1,2,3)))
+SYD_GCC_ATTR((nonnull(1)))
 int syd_path_to_xxh64_hex(const char *restrict pathname, uint64_t *digest, char *hex)
 {
 	FILE *f = fopen(pathname, "r");
@@ -223,7 +221,7 @@ int syd_path_to_xxh64_hex(const char *restrict pathname, uint64_t *digest, char 
 	return r;
 }
 
-SYD_GCC_ATTR((nonnull(1,2,3)))
+SYD_GCC_ATTR((nonnull(1)))
 int syd_path_to_xxh32_hex(const char *restrict pathname, uint32_t *digest, char *hex)
 {
 	FILE *f = fopen(pathname, "r");
@@ -239,4 +237,23 @@ int syd_path_to_xxh32_hex(const char *restrict pathname, uint32_t *digest, char 
 	fclose(f);
 
 	return r;
+}
+
+/*************** CHECKSUM CALCULATION *****************************************/
+void syd_hash_xxh64_init(void)
+{
+	/* create a hash state, once.
+	 * this is *not* thread safe.
+	 */
+	if (!state64)
+		state64 = XXH64_createState();
+}
+
+void syd_hash_xxh32_init(void)
+{
+	/* create a hash state, once.
+	 * this is *not* thread safe.
+	 */
+	if (!state32)
+		state32 = XXH32_createState();
 }

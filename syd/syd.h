@@ -76,21 +76,26 @@ int syd_hex_to_bytes(unsigned char *binary, const char *hex, size_t len);
 int syd_file_to_sha1_hex(FILE *file, char *hex);
 int syd_path_to_sha1_hex(const char *pathname, char *hex);
 
-#define SYD_XXH32_BUFSIZ 4
-#define SYD_XXH64_BUFSIZ 8
-#define SYD_XXH128_BUFSIZ 16
-#define SYD_XXH32_HEXSIZ 8
-#define SYD_XXH64_HEXSIZ 16
-#define SYD_XXH128_HEXSIZ 32
+#define SYD_XXH32_BUFSZ 4
+#define SYD_XXH64_BUFSZ 8
+#define SYD_XXH128_BUFSZ 16
+#define SYD_XXH32_HEXSZ 8
+#define SYD_XXH64_HEXSZ 16
+#define SYD_XXH128_HEXSZ 32
+
+/* Call these functions before interfacing or you'll get ECANCELED.
+ */
+void syd_hash_xxh32_init(void);
+void syd_hash_xxh64_init(void);
 
 uint32_t syd_name_to_xxh32_hex(const void *restrict buffer, size_t size,
 			       uint32_t seed, char *hex);
 SYD_GCC_ATTR((nonnull(1,4)))
 bool syd_vrfy_xxh32_hex(const void *restrict buffer, size_t size,
 			uint32_t seed, const char *hex);
-SYD_GCC_ATTR((nonnull(1,2,3)))
+SYD_GCC_ATTR((nonnull(1)))
 int syd_file_to_xxh32_hex(FILE *file, uint32_t *digest, char *hex);
-SYD_GCC_ATTR((nonnull(1,2,3)))
+SYD_GCC_ATTR((nonnull(1)))
 int syd_path_to_xxh32_hex(const char *restrict, uint32_t *digest, char *hex);
 
 uint64_t syd_name_to_xxh64_hex(const void *restrict buffer, size_t size,
@@ -98,9 +103,9 @@ uint64_t syd_name_to_xxh64_hex(const void *restrict buffer, size_t size,
 SYD_GCC_ATTR((nonnull(1,4)))
 bool syd_vrfy_xxh64_hex(const void *restrict buffer, size_t size,
 			uint64_t seed, const char *hex);
-SYD_GCC_ATTR((nonnull(1,2,3)))
+SYD_GCC_ATTR((nonnull(1)))
 int syd_file_to_xxh64_hex(FILE *file, uint64_t *digest, char *hex);
-SYD_GCC_ATTR((nonnull(1,2,3)))
+SYD_GCC_ATTR((nonnull(1)))
 int syd_path_to_xxh64_hex(const char *restrict pathname, uint64_t *digest, char *hex);
 
 #if 0
