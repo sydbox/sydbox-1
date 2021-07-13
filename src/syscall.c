@@ -613,7 +613,7 @@ int sysinit_seccomp_load(void)
 	int r;
 	uint32_t action;
 	long sysnum;
-	SYD_GCC_ATTR((unused))char *in_sydbox_test = getenv("IN_SYDBOX_TEST");
+	SYD_GCC_ATTR((unused))char *in_sydbox_test = secure_getenv("IN_SYDBOX_TEST");
 #ifdef SAY
 #undef SAY
 #endif
