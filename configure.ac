@@ -162,6 +162,7 @@ dnl -fsanitize=undefined
 dnl -fsanitize-address-use-after-return=always
 SYD_CFLAGS_OPT="\
 -D_SYD_OPT \
+-std=gnu11 \
 -O3 -g \
 -march=native \
 -mtune=native \
@@ -648,13 +649,6 @@ AC_CHECK_HEADER([termios.h],  [], AC_MSG_ERROR([SydB☮x requires the header ter
 dnl check for everything (for tests)
 AC_FUNC_ALLOCA
 AC_HEADER_DIRENT
-dnl/autoupdate: m4_warn([obsolete],
-dnl/autoupdate: [The preprocessor macro `STDC_HEADERS' is obsolete.
-dnl/autoupdate:   Except in unusual embedded environments, you can safely include all
-dnl/autoupdate:   ISO C90 headers unconditionally.])dnl
-dnl/autoupdate: # Autoupdate added the next two lines to ensure that your configure
-dnl/autoupdate: # script's behavior did not change.  They are probably safe to remove.
-STDC_HEADERS
 dnl autoconf[>=2.71] AC_CHECK_INCLUDES_DEFAULT
 AC_PROG_EGREP
 
@@ -894,7 +888,7 @@ m4_sinclude([m4/syd-seccomp-arch-check.m4])
 m4_sinclude([m4/syd-seccomp-arch-define.m4])
 
 dnl AC_MSG_WARN(["Libseccomp arch check unavailable during cross compiling"])
-dnl AC_MSG_WARN(["
+
 dnl check for debugging support (requires libunwind)
 dnl also sets cargo release type to debug.
 LIBUNWIND_REQUIRED=1.1
@@ -902,21 +896,19 @@ SYDBOX_CARGO_RELEASE_TYPE=release
 
 AC_MSG_CHECKING([for debug support])
 AC_ARG_ENABLE([debug],
-	      [AS_HELP_STRING([--enable-debug], [Enable debug support (requires: libunwind)])],
-	      [WANT_DEBUG="$enableval"],
-	      [WANT_DEBUG="no"])
+	      AS_HELP_STRING([--enable-debug], [Enable debug support, requires: libunwind.]),
+	      [WANT_DEBUG=$enableval],
+	      [WANT_DEBUG=no])
 AC_MSG_RESULT([$WANT_DEBUG])
 if test x"$WANT_DEBUG" = x"yes"; then
 	PKG_CHECK_MODULES([libunwind], [libunwind >= $LIBUNWIND_REQUIRED],,
 			  AC_MSG_ERROR([SydB☮x requires libunwind-$LIBUNWIND_REQUIRED or newer for --enable-debug]))
-	SYDBOX_DEBUG=1
+	AC_DEFINE_UNQUOTED([SYDBOX_DEBUG], [$SYDBOX_DEBUG], ['Enable debug support (requires: libunwind)'])
 	SYDBOX_CARGO_RELEASE_TYPE=debug
 else
-	SYDBOX_DEBUG=0
+	SYDBOX_CFLAGS="$SYDBOX_CFLAGS -DNDEBUG"
 fi
 AM_CONDITIONAL([WANT_DEBUG], test x"$WANT_DEBUG" = x"yes")
-AC_DEFINE_UNQUOTED([SYDBOX_DEBUG], [$SYDBOX_DEBUG], ['Enable debug support (requires: libunwind)'])
-AC_SUBST([SYDBOX_DEBUG])
 AC_SUBST([SYDBOX_CARGO_RELEASE_TYPE])
 AM_CONDITIONAL([SYDBOX_CARGO_RELEASE],
 	       test x"$SYDBOX_CARGO_RELEASE_TYPE" = x"release")
@@ -997,8 +989,8 @@ AC_CHECK_DECL([__NR_pidfd_send_signal], [],
 	      [include_pidfd_headers])
 
 AC_MSG_CHECKING([for dump])
-AC_ARG_ENABLE([dump],
-	AS_HELP_STRING([--disable-dump],
+AC_ARG_WITH([dump],
+	AS_HELP_STRING([--without-dump],
 		       [Avoid linking event dumper into the SydB☮x binary, required for SydB☮x -d/--dump option]),
 	[WANT_DUMP_BUILTIN="$withval"],
 	[WANT_DUMP_BUILTIN=yes])
