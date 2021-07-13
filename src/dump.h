@@ -98,6 +98,7 @@ extern unsigned long long dump_inspect;
 #define inspected_f(what) ((dump_inspect & (what)) != 0)
 
 void dump(enum dump what, ...);
+bool dump_enabled(void);
 int dump_get_fd(void);
 void dump_set_fd(int dump_fd);
 
