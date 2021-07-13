@@ -324,7 +324,7 @@ static int seccomp_setup(void)
 		/* User has specified no architectures.
 		 * use/try all the valid architectures defined at compile-time.
 		 */
-		SYD_GCC_ATTR((unused))char *in_sydbox_test = getenv("IN_SYDBOX_TEST");
+		SYD_GCC_ATTR((unused))char *in_sydbox_test = secure_getenv("IN_SYDBOX_TEST");
 #include "syd_seccomp_arch_default.c"
 	} else {
 		/* Else, we plan to remove the native architecture of libseccomp.
@@ -2184,8 +2184,8 @@ seccomp_init:
 		cleanup_for_sydbox();
 		free(sydbox);
 		if (noexec)
-			_exit(getenv(SYDBOX_NOEXEC_ENV) ?
-				atoi(getenv(SYDBOX_NOEXEC_ENV)) :
+			_exit(secure_getenv(SYDBOX_NOEXEC_ENV) ?
+				atoi(secure_getenv(SYDBOX_NOEXEC_ENV)) :
 				0);
 		struct syd_exec_opt opt;
 
@@ -2426,7 +2426,7 @@ int main(int argc, char **argv)
 		dump_set_fd(STDERR_FILENO);
 	}
 
-	const char *shoebox = getenv("SHOEBOX");
+	const char *shoebox = secure_getenv("SHOEBOX");
 	if (shoebox) {
 		dfd = open(shoebox, SYDBOX_DUMP_FLAGS, SYDBOX_DUMP_MODE);
 		if (dfd < 0)
