@@ -126,12 +126,9 @@ static void report(syd_process_t *current, const char *fmt, va_list ap)
 	syd_proc_parents(sydbox->pfd, &ppid, &tgid);
 	syd_proc_cwd(sydbox->pfd_cwd, false, &cwd);
 	dump(DUMP_OOPS,
-	     isatty(STDERR_FILENO),
-	     current->pid, current->tgid, current->ppid,
-	     tgid, ppid,
-	     current->sysname,
+	     current, tgid, ppid,
 	     r == -1 ? NULL : context,
-	     P_CWD(current), cwd);
+	     cwd, isatty(STDERR_FILENO));
 
 	if (context)
 		free(context);
@@ -223,8 +220,7 @@ int violation(syd_process_t *current, const char *fmt, ...)
 void sayv(SYD_GCC_ATTR((unused)) const char *fmt, ...)
 {
 #if SYDBOX_DUMP || SYDBOX_HAVE_DUMP_BUILTIN
-	int fd = dump_get_fd();
-	if (fd <= 0)
+	if (!dump_enabled())
 		return;
 
 	va_list ap;

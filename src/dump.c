@@ -267,6 +267,14 @@ static void dump_process(pid_t pid)
 }
 #endif
 
+inline bool dump_enabled(void) {
+	if (nodump > 0)
+		return false;
+	if (fd <= 0 && fd != -3 && fd != -42)
+		return false;
+	return true;
+}
+
 inline int dump_get_fd(void) {
 	return fd;
 }
@@ -291,7 +299,7 @@ static int dump_init(enum dump what)
 	} else if (fd == -3) {
 		return -EBADF; /* Early initialisation, nothing to do. */
 	} else if (fd == -42) {
-		pathname = getenv(DUMP_ENV);
+		pathname = secure_getenv(DUMP_ENV);
 		if (pathname) {
 			strlcpy(pathdump, pathname, sizeof(pathdump));
 		} else {
