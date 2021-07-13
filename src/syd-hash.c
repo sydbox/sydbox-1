@@ -1,6 +1,11 @@
 /*
  * sydbox/syd-run.c
- * Syd's SHA1 Checksum Calculator
+ * Syd's Checksum Calculator.
+ * Currently supported algorithms:
+ * 1. XXH64
+ * 2. SHA1 with Collision Detection
+ * 1 is default, 2 is enabled with --secure.
+ * The second algorithm is subject to change in the future.
  *
  * Copyright (c) 2021 Ali Polatel <alip@exherbo.org>
  * SPDX-License-Identifier: GPL-2.0-only
@@ -22,7 +27,7 @@
 #ifdef PACKAGE
 # undef PACKAGE
 #endif
-#define PACKAGE "syd-sha1"
+#define PACKAGE "syd-hash"
 
 static void about(void)
 {
@@ -33,26 +38,40 @@ static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
 "PACKAGE"-"VERSION GITVERSION"\n\
-Syd's SHA-1 Calculator and Verifier\n\
+Syd's Checksum Calculator and Verifier\n\
 usage: "PACKAGE" [-hv]\n\
                 [--check {-|file}] [--output {-|file}]\n\
+                [--secure] [--sha1dc_partialcoll]\n\
+                [--xxh32]\n\
                 {-|file...}\n\
--h          -- Show usage and exit\n\
--v          -- Show version and exit\n\
--c          -- Read SHA-1 sums from the FILEs and check them\n\
-               If argument is `-', read SHA-1 sums from file »~/.syd.sha1sum«,\n\
+-h          -- Show usage and exit.\n\
+-v          -- Show version and exit.\n\
+-c          -- Read XXH64 sums from the FILEs and check them.\n\
+               If argument is `-', read XXH64 sums from file »~/.syd.xxh64sum«,\n\
                and check them.\n\
--o          -- Write SHA-1 sums to the given file, or to »~/.syd.sha1sum«,\n\
+-o          -- Write XXH64 sums to the given file, or to »~/.syd.xxh64sum«,\n\
                if the given argument is »-«.\n\
+-s          -- Use a cryptographically secure algorithm.\n\
+               Algo: safe SHA-1 hashing with Unavoidable Bitconditions,\n\
+                     Collision Detection &\n\
+                     Reduced Round Collision Detection\n\
+--xxh32     -- Use XXH32 rather than XXH64 unless --secure.\n\
 \n\
-Given a file, calculate its SHA-1 and output in hex.\n\
-Given »-« or no arguments, calculate SHA-1 from standard input and output in hex.\n\
+With -s, --secure use SHA-1 rather than XXH64.\n\
+Given a file, calculate its XXH64 and output in hex.\n\
+Given »-« or no arguments, calculate XXH64 from standard input and output in hex.\n\
 Multiple arguments may be given.\n\
-If --check is given read SHA1 sums from the FILEs and check them\n\
-Without arguments write checksums to file »./.syd.sha1sum«\n\
-With --verify, read checksums from file »./.syd.sha1sum« and check them\n\
+If --check is given read XXH64 sums from the FILEs and check them\n\
+Without arguments write checksums to file »./.syd.xxh64sum«\n\
+With -s, --secure write checksums to file »./.syd.sha1sum«\n\
+With --verify, read checksums from file »./.syd.xxh64sum« and check them\n\
+With -s, --secure read checksums from file »./.syd.sha1sum« and check them\n\
 In check mode, use »✓« for match, »×« for mismatch and »💀« for detected collision.\n\
 Use »☮« to denote reading from standard input.\n\
+\n\
+XXH64 Calculator uses xxHash which is:\n\
+Copyright (c) 2012-2020 Yann Collet\n\
+SPDX-License-Identifier: BSD-2\n\
 \n\
 SHA-1 Calculator uses SHA-1DC which is:\n\
 Copyright (c) 2017 Marc Stevens, Dan Shumow\n\
@@ -412,7 +431,8 @@ int main(int argc, char **argv)
 	int options_index, r = 0;
 	char *opt_check = NULL;
 	const char *home = secure_getenv("HOME");
-	while ((opt = getopt_long(argc, argv, "hvc:o:", long_options,
+	char hash[syd_algo_name+1] = {0};
+	while ((opt = getopt_long(argc, argv, "hsn:vc:o:", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
 		case 'h':
@@ -421,6 +441,13 @@ int main(int argc, char **argv)
 		case 'v':
 			about();
 			syd_about(stdout);
+			return 0;
+		case 'n':
+			syd_name_to_xxh32_hex(optarg, strlen(optarg),
+					      getuid() == syd_seed_uid
+						? syd_seed_name
+						: syd_seed_orig, hash);
+			printf("%s\n", hash);
 			return 0;
 		case 'c':
 			if (opt_check)

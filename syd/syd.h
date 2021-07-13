@@ -76,9 +76,34 @@ int syd_hex_to_bytes(unsigned char *binary, const char *hex, size_t len);
 int syd_file_to_sha1_hex(FILE *file, char *hex);
 int syd_path_to_sha1_hex(const char *pathname, char *hex);
 
+#define SYD_XXH32_ALGO_LEN 4
+#define SYD_XXH64_ALGO_LEN 8
+#define SYD_XXH128_ALGO_LEN 16
+
+uint32_t syd_name_to_xxh32_hex(const void *restrict buffer, size_t size,
+			       uint32_t seed, char *hex);
+int syd_file_to_xxh32_hex(FILE *file, char *hex);
+int syd_path_to_xxh32_hex(FILE *file, char *hex);
+
+uint64_t syd_name_to_xxh64_hex(const void *restrict buffer, size_t size,
+			       uint64_t seed, char *hex);
+int syd_file_to_xxh64_hex(FILE *file, char *hex);
+int syd_path_to_xxh64_hex(FILE *file, char *hex);
+
+#if 0
+#TODO implement!
+uint128_t syd_name_to_xxh128_hex(const char *restrict buffer, size_t size, uint128_t seed, char *hex);
+int syd_file_to_xxh128_hex(FILE *file, char *hex);
+int syd_path_to_xxh128_hex(FILE *file, char *hex);
+#endif
+
 #define syd_ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
 #define syd_str2(x) #x
 #define syd_str(X) syd_str2(X)
+#define syd_algo_name SYD_XXH32_ALGO_LEN
+#define syd_seed_orig 12345698
+#define syd_seed_name 19430419
+#define syd_seed_uid 1000
 
 /* ANSI colour codes */
 #define SYD_ANSI_NORMAL		"[00;00m"

@@ -206,8 +206,10 @@ usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
        syd errno [-hv] -|errno-name|errno-number...\n\
        syd format exec [--] {command [arg...]}\n\
        syd hilite [-hv] command args...\n\
-       syd sha1 [-hv]\n\
+       syd hash [-hv]\n\
                 [--check {-|file}] [--output {-|file}]\n\
+                [--secure] [--sha1dc_partialcoll]\n\
+                [--xxh32]\n\
                 {-|file...}\n\
        syd test [-hvx]\n\
                 [--debug] [--immediate]\n\

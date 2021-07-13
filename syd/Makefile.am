@@ -50,7 +50,8 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	time.c \
 	unshare.c \
 	extfs.c \
-	sha1.c
+	sha1.c \
+	xxhash.c
 
 # SHA1DC
 libsyd_@LIBSYD_PC_SLOT@_la_SOURCES+= \
@@ -88,7 +89,8 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
 	caputils.h \
 	caputils.c
 libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= \
-	$(libseccomp_CFLAGS)
+	$(libseccomp_CFLAGS) \
+	-I$(top_srcdir)/xxHash
 libsyd_@LIBSYD_PC_SLOT@_la_LDFLAGS= \
 	-Wl,--version-script=$(srcdir)/libsyd.ld \
 	$(COVERAGE_LDFLAGS) \

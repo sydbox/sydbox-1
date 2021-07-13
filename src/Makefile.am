@@ -181,7 +181,7 @@ bin_PROGRAMS= syd
 
 # TODO: syd-run
 syd_libexecdir=$(libexecdir)/$(PACKAGE)/bin
-syd_libexec_PROGRAMS= syd-dump syd-errno syd-format syd-sha1
+syd_libexec_PROGRAMS= syd-dump syd-errno syd-format syd-hash
 
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_errno_CPPFLAGS= -DSYDERR -DSYD_ERRNO=1
@@ -331,14 +331,14 @@ syd_format_LDADD=\
 		 $(libseccomp_LIBS) \
 		 $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
 
-syd_sha1_SOURCES= \
+syd_hash_SOURCES= \
 		  errno2name.c \
 		  errno2name.h \
-		  syd-sha1.c
-syd_sha1_LDFLAGS=\
+		  syd-hash.c
+syd_hash_LDFLAGS=\
 		 $(CODE_COVERAGE_LDFLAGS) \
 		 $(libseccomp_LIBS)
-syd_sha1_LDADD=\
+syd_hash_LDADD=\
 	       @SYDBOX_LIBTOOL_FLAGS@ \
 	       $(CODE_COVERAGE_LIBS) \
 	       $(libseccomp_LIBS) \

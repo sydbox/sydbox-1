@@ -202,6 +202,8 @@ global:
 	syd_hex_to_bytes;
 	syd_file_to_sha1_hex;
 	syd_path_to_sha1_hex;
+	syd_name_to_xxh32_hex;
+	syd_name_to_xxh64_hex;
 local:
 	*;
 };

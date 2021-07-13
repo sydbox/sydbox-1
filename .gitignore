@@ -131,7 +131,7 @@ Makefile
 /src/syd-dump
 /src/syd-errno
 /src/syd-format
-/src/syd-sha1
+/src/syd-hash
 /src/syd-shoebox
 /src/lib.rs
 /t/syd-test
