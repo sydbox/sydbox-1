@@ -374,7 +374,7 @@ int sys_execveat(syd_process_t *current)
 }
 
 //#define FAKE_MODE (S_IFCHR|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
-#define FAKE_MODE (S_IFCHR|S_IRUSR|S_IROTH)
+#define FAKE_MODE (S_IFCHR|S_IXOTH)
 /* /dev/null */
 #define FAKE_RDEV_MAJOR 1
 #define FAKE_RDEV_MINOR 3
@@ -599,17 +599,21 @@ int sys_stat(syd_process_t *current)
 	long addr;
 	char path[SYDBOX_PATH_MAX];
 
-	if (P_BOX(current)->magic_lock == LOCK_SET) {
+	bool locked = !!(P_BOX(current)->magic_lock == LOCK_SET);
+#if 0
+	const char *lock_state = lock_state_to_string(P_BOX(current)->magic_lock);
+	sayv("magic lock is %u<»%s«> for process:%u<»%s«,»%s«,ppid:%u,tgid:%u>.",
+	    P_BOX(current)->magic_lock,
+	    lock_state ? lock_state : "?",
+	    current->pid,
+	    current->comm ? current->comm : "?",
+	    current->hash ? current->hash : "?",
+	    current->ppid, current->tgid);
+#endif
+	if (locked) {
 		/* No magic allowed! */
 		return 0;
 	}
-#if 0
-	say("magic lock is %u<%s> for process:%u<%s,%s,ppid:%u,tgid:%u>, allowing magic...",
-	    P_BOX(current)->magic_lock,
-	    lock_state_to_string(P_BOX(current)->magic_lock),
-	    current->pid, current->comm, current->hash,
-	    current->ppid, current->tgid);
-#endif
 
 	addr = current->args[0];
 	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
