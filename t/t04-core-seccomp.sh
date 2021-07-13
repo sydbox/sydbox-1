@@ -75,38 +75,38 @@ test_expect_success GREP_P 'default action is permission denied with -b and Leve
 test_expect_success GREP_P 'default action is allow with read sandboxing bpf' '
     syd \
         -y core/sandbox/read:bpf \
-        -y core/sandbox/write:off \
-        -y core/sandbox/exec:off \
-        -y core/sandbox/network:off \
+        -y core/sandbox/write:allow \
+        -y core/sandbox/exec:allow \
+        -y core/sandbox/network:allow \
         noexec &&
     test_bpf_action default ALLOW
 '
 
 test_expect_success GREP_P 'default action is allow with write sandboxing bpf' '
     syd \
-        -y core/sandbox/read:off \
+        -y core/sandbox/read:allow \
         -y core/sandbox/write:bpf \
-        -y core/sandbox/exec:off \
-        -y core/sandbox/network:off \
+        -y core/sandbox/exec:allow \
+        -y core/sandbox/network:allow \
         noexec &&
     test_bpf_action default ALLOW
 '
 
 test_expect_success 'default action is allow with exec sandboxing bpf' '
     syd \
-        -y core/sandbox/read:off \
+        -y core/sandbox/read:allow \
         -y core/sandbox/write:bpf \
         -y core/sandbox/exec:bpf \
-        -y core/sandbox/network:off \
+        -y core/sandbox/network:allow \
         noexec &&
     test_bpf_action default ALLOW
 '
 
 test_expect_success 'default action is allow with network sandboxing bpf' '
     syd \
-        -y core/sandbox/read:off \
-        -y core/sandbox/write:off \
-        -y core/sandbox/exec:off \
+        -y core/sandbox/read:allow \
+        -y core/sandbox/write:allow \
+        -y core/sandbox/exec:allow \
         -y core/sandbox/network:bpf \
         noexec &&
     test_bpf_action default ALLOW
