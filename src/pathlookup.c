@@ -50,7 +50,7 @@ char *path_lookup(const char *filename)
 		const char *path;
 		size_t m, n, len;
 
-		for (path = getenv("PATH"); path && *path; path += m) {
+		for (path = secure_getenv("PATH"); path && *path; path += m) {
 			const char *colon = strchr(path, ':');
 			if (colon) {
 				n = colon - path;
