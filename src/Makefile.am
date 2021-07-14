@@ -499,7 +499,7 @@ sparse-check:
 
 cppcheck:
 	cppcheck $(syd_SOURCES) \
-		$(DEFS) -I$(top_builddir) -I$(top_srcdir) \
+		$(DEFS) -I$(top_builddir) -I$(top_srcdir) -I$(srcdir)/lib \
 		--std=c99 --std=posix --enable=all
 .PHONY: cppcheck
 
@@ -513,8 +513,8 @@ splint:
 			-DLINE_MAX=2048 \
 			-boolops \
 			-nullret \
-			-I$(top_builddir) -I$(top_builddir)/syd \
-			-I$(top_srcdir) -I$(top_srcdir)/syd \
+			-I$(top_builddir) -I$(builddir)/syd \
+			-I$(top_srcdir) -I$(srcdir)/syd \
 			$(libseccomp_CFLAGS) \
 			$$path; \
 	done 2>&1 |\
