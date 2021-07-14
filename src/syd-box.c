@@ -15,6 +15,7 @@
 #include <syd/compiler.h>
 #include "daemon.h"
 #include "dump.h"
+#include "rc.h"
 
 #include <time.h>
 #include <stdatomic.h>
@@ -197,7 +198,7 @@ usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
            [--unshare-cgroups] [--unshare-time]\n\
            [--close-fds <begin:end>] [--reset-fds] [--escape-stdout]\n\
            [--env-var-with-pid <varname>]\n\
-           {command [arg...]}\n", outfp);
+           <command|rc> {[arg...]}\n", outfp);
        fputs("\
        syd [--export <bpf|pfc:filename>]\n\
            [--arch arch...] [--file pathspec...]\n\
@@ -2117,8 +2118,9 @@ static syd_process_t *startup_child(int argc, char **argv)
 	sydbox->execve_wait = true;
 	sydbox->pid_valid = PID_INIT_VALID;
 
+	bool plan9 = streq(argv[0] , "rc");
 	bool noexec = streq(argv[0], SYDBOX_NOEXEC_NAME);
-	if (!noexec) {
+	if (!noexec || !plan9) {
 		pathname = path_lookup(argv[0]);
 		if (!pathname)
 			die_errno("Path look up for »%s« failed", argv[0]);
@@ -2127,8 +2129,10 @@ static syd_process_t *startup_child(int argc, char **argv)
 			say_errno("Can't calculate checksum of file "
 				  "»%s«", pathname);
 		}
-	} else {
+	} else if (noexec) {
 		strlcpy(sydbox->hash, "<noexec>", sizeof("<noexec>"));
+	} else if (plan9) {
+		strlcpy(sydbox->hash, "42", sizeof("42"));
 	}
 
 	/* Initialize Secure Computing */
@@ -2281,12 +2285,16 @@ seccomp_init:
 		opt.supplementary_gids = get_groups();
 		opt.supplementary_gids_length = get_groups_length();
 		opt.proc_mount = procmnt;
-		r = syd_execv(pathname, argc, argv, &opt);
+		if (plan9) {
+			r = syd_execf(syd_rc_main, argc, argv, &opt);
+		} else {
+			r = syd_execv(pathname, argc, argv, &opt);
+			free(pathname);
+		}
 		if (r < 0) {
 			errno = -r;
 			say_errno("Error executing »%s«", pathname);
 		}
-		free(pathname);
 		_exit(127);
 	}
 

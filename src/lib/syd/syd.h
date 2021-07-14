@@ -251,6 +251,11 @@ struct syd_exec_opt {
 	const char *pid_env_var;
 };
 
+SYD_GCC_ATTR((warn_unused_result,nonnull(1,3,4)))
+int syd_execf(int (*command)(int argc, char **argv),
+	      size_t argc, char **argv,
+	      struct syd_exec_opt *opt);
+
 SYD_GCC_ATTR((warn_unused_result))
 int syd_execv(const char *command,
 	      size_t argc, char **argv,

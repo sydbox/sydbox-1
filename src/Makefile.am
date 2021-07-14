@@ -162,6 +162,7 @@ AM_CFLAGS= \
 	   -I$(srcdir)/lib \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
+	   -I$(top_srcdir)/rc \
 	   $(libseccomp_CFLAGS) \
 	   $(SYDBOX_CFLAGS)
 

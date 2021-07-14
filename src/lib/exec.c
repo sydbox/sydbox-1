@@ -44,14 +44,12 @@ pid_t syd_clone(unsigned long long flags,
 	return syd_clone3(&args);
 }
 
-SYD_GCC_ATTR((warn_unused_result))
-int syd_execv(const char *command,
-	      size_t argc, char **argv,
-	      struct syd_exec_opt *opt)
+SYD_GCC_ATTR((warn_unused_result,nonnull(1,2)))
+static int syd_exec_apply(struct syd_exec_opt *opt,
+			  char **arg0)
 {
-	int r = 0;
+	int death_sig, r;
 
-	int death_sig;
 	switch (opt->parent_death_signal) {
 	case 0: /* Default is SIGKILL. */
 		death_sig = SIGKILL;
@@ -151,8 +149,37 @@ int syd_execv(const char *command,
 	char *name;
 	if (opt->alias)
 		name = (char *)opt->alias;
-	else if (asprintf(&name, "☮%s", argv[0]) < 0)
-		name = argv[0];
-	argv[0] = name;
+	else if (asprintf(&name, "☮%s", *arg0) < 0)
+		name = *arg0;
+	*arg0 = name;
+
+	return 0;
+}
+
+SYD_GCC_ATTR((warn_unused_result,nonnull(1,3,4)))
+int syd_execf(int (*command)(int argc, char **argv),
+	      size_t argc, char **argv,
+	      struct syd_exec_opt *opt)
+{
+	int r = 0;
+
+	r = syd_exec_apply(opt, &argv[0]);
+	if (r < 0)
+		return r;
+
+	return command(argc, argv);
+}
+
+SYD_GCC_ATTR((warn_unused_result))
+int syd_execv(const char *command,
+	      size_t argc, char **argv,
+	      struct syd_exec_opt *opt)
+{
+	int r = 0;
+
+	r = syd_exec_apply(opt, &argv[0]);
+	if (r < 0)
+		return r;
+
 	return execv(command, argv);
 }
