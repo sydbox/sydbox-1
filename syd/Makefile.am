@@ -36,7 +36,7 @@ lib_LTLIBRARIES = libsyd_@LIBSYD_PC_SLOT@.la
 dist_man3_MANS= \
 	       doc/man/man3/syd_version.3
 
-libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
+libsyd_SRCS = \
 	about.c \
 	debug.c \
 	exec.c \
@@ -47,6 +47,7 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	proc.c \
 	strlcpy.c \
 	state.c \
+	utf8.c \
 	time.c \
 	unshare.c \
 	extfs.c \
@@ -54,7 +55,7 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES = \
 	xxhash.c
 
 # SHA1DC
-libsyd_@LIBSYD_PC_SLOT@_la_SOURCES+= \
+libsyd_SRCS+= \
 	$(srcdir)/sha1dc/lib/sha1.c \
 	$(srcdir)/sha1dc/lib/sha1.h \
 	$(srcdir)/sha1dc/lib/ubc_check.c \
@@ -66,18 +67,18 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES+= \
 
 # Robinhood Hash.
 # Implemented by Vitaly "_Vi" Shukela in 2017. License = MIT or Apache 2.0
-libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
+libsyd_SRCS += \
 	robinhood_hash.h
 
 # sc_map: simple, efficient hash table
 # Copyright 2021 Ozan Tezcan
 # BSD-3-Clause.
-libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
+libsyd_SRCS += \
 	sc_map.h \
 	sc_map.c
 
 # Imported from util-linux' unshare:
-libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
+libsyd_SRCS += \
 	all-io.h \
 	c.h \
 	pathnames.h \
@@ -88,6 +89,7 @@ libsyd_@LIBSYD_PC_SLOT@_la_SOURCES += \
 	statfs_magic.h \
 	caputils.h \
 	caputils.c
+libsyd_@LIBSYD_PC_SLOT@_la_SOURCES= $(libsyd_SRCS)
 libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= \
 	$(libseccomp_CFLAGS) \
 	-I$(top_srcdir)/xxHash
@@ -117,20 +119,11 @@ syd_check_SOURCES= \
 		   file-TEST.c \
 		   proc-TEST.c \
 		   sha1-TEST.c \
-		   about.c \
-		   debug.c \
-		   name.c \
-		   file.c \
-		   proc.c \
-		   strlcpy.c \
-		   utf8.c \
-		   hex.c \
-		   sha1.c \
-		   sha1dc_syd.c \
-		   sha1dc/lib/sha1.c \
-		   sha1dc/lib/ubc_check.c
+		   $(libsyd_SRCS)
+
 syd_check_CFLAGS= \
 		  -I$(srcdir) \
+		  -I$(top_srcdir)/xxHash
 		  $(libseccomp_CFLAGS)
 syd_check_LDFLAGS= \
 		   -lrt -lm $(libseccomp_LIBS) \
