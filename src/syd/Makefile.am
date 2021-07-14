@@ -92,6 +92,7 @@ libsyd_SRCS += \
 libsyd_@LIBSYD_PC_SLOT@_la_SOURCES= $(libsyd_SRCS)
 libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= \
 	$(libseccomp_CFLAGS) \
+	-I$(top_srcdir)/src \
 	-I$(top_srcdir)/xxHash
 libsyd_@LIBSYD_PC_SLOT@_la_LDFLAGS= \
 	-Wl,--version-script=$(srcdir)/libsyd.ld \
@@ -123,6 +124,7 @@ syd_check_SOURCES= \
 
 syd_check_CFLAGS= \
 		  -I$(srcdir) \
+		  -I$(top_srcdir)/src \
 		  -I$(top_srcdir)/xxHash
 		  $(libseccomp_CFLAGS)
 syd_check_LDFLAGS= \
@@ -132,12 +134,12 @@ syd_check_LDFLAGS= \
 syd_check_LDADD= \
 		 $(COVERAGE_LIBS) \
 		 $(libseccomp_LIBS) \
-		 $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+		 $(builddir)/.libs/libsyd_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else
 syd_check_LDDD= \
-		  -L$(top_builddir)/syd/.libs \
+		  -L$(builddir)/.libs \
 		  -llibsyd_@LIBSYD_PC_SLOT@
 endif
 

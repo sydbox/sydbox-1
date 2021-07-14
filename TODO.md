@@ -1,7 +1,7 @@
 # Sydb☮x
 
 implement basic system call name filters such that:
-	- whitelist/syscall+<regex-for-syscall-name>
+	- allowlist/syscall+<regex-for-syscall-name>
 	- blacklist/syscall+<regex-for-syscall-name>
 is possible in config!
 

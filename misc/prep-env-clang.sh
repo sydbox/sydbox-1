@@ -1,15 +1,7 @@
 #!/bin/bash -x
 
-CC="$(which clang)"
-if "${CC}" --version | grep -q 10.0; then
-    CC_11="$(which clang-11)"
-    if [ -n "$CC_11" ]; then
-        CC="$CC_11"
-    fi
-fi
-if [[ ! -x "$CC" ]]; then
-    echo >&2 "clang not found in PATH"
-    exit 1
-fi
+CC=clang-12
+LD=lld-12
 export CC
-export LD=lld
+export LD
+#export LD=ld.gold

@@ -141,7 +141,7 @@ coveralls:
 
 .PHONY: check-build
 check-build: all
-	${MAKE} ${AM_MAKEFLAGS} -C syd check-build
+	${MAKE} ${AM_MAKEFLAGS} -C src/syd check-build
 	${MAKE} ${AM_MAKEFLAGS} -C t check-build
 
 .PHONY: check-code-coverage

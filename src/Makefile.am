@@ -319,7 +319,7 @@ syd_errno_LDFLAGS=\
 syd_errno_LDADD=\
 		@SYDBOX_LIBTOOL_FLAGS@ \
 		$(CODE_COVERAGE_LIBS) \
-		$(builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+		$(builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else
@@ -338,7 +338,7 @@ syd_format_LDADD=\
 		 @SYDBOX_LIBTOOL_FLAGS@ \
 		 $(CODE_COVERAGE_LIBS) \
 		 $(libseccomp_LIBS) \
-		 $(builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+		 $(builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else
@@ -358,7 +358,7 @@ syd_hash_LDADD=\
 	       @SYDBOX_LIBTOOL_FLAGS@ \
 	       $(CODE_COVERAGE_LIBS) \
 	       $(libseccomp_LIBS) \
-	       $(builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+	       $(builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else
@@ -381,7 +381,7 @@ syd_LDADD= \
 	   @SYDBOX_LIBTOOL_FLAGS@ \
 	   $(CODE_COVERAGE_LIBS) \
 	   $(libseccomp_LIBS) \
-	   $(builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+	   $(builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else

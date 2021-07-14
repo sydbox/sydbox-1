@@ -54,123 +54,12 @@ core/match/no_wildcard:literal
 
 # Use binaries under well-known locations.
 denylist/exec+/dev/***
-denylist/exec+/proc/***
+denylist/exec+/proc/sys/***
 denylist/exec+/run/***
 denylist/exec+/sys/***
 denylist/exec+/var/***
 denylist/exec+/tmp/***
 denylist/exec+/home/***
-
-# Deny access to potentially dangerous paths.
-denylist/read+/boot/***
-denylist/read+/root/***
-
-# Restrict /etc
-allowlist/write+/etc/init.d/***
-denylist/read+/etc/security/***
-denylist/read+/etc/g?shadow*
-denylist/read+/etc/passwd*
-denylist/read+/etc/group+
-denylist/read+/etc/ftpusers
-denylist/read+/etc/aliases
-denylist/read+/etc/services
-denylist/read+/etc/conf.*/***
-denylist/read+/etc/rc.*/***
-denylist/read+/etc/system.*/***
-denylist/read+/etc/xinet.*/***
-denylist/read+/etc/ssl*/***
-denylist/read+/etc/mtab
-denylist/read+/etc/fstab
-denylist/read+/etc/crontab
-denylist/read+/etc/cron*/***
-denylist/read+/etc/crypttab
-denylist/read+/etc/securetty
-denylist/read+/etc/pam*/***
-
-# No access to system logs
-denylist/read+/var/log/***
-
-# Disable tools to get information on the running
-# kernel and its configuration.
-denylist/read+/dev/kmsg
-denylist/read+/proc/cmdline
-denylist/read+/proc/config*
-denylist/read+/proc/version
-denylist/read+/etc/sysctl.conf
-denylist/read+/etc/sysctl.d/***
-
-# Deny access to system information.
-denylist/read+/proc/cpuinfo
-denylist/read+/proc/meminfo
-denylist/read+/proc/swaps
-denylist/read+/proc/iomem
-denylist/read+/proc/slabinfo
-denylist/read+/proc/vmallocinfo
-denylist/read+/proc/vmstat
-denylist/read+/proc/self/auxv
-denylist/read+/proc/self/cgroup
-denylist/read+/proc/self/cwd
-denylist/read+/proc/self/environ
-denylist/read+/proc/self/mtab
-denylist/read+/proc/self/net/***
-denylist/read+/proc/self/ns/***
-# Take into account both {numa_,}maps {,s}maps{_rollup}
-denylist/read+/proc/self/*map*
-denylist/read+/proc/self/map_files/***
-denylist/read+/proc/self/mem
-denylist/read+/proc/self/mount*
-denylist/read+/proc/self/oom*
-denylist/read+/proc/self/root
-denylist/read+/proc/self/setgroups
-# Take into account {sched,}stat{m,us}
-denylist/read+/proc/self/*stat*
-denylist/read+/proc/self/syscall
-denylist/read+/proc/self/task
-
-# More restrictions:
-denylist/read+/sys/fs/***
-
-# Fuse could lead to local dos for instance creating file a la /dev/null with
-# random content. Moreover they are past problem in the fuse kernel code that
-# lead to dos.
-# Filesystem created by fuse are not visible by other user including root in
-# order to avoid dos. For instance an user that create an infinite depth
-# filesystem in order to fool updatedb.
-denylist/read+/dev/fuse
-
-# Deny access to Device Mapper data nodes.
-denylist/read+/dev/dm*/***
-denylist/read+/dev/mapper/***
-
-# Some critical paths under /home
-# We leave shell rc files alone except login.
-denylist/read+/home/*/.*login*
-denylist/read+/home/*/.netrc*
-denylist/read+/home/*/.ssh*
-denylist/read+/home/*/.gnupg*
-denylist/read+/home/*/.password-store/***
-denylist/write+/home/*/.*login*
-denylist/write+/home/*/.netrc*
-# This includes sh, bash, zsh and ssh.
-denylist/write+/home/*/.*sh*
-denylist/write+/home/*/.gnupg*
-denylist/write+/home/*/.password-store/***
-
-# Deny access to config and cache
-denylist/read+/home/*/.config*/***
-denylist/write+/home/*/.config*/***
-denylist/read+/home/*/.cache*/***
-denylist/write+/home/*/.cache*/***
-
-# Common mua, editor, browser directories.
-denylist/read+/home/*/.emacs*/***
-denylist/write+/home/*/.emacs*/***
-denylist/read+/home/*/.mutt*/***
-denylist/write+/home/*/.mutt*/***
-denylist/read+/home/*/.mozilla*/***
-denylist/write+/home/*/.mozilla*/***
-denylist/read+/home/*/.vim*/***
-denylist/write+/home/*/.vim*/***
 
 #
 # Allow access to standard paths
@@ -191,23 +80,31 @@ allowlist/write+/dev/tts
 allowlist/write+/dev/pts/***
 allowlist/write+/dev/shm/***
 allowlist/write+/selinux/context/***
-allowlist/write+/proc/self/attr/***
-allowlist/write+/proc/self/fd/***
-allowlist/write+/proc/self/task/***
 allowlist/write+/tmp/***
 allowlist/write+/var/tmp/***
 allowlist/write+/var/cache/***
 
+# HOME is in /tmp, user is root.
+denylist/read+/home/***
+denylist/read+/tmp/***
+denylist/read+/root/***
+allowlist/write+/root/***
+
+# Python
+allowlist/write+/usr/lib*/python*/lib-dynload/***
+
 # Systemd
-allowlist/write+/run/systemd/userdb/***
-allowlist/network/connect+unix:/run/systemd/userdb/***
+allowlist/write+/etc/init.d
+allowlist/write+/run/systemd/userdb
+allowlist/network/connect+unix:/run/systemd/userdb/io.systemd.DynamicUser
+allowlist/network/connect+unix:/run/user/[0-9]*/bus
 allowlist/network/bind+unix-abstract:userdb-*
 allowlist/network/connect+unix-abstract:userdb-*
 
 # Bash
 allowlist/write+/etc/bash_completion.d/***
-allowlist/write+/home/*/.bash_history*
-allowlist/write+/home/*/.history*
+allowlist/write+/root/*/.bash_history*
+allowlist/write+/root/*/.history*
 
 # Allow tab completion for system paths.
 # Note we have `core/match/no_wildcard:literal' set,
@@ -218,10 +115,14 @@ allowlist/write+/home/*/.history*
 allowlist/write+/
 allowlist/write+/dev
 allowlist/write+/proc
-allowlist/write+/run
+allowlist/write+/root
+allowlist/write+/run/***
 allowlist/write+/sys
 allowlist/write+/var
+allowlist/write+/var/run/***
 allowlist/write+/usr/share/doc*/***
+allowlist/write+/usr/share/locales?/***
+allowlist/write+/usr/share/locale-langpack/***
 allowlist/write+/usr/share/man*/***
 allowlist/write+/tmp
 
@@ -242,6 +143,9 @@ allowlist/network/connect+unix:/var/lib/sss/pipes/nss
 # Allow getaddrinfo() with AI_ADDRCONFIG on musl systems.
 allowlist/network/connect+LOOPBACK@65535
 allowlist/network/connect+LOOPBACK6@65535
+
+# Log
+# log/file/read:2
 
 # Lock configuration
 # core/trace/magic_lock:on

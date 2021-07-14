@@ -253,6 +253,7 @@ $SYD_CFLAGS_SAFE \
 -Wno-declaration-after-statement \
 -Wno-format-extra-args \
 -Wno-format-nonliteral \
+-Wno-missing-field-initializers \
 -Wno-unused-parameter \
 -Wunused-result \
 -Wunused-value \

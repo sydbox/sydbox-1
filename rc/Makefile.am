@@ -12,40 +12,48 @@ CLEANFILES= \
 #PROMPT=readline
 PROMPT=null
 
-lib_LTLIBRARIES = libsyd_rc_@LIBSYD_PC_SLOT@.la
-libsyd_rc_@LIBSYD_PC_SLOT@_la_CFLAGS=\
+AM_CFLAGS=\
 	-DPREFIX='"/usr"' \
 	-Wall -Wextra -Wno-parentheses \
 	-Wno-missing-braces -Wno-missing-field-initializers \
 	-Wno-comment -Wno-sign-compare -Wno-unused-parameter \
 	-Wno-implicit-fallthrough
-libsyd_rc_@LIBSYD_PC_SLOT@_la_SOURCES=\
-		exec.h\
-		fns.h\
-		getflags.h\
-		io.h\
-		rc.h\
-		unix.h\
-		code.c\
-		exec.c\
-		getflags.c\
-		glob.c\
-		here.c\
-		io.c\
-		lex.c\
-		pcmd.c\
-		pfnc.c\
-		simple.c\
-		subr.c\
-		trap.c\
-		tree.c\
-		var.c\
-		unix.c\
-		havefork.c\
-		prompt-$(PROMPT).c\
-		y.tab.c \
-		y.tab.h \
-		x.tab.h
+
+RC_SRCS=\
+	exec.h\
+	fns.h\
+	getflags.h\
+	io.h\
+	rc.h\
+	unix.h\
+	code.c\
+	exec.c\
+	getflags.c\
+	glob.c\
+	here.c\
+	io.c\
+	lex.c\
+	pcmd.c\
+	pfnc.c\
+	simple.c\
+	subr.c\
+	trap.c\
+	tree.c\
+	var.c\
+	unix.c\
+	havefork.c\
+	prompt-$(PROMPT).c\
+	y.tab.c \
+	y.tab.h \
+	x.tab.h
+
+lib_LTLIBRARIES = libsyd_rc_@LIBSYD_PC_SLOT@.la
+libsyd_rc_@LIBSYD_PC_SLOT@_la_CFLAGS= $(AM_CFLAGS) -DIN_LIBSYD=1 -DNO_MAIN=1
+libsyd_rc_@LIBSYD_PC_SLOT@_la_SOURCES= $(RC_SRCS)
+
+#bin_PROGRAMS= syd-rc
+#syd_rc_CFLAGS= $(AM_CFLAGS) -DIN_SYD_RC=1
+#syd_rc_SOURCES= $(RC_SRCS)
 
 YFILES=syn.y
 y.tab.h y.tab.c: $(YFILES)

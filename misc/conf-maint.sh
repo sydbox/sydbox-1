@@ -12,6 +12,6 @@ cd "$root"
 exec "$root"/./configure --prefix=/usr --sysconfdir=/etc \
     --enable-maintainer-mode \
     --disable-code-coverage \
-    --enable-static \
+    --disable-static \
     --disable-pandora \
     --disable-dependency-tracking

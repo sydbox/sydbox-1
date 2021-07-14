@@ -37,6 +37,10 @@ core/match/no_wildcard:literal
 # alip's executables
 allowlist/exec+/s?bin/*
 allowlist/exec+/usr/s?bin/*
+allowlist/exec+/usr/local/s?bin/*
+allowlist/exec+/home/alip/bin/*
+allowlist/exec+/home/alip/org/bin/*
+allowlist/exec+/home/alip/.local/bin/*
 
 # Safe defaults for system paths
 allowlist/write+/dev/stdout
@@ -108,4 +112,4 @@ allowlist/write+/tmp/firefox/***
 allowlist/write+/usr/lib/firefox/fonts/.uuid.TMP-*
 
 # Lock configuration
-core/trace/magic_lock:on
+core/trace/magic_lock:exec
