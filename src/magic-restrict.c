@@ -11,17 +11,31 @@ int magic_set_kill(const void *val, syd_process_t *current)
 {
 	int r;
 	unsigned u_val = PTR_TO_UINT(val);
+	const char *name;
 
 	switch (u_val) {
 	case SIGKILL:
+		name = "KILL";
+		break;
 	case SIGTERM:
+		name = "TERM";
+		break;
 	case SIGCONT:
+		name = "CONT";
+		break;
 	case SIGSTOP:
+		name = "STOP";
+		break;
 	case SIGHUP:
+		name = "HUP";
+		break;
+	case SIGINT:
+		name = "INT";
 		break;
 	default:
 		return MAGIC_RET_INVALID_VALUE;
 	}
+	say("Sending signal %d»%s« to process %d", u_val, name, sydbox->execve_pid);
 	if (sydbox->execve_pidfd >= 0 &&
 	    (r = syd_pidfd_send_signal(sydbox->execve_pidfd, u_val, NULL, 0)) < 0 &&
 	    r != -ESRCH) {

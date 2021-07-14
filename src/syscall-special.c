@@ -372,7 +372,7 @@ int sys_execveat(syd_process_t *current)
 }
 
 //#define FAKE_MODE (S_IFCHR|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
-#define FAKE_MODE (S_IFCHR|S_IXOTH)
+#define FAKE_MODE (S_IFCHR|S_IXUSR|S_IXGRP|S_IXOTH)
 /* /dev/null */
 #define FAKE_RDEV_MAJOR 1
 #define FAKE_RDEV_MINOR 3
