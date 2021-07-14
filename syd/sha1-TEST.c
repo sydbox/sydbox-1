@@ -40,19 +40,15 @@ static void test_teardown(void)
 static void test_sha1_partialcoll(void)
 {
 	int r;
-	char *hex = malloc((SYD_SHA1_HEXSZ + 1) * sizeof(char));
-	if (!hex)
-		abort();
+	char hex[SYD_SHA1_HEXSZ+1] = {0};
 
 	for (uint8_t i = 0; i < SYD_SHA1_SAMPLES_MAX; i++) {
-		char *path = strdup(syd_sha1_samples[i]);
-		if (!path)
-			abort();
+		char *path = syd_sha1_samples[i];
 		if ((r = syd_path_to_sha1_hex(path, hex)) < 0)
 			fail_msg("syd_path_to_sha1(»%s«) failed (errno:%d %s)",
 				 path, errno, strerror(errno));
 		/* Basename is the correct SHA1 check sum. */
-		char *name = basename(strdup(path));
+		char *name = basename(path);
 		if (strcasecmp(name, hex))
 			fail_msg("SHA-1 Hash Mismatch for Sample %d, expected »%s«, got »%s«.",
 				 i + 1, name, hex);
