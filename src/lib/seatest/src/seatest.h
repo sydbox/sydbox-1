@@ -31,7 +31,7 @@ typedef void (seatest_simple_test_result_fn_t)(int passed, const char* reason, c
 /*
 Declarations
 */
-seatest_simple_test_result_fn_t *seatest_simple_test_result;
+extern seatest_simple_test_result_fn_t *seatest_simple_test_result;
 void seatest_test_fixture_start(const char* filepath);
 void seatest_test_fixture_end( void );
 void seatest_test_fixture_set_failed_limit(int limit);
