@@ -203,6 +203,8 @@ usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
            [--arch arch...] [--file pathspec...]\n\
            [--syd magic-command...] {noexec}\n\
        syd --test\n\
+       syd book [-hvar] {chapter-number}\n\
+       syd draw\n\
        syd dump {syd-args...}\n\
        syd errno [-hv] -|errno-name|errno-number...\n\
        syd format exec [--] {command [arg...]}\n\
