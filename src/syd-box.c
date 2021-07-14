@@ -3109,7 +3109,7 @@ int main(int argc, char **argv)
 		/* Continue */
 	}
 
-	if (mapuser != -1 &&
+	if ((uid_t)mapuser != (uid_t)-1 &&
 	    syd_map_id(SYD_PATH_PROC_UIDMAP,
 		       mapuser,
 		       real_euid) < 0) {
@@ -3122,7 +3122,7 @@ int main(int argc, char **argv)
 	 * has been disabled unless /proc/self/setgroups is written
 	 * first to permanently disable the ability to call setgroups
 	 * in that user namespace. */
-	if (mapgroup != (gid_t) -1) {
+	if ((gid_t)mapgroup != (gid_t)-1) {
 		if (setgrpcmd == SYD_SETGROUPS_ALLOW) {
 			errno = EINVAL;
 			say_errno("options setgroups=allow and "
