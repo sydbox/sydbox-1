@@ -409,7 +409,8 @@ syd_LDADD= \
 	   @SYDBOX_LIBTOOL_FLAGS@ \
 	   $(CODE_COVERAGE_LIBS) \
 	   $(libseccomp_LIBS) \
-	   lib/libsyd_@LIBSYD_PC_SLOT@.la
+	   lib/libsyd_@LIBSYD_PC_SLOT@.la \
+	   $(top_builddir)/rc/libsyd_rc_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else

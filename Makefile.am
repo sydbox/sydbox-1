@@ -1,3 +1,4 @@
+SUBDIRS= misc rc src data man t pandora rc .
 AM_MAKEFLAGS= --no-print-directory
 ACLOCAL_AMFLAGS= -I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS= dist-bzip2 no-dist-gzip std-options subdir-objects foreign
@@ -147,5 +148,3 @@ check-build: all
 .PHONY: check-code-coverage
 check-code-coverage: check-build
 	${MAKE} ${AM_MAKEFLAGS} -C t check-code-coverage
-
-SUBDIRS= misc src data man t pandora rc .
