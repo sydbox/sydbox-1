@@ -63,6 +63,13 @@ pid_t syd_clone3(struct clone_args *args);
 #include <syd/sha1dc_syd.h>
 
 /***
+ * LibSyd: Interface to the Book of the Way
+ ***/
+const char *syd_tao_rand(void);
+const char *syd_tao_pick(uint8_t pick);
+uint8_t syd_tao_max(void);
+
+/***
  * LibSyd: SHA1 Interface
  ***/
 

@@ -4,6 +4,9 @@ global:
 	syd_about;
 	syd_say;
 	syd_say_errno;
+	syd_tao_rand;
+	syd_tao_pick;
+	syd_tao_max;
 	syd_clone3;
 	syd_clone;
 	syd_debug_get;
