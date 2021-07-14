@@ -7,17 +7,18 @@
  * rc.h global variables, added by alïp.
  * To fix linker errors with lld.
  */
-//tree *cmdtree;
-//code *codebuf;				/* compiler output */
-//int ntrap;				/* number of outstanding traps */
+tree *cmdtree;
+code *codebuf;				/* compiler output */
+int ntrap;				/* number of outstanding traps */
 int trap[NSIG];				/* number of outstanding traps per type */
-//var *gvar[NVAR];				/* hash for globals */
+var *gvar[NVAR];				/* hash for globals */
 char *promptstr;
 char tok[NTOK];
 int mypid;
 char **argp;
 char **args;
 int nerror;		/* number of errors encountered during compilation */
+int eflagok;
 /*
  * How many dot commands have we executed?
  * Used to ensure that -v flag doesn't print rcmain.
@@ -26,7 +27,7 @@ int ndot;
 char *getstatus(void);
 int lastc;
 int kidpid;
-//thread *runq;
+thread *runq;
 
 
 /*
