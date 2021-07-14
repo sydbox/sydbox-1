@@ -762,17 +762,12 @@ int magic_cast_string(syd_process_t *current, const char *magic, int prefix)
 	if (prefix) {
 		if (!magic || magic[0] == '\0')
 			return MAGIC_RET_INVALID_COMMAND;
-		bool magic_new = startswith(magic, SYD_MAGIC_PREFIX);
-		bool magic_old = startswith(magic, SYDBOX_MAGIC_PREFIX);
-		if (magic_new) {
-			cmd = magic + sizeof(SYD_MAGIC_PREFIX) - 1;
-		} else if (magic_old) {
-			cmd = magic + sizeof(SYDBOX_MAGIC_PREFIX) - 1;
-		} else {
+		if (!startswith(magic, SYDBOX_MAGIC_PREFIX)) {
 			/* no magic */
 			return MAGIC_RET_NOOP;
 		}
 
+		cmd = magic + sizeof(SYDBOX_MAGIC_PREFIX) - 1;
 		if (!*cmd) {
 			/* magic without command */
 			return MAGIC_RET_OK;
