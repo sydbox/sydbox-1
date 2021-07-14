@@ -166,6 +166,7 @@ SYD_CFLAGS_OPT="\
 -march=native \
 -mtune=native \
 -fno-omit-frame-pointer \
+-fPIC \
 -fPIE \
 -D_SYD_OPT_OK \
 "
@@ -607,6 +608,12 @@ if test "$arch" = mips; then
 	MIPS_ABI="$st_cv_mips_abi"
 fi
 AC_SUBST(MIPS_ABI)
+
+dnl patching ${archive_cmds} to affect generation of file "libtool" to fix linking with clang (issue #312)
+AS_CASE(["$LD"], [*clang*],
+	[AS_CASE(["${host_os}"],
+		 [*linux*],
+		 [archive_cmds='$CC -shared $pic_flag $libobjs $deplibs $compiler_flags $wl-soname $wl$soname -o $lib'])])
 
 dnl AC_ARG_ENABLE([arm-oabi],
 dnl 	      [AS_HELP_STRING([--enable-arm-oabi],
