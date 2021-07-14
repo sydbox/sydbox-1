@@ -15,12 +15,10 @@ EXTRA_DIST= \
 	    Cargo.toml.in
 noinst_HEADERS=
 
-BUILT_SOURCES= jobs libsyd
+BUILT_SOURCES= jobs
 .PHONY: jobs
 jobs: | parallel
-.PHONY: libsyd
-libsyd:
-	$(MAKE) -j$(JOB_COUNT) -C lib all
+	$(MAKE) -C lib all
 
 BUILT_SOURCES+= build
 .PHONY: build
