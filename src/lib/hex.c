@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "hex.h"
+#include <syd/hex.h>
 #include "macro.h"
 
 /* The length in bytes and in hex digits of an object name (SHA-1 value). */

@@ -146,9 +146,9 @@ Makefile
 /src/kingbee.d/*
 
 jobs
-/syd/libsyd.ld
-/syd/syd-check
-/syd/check-pause
+/src/libs/libsyd.ld
+/src/libs/syd-check
+/src/libs/check-pause
 
 tests/test-lib.sh
 tests/test-results

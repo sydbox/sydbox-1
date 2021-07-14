@@ -37,62 +37,64 @@ dist_man3_MANS= \
 	       doc/man/man3/syd_version.3
 
 libsyd_SRCS = \
-	about.c \
-	debug.c \
-	exec.c \
-	name.c \
-	strlcat.c \
-	file.c \
-	pidfd.c \
-	proc.c \
-	strlcpy.c \
-	state.c \
-	utf8.c \
-	time.c \
-	unshare.c \
-	extfs.c \
-	sha1.c \
-	xxhash.c
+	      $(srcdir)/syd/compiler.h \
+	      $(srcdir)/syd/syd.h \
+	      about.c \
+	      debug.c \
+	      exec.c \
+	      name.c \
+	      strlcat.c \
+	      file.c \
+	      pidfd.c \
+	      proc.c \
+	      strlcpy.c \
+	      state.c \
+	      utf8.c \
+	      time.c \
+	      unshare.c \
+	      extfs.c \
+	      sha1.c \
+	      xxhash.c
 
 # SHA1DC
 libsyd_SRCS+= \
-	$(srcdir)/sha1dc/lib/sha1.c \
-	$(srcdir)/sha1dc/lib/sha1.h \
-	$(srcdir)/sha1dc/lib/ubc_check.c \
-	$(srcdir)/sha1dc/lib/ubc_check.h \
-	sha1dc_syd.h \
-	sha1dc_syd.c \
-	hex.h \
-	hex.c
+	      $(srcdir)/sha1dc/lib/sha1.h \
+	      $(srcdir)/sha1dc/lib/sha1.c \
+	      $(srcdir)/sha1dc/lib/ubc_check.h \
+	      $(srcdir)/sha1dc/lib/ubc_check.c \
+	      $(srcdir)/syd/sha1dc_syd.h \
+	      $(srcdir)/syd/hex.h \
+	      sha1dc_syd.c \
+	      hex.c
 
 # Robinhood Hash.
 # Implemented by Vitaly "_Vi" Shukela in 2017. License = MIT or Apache 2.0
 libsyd_SRCS += \
-	robinhood_hash.h
+	      $(srcdir)/syd/robinhood_hash.h
 
 # sc_map: simple, efficient hash table
 # Copyright 2021 Ozan Tezcan
 # BSD-3-Clause.
 libsyd_SRCS += \
-	sc_map.h \
+	$(srcdir)/src/sc_map.h \
 	sc_map.c
 
 # Imported from util-linux' unshare:
 libsyd_SRCS += \
-	all-io.h \
-	c.h \
-	pathnames.h \
-	fileutils.h \
-	fileutils.c \
-	procutils.h \
-	procutils.c \
-	statfs_magic.h \
-	caputils.h \
-	caputils.c
+	      $(srcdir)/syd/all-io.h \
+	      c.h \
+	      pathnames.h \
+	      fileutils.h \
+	      fileutils.c \
+	      procutils.h \
+	      procutils.c \
+	      statfs_magic.h \
+	      caputils.h \
+	      caputils.c
 libsyd_@LIBSYD_PC_SLOT@_la_SOURCES= $(libsyd_SRCS)
 libsyd_@LIBSYD_PC_SLOT@_la_CFLAGS= \
 	$(libseccomp_CFLAGS) \
-	-I$(top_srcdir)/src \
+	-I$(srcdir) \
 	-I$(top_srcdir)/xxHash
 libsyd_@LIBSYD_PC_SLOT@_la_LDFLAGS= \
 	-Wl,--version-script=$(srcdir)/libsyd.ld \
@@ -104,15 +106,15 @@ libsyd_@LIBSYD_PC_SLOT@_la_LIBS= \
 
 libsyd_includedir = $(includedir)/syd-$(LIBSYD_PC_SLOT)/syd
 libsyd_include_HEADERS= \
-			confname.h \
-			sha1dc_syd.h \
-			hex.h \
-			syd.h
+			$(srcdir)/syd/confname.h \
+			$(srcdir)/syd/sha1dc_syd.h \
+			$(srcdir)/syd/hex.h \
+			$(srcdir)/syd/syd.h
 
 noinst_HEADERS= \
+		$(srcdir)/syd/compiler.h \
 		seatest.h \
 		check.h \
-		compiler.h \
 		macro.h
 syd_check_SOURCES= \
 		   seatest.c \
@@ -124,7 +126,6 @@ syd_check_SOURCES= \
 
 syd_check_CFLAGS= \
 		  -I$(srcdir) \
-		  -I$(top_srcdir)/src \
 		  -I$(top_srcdir)/xxHash
 		  $(libseccomp_CFLAGS)
 syd_check_LDFLAGS= \

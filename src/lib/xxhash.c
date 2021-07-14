@@ -11,7 +11,7 @@
  */
 
 #include "HELPME.h"
-#include "syd.h"
+#include <syd/syd.h>
 
 /* ************************************
  *  Includes

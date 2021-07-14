@@ -16,9 +16,8 @@
 
 #include "c.h"
 #include "all-io.h"
-#include "confname.h"
 #include "fileutils.h"
-#include "syd.h"
+#include <syd/syd.h>
 
 int mkstemp_cloexec(char *template)
 {

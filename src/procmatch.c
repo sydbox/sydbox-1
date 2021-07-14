@@ -13,7 +13,7 @@
 
 #include "procmatch.h"
 #include "pathmatch.h"
-#include "sc_map.h"
+#include <syd/syd.h>
 
 int procadd(struct syd_map_64s *map, pid_t pid)
 {

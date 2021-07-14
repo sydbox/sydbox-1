@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <syd.h>
+#include <syd/syd.h>
 
 #include "path.h"
 #include "xfunc.h"

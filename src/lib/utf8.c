@@ -8,7 +8,7 @@
  */
 
 #include <stddef.h>
-#include "syd.h"
+#include <syd/syd.h>
 
 inline bool syd_utf8_nul(int c)
 {

@@ -54,9 +54,13 @@
 #endif
 pid_t syd_clone3(struct clone_args *args);
 
-#include <syd/compiler.h>
-
 #include <seccomp.h>
+
+#include <syd/compiler.h>
+#include <syd/confname.h>
+#include <syd/hex.h>
+#include <syd/sc_map.h>
+#include <syd/sha1dc_syd.h>
 
 /***
  * LibSyd: SHA1 Interface

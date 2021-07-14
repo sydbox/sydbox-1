@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: GPL-2.0-only
  */
 
-#include "syd.h"
+#include <syd/syd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>

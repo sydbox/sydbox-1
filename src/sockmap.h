@@ -12,8 +12,8 @@
 
 #include "syd-conf.h"
 #include "xfunc.h"
-#include "sc_map.h"
 #include "sockmatch.h"
+#include <syd/syd.h>
 
 static inline void sockmap_add(struct syd_map_64v *map,
 			       unsigned long long inode,

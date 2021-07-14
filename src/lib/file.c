@@ -11,7 +11,7 @@
 # define _GNU_SOURCE 1
 #endif
 
-#include "syd.h"
+#include <syd/syd.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -9,7 +9,7 @@
 
 #include <errno.h>
 #include <sys/ioctl.h>
-#include "syd.h"
+#include <syd/syd.h>
 
 int syd_extfs_get_compression(const char *filename, bool *compress)
 {

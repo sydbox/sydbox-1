@@ -32,16 +32,13 @@
 #include "acl-queue.h"
 #include "bsd-compat.h"
 #include "procmatch.h"
-#include "sc_map.h"
 #include "sockmatch.h"
 #include "sockmap.h"
 #include "util.h"
 #include "xfunc.h"
 #include "arch.h"
-#include <syd/compiler.h>
-
-#include "sha1dc_syd.h"
-#include "hex.h"
+#include <syd/syd.h>
+#include <syd/syd.h>
 
 /* Definitions */
 #ifdef KERNEL_VERSION

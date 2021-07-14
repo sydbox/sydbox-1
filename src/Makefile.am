@@ -1,5 +1,5 @@
 #H = $(top_builddir)/misc/syd-hilite
-SUBDIRS= syd .
+SUBDIRS= lib .
 AM_MAKEFLAGS= --no-print-directory
 CLEANFILES= \
 	    *~ \
@@ -15,9 +15,12 @@ EXTRA_DIST= \
 	    Cargo.toml.in
 noinst_HEADERS=
 
-BUILT_SOURCES= jobs
+BUILT_SOURCES= jobs libsyd
 .PHONY: jobs
 jobs: | parallel
+.PHONY: libsyd
+libsyd:
+	$(MAKE) -j$(JOB_COUNT) -C lib all
 
 BUILT_SOURCES+= build
 .PHONY: build
@@ -157,8 +160,8 @@ DEFS+= \
 syd_SOURCES=
 
 AM_CFLAGS= \
-	   -I$(builddir)/syd \
-	   -I$(srcdir)/syd \
+	   -I$(builddir)/lib \
+	   -I$(srcdir)/lib \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
 	   $(libseccomp_CFLAGS) \
@@ -319,15 +322,14 @@ syd_errno_LDFLAGS=\
 syd_errno_LDADD=\
 		@SYDBOX_LIBTOOL_FLAGS@ \
 		$(CODE_COVERAGE_LIBS) \
-		$(builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la
+		lib/libsyd_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else
 syd_errno_LDADD+= \
-		  -L$(builddir)/syd/.libs \
+		  -Llib/.libs \
 		  -lsyd_@LIBSYD_PC_SLOT@
 endif
-
 
 syd_format_SOURCES= \
 		    syd-format.c
@@ -338,12 +340,12 @@ syd_format_LDADD=\
 		 @SYDBOX_LIBTOOL_FLAGS@ \
 		 $(CODE_COVERAGE_LIBS) \
 		 $(libseccomp_LIBS) \
-		 $(builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la
+		 lib/libsyd_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else
 syd_format_LDADD+= \
-		   -L$(builddir)/syd/.libs \
+		   -Llib/.libs \
 		   -lsyd_@LIBSYD_PC_SLOT@
 endif
 
@@ -358,12 +360,12 @@ syd_hash_LDADD=\
 	       @SYDBOX_LIBTOOL_FLAGS@ \
 	       $(CODE_COVERAGE_LIBS) \
 	       $(libseccomp_LIBS) \
-	       $(builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la
+	       lib/libsyd_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else
 syd_hash_LDADD+= \
-		 -L$(builddir)/syd/.libs \
+		 -Llib/.libs \
 		 -lsyd_@LIBSYD_PC_SLOT@
 endif
 
@@ -381,12 +383,12 @@ syd_LDADD= \
 	   @SYDBOX_LIBTOOL_FLAGS@ \
 	   $(CODE_COVERAGE_LIBS) \
 	   $(libseccomp_LIBS) \
-	   $(builddir)/syd/libsyd_@LIBSYD_PC_SLOT@.la
+	   lib/libsyd_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else
 syd_LDADD+= \
-	    -L$(builddir)/syd/.libs \
+	    -Llib/.libs \
 	    -lsyd_@LIBSYD_PC_SLOT@
 endif
 

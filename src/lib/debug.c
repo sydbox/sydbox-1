@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
-#include "syd.h"
+#include <syd/syd.h>
 
 static bool syd_debug;
 static int syd_debug_fd = STDERR_FILENO;

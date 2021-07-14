@@ -11,7 +11,7 @@
 # include "config.h"
 #endif
 
-#include "syd.h"
+#include <syd/syd.h>
 #include <stdbool.h>
 #include <errno.h>
 #include <sys/types.h>

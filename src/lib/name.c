@@ -17,7 +17,7 @@
 #include <stddef.h>
 #include <errno.h>
 #include <sched.h>
-#include "syd.h"
+#include <syd/syd.h>
 
 int syd_str_startswith(const char *s, const char *prefix, bool *ret_bool)
 {

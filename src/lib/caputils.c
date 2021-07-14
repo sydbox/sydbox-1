@@ -23,7 +23,7 @@
 #include "c.h"
 #include "caputils.h"
 #include "procutils.h"
-#include "syd.h"
+#include <syd/syd.h>
 
 static int test_cap(unsigned int cap)
 {

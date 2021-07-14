@@ -1129,7 +1129,7 @@ AC_CONFIG_FILES([Makefile
 		 pandora/Makefile
 		 rc/Makefile
 		 src/Makefile
-		 src/syd/Makefile
+		 src/lib/Makefile
 		 t/Makefile
 		 t/bin-wrappers/Makefile
 		 t/bin/Makefile

@@ -45,7 +45,7 @@
 #include "proc.h"
 #include "util.h"
 
-#include <syd.h>
+#include <syd/syd.h>
 #ifdef SYDBOX_DEBUG
 # define UNW_LOCAL_ONLY
 # include <libunwind.h>

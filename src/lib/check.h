@@ -9,7 +9,7 @@
 #define LIBSYD_CHECK_H 1
 
 #include "seatest.h"
-#include "syd.h"
+#include <syd/syd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>

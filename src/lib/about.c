@@ -8,7 +8,7 @@
  */
 
 #include "config.h"
-#include "syd.h"
+#include <syd/syd.h>
 #include <errno.h>
 #include <seccomp.h>
 
