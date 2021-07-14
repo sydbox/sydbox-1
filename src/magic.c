@@ -151,6 +151,15 @@ static const struct key key_table[] = {
 		.type   = MAGIC_TYPE_OBJECT,
 	},
 
+	[MAGIC_KEY_KILL] = {
+		.name   = "kill",
+		.lname  = "kill",
+		.parent = MAGIC_KEY_NONE,
+		.type   = MAGIC_TYPE_INTEGER,
+		.set    = magic_set_kill,
+		.query  = magic_get_kill,
+	},
+
 	[MAGIC_KEY_CORE_MATCH_CASE_SENSITIVE] = {
 		.name   = "case_sensitive",
 		.lname  = "core.match.case_sensitive",

@@ -292,6 +292,7 @@ enum magic_key {
 
 	MAGIC_KEY_CMD,
 	MAGIC_KEY_CMD_EXEC,
+	MAGIC_KEY_KILL,
 
 	MAGIC_KEY_INVALID,
 };
@@ -1079,6 +1080,8 @@ int magic_set_trace_program_checksum(const void *val, syd_process_t *current);
 int magic_query_trace_program_checksum(syd_process_t *current);
 int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current);
 int magic_query_trace_use_toolong_hack(syd_process_t *current);
+int magic_set_kill(const void *val, syd_process_t *current);
+int magic_get_kill(syd_process_t *current);
 int magic_set_restrict_general(const void *val, syd_process_t *current);
 int magic_query_restrict_general(syd_process_t *current);
 int magic_set_restrict_id(const void *val, syd_process_t *current);

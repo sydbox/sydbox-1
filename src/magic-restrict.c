@@ -7,6 +7,35 @@
 
 #include "syd-box.h"
 
+int magic_set_kill(const void *val, syd_process_t *current)
+{
+	int r;
+	unsigned u_val = PTR_TO_UINT(val);
+
+	switch (u_val) {
+	case SIGKILL:
+	case SIGTERM:
+	case SIGCONT:
+	case SIGSTOP:
+	case SIGHUP:
+		break;
+	default:
+		return MAGIC_RET_INVALID_VALUE;
+	}
+	if (sydbox->execve_pidfd >= 0 &&
+	    (r = syd_pidfd_send_signal(sydbox->execve_pidfd, u_val, NULL, 0)) < 0 &&
+	    r != -ESRCH) {
+		errno = -r;
+		say_errno("syd_pidfd_send_signal");
+	}
+	return MAGIC_RET_OK;
+}
+
+int magic_get_kill(syd_process_t *current)
+{
+	return MAGIC_BOOL(true);
+}
+
 int magic_set_restrict_general(const void *val, syd_process_t *current)
 {
 	unsigned u_val = PTR_TO_UINT(val);
