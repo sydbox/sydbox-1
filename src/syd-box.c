@@ -114,12 +114,13 @@ static size_t arch_argv_idx;
 #ifdef HAVE_SIG_ATOMIC_T
 static volatile sig_atomic_t debugger_present = -1;
 static volatile sig_atomic_t interrupted, interrupted_reload, interrupted_trap;
-static volatile sig_atomic_t interruptid, interruptcode, interruptstat;
+static volatile sig_atomic_t interruptid;
 #else
 static volatile int debugger_present = -1;
 static volatile int interrupted, interrupted_reload, interrupted_trap;
-static volatile int interruptid, interruptcode, interruptstat;
+static volatile int interruptid
 #endif
+static int interruptcode, interruptstat;
 static sigset_t empty_set, blocked_set, interrupt_set;
 static bool debugger_killed;
 
@@ -1029,6 +1030,16 @@ static inline void block_signals(int on)
 }
 
 /* Signals are blocked by default. */
+static void init_sigchild(void)
+{
+	struct sigaction sa;
+
+	/* Ign */
+	sa.sa_sigaction = interrupt;
+	sa.sa_flags = SA_NOCLDSTOP|SA_RESTART|SA_SIGINFO;
+	sigaction(SIGCHLD, &sa, &child_sa);
+}
+
 static void init_signals(void)
 {
 	struct sigaction sa;
@@ -1036,11 +1047,6 @@ static void init_signals(void)
 	init_signal_sets();
 
 	block_signals(1);
-
-	/* Ign */
-	sa.sa_sigaction = interrupt;
-	sa.sa_flags = SA_NOCLDSTOP|SA_RESTART|SA_SIGINFO;
-	sigaction(SIGCHLD, &sa, &child_sa);
 
 	/* Stop */
 	sa.sa_handler = SIG_IGN;
@@ -1187,16 +1193,53 @@ static int sig_child(void)
 {
 	int status;
 	pid_t pid = interruptid;
+	syd_process_t *p = process_lookup(pid);
 
 	if (pid == sydbox->execve_pid) {
+		const char *op;
+		switch (interruptcode) {
+		case CLD_EXITED:
+			op = "exit";
+			break;
+		case CLD_KILLED:
+			op = "kill";
+			break;
+		case CLD_DUMPED:
+			op = "dump";
+			break;
+		case CLD_TRAPPED:
+			op = "trap";
+			break;
+		case CLD_STOPPED:
+			op = "stop";
+			break;
+		case CLD_CONTINUED:
+			op = "cont";
+			break;
+		default:
+			op = "?";
+			break;
+		}
 		if (interruptcode == CLD_EXITED)
 			sydbox->exit_code = WEXITSTATUS(interruptstat);
 		else if (interruptcode == CLD_KILLED ||
 			 interruptcode == CLD_DUMPED)
 			sydbox->exit_code = 128 + WTERMSIG(interruptstat);
+		say("SⒶnd☮x Pr☮cess %d»%s« exits with %d, secure:%s%s%s, code:%d»%s«, status:%#lx.",
+		    pid,
+		    sydbox->program_invocation_name,
+		    sydbox->exit_code,
+		    sydbox->violation
+			? ANSI_DARK_RED
+			: ANSI_DARK_GREEN,
+		    sydbox->violation
+			? "✕"
+			: "✓",
+		    SYD_WARN,
+		    interruptcode, op,
+		    (unsigned long)interruptstat);
 	}
 
-	syd_process_t *p = process_lookup(pid);
 	if (p && process_is_zombie(p->pid)) {
 		bury_process(p, true);
 		return 0;
@@ -1995,7 +2038,7 @@ notify_respond:
 				goto out;
 			} else {
 				errno = -r;
-				say_errno("seccomp_notify_receive");
+				say_errno("seccomp_notify_respond");
 				say("abnormal error code from seccomp, "
 				    "aborting!");
 				say("Please submit a bug to "
@@ -2109,6 +2152,9 @@ static syd_process_t *startup_child(int argc, char **argv)
 		say_errno("Cannot set child subreaper attribute, "
 			  "continuing...");
 
+	/* Set up the signal handler so that we get exit notification. */
+	init_sigchild();
+
 	/*
 	 * Mark SydB☮x's process id so that the seccomp filtering can
 	 * apply the unconditional restrictions about SydB☮x process
@@ -2135,6 +2181,9 @@ startup_child:
 		}
 		die_errno("can't fork");
 	} else if (pid == 0) {
+		/* Reset the SIGCHLD handler. */
+		signal(SIGCHLD, SIG_DFL);
+
 		sydbox->execve_pid = getpid();
 		sydbox->in_child = true;
 		sydbox->seccomp_fd = pfd[1];
@@ -3026,7 +3075,7 @@ int main(int argc, char **argv)
 		mapgroup = 0;
 		set_uid(0);
 		set_gid(0);
-		set_arg0("syd-sh");
+		set_arg0("☮syd-sh");
 		set_working_directory(xstrdup("tmp"));
 		close_fds[0] = 3;
 		close_fds[1] = 0;
@@ -3040,7 +3089,7 @@ int main(int argc, char **argv)
 				  CLONE_NEWCGROUP);
 		my_argc = ELEMENTSOF(sydsh_argv);
 		my_argv = sydsh_argv;
-		sydbox->program_invocation_name = xstrdup("syd-sh");
+		sydbox->program_invocation_name = xstrdup("☮syd-sh");
 		child_block_interrupt_signals = true;
 	} else {
 		my_argv = (char **)(argv + optind);
@@ -3049,7 +3098,9 @@ int main(int argc, char **argv)
 		 * Initial program_invocation_name to be used for P_COMM(current).
 		 * Saves one proc_comm() call.
 		 */
-		sydbox->program_invocation_name = xstrdup(argv[optind]);
+		if (asprintf(&sydbox->program_invocation_name, "☮%s",
+			     argv[optind]) < 0)
+			;
 	}
 	config_done();
 
