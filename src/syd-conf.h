@@ -181,6 +181,10 @@
 # define SYDBOX_MAGIC_PREFIX "/dev/sydbox"
 #endif
 
+#ifndef SYD_MAGIC_PREFIX
+# define SYD_MAGIC_PREFIX "/dev/syd"
+#endif
+
 #ifndef SYDBOX_MAGIC_SET_CHAR
 # define SYDBOX_MAGIC_SET_CHAR ':'
 #endif

@@ -533,8 +533,16 @@ static int do_stat(syd_process_t *current, const char *path,
 	bool locked = !!(P_BOX(current) && P_BOX(current)->magic_lock == LOCK_SET);
 	if (locked) {
 		/* No magic allowed! */
-		if (!streq(path, SYDBOX_MAGIC_PREFIX))
-			return 0;
+		if (startswith(path, SYDBOX_MAGIC_PREFIX) ||
+		    startswith(path, SYD_MAGIC_PREFIX)) {
+			if (!streq(path, SYDBOX_MAGIC_PREFIX) ||
+			    !streq(path, SYDBOX_MAGIC_PREFIX "/2")  ||
+			    !streq(path, SYD_MAGIC_PREFIX) ||
+			    !streq(path, SYD_MAGIC_PREFIX "/2"))
+				return 0;
+			else
+				return MAGIC_RET_NOPERM;
+		}
 		r = MAGIC_RET_OK;
 	} else {
 		r = magic_cast_string(current, path, 1);
