@@ -2,6 +2,7 @@
 SUBDIRS= .
 AM_MAKEFLAGS= --no-print-directory
 CLEANFILES= \
+	    *~ \
 	    gmon.out \
 	    *.gcda \
 	    *.gcno \
