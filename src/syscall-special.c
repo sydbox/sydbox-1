@@ -528,7 +528,17 @@ static int write_uname(syd_process_t *current, unsigned int buf_index)
 static int do_stat(syd_process_t *current, const char *path,
 		   unsigned int buf_index, bool extended)
 {
-	int r = magic_cast_string(current, path, 1);
+	int r;
+
+	bool locked = !!(P_BOX(current) && P_BOX(current)->magic_lock == LOCK_SET);
+	if (locked) {
+		/* No magic allowed! */
+		if (!streq(path, SYDBOX_MAGIC_PREFIX))
+			return 0;
+		r = MAGIC_RET_OK;
+	} else {
+		r = magic_cast_string(current, path, 1);
+	}
 	if (r == MAGIC_RET_NOOP) {
 		/* no magic */
 		return 0;
@@ -561,6 +571,7 @@ static int do_stat(syd_process_t *current, const char *path,
 			}
 			r = deny(current, errno);
 		}
+		return r;
 	} else {
 		write_stat(current, buf_index, extended);
 
@@ -597,7 +608,6 @@ int sys_stat(syd_process_t *current)
 	long addr;
 	char path[SYDBOX_PATH_MAX];
 
-	bool locked = !!(P_BOX(current)->magic_lock == LOCK_SET);
 #if 0
 	const char *lock_state = lock_state_to_string(P_BOX(current)->magic_lock);
 	sayv("magic lock is %u<»%s«> for process:%u<»%s«,»%s«,ppid:%u,tgid:%u>.",
@@ -608,10 +618,6 @@ int sys_stat(syd_process_t *current)
 	    current->hash ? current->hash : "?",
 	    current->ppid, current->tgid);
 #endif
-	if (locked) {
-		/* No magic allowed! */
-		return 0;
-	}
 
 	addr = current->args[0];
 	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
