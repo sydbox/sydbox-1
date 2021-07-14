@@ -1,1 +1,1 @@
-src/syd/sha1dc/README.md
+src/lib/sha1dc/README.md
