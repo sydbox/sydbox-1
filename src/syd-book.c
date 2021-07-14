@@ -64,15 +64,24 @@ static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
 "PACKAGE"-"VERSION GITVERSION"\n\
-Syd's errno <-> name converter\n\
-usage: "PACKAGE" [-hv] -|errno-name|errno-number...\n\
+Syd's interface to the Tao, the Book of the Way\n\
+usage: "PACKAGE" [-hvar] {chapter-number}\n\
 -h          -- Show usage and exit\n\
 -v          -- Show version and exit\n\
 \n\
-Given an errno number, print its name.\n\
-Given an errno name, print its number.\n\
-Given »-«, print all error numbers defined by the system.\n\
-Multiple arguments may be given.\n\
+Given no arguments, prints a random chapter.\n\
+Given »-a«, prints all chapters in Fortune Cookie Format.\n\
+Given a number as argument prints the respective chapter.\n\
+\n\
+You may compile the output of »-a« with »strfile tao.fortune tao.dat«.\n\
+and install both files under »${sharedir}/games/fortunes«\n\
+where »${sharedir}« is usually »/usr/share«\n\
+\n\
+Generated from:\n\
+https://raw.githubusercontent.com/lovingawareness/tao-te-ching/master/Ursula%20K%%20Le%%20Guin.md\n\
+written by " SYD_ANSI_GREEN "Lao Tzu" SYD_ANSI_NORMAL "\n\
+An English Version by " SYD_ANSI_YELLOW "Ursula K. Le Guin" SYD_ANSI_NORMAL "\n\
+ISBN: "SYD_ANSI_CYAN"978-1-59030-744-1"SYD_ANSI_NORMAL"\n\
 \n"SYD_HELPME);
 	exit(code);
 }

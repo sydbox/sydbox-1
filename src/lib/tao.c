@@ -31,7 +31,8 @@ const char *syd_tao_rand(void)
 	if (!syd_tao_init) {
 		uint64_t seed;
 		for (;;) {
-			if (getrandom(&seed, sizeof(uint64_t), 0) < 0) {
+			if (getrandom(&seed, sizeof(uint64_t),
+				      GRND_RANDOM) < 0) {
 				if (errno == EINTR)
 					continue;
 				pick = 1;
