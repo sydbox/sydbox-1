@@ -7,6 +7,7 @@ global:
 	syd_tao_rand;
 	syd_tao_pick;
 	syd_tao_max;
+	syd_tarot_draw;
 	syd_clone3;
 	syd_clone;
 	syd_debug_get;

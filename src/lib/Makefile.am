@@ -55,7 +55,8 @@ libsyd_SRCS = \
 	      extfs.c \
 	      sha1.c \
 	      xxhash.c \
-	      tao.c
+	      tao.c \
+	      tarot.c
 
 # SHA1DC
 libsyd_SRCS+= \
