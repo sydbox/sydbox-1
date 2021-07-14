@@ -378,8 +378,10 @@ static void new_shared_memory_clone_fs(struct syd_process *p)
 
 static void new_shared_memory_clone_files(struct syd_process *p)
 {
-	if (!syd_map_free(&p->sockmap))
-		return;
+	if (!syd_map_free(&p->sockmap)) {
+		syd_map_clear_64v(&p->sockmap);
+		syd_map_term_64v(&p->sockmap);
+	}
 	if (!syd_map_init_64v(&p->sockmap,
 			     SYDBOX_SOCKMAP_CAP,
 			     SYDBOX_MAP_LOAD_FAC)) {
@@ -397,6 +399,7 @@ static void new_shared_memory(struct syd_process *p)
 
 static syd_process_t *new_thread(pid_t pid)
 {
+	int r;
 	syd_process_t *thread;
 
 	thread = syd_calloc(1, sizeof(syd_process_t));
@@ -404,6 +407,12 @@ static syd_process_t *new_thread(pid_t pid)
 		return NULL;
 	for (size_t i = 0; i <= SYSCALL_ARG_MAX; i++)
 		thread->repr[i] = NULL;
+	new_shared_memory(thread);
+	if ((r = new_sandbox(&thread->box)) < 0) {
+		errno = -r;
+		say_errno("new_sandbox(%d)", thread->pid);
+		thread->box = NULL;
+	}
 
 	thread->pid = pid;
 	if (thread->pidfd < 0) {
@@ -427,24 +436,6 @@ static syd_process_t *new_thread(pid_t pid)
 	return thread;
 }
 
-static syd_process_t *new_process(pid_t pid)
-{
-	int r;
-	syd_process_t *process;
-
-	process = new_thread(pid);
-	if (!process)
-		return NULL;
-	process->tgid = process->pid;
-	new_shared_memory(process);
-	if ((r = new_sandbox(&process->box)) < 0) {
-		errno = -r;
-		die_errno("new_sandbox");
-	}
-
-	return process;
-}
-
 static syd_process_t *new_thread_or_kill(pid_t pid)
 {
 	syd_process_t *thread;
@@ -456,6 +447,18 @@ static syd_process_t *new_thread_or_kill(pid_t pid)
 	}
 
 	return thread;
+}
+
+static syd_process_t *new_process(pid_t pid)
+{
+	syd_process_t *process;
+
+	process = new_thread_or_kill(pid);
+	if (!process)
+		return NULL;
+	process->tgid = process->pid;
+
+	return process;
 }
 
 static syd_process_t *new_process_or_kill(pid_t pid)
@@ -2298,20 +2301,17 @@ void cleanup_for_child(void)
 	if (sydbox->program_invocation_name)
 		free(sydbox->program_invocation_name);
 
-	/* FIXME: Why can't we free these? */
-#if 0
-	if (syd_map_size_64s(&sydbox->config.proc_pid_auto)) {
+	if (!syd_map_free(&sydbox->config.proc_pid_auto)) {
 		syd_map_clear_64s(&sydbox->config.proc_pid_auto);
 		syd_map_term_64s(&sydbox->config.proc_pid_auto);
 	}
-	if (syd_map_size_64v(&sydbox->tree)) {
+	if (!syd_map_free(&sydbox->tree)) {
 		syd_map_clear_64v(&sydbox->tree);
 		syd_map_term_64v(&sydbox->tree);
 	}
 
 	filter_free();
-	// reset_sandbox(&sydbox->config.box_static);
-#endif
+	reset_sandbox(&sydbox->config.box_static);
 
 	struct acl_node *acl_node;
 	ACLQ_FREE(acl_node, &sydbox->config.exec_kill_if_match, xfree);
