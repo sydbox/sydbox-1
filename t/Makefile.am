@@ -62,8 +62,8 @@ syd_SCRIPTS= aggregate-results.sh check-non-portable-shell.pl chainlint.sed $(ch
 syd_DATA= README
 EXTRA_DIST+= $(syd_SCRIPTS) $(syd_DATA)
 
-syd_libexecdir=$(libexecdir)/$(PACKAGE)/bin
-syd_libesyd_libexec_SCRIPT= syd-test
+syd_test_libexecdir=$(libexecdir)/$(PACKAGE)/bin
+syd_test_libexec_SCRIPTS= syd-test
 EXTRA_DIST+= syd-test.sh.in
 syd-test: syd-test.sh.in
 	$(AM_V_GEN)
