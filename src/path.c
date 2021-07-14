@@ -54,6 +54,8 @@ char *path_make_absolute(const char *p, const char *prefix)
 		return NULL;
 	}
 	free(rc);
+
+	rc_safe = path_kill_slashes(rc_safe);
 	return rc_safe;
 }
 
