@@ -1036,6 +1036,17 @@ comp_sysentry(const void *e1, const void *e2)
 {
 	sysentry_t *entry1 = (sysentry_t *)e1;
 	sysentry_t *entry2 = (sysentry_t *)e2;
+	if (!entry1) {
+		if (entry2)
+			return 1;
+		else if (!entry2);
+			return 0;
+	} else if (!entry2) {
+		if (entry1)
+			return -1;
+		else if (!entry1)
+			return 0;
+	}
 	return strcmp(entry1->name, entry2->name);
 }
 
