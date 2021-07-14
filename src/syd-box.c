@@ -378,6 +378,8 @@ static void new_shared_memory_clone_fs(struct syd_process *p)
 
 static void new_shared_memory_clone_files(struct syd_process *p)
 {
+	if (!syd_map_free(&p->sockmap))
+		return;
 	if (!syd_map_init_64v(&p->sockmap,
 			     SYDBOX_SOCKMAP_CAP,
 			     SYDBOX_MAP_LOAD_FAC)) {

@@ -131,8 +131,15 @@ syd_check_LDFLAGS= \
 		   $(libseccomp_LIBS)
 syd_check_LDADD= \
 		 $(COVERAGE_LIBS) \
-		 $(libseccomp_LIBS)
-		.libs/libsyd_@LIBSYD_PC_SLOT@.la
+		 $(libseccomp_LIBS) \
+		 $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+
+if ENABLE_STATIC
+else
+syd_check_LDDD= \
+		  -L$(top_builddir)/syd/.libs \
+		  -llibsyd_@LIBSYD_PC_SLOT@
+endif
 
 syd_checkdir=$(libexecdir)/$(PACKAGE)/t/sha1_samples
 syd_check_DATA=\
