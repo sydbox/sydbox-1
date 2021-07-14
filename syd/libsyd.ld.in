@@ -70,6 +70,9 @@ global:
 	syd_strlcat;
 	syd_strlcpy;
 	syd_str_startswith;
+	syd_utf8_nul;
+	syd_utf8_valid;
+	syd_utf8_safe;
 	syd_extfs_get_flags;
 	syd_extfs_set_flags;
 	syd_extfs_get_undeletable;

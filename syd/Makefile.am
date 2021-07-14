@@ -123,6 +123,7 @@ syd_check_SOURCES= \
 		   file.c \
 		   proc.c \
 		   strlcpy.c \
+		   utf8.c \
 		   hex.c \
 		   sha1.c \
 		   sha1dc_syd.c \

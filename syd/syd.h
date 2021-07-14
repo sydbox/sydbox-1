@@ -585,6 +585,14 @@ size_t syd_strlcpy(char *restrict dst, const char *restrict src, size_t siz);
 int syd_str_startswith(const char *s, const char *prefix, bool *ret_bool);
 
 /***
+ * Syd's UTF-8 Functions
+ ***/
+bool syd_utf8_nul(int c);
+bool syd_utf8_valid(int c);
+int syd_utf8_safe(const char *restrict p, size_t length, char **res)
+	SYD_GCC_ATTR((nonnull(1,3)));
+
+/***
  * Syd's Path Names for Linux Systems
  ***/
 #include <paths.h>
