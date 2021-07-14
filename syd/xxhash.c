@@ -167,11 +167,18 @@ int syd_file_to_xxh64_hex(FILE *file, uint64_t *digest, char *hex)
 	for (;;) {
 		errno = 0;
 		ssize_t nread = fread(glob_buf, 1, SYD_PATH_TO_HEX_BUFSZ, file);
-		if (XXH64_update(state64, glob_buf,
+		if (errno == EINTR)
+			continue;
+		if (nread > 0 &&
+		    XXH64_update(state64, glob_buf,
 				 (unsigned)nread) == XXH_ERROR)
 			return -ECANCELED;
-		if (nread != SYD_PATH_TO_HEX_BUFSZ)
-			break;
+		if (nread != SYD_PATH_TO_HEX_BUFSZ) {
+			if (ferror(file))
+				return -errno;
+			else if (feof(file))
+				break;
+		}
 	}
 
 	/* Produce the final hash value */
