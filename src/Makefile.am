@@ -472,13 +472,6 @@ PAR_COUNT :=
 par: $(addprefix par-,$(call to_n,32))
 par-%: ; @$(eval PAR_COUNT += x)@echo $(words $(PAR_COUNT)) && sleep 1 && false
 
-# Convenience for users, more ugliness for meself...
-# PATH=${syd_dumpdir} cave resolve ...
-# to use syd-dump
-install-data-hook:
-	cd $(DESTDIR)$(syd_dumpdir) && \
-		$(LN_S) -f syd-dump syd
-
 SPARSE=sparse
 SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \
 		 -D__STDC_VERSION__=199901L \
