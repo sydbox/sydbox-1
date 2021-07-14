@@ -18,6 +18,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include "bsd-compat.h"
+#include "daemon.h"
 #include "file.h"
 #include "path.h"
 #include "pathdecode.h"
@@ -30,19 +31,54 @@ static void box_report_violation_path(syd_process_t *current,
 
 	switch (arg_index) {
 	case 0:
-		violation(current, "%s(»%s«)", name, path);
+		violation(current, "%s(»%s«,%#lx,%#lx,%#lx,%#lx %#lx)",
+			  name,
+			  path ? path : "",
+			  current->args[1],
+			  current->args[2],
+			  current->args[3],
+			  current->args[4],
+			  current->args[5]);
 		break;
 	case 1:
-		violation(current, "%s(?, »%s«)", name, path);
+		violation(current, "%s(%#lx,»%s«,%#lx,%#lx,%#lx,%#lx)",
+			  name,
+			  current->args[0],
+			  path ? path : "",
+			  current->args[2],
+			  current->args[3],
+			  current->args[4],
+			  current->args[5]);
 		break;
 	case 2:
-		violation(current, "%s(?, ?, »%s«)", name, path);
+		violation(current, "%s(%#lx,%#lx,»%s«,%#lx,%#lx,%#lx)",
+			  name,
+			  current->args[0],
+			  current->args[1],
+			  path ? path : "",
+			  current->args[3],
+			  current->args[4],
+			  current->args[5]);
 		break;
 	case 3:
-		violation(current, "%s(?, ?, ?, »%s«)", name, path);
+		violation(current, "%s(%#lx,%#lx,%#lx,»%s«,%#lx,%#lx)",
+			  name,
+			  current->args[0],
+			  current->args[1],
+			  current->args[2],
+			  path ? path : "",
+			  current->args[4],
+			  current->args[5]);
 		break;
 	default:
-		violation(current, "%s(?)", name);
+		violation(current, "%s(%#lx,%#lx,%#lx,%#lx,%#lx,%#lx)",
+			  name,
+			  current->args[0],
+			  current->args[1],
+			  current->args[2],
+			  current->args[3],
+			  current->args[4],
+			  current->args[5]);
 		break;
 	}
 }
@@ -56,16 +92,56 @@ static void box_report_violation_path_at(syd_process_t *current,
 
 	switch (arg_index) {
 	case 1:
-		violation(current, "%s(»%s«, prefix=»%s«)", name, path, prefix);
+		violation(current, "%s(»%s«,»%s«,%#lx,%#lx,%#lx,%#lx)",
+			  name,
+			  prefix ? prefix : "",
+			  path ? path : "",
+			  current->args[2],
+			  current->args[3],
+			  current->args[4],
+			  current->args[5]);
 		break;
 	case 2:
-		violation(current, "%s(?, »%s«, prefix=»%s«)", name, path, prefix);
+		violation(current, "%s(%#lx,»%s«,»%s«,%#lx,%#lx,%#lx)",
+			  name,
+			  current->args[0],
+			  prefix ? prefix : "",
+			  path ? path : "",
+			  current->args[3],
+			  current->args[4],
+			  current->args[5]);
 		break;
 	case 3:
-		violation(current, "%s(?, ?, '%s', prefix=»%s«)", name, path, prefix);
+		violation(current, "%s(%#lx,%#lx,»%s«,»%s«,%#lx,%#lx)",
+			  name,
+			  current->args[0],
+			  current->args[1],
+			  prefix ? prefix : "",
+			  path ? path : "",
+			  current->args[4],
+			  current->args[5]);
 		break;
 	default:
-		violation(current, "%s(?)", name);
+		if (current->sysname &&
+		    startswith(current->sysname, "getdents"))
+			violation(current, "%s(»%s%s«,%#lx,%#lx,%#lx,%#lx,%#lx)",
+				  name,
+				  prefix ? prefix : "/",
+				  path ? path : "",
+				  current->args[1],
+				  current->args[2],
+				  current->args[3],
+				  current->args[4],
+				  current->args[5]);
+		else
+			violation(current, "%s(%#lx,%#lx,%#lx,%#lx,%#lx,%#lx)",
+				  name,
+				  current->args[0],
+				  current->args[1],
+				  current->args[2],
+				  current->args[3],
+				  current->args[4],
+				  current->args[5]);
 		break;
 	}
 }
@@ -117,24 +193,42 @@ static void box_report_violation_sock(syd_process_t *current,
 
 	switch (paddr->family) {
 	case AF_UNIX:
-		violation(current, "%s(%d, %s)",
+		violation(current, "%s(%d,`%s',%#lx,%#lx,%#lx,%#lx)",
 			  name,
 			  info->ret_fd ? *info->ret_fd : -1,
-			  current->repr[info->arg_index]);
+			  current->repr[info->arg_index],
+			  current->args[2],
+			  current->args[3],
+			  current->args[4],
+			  current->args[5]);
 		break;
 	case AF_INET:
-		violation(current, "%s(%d, %s)", name,
+		violation(current, "%s(%d,`%s',%#lx,%lx,%#lx,%#lx)", name,
 			  info->ret_fd ? *info->ret_fd : -1,
-			  current->repr[info->arg_index]);
+			  current->repr[info->arg_index],
+			  current->args[2],
+			  current->args[3],
+			  current->args[4],
+			  current->args[5]);
 		break;
 	case AF_INET6:
-		violation(current, "%s(%d, %s)", name,
+		violation(current, "%s(%d,`%s',%#lx,%#lx,%#lx,%#lx)", name,
 			  info->ret_fd ? *info->ret_fd : -1,
-			  current->repr[info->arg_index]);
+			  current->repr[info->arg_index],
+			  current->args[2],
+			  current->args[3],
+			  current->args[4],
+			  current->args[5]);
 		break;
 	default:
 		f = addrfams_to_string(paddr->family);
-		violation(current, "%s(-1, ?:%s)", name, f ? f : "AF_???");
+		violation(current, "%s(%ld,`%s',%#lx,%#lx,%#lx,%#lx)", name,
+			  current->args[0],
+			  f ? f : "AF_???",
+			  current->args[2],
+			  current->args[3],
+			  current->args[4],
+			  current->args[5]);
 		break;
 	}
 }
@@ -388,7 +482,7 @@ int box_vm_read_path(syd_process_t *current, syscall_info_t *info,
 		}
 	} else { /* r == 0 */
 		/*
-		 * 1. Handle `.' as argument.
+		 * 1. Handle ».« as argument.
 		 * 2. Careful, we may both have a bad fd and the path may be either
 		 * NULL or empty string!
 		 * */
