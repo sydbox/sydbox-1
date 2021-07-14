@@ -396,12 +396,12 @@ void dump(enum dump what, ...)
 		char *j_prog = json_escape_str(&b_prog, p ? p->prog : "?");
 
 		sandbox_t *box = box_current(p);
-		char box_repr[6] = {0};
+		char box_repr[5] = {0};
 		box_repr[0] = sandbox_mode_toc(box->mode.sandbox_read);
 		box_repr[1] = sandbox_mode_toc(box->mode.sandbox_write);
 		box_repr[2] = sandbox_mode_toc(box->mode.sandbox_exec);
-		box_repr[4] = sandbox_mode_toc(box->mode.sandbox_network);
-		box_repr[5] = '\0';
+		box_repr[3] = sandbox_mode_toc(box->mode.sandbox_network);
+		box_repr[4] = '\0';
 
 		if (inspected_i(what) || verbose) {
 			id++;
