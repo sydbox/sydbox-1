@@ -13,7 +13,10 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
+#include <syd.h>
 
 #include "path.h"
 #include "xfunc.h"
@@ -33,9 +36,9 @@ char *path_make_absolute(const char *p, const char *prefix)
 	 * limiting length to SYDBOX_PATH_MAX.
 	 */
 	if (p && p[0] != '\0')
-		r = syd_asprintf(&rc, "%3072[^\n]/%1024[^\n]", prefix, p);
+		r = syd_asprintf(&rc, "%.3072s/%.1024s", prefix, p);
 	else
-		r = syd_asprintf(&rc, "%4096[^\n]", prefix);
+		r = syd_asprintf(&rc, "%.4096s", prefix);
 	if (r < 0) {
 		errno = -EINVAL;
 		return NULL;
