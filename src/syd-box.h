@@ -805,9 +805,9 @@ extern sydbox_t *sydbox;
 			   SANDBOX_OFF_EXEC() &&\
 			   SANDBOX_OFF_NETWORK())
 
-#define sandbox_allow(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_ALLOW))
-#define sandbox_deny(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_DENY))
-#define sandbox_off(p, box) (!!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_OFF))
+#define sandbox_allow(p, box) (P_BOX(p) && !!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_ALLOW))
+#define sandbox_deny(p, box) (P_BOX(p) && !!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_DENY))
+#define sandbox_off(p, box) (P_BOX(p) && !!(P_BOX(p)->mode.sandbox_ ## box == SANDBOX_OFF))
 
 #define sandbox_allow_exec(p) (sandbox_allow((p), exec))
 #define sandbox_allow_read(p) (sandbox_allow((p), read))
