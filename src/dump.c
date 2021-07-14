@@ -395,6 +395,14 @@ void dump(enum dump what, ...)
 		char *j_comm = json_escape_str(&b_comm, p ? p->comm : "?");
 		char *j_prog = json_escape_str(&b_prog, p ? p->prog : "?");
 
+		sandbox_t *box = box_current(p);
+		char box_repr[6] = {0};
+		box_repr[0] = sandbox_mode_toc(box->mode.sandbox_read);
+		box_repr[1] = sandbox_mode_toc(box->mode.sandbox_write);
+		box_repr[2] = sandbox_mode_toc(box->mode.sandbox_exec);
+		box_repr[4] = sandbox_mode_toc(box->mode.sandbox_network);
+		box_repr[5] = '\0';
+
 		if (inspected_i(what) || verbose) {
 			id++;
 			bool colour = (verbose && (fd <= 0 || fd == STDERR_FILENO));
@@ -405,6 +413,7 @@ void dump(enum dump what, ...)
 					J(id)"%llu,"
 					J(ts)"%llu,"
 					J(event)"{\"id\":%u,\"name\":\"%s☮☮ps%s\"},"
+					J(box)"{\"mode\":\"%s%s%s\"},"
 					J(proc)"{\"pid\":%s%d%s,\"comm\":%s\"%s\"%s,"
 						"\"prog\":%s\"%s\"%s,"
 						"\"hash\":%s\"%s\"%s,"
@@ -421,6 +430,9 @@ void dump(enum dump what, ...)
 					J(cwd)"\"%s%s%s\"}}",
 					id, (unsigned long long)now, what,
 					colour ? ANSI_DARK_RED : "",
+					colour ? ANSI_DARK_MAGENTA : "",
+					colour ? ANSI_DARK_GREEN : "",
+					box_repr,
 					colour ? ANSI_DARK_MAGENTA : "",
 					colour ? ANSI_DARK_GREEN : "",
 					pid,
