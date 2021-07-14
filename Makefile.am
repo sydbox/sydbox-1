@@ -148,4 +148,4 @@ check-build: all
 check-code-coverage: check-build
 	${MAKE} ${AM_MAKEFLAGS} -C t check-code-coverage
 
-SUBDIRS= misc syd src data man t pandora rc .
+SUBDIRS= misc src data man t pandora rc .

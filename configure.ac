@@ -1122,13 +1122,13 @@ AC_SUBST_FILE([GENERATED_FILE])
 dnl output
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_CONFIG_FILES([Makefile
-		 pandora/Makefile
-		 rc/Makefile
-		 misc/Makefile
-		 src/Makefile
-		 syd/Makefile
 		 data/Makefile
 		 man/Makefile
+		 misc/Makefile
+		 pandora/Makefile
+		 rc/Makefile
+		 src/Makefile
+		 src/syd/Makefile
 		 t/Makefile
 		 t/bin-wrappers/Makefile
 		 t/bin/Makefile

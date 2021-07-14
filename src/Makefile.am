@@ -1,5 +1,5 @@
 #H = $(top_builddir)/misc/syd-hilite
-SUBDIRS= .
+SUBDIRS= syd .
 AM_MAKEFLAGS= --no-print-directory
 CLEANFILES= \
 	    *~ \
@@ -157,8 +157,8 @@ DEFS+= \
 syd_SOURCES=
 
 AM_CFLAGS= \
-	   -I$(top_builddir)/syd \
-	   -I$(top_srcdir)/syd \
+	   -I$(builddir)/syd \
+	   -I$(srcdir)/syd \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
 	   $(libseccomp_CFLAGS) \
@@ -319,7 +319,15 @@ syd_errno_LDFLAGS=\
 syd_errno_LDADD=\
 		@SYDBOX_LIBTOOL_FLAGS@ \
 		$(CODE_COVERAGE_LIBS) \
-		$(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+		$(builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+
+if ENABLE_STATIC
+else
+syd_errno_LDADD+= \
+		  -L$(builddir)/syd/.libs \
+		  -lsyd_@LIBSYD_PC_SLOT@
+endif
+
 
 syd_format_SOURCES= \
 		    syd-format.c
@@ -330,13 +338,13 @@ syd_format_LDADD=\
 		 @SYDBOX_LIBTOOL_FLAGS@ \
 		 $(CODE_COVERAGE_LIBS) \
 		 $(libseccomp_LIBS) \
-		 $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+		 $(builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else
 syd_format_LDADD+= \
-		   -L$(top_builddir)/syd/.libs \
-		   $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.so
+		   -L$(builddir)/syd/.libs \
+		   -lsyd_@LIBSYD_PC_SLOT@
 endif
 
 syd_hash_SOURCES= \
@@ -350,12 +358,12 @@ syd_hash_LDADD=\
 	       @SYDBOX_LIBTOOL_FLAGS@ \
 	       $(CODE_COVERAGE_LIBS) \
 	       $(libseccomp_LIBS) \
-	       $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+	       $(builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else
 syd_hash_LDADD+= \
-		 -L$(top_builddir)/syd/.libs \
+		 -L$(builddir)/syd/.libs \
 		 -lsyd_@LIBSYD_PC_SLOT@
 endif
 
@@ -373,12 +381,12 @@ syd_LDADD= \
 	   @SYDBOX_LIBTOOL_FLAGS@ \
 	   $(CODE_COVERAGE_LIBS) \
 	   $(libseccomp_LIBS) \
-	   $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+	   $(builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
 
 if ENABLE_STATIC
 else
 syd_LDADD+= \
-	    -L$(top_builddir)/syd/.libs \
+	    -L$(builddir)/syd/.libs \
 	    -lsyd_@LIBSYD_PC_SLOT@
 endif
 
