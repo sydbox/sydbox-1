@@ -106,18 +106,18 @@ libsyd_@LIBSYD_PC_SLOT@_la_LIBS= \
 
 libsyd_includedir = $(includedir)/syd-$(LIBSYD_PC_SLOT)/syd
 libsyd_include_HEADERS= \
-			$(srcdir)/syd/confname.h \
-			$(srcdir)/syd/sha1dc_syd.h \
-			$(srcdir)/syd/hex.h \
-			$(srcdir)/syd/syd.h
+			syd/confname.h \
+			syd/sha1dc_syd.h \
+			syd/hex.h \
+			syd/syd.h
 
 noinst_HEADERS= \
-		$(srcdir)/syd/compiler.h \
-		seatest.h \
+		seatest/src/seatest.h \
+		syd/compiler.h \
 		check.h \
 		macro.h
 syd_check_SOURCES= \
-		   seatest.c \
+		   seatest/src/seatest.c \
 		   check.c \
 		   file-TEST.c \
 		   proc-TEST.c \
@@ -126,6 +126,7 @@ syd_check_SOURCES= \
 
 syd_check_CFLAGS= \
 		  -I$(srcdir) \
+		  -I$(srcdir)/seatest/src \
 		  -I$(top_srcdir)/xxHash
 		  $(libseccomp_CFLAGS)
 syd_check_LDFLAGS= \
