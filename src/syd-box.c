@@ -398,6 +398,8 @@ static syd_process_t *new_thread(pid_t pid)
 	thread = syd_calloc(1, sizeof(syd_process_t));
 	if (!thread)
 		return NULL;
+	for (size_t i = 0; i <= SYSCALL_ARG_MAX; i++)
+		thread->repr[i] = NULL;
 
 	thread->pid = pid;
 	if (thread->pidfd < 0) {
@@ -489,6 +491,11 @@ void reset_process(syd_process_t *p)
 	if (p->abspath)
 		free(p->abspath);
 	p->abspath = NULL;
+	for (size_t i = 0; i <= SYSCALL_ARG_MAX; i++) {
+		if (p->repr[i])
+			free(p->repr[i]);
+		p->repr[i] = NULL;
+	}
 }
 
 static void init_shareable_data(syd_process_t *current, syd_process_t *parent,

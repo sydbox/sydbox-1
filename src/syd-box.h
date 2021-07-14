@@ -448,7 +448,7 @@ struct syd_process {
 	long args[6];
 
 	/* String representation of arguments, used by dump. */
-	char *repr[6];
+	char *repr[6+1];
 
 	/* Last system call name */
 	char *sysname;
