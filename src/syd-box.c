@@ -371,6 +371,8 @@ static int seccomp_setup(void)
 
 static void new_shared_memory_clone_fs(struct syd_process *p)
 {
+	if (p->cwd)
+		free(p->cwd);
 	p->cwd = NULL;
 }
 
