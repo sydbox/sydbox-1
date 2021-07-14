@@ -13,7 +13,6 @@
 
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "path.h"
@@ -35,23 +34,12 @@ char *path_make_absolute(const char *p, const char *prefix)
 	 * Ensure we never overflow the path buffers by
 	 * limiting length to SYDBOX_PATH_MAX.
 	 */
-	rc = malloc(3072 + 1024 + 1/*slash*/ + 1/*nul byte*/);
-	if (!rc)
-		return NULL;
-	errno = 0;
 	if (p && p[0] != '\0')
-		r = sscanf(rc, "%3072[^\n]/%1024[^\n]",
-			   (char *)prefix,
-			   (char *)p);
+		r = syd_asprintf(&rc, "%3072[^\n]/%1024[^\n]", prefix, p);
 	else
-		r = sscanf(rc, "%4096[^\n]",
-			   (char *)prefix);
-	if (!errno)
-		return rc;
-	int save_errno = errno;
-	free(rc);
-	errno = save_errno;
-	return NULL;
+		r = syd_asprintf(&rc, "%4096[^\n]", prefix);
+
+	return (r < 0) ? NULL : rc;
 }
 
 char *path_kill_slashes(char *path)
