@@ -19,8 +19,8 @@ core/allowlist/successful_bind:true
 
 # We only passthrough UNIX sockets, UNIX abstract
 # sockets, IPv4 and IPv6 addresses. The rest,
-# e.g: NETLINK addresses are denied by default.
-core/allowlist/unsupported_socket_families:false
+# e.g: NETLINK addresses are allowed by default.
+core/allowlist/unsupported_socket_families:true
 
 core/violation/decision:deny
 core/violation/exit_code:-1
@@ -103,8 +103,8 @@ allowlist/network/connect+unix-abstract:userdb-*
 
 # Bash
 allowlist/write+/etc/bash_completion.d/***
-allowlist/write+/root/*/.bash_history*
-allowlist/write+/root/*/.history*
+allowlist/write+/**/.history*
+allowlist/write+/**/.bash_history*
 
 # Allow tab completion for system paths.
 # Note we have `core/match/no_wildcard:literal' set,
@@ -125,6 +125,9 @@ allowlist/write+/usr/share/locales?/***
 allowlist/write+/usr/share/locale-langpack/***
 allowlist/write+/usr/share/man*/***
 allowlist/write+/tmp
+
+# Allow access to local DNS
+allowlist/network/connect+LOOPBACK@53
 
 # Allow access to Tor via IPv{4,6}
 allowlist/network/connect+LOOPBACK@9050

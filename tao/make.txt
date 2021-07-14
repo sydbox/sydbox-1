@@ -1,7 +1,7 @@
 [32mTHANKS FOR USING SydB☮x!
-Type `[92mmake[32m' to compile.
-Run the recommended checks with `[92mmake check[32m' afterwards.
-Use `[92mmake install[32m' to install.
-Use `[92msyd --test[32m' to verify your system is supported by SydB☮x.
+Type »[92mmake[32m« to compile.
+Run the recommended checks with »[92mmake check[32m« afterwards.
+Use »[92mmake install[32m« to install.
+Use »[92msyd --test[32m« to verify your system is supported by SydB☮x.
 You may run the recommended checks after installation with the
-`[92msyd test[32m' command.[00;00m
+»[92msyd test[32m« command.[00;00m
