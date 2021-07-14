@@ -3152,7 +3152,7 @@ int main(int argc, char **argv)
 		death_sig = SIGKILL;
 		break;
 	default:
-		death_sig = abs(parent_death_signal);
+		death_sig = parent_death_signal;
 		break;
 	}
 
