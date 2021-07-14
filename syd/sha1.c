@@ -43,9 +43,16 @@ int syd_file_to_sha1_hex(FILE *file, char *hex)
 	for (;;) {
 		errno = 0;
 		ssize_t nread = fread(glob_buf, 1, SYD_PATH_TO_HEX_BUFSIZ, file);
-		syd_hash_sha1_update(&glob_ctx, glob_buf, (unsigned)nread);
-		if (nread != SYD_PATH_TO_HEX_BUFSIZ)
-			break;
+		if (errno == EINTR)
+			continue;
+		if (nread > 0)
+			syd_hash_sha1_update(&glob_ctx, glob_buf, (unsigned)nread);
+		if (nread != SYD_PATH_TO_HEX_BUFSIZ) {
+			if (ferror(file))
+				return -errno;
+			else if (feof(file))
+				break;
+		}
 	}
 	if (r == 0) {
 		r = syd_hash_sha1_final(&glob_ctx, glob_hash);
