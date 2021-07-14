@@ -14,7 +14,8 @@ AM_CPPFLAGS = $(DEFS) \
 AM_CFLAGS = \
 	    `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_CFLAGS)` \
 	    $(CODE_COVERAGE_CFLAGS) \
-	    -I$(top_srcdir)/syd
+	    -I$(top_srcdir)/src/lib \
+	    -I$(top_srcdir)/src/lib/syd
 AM_LDFLAGS = \
 	     `expr $@ : .*-static >/dev/null && echo -all-static` \
 	     `expr $@ : .*-pthread >/dev/null && echo $(PTHREAD_LIBS)` \
@@ -27,8 +28,12 @@ endif
 
 wildtest_SOURCES= tap.h wildtest.c
 wildtest_CFLAGS= \
+		 $(AM_CFLAGS) \
 		 -DWILD_TEST_ITERATIONS \
 		 --include=$(top_srcdir)/src/wildmatch.c
+wildtest_CFLAGS= \
+		 -L$(top_builddir)/src/lib/.libs \
+		 -lsyd_@LIBSYD_PC_SLOT@
 
 realpath_mode_1_SOURCES= realpath_mode-1.c \
 			 $(top_srcdir)/src/errno2name.c \
@@ -39,6 +44,9 @@ realpath_mode_1_SOURCES= realpath_mode-1.c \
 			 $(top_srcdir)/src/util.c \
 			 $(top_srcdir)/src/xfunc.c
 realpath_mode_1_CFLAGS= $(AM_CFLAGS) -DSYDBOX_NDUMP
+realpath_mode_1FLAGS= \
+		      -L$(top_builddir)/src/lib/.libs \
+		      -lsyd_@LIBSYD_PC_SLOT@
 
 sockmatchtest_SOURCES= sockmatchtest.c \
 		       $(top_srcdir)/src/errno2name.c \
@@ -49,6 +57,9 @@ sockmatchtest_SOURCES= sockmatchtest.c \
 		       $(top_srcdir)/src/wildmatch.c \
 		       $(top_srcdir)/src/xfunc.c
 sockmatchtest_CFLAGS= $(AM_CFLAGS) -DSYDBOX_NDUMP
+sockmatchtest_LDFLAGS= \
+		      -L$(top_builddir)/src/lib/.libs \
+		      -lsyd_@LIBSYD_PC_SLOT@
 
 threads_execve_SOURCES= threads_execve.c \
 			$(top_srcdir)/src/errno2name.c
@@ -72,6 +83,8 @@ syd_PROGRAMS= wildtest realpath_mode-1 sockmatchtest \
 	      syd-abort-pthread syd-abort-pthread-static syd-fstatat syd-mkdir-p syd-open-static \
 	      syd-open-dot threads_execve
 
+check_CFLAGS= $(AM_CFLAGS)
+check_LDFLAGS= $(AM_LDFLAGS)
 check_SCRIPTS= $(syd_SCRIPTS)
 check_PROGRAMS= $(syd_PROGRAMS)
 EXTRA_DIST+= $(syd_SCRIPTS)
