@@ -331,6 +331,13 @@ syd_format_LDADD=\
 		 $(libseccomp_LIBS) \
 		 $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
 
+if ENABLE_STATIC
+else
+syd_format_LDADD+= \
+		   -L$(top_builddir)/syd/.libs \
+		   $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.so
+endif
+
 syd_hash_SOURCES= \
 		  errno2name.c \
 		  errno2name.h \
@@ -344,6 +351,13 @@ syd_hash_LDADD=\
 	       $(libseccomp_LIBS) \
 	       $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
 
+if ENABLE_STATIC
+else
+syd_hash_LDADD+= \
+		 -L$(top_builddir)/syd/.libs \
+		 -lsyd_@LIBSYD_PC_SLOT@
+endif
+
 if WANT_PSYSCALL
 # imported from psyscall
 AM_CFLAGS+= $(pinktrace_CFLAGS)
@@ -353,12 +367,19 @@ endif
 
 syd_LDFLAGS= -pthread -lpthread -ldl \
 	     $(CODE_COVERAGE_LDFLAGS) \
-	      $(libseccomp_LIBS)
+	     $(libseccomp_LIBS)
 syd_LDADD= \
 	   @SYDBOX_LIBTOOL_FLAGS@ \
 	   $(CODE_COVERAGE_LIBS) \
 	   $(libseccomp_LIBS) \
 	   $(top_builddir)/syd/.libs/libsyd_@LIBSYD_PC_SLOT@.la
+
+if ENABLE_STATIC
+else
+syd_LDADD+= \
+	    -L$(top_builddir)/syd/.libs \
+	    -lsyd_@LIBSYD_PC_SLOT@
+endif
 
 if WANT_SYDBOX_RS
 syd_LDADD+= $(SYDBOX_RUST_LIB_STA)
