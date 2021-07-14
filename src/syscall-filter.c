@@ -84,6 +84,7 @@ static const int deny_list_level0[] = {
 	SCMP_SYS(sethostname),
 	SCMP_SYS(swapoff),
 	SCMP_SYS(swapon),
+	SCMP_SYS(syslog),
 	SCMP_SYS(umount),
 	SCMP_SYS(umount2),
 	SCMP_SYS(unshare),
