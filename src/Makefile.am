@@ -183,10 +183,17 @@ bin_PROGRAMS= syd
 
 # TODO: syd-run
 syd_libexecdir=$(libexecdir)/$(PACKAGE)/bin
-syd_libexec_PROGRAMS= syd-book syd-dump syd-errno syd-format syd-hash
+syd_libexec_PROGRAMS= \
+		      syd-book \
+		      syd-draw \
+		      syd-dump \
+		      syd-errno \
+		      syd-format \
+		      syd-hash
 
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_book_CPPFLAGS= -DSYDBOOK -DSYD_BOOK=1
+syd_draw_CPPFLAGS= -DSYDDRAW -DSYD_DRAW=1
 syd_errno_CPPFLAGS= -DSYDERR -DSYD_ERRNO=1
 syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
 noinst_INCLUDE_SRCS= syd_seccomp_arch_default.c
@@ -317,6 +324,16 @@ syd_book_LDFLAGS=\
 		  $(CODE_COVERAGE_LDFLAGS) \
 		  $(libseccomp_LIBS)
 syd_book_LDADD=\
+		@SYDBOX_LIBTOOL_FLAGS@ \
+		$(CODE_COVERAGE_LIBS) \
+		lib/libsyd_@LIBSYD_PC_SLOT@.la
+
+syd_draw_SOURCES= \
+		   syd-draw.c
+syd_draw_LDFLAGS=\
+		  $(CODE_COVERAGE_LDFLAGS) \
+		  $(libseccomp_LIBS)
+syd_draw_LDADD=\
 		@SYDBOX_LIBTOOL_FLAGS@ \
 		$(CODE_COVERAGE_LIBS) \
 		lib/libsyd_@LIBSYD_PC_SLOT@.la

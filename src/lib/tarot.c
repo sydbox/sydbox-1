@@ -42,14 +42,14 @@ int syd_tarot_draw(char **tarot_card)
 	const char *card;
 	const char *side;
 	size_t pick = rand() % TAROT_MAX;
-	bool revers = rand() % 2 == 1;
+	bool revers = (rand() % 2) == 1;
 	card = TAROT_CARDS[pick];
 	side = (revers)
 		? TAROT_SIDES[pick][0]
 		: TAROT_SIDES[pick][1];
 
 	char *p;
-	if (asprintf(&p, "%s %s- %s\n",
+	if (asprintf(&p, "%s %s- %s",
 		     card,
 		     revers ? "(Reversed) " : "",
 		     side) < 0)

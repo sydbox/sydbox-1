@@ -131,6 +131,7 @@ Makefile
 # Sydb☮x-2
 /src/syd
 /src/syd-book
+/src/syd-draw
 /src/syd-dump
 /src/syd-errno
 /src/syd-format

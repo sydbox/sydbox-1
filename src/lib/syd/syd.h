@@ -70,6 +70,11 @@ const char *syd_tao_pick(uint8_t pick);
 uint8_t syd_tao_max(void);
 
 /***
+ * LibSyd: Interface to the Tarot Decks
+ ***/
+int syd_tarot_draw(char **tarot_card);
+
+/***
  * LibSyd: SHA1 Interface
  ***/
 
