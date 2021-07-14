@@ -19,18 +19,31 @@ static const char *SYD_TAO[SYD_TAO_MAX];
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/random.h>
 #include <syd/syd.h>
 
 static bool syd_tao_init;
 
 const char *syd_tao_rand(void)
 {
+	uint8_t pick = 0;
+
 	if (!syd_tao_init) {
-		srand(1984);
+		uint64_t seed;
+		for (;;) {
+			if (getrandom(&seed, sizeof(uint64_t), 0) < 0) {
+				if (errno == EINTR)
+					continue;
+				pick = 1;
+				break;
+			}
+			break;
+		}
+		srand(seed);
 		syd_tao_init = true;
 	}
-
-	uint8_t pick = rand() % SYD_TAO_MAX;
+	if (!pick)
+		pick = rand() % SYD_TAO_MAX;
 	return SYD_TAO[pick];
 }
 
