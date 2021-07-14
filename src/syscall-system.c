@@ -304,8 +304,8 @@ static int check_open(syd_process_t *current, syscall_info_t *info,
 	bool rd, wr;
 	struct stat statbuf;
 
-	rd = !sandbox_off_read(current) && open_info->may_read;
-	wr = !sandbox_off_write(current) && open_info->may_write;
+	rd = !sandbox_not_read(current) && open_info->may_read;
+	wr = !sandbox_not_write(current) && open_info->may_write;
 
 	if (wr && rd) {
 		info->ret_abspath = &abspath;
@@ -401,7 +401,7 @@ int sys_open(syd_process_t *current)
 		return r;
 	}
 
-	if (sandbox_off_read(current) && sandbox_off_write(current)) {
+	if (sandbox_not_read(current) && sandbox_not_write(current)) {
 		if (abspath)
 			free(abspath);
 		return 0;
@@ -496,16 +496,16 @@ int sys_openat(syd_process_t *current)
 		return r;
 	}
 
-	if (sandbox_off_read(current) && sandbox_off_write(current))
+	if (sandbox_not_read(current) && sandbox_not_write(current)) {
+		if (abspath)
+			free(abspath);
 		return 0;
+	}
 
 	/* check flags first */
 	how.flags = current->args[2];
 	if ((r = restrict_open_flags(current, how.flags)) < 0)
 		return r;
-
-	if (sandbox_off_read(current) && sandbox_off_write(current))
-		return 0;
 
 	how.mode = 0;
 	how.resolve = 0;
@@ -587,7 +587,7 @@ int sys_openat2(syd_process_t *current)
 		return r;
 	}
 
-	if (sandbox_off_read(current) && sandbox_off_write(current)) {
+	if (sandbox_not_read(current) && sandbox_not_write(current)) {
 		if (abspath)
 			free(abspath);
 		return 0;

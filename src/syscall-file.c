@@ -45,9 +45,9 @@ static bool check_access_mode(syd_process_t *current, int mode)
 
 	assert(current);
 
-	if (mode & W_OK && !sandbox_off_write(current))
+	if (mode & W_OK && !sandbox_not_write(current))
 		r = true;
-	else if (!sandbox_off_read(current))
+	else if (!sandbox_not_read(current))
 		r = true;
 	else
 		r = false;
@@ -62,8 +62,8 @@ static int check_access(syd_process_t *current, syscall_info_t *info, int mode)
 	char *abspath = NULL;
 	struct stat statbuf;
 
-	rd = !sandbox_off_read(current); /* every mode `check' is a read access */
-	wr = !sandbox_off_write(current) && mode & W_OK;
+	rd = !sandbox_not_read(current); /* every mode `check' is a read access */
+	wr = !sandbox_not_write(current) && mode & W_OK;
 
 	if (wr && rd) {
 		info->ret_abspath = &abspath;
@@ -99,7 +99,7 @@ int sys_access(syd_process_t *current)
 	long mode;
 	syscall_info_t info;
 
-	if (sandbox_off_file(current))
+	if (sandbox_not_file(current))
 		return 0;
 
 	mode = current->args[1];
@@ -118,7 +118,7 @@ static int do_faccessat(syd_process_t *current, bool has_flags)
 	long mode, flags;
 	syscall_info_t info;
 
-	if (sandbox_off_file(current))
+	if (sandbox_not_file(current))
 		return 0;
 
 	/* check mode and then the AT_SYMLINK_NOFOLLOW flag */
@@ -152,7 +152,7 @@ int sys_chmod(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -199,7 +199,7 @@ int sys_fchmodat(syd_process_t *current)
 	long flags;
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	/* check for AT_SYMLINK_NOFOLLOW */
@@ -218,7 +218,7 @@ int sys_chown(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -230,7 +230,7 @@ int sys_lchown(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -244,7 +244,7 @@ int sys_fchownat(syd_process_t *current)
 	long flags;
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	/* check for AT_SYMLINK_NOFOLLOW */
@@ -263,7 +263,7 @@ int sys_creat(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -279,7 +279,7 @@ int sys_close(syd_process_t *current)
 
 	current->args[0] = -1;
 
-	if (sandbox_off_network(current) ||
+	if (sandbox_not_network(current) ||
 	    !sydbox->config.allowlist_successful_bind)
 		return 0;
 
@@ -296,7 +296,7 @@ int sysx_close(syd_process_t *current)
 	int r;
 	long retval;
 
-	if (sandbox_off_network(current) ||
+	if (sandbox_not_network(current) ||
 	    !sydbox->config.allowlist_successful_bind ||
 	    current->args[0] < 0)
 		return 0;
@@ -318,7 +318,7 @@ int sys_mkdir(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -332,7 +332,7 @@ int sys_mkdirat(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -348,7 +348,7 @@ int sys_mknod(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -362,7 +362,7 @@ int sys_mknodat(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -378,7 +378,7 @@ int sys_rmdir(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -392,7 +392,7 @@ int sys_truncate(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -404,7 +404,7 @@ int sys_mount(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -417,7 +417,7 @@ int sys_umount(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -432,7 +432,7 @@ int sys_umount2(syd_process_t *current)
 #endif
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -450,7 +450,7 @@ int sys_utime(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -462,7 +462,7 @@ int sys_utimes(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -475,7 +475,7 @@ int sys_utimensat(syd_process_t *current)
 	long flags;
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	/* check for AT_SYMLINK_NOFOLLOW */
@@ -495,7 +495,7 @@ int sys_futimesat(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -510,7 +510,7 @@ int sys_unlink(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -525,7 +525,7 @@ int sys_unlinkat(syd_process_t *current)
 	long flags;
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	flags = current->args[2];
@@ -553,7 +553,7 @@ int sys_link(syd_process_t *current)
 	int r;
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -587,7 +587,7 @@ int sys_linkat(syd_process_t *current)
 	long flags;
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	/* check for AT_SYMLINK_FOLLOW */
@@ -617,7 +617,7 @@ int sys_rename(syd_process_t *current)
 	struct stat statbuf;
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -656,7 +656,7 @@ int sys_renameat(syd_process_t *current)
 	struct stat statbuf = { .st_mode = 0 };
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -689,7 +689,7 @@ int sys_symlink(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -704,7 +704,7 @@ int sys_symlinkat(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -720,7 +720,7 @@ static int check_listxattr(syd_process_t *current, bool nofollow)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_read(current))
+	if (sandbox_not_read(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -747,7 +747,7 @@ int sys_setxattr(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -759,7 +759,7 @@ int sys_lsetxattr(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -772,7 +772,7 @@ int sys_removexattr(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -784,7 +784,7 @@ int sys_lremovexattr(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_write(current))
 		return 0;
 
 	init_sysinfo(&info);

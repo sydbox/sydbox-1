@@ -130,6 +130,7 @@ Makefile
 /t/bin-wrappers/shoebox
 # Sydb☮x-2
 /src/syd
+/src/syd-book
 /src/syd-dump
 /src/syd-errno
 /src/syd-format

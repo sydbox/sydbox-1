@@ -77,7 +77,7 @@ int sys_chdir(syd_process_t *current)
 	syscall_info_t info;
 
 	current->update_cwd = true;
-	if (sandbox_off_read(current))
+	if (sandbox_not_read(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -96,7 +96,7 @@ int sys_fchdir(syd_process_t *current)
 	syscall_info_t info;
 
 	current->update_cwd = true;
-	if (sandbox_off_read(current))
+	if (sandbox_not_read(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -149,7 +149,7 @@ int sys_getdents(syd_process_t *current)
 {
 	syscall_info_t info;
 
-	if (sandbox_off_write(current))
+	if (sandbox_not_read(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -157,6 +157,7 @@ int sys_getdents(syd_process_t *current)
 	info.arg_index = SYSCALL_ARG_MAX;
 	info.deny_errno = ENOENT;
 	info.prefix = P_CWD(current) ? P_CWD(current) : get_working_directory();
+	info.safe = true;
 
 	return box_check_path(current, &info);
 }
@@ -169,7 +170,7 @@ static int do_execve(syd_process_t *current, bool at_func)
 
 #if 0
 # execve is unconditionally hooked for process/thread hierarchy tracking.
-	if (sandbox_off_exec(current) &&
+	if (sandbox_not_exec(current) &&
 	    ACLQ_EMPTY(&sydbox->config.exec_kill_if_match))
 		return 0;
 #endif

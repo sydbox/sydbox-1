@@ -193,7 +193,7 @@ static void box_report_violation_sock(syd_process_t *current,
 
 	switch (paddr->family) {
 	case AF_UNIX:
-		violation(current, "%s(%d,`%s',%#lx,%#lx,%#lx,%#lx)",
+		violation(current, "%s(%d,»%s«,%#lx,%#lx,%#lx,%#lx)",
 			  name,
 			  info->ret_fd ? *info->ret_fd : -1,
 			  current->repr[info->arg_index],
@@ -203,7 +203,7 @@ static void box_report_violation_sock(syd_process_t *current,
 			  current->args[5]);
 		break;
 	case AF_INET:
-		violation(current, "%s(%d,`%s',%#lx,%lx,%#lx,%#lx)", name,
+		violation(current, "%s(%d,»%s«,%#lx,%lx,%#lx,%#lx)", name,
 			  info->ret_fd ? *info->ret_fd : -1,
 			  current->repr[info->arg_index],
 			  current->args[2],
@@ -212,7 +212,7 @@ static void box_report_violation_sock(syd_process_t *current,
 			  current->args[5]);
 		break;
 	case AF_INET6:
-		violation(current, "%s(%d,`%s',%#lx,%#lx,%#lx,%#lx)", name,
+		violation(current, "%s(%d,»%s«,%#lx,%#lx,%#lx,%#lx)", name,
 			  info->ret_fd ? *info->ret_fd : -1,
 			  current->repr[info->arg_index],
 			  current->args[2],
@@ -222,7 +222,7 @@ static void box_report_violation_sock(syd_process_t *current,
 		break;
 	default:
 		f = addrfams_to_string(paddr->family);
-		violation(current, "%s(%ld,`%s',%#lx,%#lx,%#lx,%#lx)", name,
+		violation(current, "%s(%ld,»%s«,%#lx,%#lx,%#lx,%#lx)", name,
 			  current->args[0],
 			  f ? f : "AF_???",
 			  current->args[2],

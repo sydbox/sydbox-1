@@ -75,7 +75,6 @@ static const char *const syd_system_denylist[UINT8_MAX] = {
 	"**/sysvipc/***",
 	"**/interrupts*",
 	"**/softirqs*",
-	"**/cmdline*",
 
 	"**/block/***",
 	"**/*rtc[0-9]*",
@@ -163,7 +162,6 @@ static const char *const syd_system_denylist[UINT8_MAX] = {
 	"**/[0-9]+/*auxv*",
 	"**/[0-9]+/*cgroup*",
 	"**/[0-9]+/*clear_refs*",
-	"**/[0-9]+/*cmdline*",
 	"**/[0-9]+/*core*",
 	"**/[0-9]+/*cpu*",
 	"**/[0-9]+/*environ*",

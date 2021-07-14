@@ -28,7 +28,7 @@ core/violation/exit_code:-1
 # The defaults are not noisy, but the shell
 # is allowed to make a bit more noise......
 core/violation/raise_fail:false
-core/violation/raise_safe:true
+core/violation/raise_safe:false
 
 core/trace/memory_access:0
 core/trace/program_checksum:2

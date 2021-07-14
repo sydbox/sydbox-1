@@ -71,7 +71,7 @@ int sys_bind(syd_process_t *current)
 	struct pink_sockaddr *psa = NULL;
 	syscall_info_t info;
 
-	if (sandbox_off_network(current))
+	if (sandbox_not_network(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -152,7 +152,7 @@ static int sys_connect_call(syd_process_t *current, bool sockaddr_in_msghdr,
 #define sub_sendto(p, i)	((i) == 4 && \
 				 (p)->subcall == PINK_SOCKET_SUBCALL_SENDTO)
 
-	if (sandbox_off_network(current))
+	if (sandbox_not_network(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -183,7 +183,7 @@ static int sys_socket_inode_lookup(syd_process_t *current, bool read_net_tcp)
 	const struct sockinfo *info;
 	struct sockmatch *match;
 
-	if (sandbox_off_network(current) ||
+	if (sandbox_not_network(current) ||
 	    !sydbox->config.allowlist_successful_bind)
 		return 0;
 
@@ -322,7 +322,7 @@ int sys_socketcall(syd_process_t *current)
 	int r;
 	long subcall;
 
-	if (sandbox_off_network(current))
+	if (sandbox_not_network(current))
 		return 0;
 
 	if ((r = syd_read_socket_subcall(current, &subcall)) < 0)

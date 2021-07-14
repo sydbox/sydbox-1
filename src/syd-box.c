@@ -2265,6 +2265,7 @@ seccomp_init:
 		opt.pid_env_var = get_pid_env_var();
 		get_pivot_root((char **)&opt.new_root,
 			       (char **)&opt.put_old);
+		opt.proc_mount = procmnt;
 		opt.unshare_flags = unshare_flags;
 		opt.uid = get_uid();
 		opt.gid = get_gid();
@@ -3068,9 +3069,9 @@ int main(int argc, char **argv)
 	int my_argc;
 	char **my_argv;
 	if (optind == argc) {
-		setenv("SHELL", "/bin/bash", 1);
 		config_parse_spec(DATADIR "/" PACKAGE
 				  "/default.syd-" STRINGIFY(SYDBOX_API_VERSION));
+		setenv("SHELL", "/bin/bash", 1);
 		mapuser = 0;
 		mapgroup = 0;
 		set_uid(0);
@@ -3087,6 +3088,7 @@ int main(int argc, char **argv)
 				  CLONE_NEWUSER|\
 				  CLONE_NEWTIME|\
 				  CLONE_NEWCGROUP);
+		procmnt = "/proc";
 		my_argc = ELEMENTSOF(sydsh_argv);
 		my_argv = sydsh_argv;
 		sydbox->program_invocation_name = xstrdup("☮syd-sh");

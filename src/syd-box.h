@@ -819,6 +819,12 @@ extern sydbox_t *sydbox;
 #define sandbox_off_network(p) (sandbox_off((p), network))
 #define sandbox_off_file(p) (sandbox_off_exec((p)) && sandbox_off_read((p)) && sandbox_off_write((p)))
 
+#define sandbox_not_exec(p) (sandbox_off((p), exec) || sandbox_allow((p), exec))
+#define sandbox_not_read(p) (sandbox_off((p), read) || sandbox_allow((p), read))
+#define sandbox_not_write(p) (sandbox_off((p), write) || sandbox_allow((p), write))
+#define sandbox_not_network(p) (sandbox_off((p), network) || sandbox_allow((p), network))
+#define sandbox_not_file(p) (sandbox_not_exec((p)) && sandbox_not_read((p)) && sandbox_not_write((p)))
+
 #define sandbox_deny_exec(p) (sandbox_deny((p), exec))
 #define sandbox_deny_read(p) (sandbox_deny((p), read))
 #define sandbox_deny_write(p) (sandbox_deny((p), write))

@@ -230,6 +230,7 @@ struct syd_exec_opt {
 	const char *chroot;
 	const char *new_root;
 	const char *put_old;
+	const char *proc_mount;
 	int unshare_flags;
 	unsigned long propagation;
 	int32_t close_fds_beg;
@@ -243,7 +244,6 @@ struct syd_exec_opt {
 	const uint32_t *supplementary_gids;
 	size_t supplementary_gids_length;
 	const char *pid_env_var;
-	const char *proc_mount;
 };
 
 SYD_GCC_ATTR((warn_unused_result))
