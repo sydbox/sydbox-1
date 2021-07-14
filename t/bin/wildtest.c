@@ -40,6 +40,7 @@
 #include <string.h>
 
 #include "tap.h"
+#include "wildmatch.h"
 
 #ifndef MAXPATHLEN
 #ifdef PATH_MAX

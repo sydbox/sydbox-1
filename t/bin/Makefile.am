@@ -31,7 +31,7 @@ wildtest_CFLAGS= \
 		 $(AM_CFLAGS) \
 		 -DWILD_TEST_ITERATIONS \
 		 --include=$(top_srcdir)/src/wildmatch.c
-wildtest_CFLAGS= \
+wildtest_CFLAGS+= \
 		 -L$(top_builddir)/src/lib/.libs \
 		 -lsyd_@LIBSYD_PC_SLOT@
 
