@@ -29,8 +29,6 @@ char *path_make_absolute(const char *p, const char *prefix)
 		return syd_strdup(p);
 
 	/*
-	 * Security: Handle untrusted input safely and only
-	 * allow in alphanumeric characters and spaces.
 	 * Ensure we never overflow the path buffers by
 	 * limiting length to SYDBOX_PATH_MAX.
 	 */
@@ -38,8 +36,22 @@ char *path_make_absolute(const char *p, const char *prefix)
 		r = syd_asprintf(&rc, "%3072[^\n]/%1024[^\n]", prefix, p);
 	else
 		r = syd_asprintf(&rc, "%4096[^\n]", prefix);
+	if (r < 0) {
+		errno = -EINVAL;
+		return NULL;
+	}
 
-	return (r < 0) ? NULL : rc;
+	/*
+	 * Security: Handle untrusted input safely and only
+	 * allow in valid UTF-8.
+	 */
+	char *rc_safe;
+	if ((r = syd_utf8_safe(rc, SYDBOX_PATH_MAX, &rc_safe)) < 0) {
+		errno = -r;
+		return NULL;
+	}
+	free(rc);
+	return rc_safe;
 }
 
 char *path_kill_slashes(char *path)
