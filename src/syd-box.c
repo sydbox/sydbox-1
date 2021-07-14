@@ -2420,9 +2420,11 @@ int main(int argc, char **argv)
 			return ENOMEM;
 		}
 		if (access(bin, X_OK) == 0) {
+			free(bin);
 			execv(bin, argv + 1);
 			exit(ECANCELED);
 		}
+		free(bin);
 	}
 
 	/*

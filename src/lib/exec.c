@@ -113,16 +113,14 @@ int syd_execv(const char *command,
 		if (!opt->new_root &&
 		    mount("none", opt->proc_mount,
 			  NULL, MS_PRIVATE|MS_REC, NULL) != 0) {
-			int save_errno = errno;
 			syd_say_errno("Cannot change »%s« filesystem propagation",
 				      opt->proc_mount);
-			return -save_errno;
-		}
-		if (mount("proc", opt->proc_mount,
+			/* fall through */
+		} else if (mount("proc", opt->proc_mount,
 			  "proc", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL) != 0) {
 			int save_errno = errno;
 			syd_say_errno("Mount »%s« failed", opt->proc_mount);
-			return -save_errno;
+			/* fall through */
 		}
 	}
 
