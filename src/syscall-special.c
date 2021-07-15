@@ -496,11 +496,10 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 
 	long addr;
 	addr = current->args[buf_index];
-	if ((r = syd_write_data(current, addr, bufaddr, bufsize)) < 0) {
+	if ((r = syd_write_vm_data(current, addr, bufaddr, bufsize)) < 0) {
 		errno = -r;
 		say_errno("syd_write_stat");
 	}
-	(void)syd_write_vm_data(current, addr, bufaddr, bufsize);
 
 	return true;
 }
