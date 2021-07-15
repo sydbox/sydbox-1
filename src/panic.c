@@ -90,8 +90,14 @@ void kill_all(int fatal_sig)
 	if (!sydbox)
 		return;
 
-	syd_map_foreach_value(&sydbox->tree, node) {
-		if (kill_one(node, fatal_sig) == -ESRCH)
+	if (syd_map_size_64v(&sydbox->tree)) {
+		syd_map_foreach_value(&sydbox->tree, node) {
+			if (kill_one(node, fatal_sig) == -ESRCH)
+				bury_process(node, true);
+		}
+	} else {
+		node = process_lookup(sydbox->execve_pid);
+		if (node && kill_one(node, fatal_sig) == -ESRCH)
 			bury_process(node, true);
 	}
 }
