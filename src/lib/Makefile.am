@@ -55,6 +55,7 @@ libsyd_SRCS = \
 	      extfs.c \
 	      sha1.c \
 	      xxhash.c \
+	      ipc.c \
 	      tao.c \
 	      tarot.c
 

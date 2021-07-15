@@ -366,6 +366,56 @@ int syd_extfs_get_compression(const char *filename, bool *compress);
 int syd_extfs_set_compression(const char *filename, bool on);
 
 /***
+ * libsyd: Interface to SydB☮x Magic IPC
+ ***/
+int syd_ipc_api(uint8_t *api)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_check(bool *check)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_lock(void);
+int syd_ipc_exec_lock(void);
+int syd_ipc_use_toolong_hack(bool on);
+int syd_ipc_kill(uint8_t signum);
+int syd_ipc_kill_if_match(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_set_exec(bool on);
+int syd_ipc_set_read(bool on);
+int syd_ipc_set_write(bool on);
+int syd_ipc_set_network(bool on);
+int syd_ipc_get_exec(bool *on)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_get_read(bool *on)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_get_write(bool *on)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_get_network(bool *on)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_allow_exec(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_deny_exec(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_allow_read(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_deny_read(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_allow_write(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_deny_write(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_allow_network(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_deny_network(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_filter_exec(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_filter_read(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_filter_write(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_filter_network(const char *pattern, char addrem)
+	SYD_GCC_ATTR((nonnull(1)));
+
+/***
  * libsyd: Interfaces to statically allocated hash tables.
  ***/
 #define SYD_MAP_CLR ROBINHOOD_HASH_CLEAR
