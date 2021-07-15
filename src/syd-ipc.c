@@ -51,7 +51,7 @@ int syd_ipc_main(int argc, char **argv)
 		{"version",	no_argument,		NULL,	'v'},
 	};
 
-	while ((opt = getopt_long(argc, argv, "hs63sC:H:vc:o:", long_options,
+	while ((opt = getopt_long(argc, argv, "hv", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
 		case 'h':
