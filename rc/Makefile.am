@@ -62,12 +62,16 @@ RC_SRCS=\
 	x.tab.h
 
 lib_LTLIBRARIES = libsyd_rc_@LIBSYD_PC_SLOT@.la
-libsyd_rc_@LIBSYD_PC_SLOT@_la_CFLAGS= $(AM_CFLAGS) -DIN_LIBSYD=1 -DNO_MAIN=1
+libsyd_rc_@LIBSYD_PC_SLOT@_la_CFLAGS= $(AM_CFLAGS) -DIN_LIBSYD=1 -DMAIN=0
+libsyd_rc_@LIBSYD_PC_SLOT@_la_LDFLAGS= $(AM_LDFLAGS)
 libsyd_rc_@LIBSYD_PC_SLOT@_la_SOURCES= $(RC_SRCS)
 
-#bin_PROGRAMS= syd-rc
-#syd_rc_CFLAGS= $(AM_CFLAGS) -DIN_SYD_RC=1
-#syd_rc_SOURCES= $(RC_SRCS)
+bin_PROGRAMS= syd-rc
+syd_rcdir=$(libexecdir)/$(PACKAGE)/bin
+syd_rc_PROGRAMS= syd-rc
+syd_rc_CFLAGS= $(AM_CFLAGS) -DIN_SYD_RC=1 -DMAIN=1
+syd_rc_LDFLAGS= $(AM_LDFLAGS)
+syd_rc_SOURCES= $(RC_SRCS)
 
 YFILES=syn.y
 y.tab.h y.tab.c: $(YFILES)

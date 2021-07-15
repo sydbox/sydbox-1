@@ -156,8 +156,11 @@ newvar(char *name, var *next)
  * fabricate bootstrap code and start it (*=(argv);. /usr/lib/rcmain $*)
  * start interpreting code
  */
-int
-syd_rc_main(int argc, char *argv[])
+#if MAIN
+int main(int argc, char *argv[])
+#else
+int syd_rc_main(int argc, char *argv[])
+#endif
 {
 	code bootstrap[32];
 	char num[12], *rcmain;
