@@ -10,16 +10,22 @@ CLEANFILES= \
 	    *.tab.h \
 	    *.tab.c
 
-#PROMPT=readline
-PROMPT=null
-
 rcmaindir = $(datadir)/$(PACKAGE)/rc
 rcmain_HEADERS = rcmain
 
 rcmain: rcmain.syd
 	cp -pP $< $@
 
+AM_LDFLAGS=
+if SYDBOX_HAVE_READLINE
+PROMPT=readline
+AM_LDFLAGS+=-lreadline
+else
+PROMPT=null
+endif
+
 AM_CFLAGS=\
+	-DPROMPT='"$(PROMPT)"' \
 	-DPREFIX='"/usr"' \
 	-DDATADIR='"$(rcmaindir)"' \
 	-Wall -Wextra -Wno-parentheses \

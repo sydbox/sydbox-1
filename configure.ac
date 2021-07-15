@@ -1012,6 +1012,22 @@ AM_CONDITIONAL([SYDBOX_HAVE_DUMP_BUILTIN], test x"$WANT_DUMP_BUILTIN" = x"yes")
 AC_DEFINE_UNQUOTED([SYDBOX_HAVE_DUMP_BUILTIN], [$SYDBOX_WANT_DUMP_BUILTIN], [Enable builtin event dumper])
 AC_SUBST([SYDBOX_WANT_DUMP_BUILTIN])
 
+AC_MSG_CHECKING([for readline])
+AC_ARG_WITH([readline],
+	AS_HELP_STRING([--without-readline],
+		       [Avoid linking readline to the SydB☮x binary, used by the plan9 rc shell]),
+	[WANT_READLINE="$withval"],
+	[WANT_READLINE=no])
+if test x"$WANT_READLINE" = x"yes"; then
+	SYDBOX_WANT_READLINE=1
+else
+	SYDBOX_WANT_READLINE=0
+fi
+AC_MSG_RESULT([$WANT_READLINE])
+AM_CONDITIONAL([SYDBOX_HAVE_READLINE], test x"$SYDBOX_WANT_READLINE" = x"1")
+AC_DEFINE_UNQUOTED([SYDBOX_HAVE_READLINE], [$SYDBOX_WANT_READLINE], [Enable builtin event readlineer])
+AC_SUBST([SYDBOX_WANT_READLINE])
+
 dnl Mark default include directory for Makefile
 dnl This is used to generate open flags
 SYD_INCLUDEDIR="$includedir"
