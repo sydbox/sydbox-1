@@ -158,6 +158,11 @@ int sys_getdents(syd_process_t *current)
 	info.deny_errno = ENOENT;
 	info.prefix = P_CWD(current) ? P_CWD(current) : get_working_directory();
 	info.safe = true;
+	info.access_mode = sandbox_deny_read(current)
+		? ACCESS_ALLOWLIST
+		: ACCESS_DENYLIST;
+	info.access_list = &P_BOX(current)->acl_read;
+	info.access_filter = &sydbox->config.filter_read;
 
 	return box_check_path(current, &info);
 }
