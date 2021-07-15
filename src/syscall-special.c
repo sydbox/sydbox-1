@@ -82,7 +82,13 @@ int sys_chdir(syd_process_t *current)
 
 	init_sysinfo(&info);
 	info.deny_errno = EACCES;
-	info.prefix = get_working_directory();
+	info.prefix = P_CWD(current) ? P_CWD(current) : get_working_directory();
+	info.safe = true;
+	info.access_mode = sandbox_deny_read(current)
+		? ACCESS_ALLOWLIST
+		: ACCESS_DENYLIST;
+	info.access_list = &P_BOX(current)->acl_read;
+	info.access_filter = &sydbox->config.filter_read;
 
 	r = box_check_path(current, &info);
 	if (r != 0)
