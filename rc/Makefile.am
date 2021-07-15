@@ -2,6 +2,7 @@ H = $(top_builddir)/misc/syd-hilite
 AM_MAKEFLAGS= --no-print-directory
 AM_YFLAGS= -d
 CLEANFILES= \
+	    *~ \
 	    gmon.out \
 	    *.gcda \
 	    *.gcno \
@@ -12,8 +13,15 @@ CLEANFILES= \
 #PROMPT=readline
 PROMPT=null
 
+rcmaindir = $(datadir)/$(PACKAGE)/rc
+rcmain_HEADERS = rcmain
+
+rcmain: rcmain.syd
+	cp -pP $< $@
+
 AM_CFLAGS=\
 	-DPREFIX='"/usr"' \
+	-DDATADIR='"$(rcmaindir)"' \
 	-Wall -Wextra -Wno-parentheses \
 	-Wno-missing-braces -Wno-missing-field-initializers \
 	-Wno-comment -Wno-sign-compare -Wno-unused-parameter \

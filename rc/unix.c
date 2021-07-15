@@ -16,7 +16,7 @@
 #include <assert.h>
 #include <limits.h>
 
-char *Rcmain = PREFIX "/lib/rcmain";
+char *Rcmain = DATADIR "/rcmain";
 char *Fdprefix = "/dev/fd/";
 
 void execfinit(void);

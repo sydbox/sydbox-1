@@ -51,7 +51,7 @@ static void print_tao_all(void)
 {
 	uint8_t max = syd_tao_max();
 	for (uint8_t i = 0; i < max; i++)
-		printf("%s%\n", syd_tao_pick(i));
+		printf("%s\n", syd_tao_pick(i));
 }
 
 static void about(void)
@@ -78,7 +78,7 @@ and install both files under »${sharedir}/games/fortunes«\n\
 where »${sharedir}« is usually »/usr/share«\n\
 \n\
 Generated from:\n\
-https://raw.githubusercontent.com/lovingawareness/tao-te-ching/master/Ursula%20K%%20Le%%20Guin.md\n\
+https://raw.githubusercontent.com/lovingawareness/tao-te-ching/master/Ursula%%20K%%20Le%%20Guin.md\n\
 written by " SYD_ANSI_GREEN "Lao Tzu" SYD_ANSI_NORMAL "\n\
 An English Version by " SYD_ANSI_YELLOW "Ursula K. Le Guin" SYD_ANSI_NORMAL "\n\
 ISBN: "SYD_ANSI_CYAN"978-1-59030-744-1"SYD_ANSI_NORMAL"\n\
