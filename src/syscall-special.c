@@ -614,18 +614,7 @@ static int do_stat(syd_process_t *current, const char *path,
 int sys_stat(syd_process_t *current)
 {
 	long addr;
-	char path[SYDBOX_PATH_MAX];
-
-#if 0
-	const char *lock_state = lock_state_to_string(P_BOX(current)->magic_lock);
-	sayv("magic lock is %u<»%s«> for process:%u<»%s«,»%s«,ppid:%u,tgid:%u>.",
-	    P_BOX(current)->magic_lock,
-	    lock_state ? lock_state : "?",
-	    current->pid,
-	    current->comm ? current->comm : "?",
-	    current->hash ? current->hash : "?",
-	    current->ppid, current->tgid);
-#endif
+	char path[SYDBOX_PATH_MAX] = {0};
 
 	addr = current->args[0];
 	if (syd_read_string(current, addr, path, SYDBOX_PATH_MAX) < 0)
@@ -633,6 +622,11 @@ int sys_stat(syd_process_t *current)
 	path[SYDBOX_PATH_MAX-1] = '\0';
 
 	return do_stat(current, path, 1, false);
+}
+
+inline int sys_lstat(syd_process_t *current)
+{
+	return sys_stat(current);
 }
 
 int sys_fstatat(syd_process_t *current)

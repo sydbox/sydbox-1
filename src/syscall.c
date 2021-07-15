@@ -281,7 +281,7 @@ static const sysentry_t syscall_entries[] = {
 	{
 		.name = "lstat",
 		.no = SCMP_SYS(lstat),
-		.notify = sys_stat,
+		.notify = sys_lstat,
 		.magic_lock_off = true,
 	},
 	{
