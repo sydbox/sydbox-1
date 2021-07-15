@@ -1,7 +1,7 @@
 /*
- * sydbox/sydfmt.c
+ * sydbox/syd-format.c
  *
- * sydbox magic command formatter
+ * Syd's Magic Command Formatter
  *
  * Copyright (c) 2012, 2013, 2014, 2021 Ali Polatel <alip@exherbo.org>
  * SPDX-License-Identifier: GPL-2.0-only
