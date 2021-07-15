@@ -136,6 +136,7 @@ Makefile
 /src/syd-errno
 /src/syd-format
 /src/syd-hash
+/src/syd-ipc
 /src/syd-shoebox
 /src/lib.rs
 /t/syd-test

@@ -163,8 +163,7 @@ AM_CFLAGS= \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
 	   -I$(top_srcdir)/rc \
-	   $(libseccomp_CFLAGS) \
-	   $(SYDBOX_CFLAGS)
+	   $(libseccomp_CFLAGS)
 
 if WANT_GIT
 AM_CFLAGS+= $(libgit2_CFLAGS)
@@ -192,11 +191,18 @@ syd_libexec_PROGRAMS= \
 		      syd-format \
 		      syd-hash
 
+syd_CFLAGS= $(AM_CFLAGS) $(SYDBOX_CFLAGS)
+syd_book_CFLAGS= $(AM_CFLAGS) $(SYDBOX_CFLAGS)
+syd_draw_CFLAGS= $(AM_CFLAGS) $(SYDBOX_CFLAGS)
+syd_errno_CFLAGS= $(AM_CFLAGS) $(SYDBOX_CFLAGS)
+syd_format_CFLAGS= $(AM_CFLAGS) $(SYDBOX_CFLAGS)
+syd_hash_CFLAGS= $(AM_CFLAGS) $(SYDBOX_CFLAGS)
 syd_CPPFLAGS= -DSYDBOX -DSYD=1
 syd_book_CPPFLAGS= -DSYDBOOK -DSYD_BOOK=1
 syd_draw_CPPFLAGS= -DSYDDRAW -DSYD_DRAW=1
 syd_errno_CPPFLAGS= -DSYDERR -DSYD_ERRNO=1
 syd_format_CPPFLAGS= -DSYDFMT -DSYD_FORMAT=1
+syd_hash_CPPFLAGS= -DSYDHASH -DSYD_HASH=1
 noinst_INCLUDE_SRCS= syd_seccomp_arch_default.c
 noinst_HEADERS+= \
 		 acl-queue.h \
@@ -224,7 +230,8 @@ noinst_HEADERS+= \
 		 xfunc.h \
 		 syd-conf.h \
 		 syd-sys.h \
-		 syd-box.h
+		 syd-box.h \
+		 syd-ipc.h
 syd_SOURCES+= \
 	     syd-box.c \
 	     Cargo.toml \
@@ -265,7 +272,8 @@ syd_SOURCES+= \
 	     syscall-filter.c \
 	     syscall-system.c \
 	     syscall.c \
-	     config.c
+	     config.c \
+	     syd-ipc.c
 
 #syd_run_SOURCES= \
 #		 syd-run.c \
