@@ -198,6 +198,8 @@ int violation(syd_process_t *current, const char *fmt, ...)
 		va_end(ap);
 	}
 
+	//sig_usr(SIGUSR2);
+
 	switch (sydbox->config.violation_decision) {
 	case VIOLATION_NOOP:
 	case VIOLATION_DENY:
