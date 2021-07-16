@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <sys/prctl.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
 #include <sys/ptrace.h>
@@ -45,6 +46,7 @@
 #include "pathlookup.h"
 #include "proc.h"
 #include "util.h"
+#include "syd-sys.h"
 
 #include <syd/syd.h>
 #ifdef SYDBOX_DEBUG
@@ -545,6 +547,8 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 	} else {
 		copy_sandbox(P_BOX(current), box_current(NULL));
 	}
+	if (P_BOX(current)->magic_lock == LOCK_SET)
+		syd_mprotect(P_BOX(current), sizeof(sandbox_t), PROT_READ);
 
 	new_shared_memory_clone_files(current);
 	new_shared_memory_clone_fs(current);
