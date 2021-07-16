@@ -49,9 +49,9 @@ unsigned acl_pathmatch(enum acl_action defaction, const aclq_t *restrict aclq,
 		if (node->match && pathmatch(node->match, path)) {
 			sayv("syd-match: %s ⊆ %s", (const char *)node->match, path);
 			node_match = node;
-		} else {
+		} /* else {
 			sayv("syd-acl-nomatch: %s ⨂ %s", (const char *)node->match, path);
-		}
+		} */
 	}
 
 	return acl_check(defaction, node_match, match);
