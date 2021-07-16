@@ -1,21 +1,75 @@
-# rcmain: unix version
+# rcmain: SydB☮x version
+
 if(~ $#home 0) home=$HOME
 if(~ $#ifs 0) ifs=' 	
 '
 defprompt='% '
 profile=$home/.rcrc
-switch($#prompt){
-case 0
-	if(~ $SYDBOX '') { prompt=($defprompt '	') }
-	if not { prompt=($SYDBOX^'-'^$defprompt '	') }
-case 1
-	prompt=($prompt '	')
+fn syd_prompt_update {
+	sandbox=`{syd ipc status}
+	mode=$sandbox(1)
+	switch($#prompt){
+	case 0
+		if (syd ipc check) {
+			prompt=($mode^$defprompt '	')
+		}
+		if not {
+			prompt=($mode^$defprompt '	')
+		}
+	case 1
+		prompt=($prompt '	')
+	}
 }
-if(~ $rcname ?.out) prompt=('broken! ' '	')
-if(flag p) path=/bin
-if not {
-	finit
-	if(~ $#path 0) path=(. /bin /usr/bin /usr/local/bin)
+syd_prompt_update
+
+fn cd {
+	syd_prompt_update
+	builtin cd $*
+}
+fn pwd {
+	syd_prompt_update
+	builtin pwd $*
+}
+fn test {
+	syd_prompt_update
+	builtin test $*
+}
+fn err { echo $* >[1=2] }
+
+fn complete_history {
+	history | sort -u | fzf -0 --header 'History'
+}
+
+fn complete_arg {
+}
+
+fn complete_command {
+	find $path -maxdepth 1 >[2]/dev/null | sed 's/\/.*\///' | sort -u |
+        fzf -q '^'^$1 -0 -1 --header 'Commands' --prompt $prompt(1)
+}
+
+fn complete {
+#err complete: $#* "$"*"
+	if(~ $#* 0)
+		exit
+
+
+	latsp=no
+	if(~ $"* *^' ')
+		lastsp=yes
+
+	*=`{echo $*}
+	switch($#*){
+	case 0
+		complete_history
+	case 1
+		if(~ $lastsp yes)
+			complete_arg $1
+		if not
+			complete_command $1
+	case *
+		exit ''
+	}
 }
 fn sigexit
 if(! ~ $#cflag 0){
