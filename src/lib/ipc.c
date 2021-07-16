@@ -73,7 +73,7 @@ int syd_ipc_exec_lock(void)
 
 #define SYD_IPC_STATUS_MAX 5
 SYD_GCC_ATTR((nonnull(1)))
-int syd_ipc_status(const char *const status)
+int syd_ipc_status(char const *status[SYD_IPC_STATUS_MAX])
 {
 	int r;
 	char syd_ipc_status[SYD_IPC_STATUS_MAX] = {0};
