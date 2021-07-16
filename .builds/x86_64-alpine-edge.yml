@@ -64,7 +64,7 @@ tasks:
     ./src/syd -d2 -- cc --version
 - check_static:
      echo disabled > TODO
-     tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf sydbox-static.tar.bz2 config.log {syd,t}/test-suite.log TODO || true
+     tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf sydbox-static.tar.bz2 config.log TODO || true
 #- check_static: |
 #    cd sydbox
 #    make -j V=1 check && touch .check_ok
@@ -104,7 +104,7 @@ tasks:
     make -j V=1
 - check:
      echo disabled > TODO
-     tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf sydbox-test.tar.bz2 config.log {syd,t}/test-suite.log TODO || true
+     tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf sydbox-test.tar.bz2 config.log TODO || true
 #- check: |
 #    cd sydbox
 #    make -j V=1 check && touch .check_ok
