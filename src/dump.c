@@ -39,11 +39,15 @@ static size_t alloc_bytes;
 
 static void dump_flush(void)
 {
+	if (!fp)
+		return;
 	fflush(fp);
 }
 
 static void dump_cycle(void)
 {
+	if (!fp)
+		return;
 	fputs("\n", fp);
 	dump_flush();
 }
@@ -62,11 +66,15 @@ static void dump_close(void)
 
 static void dump_null(void)
 {
+	if (!fp)
+		return;
 	fprintf(fp, "null");
 }
 
 static void dump_errno(int err_no)
 {
+	if (!fp)
+		return;
 	fprintf(fp, "{"J(no)"%d", err_no);
 	if (err_no)
 		fprintf(fp, J(name)"\"%s\"}", errno2name(err_no));
@@ -85,6 +93,9 @@ static void dump_format(const char *argv0, const char *pathname,
 	char *j_argv0 = NULL;
 	char *j_runas = NULL;
 	char *j_path = NULL;
+
+	if (!fp)
+		return;
 
 	/* Step 1: Generate escaped JSON strings. */
 	if (!argv0 || !argv0[0])
@@ -340,6 +351,8 @@ void dump(enum dump what, ...)
 
 	if (dump_init(what) != 0)
 		return;
+	if (!fp)
+		return;
 	if (what == DUMP_CLOSE) {
 		dump_close();
 		return;
@@ -391,7 +404,10 @@ void dump(enum dump what, ...)
 		char *j_sys = json_escape_str(&b_sys, sys);
 		char *j_expr = json_escape_str(&b_expr, expr);
 		char *j_cwd = json_escape_str(&b_cwd, cwd);
-		char *j_proc_cwd = json_escape_str(&b_proc_cwd, proc_cwd);
+		char *j_proc_cwd = json_escape_str(&b_proc_cwd,
+						   proc_cwd
+							? proc_cwd
+							: "");
 		char *j_comm = json_escape_str(&b_comm, p ? p->comm : "?");
 		char *j_prog = json_escape_str(&b_prog, p ? p->prog : "?");
 
