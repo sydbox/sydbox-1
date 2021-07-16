@@ -40,7 +40,7 @@ static void die(const char *fmt, ...);
 static void say_errno(const char *fmt, ...);
 static void die_errno(const char *fmt, ...);
 
-int syd_ipc_main(int argc, char **argv)
+int syd_ipc_main(int argc, char *const*argv)
 {
 	if (argc == 1)
 		usage(stderr, 1);
@@ -92,9 +92,6 @@ int syd_ipc_main(int argc, char **argv)
 		}
 		return check ? EXIT_SUCCESS : EXIT_FAILURE;
 	} else if (!strcmp(cmd, "status")) {
-		bool prompt = argc >= 2 &&
-			( !strcmp(argv[1], "-p") ||
-			  !strcmp(argv[1], "--prompt"));
 		//syd_ipc_status(prompt);
 		printf("TODO\n");
 	} else if (!strcmp(cmd, "lock")) {
@@ -102,6 +99,14 @@ int syd_ipc_main(int argc, char **argv)
 			errno = -r;
 			die_errno("syd_ipc_lock");
 		}
+		return EXIT_SUCCESS;
+	} else if (!strcmp(cmd, "status")) {
+		const char *status;
+		if ((r = syd_ipc_status(&status)) < 0) {
+			errno = -r;
+			die_errno("syd_ipc_status");
+		}
+		puts(status);
 		return EXIT_SUCCESS;
 	} else if (!strcmp(cmd, "exec_lock")) {
 		if ((r = syd_ipc_exec_lock()) < 0) {
@@ -112,7 +117,7 @@ int syd_ipc_main(int argc, char **argv)
 	} else if (!strcmp(cmd, "exec")) {
 		if (!argc)
 			die("exec requires at least one argument.");
-		if ((r = syd_ipc_exec(argc, argv)) < 0) {
+		if ((r = syd_ipc_exec(argc, (const char*const*)argv)) < 0) {
 			errno = -r;
 			die_errno("syd_ipd_exec");
 		}

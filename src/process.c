@@ -108,13 +108,13 @@ inline char sandbox_mode_toc(enum sandbox_mode mode)
 {
 	switch (mode) {
 	case SANDBOX_OFF:
-		return '-';
+		return '_';
 	case SANDBOX_BPF:
-		return '&';
+		return '!';
 	case SANDBOX_DENY:
-		return '%';
+		return '*';
 	case SANDBOX_ALLOW:
-		return '+';
+		return '^';
 	default:
 		assert_not_reached();
 	}
