@@ -17,7 +17,6 @@ packages:
 - m4
 - autoconf
 - automake
-- autopoint
 - gettext
 - pkgconf
 - gperf
