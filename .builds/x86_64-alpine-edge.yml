@@ -62,12 +62,15 @@ tasks:
 - arch: |
     cd sydbox
     ./src/syd -d2 -- cc --version
-- check_static: |
-    cd sydbox
-    make -j V=1 check && touch .check_ok
-    cat {syd,t}/test-suite.log || true
-    test -e .check_ok
-    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf ../sydbox-static.tar.bz2 config.log {syd,t}/test-suite.log t/test-results || true
+- check_static:
+     echo disabled > TODO
+     tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf sydbox-static.tar.bz2 config.log {syd,t}/test-suite.log TODO || true
+#- check_static: |
+#    cd sydbox
+#    make -j V=1 check && touch .check_ok
+#    cat {syd,t}/test-suite.log || true
+#    test -e .check_ok
+#    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf ../sydbox-static.tar.bz2 config.log {syd,t}/test-suite.log t/test-results || true
 #- clean_strace: |
 #    rm -f .check_ok
 #    rm -fr t/test-suite.log t/test-results t/trash*
@@ -99,9 +102,12 @@ tasks:
 - make: |
     cd sydbox
     make -j V=1
-- check: |
-    cd sydbox
-    make -j V=1 check && touch .check_ok
-    cat {syd,t}/test-suite.log || true
-    test -e .check_ok
-    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf ../sydbox-test.tar.bz2 config.log {syd,t}/test-suite.log t/test-results || true
+- check:
+     echo disabled > TODO
+     tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf sydbox-test.tar.bz2 config.log {syd,t}/test-suite.log TODO || true
+#- check: |
+#    cd sydbox
+#    make -j V=1 check && touch .check_ok
+#    cat {syd,t}/test-suite.log || true
+#    test -e .check_ok
+#    tar --owner=0 --group=0 --numeric-owner --mode=go-w,go+rX -cvjpf ../sydbox-test.tar.bz2 config.log {syd,t}/test-suite.log t/test-results || true
