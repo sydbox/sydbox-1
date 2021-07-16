@@ -71,8 +71,19 @@ int syd_ipc_exec_lock(void)
 	return syd_stat("/dev/sydbox/core/trace/magic_lock:exec");
 }
 
+#define SYD_IPC_STATUS_MAX 5
+SYD_GCC_ATTR((nonnull(1)))
+int syd_ipc_status(const char *const status)
+{
+	int r;
+	char syd_ipc_status[SYD_IPC_STATUS_MAX] = {0};
+
+	*status = syd_ipc_status;
+	return 0;
+}
+
 SYD_GCC_ATTR((nonnull(2)))
-int syd_ipc_exec(int argc, char *const*argv)
+int syd_ipc_exec(int argc, const char *const*restrict argv)
 {
 	size_t len = sizeof("/dev/sydbox/cmd/exec!");
 	for (size_t i = 0; argv[i]; i++)
@@ -86,8 +97,8 @@ int syd_ipc_exec(int argc, char *const*argv)
 	syd_strlcpy(cmd, "/dev/sydbox/cmd/exec!", len);
 	for (size_t i = 0; argv[i]; i++) {
 		size_t l = strlen(argv[i]) + 1;
-		syd_strlcpy(cmd + len - (i ? 0 : 1), argv[i], l);
 		len += l - (i ? 0 : 1);
+		syd_strlcpy(cmd + len, argv[i], l);
 		if (argv[i + 1] != NULL)
 			cmd[len-1] = 037;
 	}

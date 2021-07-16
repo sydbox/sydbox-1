@@ -36,6 +36,7 @@ static void about(void);
 static void usage(FILE *outfp, int code)
 	SYD_GCC_ATTR((noreturn));
 
+static void die(const char *fmt, ...);
 static void say_errno(const char *fmt, ...);
 static void die_errno(const char *fmt, ...);
 
@@ -73,6 +74,8 @@ int syd_ipc_main(int argc, char **argv)
 
 	int r;
 	const char *cmd = argv[0];
+	--argc;
+	++argv;
 
 	if (!strcmp(cmd, "api")) {
 		uint8_t api;
@@ -81,6 +84,39 @@ int syd_ipc_main(int argc, char **argv)
 			die_errno("syd_ipc_api");
 		}
 		printf("%"PRIu8"\n", api);
+	} else if (!strcmp(cmd, "check")) {
+		bool check;
+		if ((r = syd_ipc_check(&check)) < 0) {
+			errno = -r;
+			die_errno("syd_ipc_check");
+		}
+		return check ? EXIT_SUCCESS : EXIT_FAILURE;
+	} else if (!strcmp(cmd, "status")) {
+		bool prompt = argc >= 2 &&
+			( !strcmp(argv[1], "-p") ||
+			  !strcmp(argv[1], "--prompt"));
+		//syd_ipc_status(prompt);
+		printf("TODO\n");
+	} else if (!strcmp(cmd, "lock")) {
+		if ((r = syd_ipc_lock()) < 0) {
+			errno = -r;
+			die_errno("syd_ipc_lock");
+		}
+		return EXIT_SUCCESS;
+	} else if (!strcmp(cmd, "exec_lock")) {
+		if ((r = syd_ipc_exec_lock()) < 0) {
+			errno = -r;
+			die_errno("syd_ipc_exec_lock");
+		}
+		return EXIT_SUCCESS;
+	} else if (!strcmp(cmd, "exec")) {
+		if (!argc)
+			die("exec requires at least one argument.");
+		if ((r = syd_ipc_exec(argc, argv)) < 0) {
+			errno = -r;
+			die_errno("syd_ipd_exec");
+		}
+		return EXIT_SUCCESS;
 	}
 
 
@@ -231,7 +267,6 @@ static void say_errno(const char *fmt, ...)
 	errno = save_errno;
 }
 
-SYD_GCC_ATTR((unused))
 static void die(const char *fmt, ...)
 {
 	va_list ap;
