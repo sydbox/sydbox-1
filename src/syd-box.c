@@ -188,7 +188,7 @@ static inline syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 					  bool genuine);
 
 SYD_GCC_ATTR((noreturn))
-static void usage(FILE *outfp, int code)
+static void usage(FILE *outfp, int exit_code)
 {
 	fputs("\
 syd-"VERSION GITVERSION"\n\
@@ -239,7 +239,7 @@ usage: syd [-hvb] [--dry-run] [-d <fd|path|tmp>]\n\
                 [--stress] [--stress-jobs jobs]\n\
                 [--stress-limit limit]\n\
 \n"SYD_HELPME, outfp);
-	exit(code);
+	exit(exit_code);
 }
 
 #ifdef SYDBOX_DEBUG
@@ -415,63 +415,63 @@ static void new_shared_memory(struct syd_process *p)
 static syd_process_t *new_thread(pid_t pid)
 {
 	int r;
-	syd_process_t *thread;
+	syd_process_t *process;
 
-	thread = syd_calloc(1, sizeof(syd_process_t));
-	if (!thread)
+	process = syd_calloc(1, sizeof(syd_process_t));
+	if (!process)
 		return NULL;
 	for (size_t i = 0; i <= SYSCALL_ARG_MAX; i++)
-		thread->repr[i] = NULL;
-	new_shared_memory(thread);
-	if ((r = new_sandbox(&thread->box)) < 0) {
+		process->repr[i] = NULL;
+	new_shared_memory(process);
+	if ((r = new_sandbox(&process->box)) < 0) {
 		errno = -r;
-		say_errno("new_sandbox(%d)", thread->pid);
-		thread->box = NULL;
+		say_errno("new_sandbox(%d)", process->pid);
+		process->box = NULL;
 	}
 	if (pid == sydbox->execve_pid)
-		thread->xxh = sydbox->xxh;
-	copy_sandbox(P_BOX(thread), box_current(NULL));
+		process->xxh = sydbox->xxh;
+	copy_sandbox(P_BOX(process), box_current(NULL));
 	/*
 	 * For deny sandbox modes, apply default allow lists.
 	 */
 	for (size_t i = 0; syd_system_allowlist[i]; i++)
-		magic_cast_string(thread,
+		magic_cast_string(process,
 				  syd_system_allowlist[i],
 				  0);
 
-	thread->pid = pid;
-	if (thread->pidfd < 0) {
-		thread->pidfd = syd_pidfd_open(thread->pid, 0);
-		if (thread->pidfd < 0)
-			say_errno("pidfd_open(%d)", thread->pid);
+	process->pid = pid;
+	if (process->pidfd < 0) {
+		process->pidfd = syd_pidfd_open(process->pid, 0);
+		if (process->pidfd < 0)
+			say_errno("pidfd_open(%d)", process->pid);
 	}
-	thread->ppid = SYD_PPID_NONE;
-	thread->tgid = SYD_TGID_NONE;
-	thread->abspath = NULL;
-	thread->execve_pid = SYD_PPID_NONE;
+	process->ppid = SYD_PPID_NONE;
+	process->tgid = SYD_TGID_NONE;
+	process->abspath = NULL;
+	process->execve_pid = SYD_PPID_NONE;
 
-	thread->comm[0] = '?';
-	thread->comm[1] = '\0';
-	thread->hash[0] = '?';
-	thread->hash[1] = '\0';
+	process->comm[0] = '?';
+	process->comm[1] = '\0';
+	process->hash[0] = '?';
+	process->hash[1] = '\0';
 
-	process_add(thread);
+	process_add(process);
 
 	dump(DUMP_THREAD_NEW, pid);
-	return thread;
+	return process;
 }
 
 static syd_process_t *new_thread_or_kill(pid_t pid)
 {
-	syd_process_t *thread;
+	syd_process_t *process;
 
-	thread = new_thread(pid);
-	if (!thread) {
+	process = new_thread(pid);
+	if (!process) {
 		kill_save_errno(pid, SIGKILL);
 		die_errno("malloc() failed, killed %u", pid);
 	}
 
-	return thread;
+	return process;
 }
 
 static syd_process_t *new_process(pid_t pid)
@@ -3269,8 +3269,9 @@ int main(int argc, char **argv)
 		 * Saves one proc_comm() call.
 		 */
 		if (asprintf(&sydbox->program_invocation_name, "☮%s",
-			     argv[0]) < 0)
+			     argv[0]) < 0) {
 			;
+		}
 	}
 	config_done();
 

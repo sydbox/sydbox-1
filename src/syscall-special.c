@@ -400,8 +400,8 @@ int sys_execveat(syd_process_t *current)
 #define FAKE_RDEV_MINOR 3
 #define FAKE_RDEV 259
 #define FAKE_ATIME 505958400
-#define FAKE_MTIME -842745600
-#define FAKE_CTIME -2036448000
+#define FAKE_MTIME (int64_t)-842745600
+#define FAKE_CTIME (int64_t)-2036448000
 #define FAKE_UID 42
 #define FAKE_GID 1984
 
