@@ -15,6 +15,10 @@ inline bool syd_utf8_nul(int c)
 	return (c == '\0' || c == 0xC080);
 }
 
+/*
+ * From: https://stackoverflow.com/a/66723102
+ * Thank you!
+ */
 inline bool syd_utf8_valid(int c)
 {
 	if (c <= 0x7F)
