@@ -427,7 +427,7 @@ int box_resolve_dirfd(syd_process_t *current, syscall_info_t *info,
 	*dirfd = AT_FDCWD;
 	if (info->at_func) {
 		uint8_t fd_index;
-		if (info->arg_index == SYSCALL_ARG_MAX)
+		if (!info->arg_index)
 			fd_index = 0;
 		else
 			fd_index = info->arg_index - 1;
@@ -534,8 +534,9 @@ int box_check_path(syd_process_t *current, syscall_info_t *info)
 		return r;
 
 	/* Step 2: VM read path */
-	bool done, null;
-	if ((r = box_vm_read_path(current, info, dirfd, badfd, &path, &null, &done)) < 0 &&
+	bool done = false, null = false;
+	if (info->arg_index != 0 &&
+	    (r = box_vm_read_path(current, info, dirfd, badfd, &path, &null, &done)) < 0 &&
 	    done)
 		goto out;
 	if (null)

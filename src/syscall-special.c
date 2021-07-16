@@ -107,7 +107,7 @@ int sys_fchdir(syd_process_t *current)
 
 	init_sysinfo(&info);
 	info.at_func = true;
-	info.arg_index = SYSCALL_ARG_MAX;
+	info.arg_index = 0;
 	info.deny_errno = EACCES;
 	info.prefix = get_working_directory();
 
@@ -160,7 +160,7 @@ int sys_getdents(syd_process_t *current)
 
 	init_sysinfo(&info);
 	info.at_func = true;
-	info.arg_index = SYSCALL_ARG_MAX;
+	info.arg_index = 0;
 	info.deny_errno = ENOENT;
 	info.prefix = P_CWD(current) ? P_CWD(current) : get_working_directory();
 	info.safe = true;
@@ -289,17 +289,18 @@ static int do_execve(syd_process_t *current, bool at_func)
 					 LINE_MAX-1);
 			current->prog[LINE_MAX-1] = '\0';
 		}
-		switch (csum) {
-		case 1:
+		if (csum >= 1) {
 			if ((r = syd_path_to_xxh64_hex(abspath, &current->xxh,
 						       NULL)) < 0) {
 				errno = -r;
 				say_errno("Can't calculate checksum of file "
 					  "»%s«", abspath);
-				break; /* Don't try twice. */
+			} else {
+				sayv("Calculated XXH hash %"PRIu64" of file "
+				    "»%s«", current->xxh, abspath);
 			}
-			SYD_GCC_ATTR((fallthrough));
-		case 2:
+		}
+		if (csum > 2) {
 			if ((r = syd_path_to_sha1_hex(abspath, sydbox->hash)) < 0) {
 				errno = -r;
 				say_errno("Can't calculate checksum of file "
@@ -308,9 +309,6 @@ static int do_execve(syd_process_t *current, bool at_func)
 				strlcpy(current->hash, sydbox->hash,
 					SYD_SHA1_HEXSZ);
 			}
-			break;
-		default:
-			break;
 		}
 	}
 
@@ -320,32 +318,29 @@ static int do_execve(syd_process_t *current, bool at_func)
 	}
 	if (abspath)
 		current->repr[0] = xstrdup(abspath);
+	current->abspath = abspath;
 	dump(DUMP_SYSENT, current);
-
-	switch (P_BOX(current)->mode.sandbox_exec) {
-	case SANDBOX_OFF:
-		return 0;
-	case SANDBOX_DENY:
-		if (acl_match_path(ACL_ACTION_ALLOWLIST,
-				   &P_BOX(current)->acl_exec,
-				   abspath, NULL))
-			return 0;
-		break;
-	case SANDBOX_ALLOW:
-		if (!acl_match_path(ACL_ACTION_DENYLIST,
-				    &P_BOX(current)->acl_exec,
-				    abspath, NULL))
-			return 0;
-		break;
-	default:
-		assert_not_reached();
+ 
+	if (sandbox_not_exec(current)) {
+		r = 0;
+		goto out;
 	}
 
-	r = deny(current, EACCES);
+	syscall_info_t info;
 
-	if (!acl_match_path(ACL_ACTION_NONE, &sydbox->config.filter_exec, abspath, NULL))
-		violation(current, "%s(»%s«)", current->sysname, abspath);
+	init_sysinfo(&info);
+	info.deny_errno = EACCES;
+	info.cache_abspath = abspath;
+	info.access_mode = sandbox_deny_exec(current)
+		? ACCESS_ALLOWLIST
+		: ACCESS_DENYLIST;
+	info.access_list = &P_BOX(current)->acl_exec;
+	info.access_filter = &sydbox->config.filter_exec;
 
+	r = box_check_path(current, &info);
+out:
+	if (prefix)
+		free(prefix);
 	free(abspath);
 	current->abspath = NULL;
 
