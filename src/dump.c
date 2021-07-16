@@ -279,9 +279,11 @@ static void dump_process(pid_t pid)
 #endif
 
 inline bool dump_enabled(void) {
+	if (fd == -3)
+		return false;
 	if (nodump > 0)
 		return false;
-	if (fd <= 0 && fd != -3 && fd != -42)
+	if (fd <= 0 && fd != -42)
 		return false;
 	return true;
 }
@@ -292,6 +294,7 @@ inline int dump_get_fd(void) {
 
 inline void dump_set_fd(int dump_fd) {
 	fd = dump_fd;
+	nodump = 0;
 }
 
 static int dump_init(enum dump what)
