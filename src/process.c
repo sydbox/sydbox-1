@@ -33,14 +33,13 @@ void init_sandbox(sandbox_t *box)
 	ACLQ_INIT(&box->acl_network_connect);
 }
 
+SYD_GCC_ATTR((nonnull(1)))
 inline void copy_sandbox(sandbox_t *box_dest, sandbox_t *box_src)
 {
 	struct acl_node *node, *newnode;
 
 	if (!box_src)
 		return;
-
-	assert(box_dest);
 
 	box_dest->mode.sandbox_exec = box_src->mode.sandbox_exec;
 	box_dest->mode.sandbox_read = box_src->mode.sandbox_read;
@@ -49,16 +48,25 @@ inline void copy_sandbox(sandbox_t *box_dest, sandbox_t *box_src)
 
 	box_dest->magic_lock = box_src->magic_lock;
 
-	ACLQ_COPY(node, &box_src->acl_exec, &box_dest->acl_exec,
-		  newnode, xstrdup);
-	ACLQ_COPY(node, &box_src->acl_read, &box_dest->acl_read,
-		  newnode, xstrdup);
-	ACLQ_COPY(node, &box_src->acl_write, &box_dest->acl_write,
-		  newnode, xstrdup);
-	ACLQ_COPY(node, &box_src->acl_network_bind,
-		  &box_dest->acl_network_bind, newnode, sockmatch_xdup);
-	ACLQ_COPY(node, &box_src->acl_network_connect,
-		  &box_dest->acl_network_connect, newnode, sockmatch_xdup);
+	if (ACLQ_FIRST(&box_dest->acl_read) &&
+	    !ACLQ_EMPTY(&box_src->acl_read))
+		ACLQ_COPY(node,
+			  &box_src->acl_read, &box_dest->acl_read,
+			  newnode, xstrdup);
+	if (ACLQ_FIRST(&box_dest->acl_write) &&
+	    !ACLQ_EMPTY(&box_src->acl_write)) {
+		ACLQ_COPY(node,
+			  &box_src->acl_write, &box_dest->acl_write,
+			  newnode, xstrdup);
+	}
+	if (ACLQ_FIRST(&box_dest->acl_network_bind) &&
+	    !ACLQ_EMPTY(&box_src->acl_network_bind))
+		ACLQ_COPY(node, &box_src->acl_network_bind,
+			  &box_dest->acl_network_bind, newnode, sockmatch_xdup);
+	if (ACLQ_FIRST(&box_dest->acl_network_connect) &&
+	    !ACLQ_EMPTY(&box_src->acl_network_connect))
+		ACLQ_COPY(node, &box_src->acl_network_connect,
+			  &box_dest->acl_network_connect, newnode, sockmatch_xdup);
 }
 
 inline void reset_sandbox(sandbox_t *box)
