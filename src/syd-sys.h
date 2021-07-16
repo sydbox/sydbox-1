@@ -15,14 +15,23 @@
 #include <stdio.h>
 
 static const char *const syd_system_allowlist[UINT8_MAX] = {
-	"allowlist/exec+/s?bin/***"
-	"allowlist/exec+/usr/s?bin/***",
 	"allowlist/exec+/usr/libexec/***",
+	"allowlist/exec+/s?bin/***",
+	"allowlist/exec+/usr/bin/***",
 	"allowlist/exec+/usr/local/s?bin/***",
+	"allowlist/exec+/snap/***",
 	"allowlist/read+/etc/***", /* Let the denylist do their job. */
 	"allowlist/read+/home/***", /* ditto */
+	"allowlist/read+/bin*/***",
+	"allowlist/read+/dev/***",
+	"allowlist/read+/lib*/***",
 	"allowlist/read+/opt/***",
+	"allowlist/read+/proc/***",
+	"allowlist/read+/sys/***",
+	"allowlist/read+/run/***",
+	"allowlist/read+/snap/***",
 	"allowlist/read+/usr/***",
+	"allowlist/read+/var/***",
 	"allowlist/read+"SYD_PATH_PASSWD,
 	"allowlist/read+"SYD_PATH_GROUP,
 	"allowlist/read+"SYD_PATH_SHELLS,
@@ -88,11 +97,14 @@ static const char *const syd_system_allowlist[UINT8_MAX] = {
 	"allowlist/network/bind+LOOPBACK6@0",
 	"allowlist/network/bind+LOOPBACK6@1024-65535",
 	"allowlist/network/connect+unix:/var/run/nscd/socket",
-	"allowlist/network/connect+unix:/run/nscd/socket",
 	"allowlist/network/connect+unix:/var/lib/sss/pipes/nss",
 	/* Allow getaddrinfo() with AI_ADDRCONFIG on musl systems */
 	"allowlist/network/connect+LOOPBACK@65535",
 	"allowlist/network/connect+LOOPBACK6@65535",
+	/* Systemd User */
+	"allowlist/network/bind+unix-abstract:userdb-*",
+	"allowlist/network/connect+unix-abstract:userdb-*",
+	"allowlist/network/connect+unix:/run/systemd/userdb/io.systemd.DynamicUser",
 	NULL,
 };
 
