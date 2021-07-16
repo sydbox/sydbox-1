@@ -6,20 +6,20 @@ test_description='test network sandboxing'
 . ./test-lib.sh
 
 for ns_mem_access in 0; do
-    test_expect_success NC "network sandboxing = allow [memory_access:${ns_mem_access}]" '
+    test_expect_success NC,TIMEOUT "network sandboxing = allow [memory_access:${ns_mem_access}]" '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
     cdir="${pdir}/$(unique_dir)" &&
     mkdir "$cdir" &&
     touch "$cdir"/readme &&
-    syd \
+    test_expect_code 137 syd \
         --memaccess '${ns_mem_access}' \
         -y core/sandbox/read:allow \
         -y core/sandbox/write:allow \
         -y core/sandbox/exec:allow \
         -y core/sandbox/network:allow \
         -- \
-        nc -v ${PUBLIC_DNS} 53
+        timeout -v -sKILL -k7s 7s nc -vu ${PUBLIC_DNS} 53
 '
 
     test_expect_success DIG "network sandboxing = deny [memory_access:${ns_mem_access}]" '
@@ -40,16 +40,16 @@ for ns_mem_access in 0; do
         -- dig +retry=1 +ignore +noall +answer @${PUBLIC_DNS} ${PUBLIC_HOST}
 '
 
-    test_expect_success HAVE_IPV6,NC \
+    test_expect_success HAVE_IPV6,NC,TIMEOUT \
         "network sandboxing for connect works to deny IPv6 address [memory_access:${ns_mem_access}]" '
     test_expect_code 1 syd \
         --memaccess '${ns_mem_access}' \
         -y core/sandbox/network:deny \
         -- \
-        nc -v6 ::1 4242
+        timeout -v -sKILL -k1s 3s nc -v6 ::1 4242
 '
 
-    test_expect_failure PY2 \
+    test_expect_success PY2 \
         "network sandboxing for bind works to deny UNIX socket [memory_access:${ns_mem_access}]" '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
@@ -65,7 +65,7 @@ for ns_mem_access in 0; do
         --memaccess '${ns_mem_access}' \
         -y core/sandbox/network:deny \
         -- \
-        timeout -v -sKILL -k3s 3s nc -vl 127.0.0.1 0
+        timeout -v -sKILL -k1s 3s nc -vl 127.0.0.1 0
 '
 
     test_expect_failure NC,TIMEOUT \
@@ -74,7 +74,7 @@ for ns_mem_access in 0; do
         --memaccess '${ns_mem_access}' \
         -y core/sandbox/network:deny \
         -- \
-        timeout -v -sKILL -k3s 3s nc -vl ::1 0
+        timeout -v -sKILL -k1s 3s nc -vl ::1 0
 '
 
     test_expect_success NC,TIMEOUT \
@@ -84,7 +84,7 @@ for ns_mem_access in 0; do
         -y core/sandbox/network:deny \
         -y allowlist/network/bind+LOOPBACK@65534 \
         -- \
-        timeout -v -sKILL -k3s 3s nc -vl 127.0.0.1 65534
+        timeout -v -sKILL -k1s 1s nc -vl 127.0.0.1 65534
 '
 
     test_expect_success NC,TIMEOUT \
@@ -94,7 +94,7 @@ for ns_mem_access in 0; do
         -y core/sandbox/network:deny \
         -y allowlist/network/bind+LOOPBACK6@65534 \
         -- \
-        timeout -v -sKILL -k3s 3s nc -vl ::1 65534
+        timeout -v -sKILL -k1s 3s nc -vl ::1 65534
 '
 
 # TODO: Continue moving the python3 scripts in HERE docs to test-bin/

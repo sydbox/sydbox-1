@@ -1256,7 +1256,7 @@ static int sig_child(void)
 			break;
 		}
 		if (interruptcode == CLD_EXITED) {
-			sydbox->exit_code = interruptstat <= 7
+			sydbox->exit_code = interruptstat <= 128
 				? interruptstat
 				: WEXITSTATUS(interruptstat);
 		} else if (interruptcode == CLD_KILLED ||
