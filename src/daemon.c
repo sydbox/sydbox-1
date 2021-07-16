@@ -31,6 +31,7 @@ static int ionicec = -1, ioniced = 0;
 static mode_t file_mode_creation_mask = 077;
 static const char *root_directory;
 static const char *working_directory;
+static char cwd[PATH_MAX];
 static char *pid_env_var;
 static const char *arg0;
 static char *pivot_new_root;
@@ -44,7 +45,13 @@ gid_t get_gid(void) { return gid ; }
 int get_nice(void) { return nice_inc; }
 const char *get_arg0(void) { return arg0; }
 const char *get_root_directory(void) { return root_directory; }
-const char *get_working_directory(void) { return working_directory; }
+const char *get_working_directory(void) {
+	if (!working_directory) {
+		getcwd(cwd, PATH_MAX);
+		return cwd;
+	}
+	return working_directory;
+}
 const char *get_pid_env_var(void) { return pid_env_var; }
 mode_t get_umask(void) { return file_mode_creation_mask; }
 const gid_t *get_groups(void) { return gid_add_index ? gid_add : NULL; }
