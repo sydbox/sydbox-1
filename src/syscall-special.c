@@ -395,17 +395,12 @@ int sys_execveat(syd_process_t *current)
 	return r;
 }
 
-//#define FAKE_MODE (S_IFCHR|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
-#define FAKE_MODE (S_IFCHR|S_IXUSR|S_IXGRP|S_IXOTH)
 /* /dev/null */
 #define FAKE_RDEV_MAJOR 1
 #define FAKE_RDEV_MINOR 3
 #define FAKE_RDEV 259
 #define FAKE_ATIME 505958400
-#if 0
-#warning unused, replaced with process file xxh64 hash
 #define FAKE_MTIME -842745600
-#endif
 #define FAKE_CTIME -2036448000
 #define FAKE_UID 42
 #define FAKE_GID 1984
@@ -430,7 +425,67 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 	struct statx bufx;
 #endif
 
-	time_t mtime = current->xxh ? current->xxh : FAKE_ATIME;
+	time_t mtime = current->xxh ? current->xxh : FAKE_MTIME;
+
+#if 0
+#define FAKE_MODE (S_IFCHR|S_IXUSR|S_IXGRP|S_IXOTH)
+#endif
+	mode_t mode = S_IFCHR;
+	sandbox_t *box = box_current(current);
+
+	switch (box->mode.sandbox_exec) {
+	case SANDBOX_OFF:
+		break;
+	case SANDBOX_BPF:
+		mode |= S_IXUSR;
+		break;
+	case SANDBOX_DENY:
+		mode |= (S_IXUSR|S_IXGRP);
+		break;
+	case SANDBOX_ALLOW:
+		mode |= (S_IXUSR|S_IXGRP|S_IXOTH);
+		break;
+	}
+	switch (box->mode.sandbox_read) {
+	case SANDBOX_OFF:
+		break;
+	case SANDBOX_BPF:
+		mode |= S_IRUSR;
+		break;
+	case SANDBOX_DENY:
+		mode |= (S_IRUSR|S_IRGRP);
+		break;
+	case SANDBOX_ALLOW:
+		mode |= (S_IRUSR|S_IRGRP|S_IROTH);
+		break;
+	}
+	switch (box->mode.sandbox_write) {
+	case SANDBOX_OFF:
+		break;
+	case SANDBOX_BPF:
+		mode |= S_IWUSR;
+		break;
+	case SANDBOX_DENY:
+		mode |= (S_IWUSR|S_IWGRP);
+		break;
+	case SANDBOX_ALLOW:
+		mode |= (S_IWUSR|S_IWGRP|S_IWOTH);
+		break;
+	}
+	switch (box->mode.sandbox_network) {
+	case SANDBOX_OFF:
+		break;
+	case SANDBOX_BPF:
+		mode |= S_ISUID;
+		break;
+	case SANDBOX_DENY:
+		mode |= (S_ISUID|S_ISGID);
+		break;
+	case SANDBOX_ALLOW:
+		mode |= (S_ISUID|S_ISGID|S_ISVTX);
+		break;
+	}
+
 #if defined(__x86_64__)
 	struct stat32 buf32;
 	if (current->arch == SCMP_ARCH_X86) {
@@ -440,7 +495,7 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 			return false;
 		}
 		memset(&buf32, 0, sizeof(struct stat32));
-		buf32.st_mode = FAKE_MODE;
+		buf32.st_mode = mode;
 		buf32.st_rdev = FAKE_RDEV;
 		buf32.st_atime = FAKE_ATIME;
 		buf32.st_mtime = mtime;
@@ -480,7 +535,7 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 	if (extended) {
 #ifdef HAVE_STRUCT_STATX
 		memset(&bufx, 0, sizeof(struct statx));
-		bufx.stx_mode = FAKE_MODE;
+		bufx.stx_mode = mode;
 		bufx.stx_uid = FAKE_UID;
 		bufx.stx_gid = FAKE_GID;
 		bufx.stx_rdev_major = FAKE_RDEV_MAJOR;
@@ -497,7 +552,7 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 #endif
 	} else {
 		memset(&buf, 0, sizeof(struct stat));
-		buf.st_mode = FAKE_MODE;
+		buf.st_mode = mode;
 		buf.st_rdev = FAKE_RDEV;
 #ifdef st_atime_was_a_macro
 # define st_atime st_atim.tv_sec
