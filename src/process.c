@@ -7,7 +7,15 @@
  */
 
 #include "syd-box.h"
+#include <sys/mman.h>
 
+SYD_GCC_ATTR((nonnull(1)))
+int sandbox_protect(sandbox_t *box, int prot)
+{
+	return syd_mprotect(box, sizeof(sandbox_t), prot);
+}
+
+SYD_GCC_ATTR((nonnull(1)))
 void init_sandbox(sandbox_t *box)
 {
 	/* Be paranoid */
