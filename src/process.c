@@ -186,32 +186,38 @@ inline syd_process_t *process_lookup(pid_t pid)
 static char comm[16];
 char *process_comm(syd_process_t *p, const char *arg0)
 {
-	sandbox_t *box = box_current(p);
+	size_t i = 0;
+	char *bname = basename(arg0);
 
+	strlcpy(comm + i, bname, strlen(bname) + 1);
+	return comm;
+#if 0
+	sandbox_t *box = box_current(p);
 	switch (box->magic_lock) {
 	case LOCK_UNSET:
-		comm[0] = '@';
+		comm[i++] = '@';
 		break;
 	case LOCK_PENDING:
-		comm[0] = '#';
+		comm[i++] = '#';
 		break;
 	case LOCK_SET:
-		comm[0] = '*';
+		comm[i++] = '*';
 		break;
 	default:
 		assert_not_reached();
 	}
-	comm[1] = sandbox_mode_toc(box->mode.sandbox_read);
-	comm[2] = sandbox_mode_toc(box->mode.sandbox_write);
-	comm[3] = sandbox_mode_toc(box->mode.sandbox_exec);
-	comm[4] = sandbox_mode_toc(box->mode.sandbox_network);
-	strlcpy(comm + 5, basename(arg0), 6);
+	comm[i++] = sandbox_mode_toc(box->mode.sandbox_read);
+	comm[i++] = sandbox_mode_toc(box->mode.sandbox_write);
+	comm[i++] = sandbox_mode_toc(box->mode.sandbox_exec);
+	comm[i++] = sandbox_mode_toc(box->mode.sandbox_network);
+#endif
+#if 0
+	strlcpy(comm + i, basename(arg0), 6);
 	if (sydbox->hash[0]) {
-		strlcpy(comm + 9, sydbox->hash, 7);
+		strlcpy(comm + (i + 4), sydbox->hash, 7);
 		comm[15] = '\0';
 	} else {
-		strlcpy(comm + 9, "?syd", sizeof("?syd"));
+		strlcpy(comm + (i + 4), "?syd", sizeof("?syd"));
 	}
-
-	return comm;
+#endif
 }

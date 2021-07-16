@@ -278,25 +278,6 @@ static void dump_process(pid_t pid)
 }
 #endif
 
-inline bool dump_enabled(void) {
-	if (fd == -3)
-		return false;
-	if (nodump > 0)
-		return false;
-	if (fd <= 0 && fd != -42)
-		return false;
-	return true;
-}
-
-inline int dump_get_fd(void) {
-	return fd;
-}
-
-inline void dump_set_fd(int dump_fd) {
-	fd = dump_fd;
-	nodump = 0;
-}
-
 static int dump_init(enum dump what)
 {
 	int fd_orig = -1;
@@ -345,6 +326,27 @@ static int dump_init(enum dump what)
 	nodump = 1;
 
 	return 0;
+}
+
+inline bool dump_enabled(void) {
+	if (fd == -3)
+		return false;
+	if (fd >= 0)
+		return true;
+	if (nodump > 0)
+		return false;
+	if (fd <= 0 && fd != -42)
+		return false;
+	return true;
+}
+
+inline int dump_get_fd(void) {
+	return fd;
+}
+
+inline void dump_set_fd(int dump_fd) {
+	fd = dump_fd;
+	dump_init(DUMP_INIT);
 }
 
 void dump(enum dump what, ...)
