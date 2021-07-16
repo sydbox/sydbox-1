@@ -14,7 +14,7 @@ for ns_mem_access in 0 1; do
         -y core/sandbox/exec:allow \
         -y core/sandbox/network:allow \
         -- \
-        ./bin/syd-true
+        ./bin/syd-true-static
 '
 
     test_expect_success "exec sandboxing = deny [memory_access:${ns_mem_access}]" '
@@ -25,19 +25,19 @@ for ns_mem_access in 0 1; do
         -y core/sandbox/exec:deny \
         -y core/sandbox/network:allow \
         -- \
-        ./bin/syd-true
+        ./bin/syd-true-static
 '
 
-    test_expect_success "exec sandboxing = allow, denylist with stat [memory_access:${ns_mem_access}]" '
-    test_expect_code 2 syd \
+    test_expect_failure "exec sandboxing = allow, denylist with stat [memory_access:${ns_mem_access}]" '
+    test_expect_code 1 syd \
         --memaccess '${ns_mem_access}' \
         -y core/sandbox/read:allow \
         -y core/sandbox/write:allow \
         -y core/sandbox/exec:allow \
         -y core/sandbox/network:allow \
         -- \
-        sh -c "test -e /dev/sydbox/allowlist/exec+\"$(readlink -f .)/bin/syd-true\";\
-                ./bin/syd-true"
+        sh -c "test -e /dev/sydbox/allowlist/exec+\"$(readlink -f .)/bin/syd-true-static\";\
+                ./bin/syd-true-static"
 '
 
     test_expect_failure "exec sandboxing = deny, allowlist with stat [memory_access:${ns_mem_access}]" '
@@ -48,8 +48,8 @@ for ns_mem_access in 0 1; do
         -y core/sandbox/exec:deny \
         -y core/sandbox/network:allow \
         -- \
-        sh -c "test -e /dev/sydbox/allowlist/exec+\"$(readlink -f .)/bin/syd-true\"; \
-                ./bin/syd-true"
+        sh -c "test -e /dev/sydbox/allowlist/exec+\"$(readlink -f .)/bin/syd-true-static\"; \
+                ./bin/syd-true-static"
 '
 
 done
