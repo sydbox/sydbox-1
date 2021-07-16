@@ -86,8 +86,10 @@ int pathmatch_expand(const char *pattern, char ***buf)
 
 bool pathmatch(const char *pattern, const char *text)
 {
-	int r;
+	if (!pattern || !text)
+		return false;
 
+	int r;
 	if (match_case_sensitive)
 		r = wildmatch(pattern, text);
 	else
