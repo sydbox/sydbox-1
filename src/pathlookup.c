@@ -28,6 +28,11 @@ char *path_lookup(const char *filename)
 	char pathname[SYDBOX_PATH_MAX];
 	size_t filename_len;
 
+	if (!filename) {
+		errno = -EINVAL;
+		return NULL;
+	}
+
 	pathname[0] = '\0';
 	filename_len = strlen(filename);
 
