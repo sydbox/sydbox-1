@@ -273,19 +273,33 @@ static int do_execve(syd_process_t *current, bool at_func)
 		current->abspath = abspath;
 
 		/*
-		 * Calculate the SHA1 checksum of the pathname
+		 * Calculate the XXH64 & SHA1 checksums of the pathname
 		 * of the command to be executed by the process.
 		 * This should be enabled with the magic command
 		 * core/trace/program_checksum by setting it to
-		 * 2 or higher.
+		 * 1 or higher for XXH64, and
+		 * 2 or higher for SHA1.
 		 */
 		syd_proc_comm(sydbox->pfd, current->comm,
 			      SYDBOX_PROC_MAX - 1);
 		current->comm[SYDBOX_PROC_MAX-1] = '\0';
-		if (magic_query_trace_program_checksum(NULL) > 1) {
+		int csum = magic_query_trace_program_checksum(NULL);
+		if (csum >= 1) {
 			syd_proc_cmdline(sydbox->pfd, current->prog,
 					 LINE_MAX-1);
 			current->prog[LINE_MAX-1] = '\0';
+		}
+		switch (csum) {
+		case 1:
+			if ((r = syd_path_to_xxh64_hex(abspath, &current->xxh,
+						       NULL)) < 0) {
+				errno = -r;
+				say_errno("Can't calculate checksum of file "
+					  "»%s«", abspath);
+				break; /* Don't try twice. */
+			}
+			SYD_GCC_ATTR((fallthrough));
+		case 2:
 			if ((r = syd_path_to_sha1_hex(abspath, sydbox->hash)) < 0) {
 				errno = -r;
 				say_errno("Can't calculate checksum of file "
@@ -294,6 +308,9 @@ static int do_execve(syd_process_t *current, bool at_func)
 				strlcpy(current->hash, sydbox->hash,
 					SYD_SHA1_HEXSZ);
 			}
+			break;
+		default:
+			break;
 		}
 	}
 
@@ -390,7 +407,10 @@ int sys_execveat(syd_process_t *current)
 #define FAKE_RDEV_MINOR 3
 #define FAKE_RDEV 259
 #define FAKE_ATIME 505958400
+#if 0
+#warning unused, replaced with process file xxh64 hash
 #define FAKE_MTIME -842745600
+#endif
 #define FAKE_CTIME -2036448000
 #define FAKE_UID 42
 #define FAKE_GID 1984
@@ -403,6 +423,7 @@ int sys_execveat(syd_process_t *current)
 #define FAKE_DOMAINNAME "exherb☮.♡rg"
 
 /* Write stat buffer */
+SYD_GCC_ATTR((nonnull(1)))
 static int write_stat(syd_process_t *current, unsigned int buf_index,
 		      bool extended)
 {
@@ -414,6 +435,7 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 	struct statx bufx;
 #endif
 
+	time_t mtime = current->xxh ? current->xxh : FAKE_ATIME;
 #if defined(__x86_64__)
 	struct stat32 buf32;
 	if (current->arch == SCMP_ARCH_X86) {
@@ -426,7 +448,7 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 		buf32.st_mode = FAKE_MODE;
 		buf32.st_rdev = FAKE_RDEV;
 		buf32.st_atime = FAKE_ATIME;
-		buf32.st_mtime = FAKE_MTIME;
+		buf32.st_mtime = mtime;
 		buf32.st_ctime = FAKE_CTIME;
 		buf32.st_uid = FAKE_UID;
 		buf32.st_gid = FAKE_GID;
@@ -469,7 +491,7 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 		bufx.stx_rdev_major = FAKE_RDEV_MAJOR;
 		bufx.stx_rdev_minor = FAKE_RDEV_MINOR;
 		bufx.stx_atime.tv_sec = FAKE_ATIME;
-		bufx.stx_mtime.tv_sec = FAKE_MTIME;
+		bufx.stx_mtime.tv_sec = mtime;
 		bufx.stx_ctime.tv_sec = FAKE_CTIME;
 		bufaddr = (char *)&bufx;
 		bufsize = sizeof(struct statx);
@@ -492,7 +514,7 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 # define st_ctime st_ctim.tv_sec
 #endif
 		buf.st_atime = FAKE_ATIME;
-		buf.st_mtime = FAKE_MTIME;
+		buf.st_mtime = mtime;
 		buf.st_ctime = FAKE_CTIME;
 		buf.st_uid = FAKE_UID;
 		buf.st_gid = FAKE_GID;

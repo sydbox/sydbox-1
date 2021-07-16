@@ -33,7 +33,7 @@ void config_init(void)
 	sydbox->config.magic_core_allow = true;
 
 	/* set sane defaults for configuration */
-	sydbox->config.prog_hash = 2;
+	sydbox->config.prog_hash = 1;
 	sydbox->config.restrict_id = true;
 	sydbox->config.allowlist_per_process_directories = true;
 	sydbox->config.allowlist_successful_bind = true;
