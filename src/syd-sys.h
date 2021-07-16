@@ -1,7 +1,7 @@
 /*
  * sydbox/sydsys.h
  *
- * SydBox' Default DenyList for modern Linux systems.
+ * SydBox' Default Allow & Deny Lists for modern Linux systems.
  * Report if you find something here that shouldn't be
  * or you know something that is important to be in here.
  * Thanks in advance.
@@ -13,6 +13,89 @@
 #include "HELPME.h"
 #include <limits.h>
 #include <stdio.h>
+
+static const char *const syd_system_allowlist[UINT8_MAX] = {
+	"allowlist/exec+/s?bin/***"
+	"allowlist/exec+/usr/s?bin/***",
+	"allowlist/exec+/usr/libexec/***",
+	"allowlist/exec+/usr/local/s?bin/***",
+	"allowlist/read+/etc/***", /* Let the denylist do their job. */
+	"allowlist/read+/home/***", /* ditto */
+	"allowlist/read+/opt/***",
+	"allowlist/read+/usr/***",
+	"allowlist/read+"SYD_PATH_PASSWD,
+	"allowlist/read+"SYD_PATH_GROUP,
+	"allowlist/read+"SYD_PATH_SHELLS,
+	"allowlist/read+"SYD_PATH_OS_RELEASE_ETC,
+	"allowlist/read+"SYD_PATH_OS_RELEASE_USR,
+	"allowlist/read+"SYD_PATH_LOGINDEFS,
+	"allowlist/read+"SYD_PATH_WORDS,
+	"allowlist/read+"SYD_PATH_WORDS_ALT,
+	"allowlist/read+"SYD_PATH_FILESYSTEMS
+	"allowlist/read+"SYD_PATH_PROC_SWAPS,
+	"allowlist/read+"SYD_PATH_PROC_MOUNTS,
+	"allowlist/read+"SYD_PATH_PROC_PARTITIONS,
+	"allowlist/read+"SYD_PATH_HUSHLOGIN"*",
+	"allowlist/read+"SYD_PATH_HUSHLOGINS"*",
+	"allowlist/read+"SYD_PATH_NOLOGIN"*",
+	"allowlist/read+"SYD_PATH_NOLOGIN"*",
+	"allowlist/read+"SYD_PATH_VAR_NOLOGIN"/***",
+	"allowlist/read+"SYD_PATH_FILESYSTEMS"*",
+	"allowlist/read+"SYD_PATH_PROC_SWAPS"*",
+	"allowlist/read+"SYD_PATH_PROC_FILESYSTEMS"*",
+	"allowlist/read+"SYD_PATH_PROC_MOUNTS"*",
+	"allowlist/read+/"SYD_PATH_MOUNTED"*",
+	"allowlist/read+"SYD_PATH_MNTTAB"*",
+
+	"allowlist/read+/proc",
+	"allowlist/read+/proc/[0-9]+/***",
+	"allowlist/read+/sys/***",
+
+	"allowlist/read+/lib*/***",
+	"allowlist/read+/usr/lib*/***",
+	"allowlist/read+/usr/local/lib*/***",
+
+	"allowlist/read+/tmp/***",
+	"allowlist/read+"SYD_PATH_TMP"/***",
+	"allowlist/read+"SYD_PATH_BTMP"/***",
+
+	"allowlist/write+/dev/stdout",
+	"allowlist/write+/dev/stderr",
+	"allowlist/write+/dev/zero",
+	"allowlist/write+/dev/null",
+	"allowlist/write+/dev/full",
+	"allowlist/write+/dev/console",
+	"allowlist/write+/dev/random",
+	"allowlist/write+/dev/urandom",
+	"allowlist/write+/dev/ptmx",
+	"allowlist/write+/dev/fd/***",
+	"allowlist/write+/dev/tty*",
+	"allowlist/write+/dev/pty*",
+	"allowlist/write+/dev/tts",
+	"allowlist/write+/dev/pts/***",
+	"allowlist/write+/dev/shm/***",
+	"allowlist/write+/selinux/context/***",
+	"allowlist/write+/proc/self/attr/***",
+	"allowlist/write+/proc/self/fd/***",
+	"allowlist/write+/proc/self/task/***",
+	"allowlist/write+/tmp/***",
+	"allowlist/write+/var/tmp/***",
+	"allowlist/write+"SYD_PATH_BTMP"/***",
+	"allowlist/write+/var/cache/***",
+	"allowlist/write+/dev/stdout",
+	"allowlist/network/bind+LOOPBACK@0",
+	"allowlist/network/bind+LOOPBACK@1024-65535",
+	"allowlist/network/bind+LOOPBACK6@0",
+	"allowlist/network/bind+LOOPBACK6@1024-65535",
+	"allowlist/network/connect+unix:/var/run/nscd/socket",
+	"allowlist/network/connect+unix:/run/nscd/socket",
+	"allowlist/network/connect+unix:/var/lib/sss/pipes/nss",
+	/* Allow getaddrinfo() with AI_ADDRCONFIG on musl systems */
+	"allowlist/network/connect+LOOPBACK@65535",
+	"allowlist/network/connect+LOOPBACK6@65535",
+	NULL,
+};
+
 static const char *const syd_system_denylist[UINT8_MAX] = {
 	/***
 	 * LibSyd PATH constants.
