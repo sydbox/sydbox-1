@@ -59,22 +59,22 @@ autopoint_fun ()
 }
 
 test -f HELPME.h ||
-	error_mesg "You must run this script in the top-level util-linux directory."
+	error_mesg "You must run this script in the top-level SydB☮x directory."
 
 (autopoint --version) < /dev/null > /dev/null 2>&1 ||
-	error_mesg "You must have autopoint installed to generate the util-linux build system." "The autopoint command is part of the GNU gettext package."
+	error_mesg "You must have autopoint installed to generate the SydB☮x build system." "The autopoint command is part of the GNU gettext package."
 
 (autoconf --version) < /dev/null > /dev/null 2>&1 ||
-	error_mesg "You must have autoconf installed to generate the util-linux build system."
+	error_mesg "You must have autoconf installed to generate the SydB☮x build system."
 
 (autoheader --version) < /dev/null > /dev/null 2>&1 ||
-	error_mesg "You must have autoheader installed to generate the util-linux build system."  "The autoheader command is part of the GNU autoconf package."
+	error_mesg "You must have autoheader installed to generate the SydB☮x build system."  "The autoheader command is part of the GNU autoconf package."
 
 [ -x "$(command -v gettext)" -o -x "$(command -v xgettext)" ] ||
 	warn_mesg "You need have [x]gettext binary installed to update po/ stuff."
 
 if ! (bison --version) < /dev/null > /dev/null 2>&1; then
-	error_mesg "You must have bison installed to build the util-linux."
+	error_mesg "You must have bison installed to build the SydB☮x."
 else
 	lexver=$(bison --version | awk '/^bison \(GNU [Bb]ison\)/ { print $4 }')
 	case "$lexver" in
@@ -89,7 +89,7 @@ fi
 LIBTOOLIZE=libtoolize
 case `uname` in Darwin*) LIBTOOLIZE=glibtoolize ;; esac
 if ! ($LIBTOOLIZE --version) < /dev/null > /dev/null 2>&1; then
-	error_mesg "You must have libtool-2 installed to generate the util-linux build system."
+	error_mesg "You must have libtool-2 installed to generate the SydB☮x build system."
 else
 	ltver=$($LIBTOOLIZE --version | awk '/^[g]*libtoolize/ { print $4 }')
 	ltver=${ltver:-"none"}
@@ -98,7 +98,7 @@ else
 fi
 
 (automake --version) < /dev/null > /dev/null 2>&1 ||
-	error_mesg "You must have automake installed to generate the util-linux build system."
+	error_mesg "You must have automake installed to generate the SydB☮x build system."
 
 if test "$DIE" -eq 1; then
 	exit 1
