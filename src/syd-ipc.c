@@ -81,7 +81,6 @@ int syd_ipc_main(int argc, char **argv)
 			die_errno("syd_ipc_api");
 		}
 		printf("%"PRIu8"\n", api);
-		system("stat /dev/sydbox/" syd_str(SYDBOX_API_VERSION));
 	}
 
 
