@@ -21,12 +21,15 @@ global:
 	syd_name2signal;
 	syd_set_death_sig;
 	syd_pivot_root;
+	syd_unshare;
 	syd_unshare_pid;
 	syd_unshare_net;
 	syd_unshare_ns;
 	syd_unshare_uts;
 	syd_unshare_ipc;
 	syd_unshare_usr;
+	syd_unshare_cgroup;
+	syd_unshare_time;
 	syd_setgroups_toi;
 	syd_parse_propagation;
 	syd_setgroups_control;

@@ -1019,20 +1019,17 @@ const char *syd_name_errno(int err_no)
 
 const char *syd_name_namespace(int namespace)
 {
-	switch (namespace) {
-	case CLONE_NEWNS:
-		return "mount";
-	case CLONE_NEWPID:
-		return "pid";
-	case CLONE_NEWNET:
-		return "net";
-	case CLONE_NEWUTS:
-		return "uts";
-	case CLONE_NEWIPC:
-		return "ipc";
-	case CLONE_NEWUSER:
+	if (namespace & CLONE_NEWUSER)
 		return "user";
-	default:
-		return NULL;
-	}
+	else if (namespace & CLONE_NEWNS)
+		return "mount";
+	else if (namespace & CLONE_NEWPID)
+		return "pid";
+	else if (namespace & CLONE_NEWNET)
+		return "net";
+	else if (namespace & CLONE_NEWUTS)
+		return "uts";
+	else if (namespace & CLONE_NEWIPC)
+		return "ipc";
+	return NULL;
 }

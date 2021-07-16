@@ -322,45 +322,66 @@ static gid_t get_group(const char *s, const char *err)
  * END OF IMPORT FROM unshare.c
  ***/
 
+int syd_unshare(int namespace_flags)
+{
+	syd_dsay("Unsharing »%s« namespaces.",
+		syd_name_namespace(namespace_flags));
+	if (unshare(namespace_flags) < 0)
+		return -errno;
+	return 0;
+}
+
+#if 0
 int syd_unshare(int namespace_type, int fd_closing)
 {
 	if (fd_closing <= 0)
 		return -EBADF;
-	syd_dsay("Unsharing %s namespace.",
+	syd_dsay("Unsharing »%s« namespace.",
 		syd_name_namespace(namespace_type));
 	if (setns(fd_closing, namespace_type) < 0)
 		return -errno;
 	return 0;
 }
+#endif
 
-int syd_unshare_pid(int fd)
+int syd_unshare_pid(void)
 {
-	return syd_unshare(CLONE_NEWPID, fd);
+	return syd_unshare(CLONE_NEWPID);
 }
 
-int syd_unshare_net(int fd)
+int syd_unshare_net(void)
 {
-	return syd_unshare(CLONE_NEWNET, fd);
+	return syd_unshare(CLONE_NEWNET);
 }
 
-int syd_unshare_ns(int fd)
+int syd_unshare_ns(void)
 {
-	return syd_unshare(CLONE_NEWNS, fd);
+	return syd_unshare(CLONE_NEWNS);
 }
 
-int syd_unshare_uts(int fd)
+int syd_unshare_uts(void)
 {
-	return syd_unshare(CLONE_NEWUTS, fd);
+	return syd_unshare(CLONE_NEWUTS);
 }
 
-int syd_unshare_ipc(int fd)
+int syd_unshare_ipc(void)
 {
-	return syd_unshare(CLONE_NEWIPC, fd);
+	return syd_unshare(CLONE_NEWIPC);
 }
 
-int syd_unshare_usr(int fd)
+int syd_unshare_usr(void)
 {
-	return syd_unshare(CLONE_NEWUSER, fd);
+	return syd_unshare(CLONE_NEWUSER);
+}
+
+int syd_unshare_cgroup(void)
+{
+	return syd_unshare(CLONE_NEWCGROUP);
+}
+
+int syd_unshare_time(void)
+{
+	return syd_unshare(CLONE_NEWTIME);
 }
 
 int syd_set_death_sig(int signal)

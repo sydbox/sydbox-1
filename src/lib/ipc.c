@@ -71,14 +71,43 @@ int syd_ipc_exec_lock(void)
 	return syd_stat("/dev/sydbox/core/trace/magic_lock:exec");
 }
 
-#define SYD_IPC_STATUS_MAX 5
 SYD_GCC_ATTR((nonnull(1)))
-int syd_ipc_status(char const *status[SYD_IPC_STATUS_MAX])
+int syd_ipc_status(char const **status)
 {
 	int r;
+	bool on;
 	char syd_ipc_status[SYD_IPC_STATUS_MAX] = {0};
 
-	*status = syd_ipc_status;
+	char *s = syd_ipc_status;
+	*status = s;
+	size_t i = 0;
+
+	if ((r = syd_ipc_check(&on)) < 0)
+		s[i++] = '_';
+	else
+		s[i++] = on ? '@' : '?';
+
+	if ((r = syd_ipc_get_read(&on)) < 0)
+		s[i++] = '_';
+	else
+		s[i++] = on ? '*' : '^';
+
+	if ((r = syd_ipc_get_write(&on)) < 0)
+		s[i++] = '_';
+	else
+		s[i++] = on ? '*' : '^';
+
+	if ((r = syd_ipc_get_exec(&on)) < 0)
+		s[i++] = '_';
+	else
+		s[i++] = on ? '*' : '^';
+
+	if ((r = syd_ipc_get_network(&on)) < 0)
+		s[i++] = '_';
+	else
+		s[i++] = on ? '*' : '^';
+
+	s[i] = '\0';
 	return 0;
 }
 

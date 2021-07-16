@@ -282,12 +282,15 @@ int syd_pivot_root(const char *new_root, const char *put_old);
 /*
  * Unshare using the given file descriptors.
  */
-int syd_unshare_pid(int fd);
-int syd_unshare_net(int fd);
-int syd_unshare_ns(int fd);
-int syd_unshare_uts(int fd);
-int syd_unshare_ipc(int fd);
-int syd_unshare_usr(int fd);
+int syd_unshare(int namespace_flags);
+int syd_unshare_pid(void);
+int syd_unshare_net(void);
+int syd_unshare_ns(void);
+int syd_unshare_uts(void);
+int syd_unshare_ipc(void);
+int syd_unshare_usr(void);
+int syd_unshare_cgroup(void);
+int syd_unshare_time(void);
 
 int syd_setgroups_toi(const char *str);
 long long syd_parse_propagation(const char *str);
@@ -373,6 +376,11 @@ int syd_ipc_api(uint8_t *api)
 int syd_ipc_check(bool *check)
 	SYD_GCC_ATTR((nonnull(1)));
 int syd_ipc_lock(void);
+
+#define SYD_IPC_STATUS_MAX 6
+int syd_ipc_status(char const **status)
+	SYD_GCC_ATTR((nonnull(1)));
+
 int syd_ipc_exec_lock(void);
 int syd_ipc_exec(int argc, const char *const*restrict argv)
 	SYD_GCC_ATTR((nonnull(2)));
