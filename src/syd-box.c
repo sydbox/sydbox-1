@@ -3397,10 +3397,13 @@ int main(int argc, char **argv)
 			switch (errno) {
 			case 0:
 				if (pid == sydbox->execve_pid) {
-					if (WIFEXITED(status))
-						sydbox->exit_code = WEXITSTATUS(status);
-					else if (WIFSIGNALED(status))
+					if (WIFEXITED(status)) {
+						sydbox->exit_code = status <= 128
+							? status
+							: WEXITSTATUS(status);
+					} else if (WIFSIGNALED(status)) {
 						sydbox->exit_code = 128 + WTERMSIG(status);
+					}
 				}
 				break;
 			case EINTR:
