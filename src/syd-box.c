@@ -11,8 +11,9 @@
  */
 
 #include "HELPME.h"
+#include <syd/syd.h>
 #include "syd-box.h"
-#include <syd/compiler.h>
+#include "syd-ipc.h"
 #include "daemon.h"
 #include "dump.h"
 #include "rc.h"
@@ -60,6 +61,18 @@ sydbox_t *sydbox;
 static unsigned os_release;
 static uint8_t yama_ptrace_scope;
 static struct sigaction child_sa;
+
+static bool plan9;
+static bool noexec;
+static bool rc, sh;
+static int (*command)(int argc, char **argv);
+static char *arg0;
+#define SYDRC_ARG0 "rc"
+static char *sydrc_argv[] = {
+	"syd",
+	SYDRC_ARG0,
+	NULL,
+};
 
 static char *sydsh_argv[] = {
 	"/bin/bash",
@@ -141,28 +154,25 @@ static int parent_death_signal;
 static uint32_t close_fds[2];
 
 /* unshare option defaults */
-int setgrpcmd = SYD_SETGROUPS_NONE;
-int unshare_flags = 0;
-long mapuser = -1;
-long mapgroup = -1;
-long mapuser_opt = -1;
-long mapgroup_opt = -1;
+static int setgrpcmd = SYD_SETGROUPS_NONE;
+static int unshare_flags;
+static long mapuser = -1;
+static long mapgroup = -1;
+static long mapuser_opt = -1;
+static long mapgroup_opt = -1;
 // int kill_child_signo = 0; /* 0 means --kill-child was not used */
-const char *procmnt = NULL;
-const char *newroot = NULL;
-const char *newdir = NULL;
-unsigned long propagation = SYD_UNSHARE_PROPAGATION_DEFAULT;
-int force_uid = 0, force_gid = 0;
-uid_t uid = 0;
-gid_t gid = 0;
+static const char *procmnt;
+static const char *newroot;
+static const char *newdir;
+static unsigned long propagation = SYD_UNSHARE_PROPAGATION_DEFAULT;
+/* static int force_uid, force_gid; */
+static uid_t uid;
+static gid_t gid;
 /* int keepcaps = 0; */
-time_t monotonic = 0;
-time_t boottime = 0;
-int force_monotonic = 0;
-int force_boottime = 0;
-
-static void dump_one_process(syd_process_t *current, bool verbose);
-static void sig_usr(int sig);
+static time_t monotonic;
+static time_t boottime;
+static int force_monotonic;
+static int force_boottime;
 
 static void interrupt(int sig, siginfo_t *siginfo, void *context);
 static void interrupt_reload(int sig, siginfo_t *siginfo, void *context);
@@ -295,32 +305,32 @@ static int seccomp_setup(void)
 	if (!(sydbox->ctx = seccomp_init(sydbox->seccomp_action)))
 		die_errno("seccomp_init");
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_NNP, 1)) < 0)
-		say("can't set no-new-privs flag for seccomp filter (%d %s), "
+		say("Cannot set no-new-privs flag for seccomp filter (%d %s), "
 		    "continuing...",
 		    -r, strerror(-r));
 #if 0
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_API_TSKIP, 1)) < 0)
-		say("can't set tskip attribute for seccomp filter (%d %s), "
+		say("Cannot set tskip attribute for seccomp filter (%d %s), "
 		    "continuing...",
 		    -r, strerror(-r));
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_API_SYSRAWRC, 1)) < 0)
-		say("can't set sysrawrc attribute for seccomp filter (%d %s), "
+		say("Cannot set sysrawrc attribute for seccomp filter (%d %s), "
 		    "continuing...",
 		    -r, strerror(-r));
 	/* Set system call priorities */
 	sysinit(sydbox->ctx);
 #endif
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_TSYNC, 1)) < 0)
-		say("can't set tsync attribute for seccomp filter (%d %s), "
+		say("Cannot set tsync attribute for seccomp filter (%d %s), "
 		    "continuing...",
 		    -r, strerror(-r));
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2)) < 0)
-		say("can't optimize seccomp filter (%d %s), continuing...",
+		say("Cannot optimize seccomp filter (%d %s), continuing...",
 		    -r, strerror(-r));
 #if SYDBOX_HAVE_DUMP_BUILTIN
 	if (dump_get_fd() > 0) {
 		if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_LOG, 1)) < 0)
-			say("can't log attribute for seccomp filter (%d %s), "
+			say("Cannot log attribute for seccomp filter (%d %s), "
 			    "continuing...", -r, strerror(-r));
 	}
 #endif
@@ -419,6 +429,16 @@ static syd_process_t *new_thread(pid_t pid)
 		say_errno("new_sandbox(%d)", thread->pid);
 		thread->box = NULL;
 	}
+	if (pid == sydbox->execve_pid)
+		thread->xxh = sydbox->xxh;
+	copy_sandbox(P_BOX(thread), box_current(NULL));
+	/*
+	 * For deny sandbox modes, apply default allow lists.
+	 */
+	for (size_t i = 0; syd_system_allowlist[i]; i++)
+		magic_cast_string(thread,
+				  syd_system_allowlist[i],
+				  0);
 
 	thread->pid = pid;
 	if (thread->pidfd < 0) {
@@ -523,13 +543,13 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 	 * sandbox information can no longer be edited. Treat such cases as
 	 * »threads«. (Threads only share sandbox_t which is constant when
 	 * magic_lock is set.)
-	 * TODO: We need to simplify the sandbox data structure to take more
-	 * advantage of such cases and decrease memory usage.
 	 */
 
-	if (parent && genuine) { /* Sharing data needs a genuine parent, check
-			  parent_process. */
+	if (parent && parent->new_clone_flags) {
+		/* Sharing data needs a genuine parent,
+		 * check parent_process. */
 		current->clone_flags = parent->new_clone_flags;
+		genuine = true; /* Assume genuine, allows potential race. */
 	} else {
 		current->clone_flags = SIGCHLD;
 	}
@@ -540,11 +560,12 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 
 	if (!P_BOX(current))
 		new_sandbox(&P_BOX(current));
-	if (parent)
+	if (parent) {
 		current->execve_pid = parent->execve_pid;
-	if (parent && P_BOX(parent)->magic_lock == LOCK_SET) {
+		current->xxh = parent->xxh;
 		copy_sandbox(P_BOX(current), P_BOX(parent));
 	} else {
+		current->xxh = sydbox->xxh;
 		copy_sandbox(P_BOX(current), box_current(NULL));
 	}
 	if (P_BOX(current)->magic_lock == LOCK_SET)
@@ -589,7 +610,10 @@ proc_getcwd:
 			close(pfd_cwd);
 		return;
 	} else {
-		P_CWD(current) = xstrdup(P_CWD(parent));
+		if (P_CWD(parent))
+			P_CWD(current) = xstrdup(P_CWD(parent));
+		if (P_BOX(parent))
+			copy_sandbox(P_BOX(current), P_BOX(parent));
 	}
 }
 
@@ -614,8 +638,10 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid, bool genuine)
 	pfd = syd_proc_open(cpid);
 	new_child = (child == NULL);
 
-	if (new_child)
+	if (new_child) {
 		child = new_thread_or_kill(cpid);
+		process_add(child);
+	}
 
 	/*
 	 * Careful here, the process may still be a thread although new
@@ -624,7 +650,7 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid, bool genuine)
 	if (p && p->pid == sydbox->execve_pid) {
 		child->ppid = sydbox->sydbox_pid;
 		child->tgid = child->pid;
-	} else if (genuine && p && (p->new_clone_flags & SYD_CLONE_THREAD)) {
+	} else if (p && (p->new_clone_flags & SYD_CLONE_THREAD)) {
 		child->ppid = p->ppid;
 		child->tgid = p->tgid;
 	} else if (pfd >= 0 &&
@@ -638,10 +664,11 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid, bool genuine)
 		close(pfd);
 	if (new_child) {
 		init_process_data(child, p, genuine);
-		process_add(child);
+	} else if (p && p->new_clone_flags & SYD_CLONE_THREAD) {
+		copy_sandbox(P_BOX(child), P_BOX(p));
 	}
 
-	if (p && genuine) {
+	if (p && p->new_clone_flags) {
 		/* clone OK: p->pid <-> cpid */
 		p->new_clone_flags = 0;
 		p->flags &= ~SYD_IN_CLONE;
@@ -689,6 +716,17 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 	    !syd_map_free(&sydbox->config.proc_pid_auto))
 		procdrop(&sydbox->config.proc_pid_auto, pid);
 
+	if (p->pidfd > 0) {
+		/* Under no circumstances we want the process to linger around
+		 * after SydB☮x exits. This is why we send a SIGLOST signal here
+		 * to the process which is about to be released from the process
+		 * tree. This will be repeated for 3 times every 0.01 seconds.
+		 * If this does not succeed, process is sent a SIGKILL...
+		 */
+		kill_one(p, SIGLOST);
+		close(p->pidfd);
+		p->pidfd = 0; /* assume p is deceased, rip. */
+	}
 
 	if ((p->pid > 0 && p->pid == sydbox->execve_pid) ||
 	    (p->flags & (SYD_IN_EXECVE|SYD_IN_CLONE))) {
@@ -698,18 +736,6 @@ void bury_process(syd_process_t *p, bool id_is_valid)
 		 * 3. prepare for sandboxing rules transfer from parent.
 		 */
 		return;
-	}
-
-	if (p->pidfd > 0) {
-		/* Under no circumstances we want the process to linger around
-		 * after SydB☮x exits. This is why we send a SIGLOST signal here
-		 * to the process which is about to be released from the process
-		 * tree. This will be repeated for 3 times every 0.01 seconds.
-		 * If this does not succeed, process is sent a SIGKILL...
-		 */
-		//kill_one(p, SIGLOST);
-		close(p->pidfd);
-		p->pidfd = 0; /* assume p is deceased, rip. */
 	}
 
 	if (id_is_valid) {
@@ -873,7 +899,8 @@ static unsigned get_os_release(void)
 	return rel;
 }
 
-static void dump_one_process(syd_process_t *current, bool verbose)
+SYD_GCC_ATTR((nonnull(1)))
+void dump_one_process(syd_process_t *current, bool verbose)
 {
 	const char *CG, *CB, *CN, *CI, *CE; /* good, bad, important, normal end */
 	struct proc_statinfo info;
@@ -1380,7 +1407,7 @@ static int handle_interrupt_trap(int sig)
 	return r;
 }
 
-static void sig_usr(int sig)
+void sig_usr(int sig)
 {
 	bool complete_dump;
 	unsigned count;
@@ -1565,7 +1592,7 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 	syd_process_t *current;
 	if (parent) {
 		current = clone_process(parent, pid, genuine);
-		if (genuine)
+		if (parent->clone_flags)
 			parent->clone_flags &= ~SYD_IN_CLONE;
 	} else {
 		parent = process_lookup(sydbox->execve_pid);
@@ -1613,7 +1640,8 @@ static syd_process_t *process_init(pid_t pid, syd_process_t *parent,
 
 static void init_early(void)
 {
-	assert(!sydbox);
+	if (sydbox)
+		return;
 
 	os_release = get_os_release();
 
@@ -1672,6 +1700,11 @@ static int event_exec(syd_process_t *current)
 	if (P_BOX(current)->magic_lock == LOCK_PENDING) {
 		/* magic commands are locked */
 		P_BOX(current)->magic_lock = LOCK_SET;
+#if 0
+#TODO check if this is a good idea.
+		syd_mprotect(P_BOX(current), sizeof(sandbox_t),
+			     PROT_READ);
+#endif
 	}
 
 	current->flags |= SYD_IN_EXECVE;
@@ -1809,7 +1842,7 @@ notify_receive:
 					    !process_lookup(pid_task))
 						process_init(pid_task,
 							     current,
-							     false);
+							     true);
 					close(pfd);
 				}
 				if (pid_task >= 0) {
@@ -2122,21 +2155,23 @@ static syd_process_t *startup_child(int argc, char **argv)
 	sydbox->execve_wait = true;
 	sydbox->pid_valid = PID_INIT_VALID;
 
-	bool plan9 = streq(argv[0] , "rc");
-	bool noexec = streq(argv[0], SYDBOX_NOEXEC_NAME);
-	if (!noexec || !plan9) {
+	if (!noexec && !command) {
 		pathname = path_lookup(argv[0]);
 		if (!pathname)
 			die_errno("Path look up for »%s« failed", argv[0]);
-		if ((r = syd_path_to_sha1_hex(pathname, sydbox->hash)) < 0) {
+		if ((r = syd_path_to_xxh64_hex(pathname, &sydbox->xxh, NULL)) < 0) {
 			errno = -r;
-			say_errno("Can't calculate checksum of file "
+			say_errno("Cannot calculate XXH64 checksum of file "
+				  "»%s«", pathname);
+		} else if ((r = syd_path_to_sha1_hex(pathname, sydbox->hash)) < 0) {
+			errno = -r;
+			say_errno("Cannot calculate SHA-1 DC_PARTIALCOLL checksum of file "
 				  "»%s«", pathname);
 		}
 	} else if (noexec) {
 		strlcpy(sydbox->hash, "<noexec>", sizeof("<noexec>"));
-	} else if (plan9) {
-		strlcpy(sydbox->hash, "42", sizeof("42"));
+	} else if (command) {
+		strlcpy(sydbox->hash, "<syd-rc>", sizeof("<syd-rc>"));
 	}
 
 	/* Initialize Secure Computing */
@@ -2153,7 +2188,7 @@ static syd_process_t *startup_child(int argc, char **argv)
 	arch_argv[0] = NULL;
 	*/
 
-	if (!noexec && !pathname)
+	if (!command && !noexec && !pathname)
 		die_errno("Cannot exec »%s«", argv[0]);
 	if (pipe2(pfd, O_CLOEXEC|O_DIRECT) < 0)
 		die_errno("Cannot pipe");
@@ -2171,7 +2206,7 @@ static syd_process_t *startup_child(int argc, char **argv)
 	 * receiving any signal other than SIGCHLD.
 	 */
 	sydbox->sydbox_pid = getpid();
-#define SYD_CLONE_FLAGS CLONE_CLEAR_SIGHAND
+#define SYD_CLONE_FLAGS CLONE_CLEAR_SIGHAND|CLONE_PIDFD
 startup_child:
 	pid = syd_clone(SYD_CLONE_FLAGS,
 			SIGCHLD, &child_pidfd,
@@ -2189,7 +2224,7 @@ startup_child:
 				}
 			}
 		}
-		die_errno("can't fork");
+		die_errno("Cannot clone");
 	} else if (pid == 0) {
 		/* Reset the SIGCHLD handler. */
 		signal(SIGCHLD, SIG_DFL);
@@ -2288,13 +2323,9 @@ seccomp_init:
 		opt.parent_death_signal = parent_death_signal;
 		opt.supplementary_gids = get_groups();
 		opt.supplementary_gids_length = get_groups_length();
-		opt.proc_mount = procmnt;
-		if (plan9) {
-			r = syd_execf(syd_rc_main, argc, argv, &opt);
-		} else {
-			r = syd_execv(pathname, argc, argv, &opt);
-			free(pathname);
-		}
+		opt.command = command;
+		r = syd_execv(pathname, argc, argv, &opt);
+		free(pathname);
 		if (r < 0) {
 			errno = -r;
 			say_errno("Error executing »%s«", pathname);
@@ -2358,18 +2389,22 @@ void cleanup_for_child(void)
 		return;
 	else
 		cleanup_for_child_done = true;
-	assert(sydbox);
+
+	if (!sydbox)
+		return;
 
 	if (sydbox->proc_fd)
 		closedir(sydbox->proc_fd);
 	if (sydbox->program_invocation_name)
 		free(sydbox->program_invocation_name);
 
-	if (!syd_map_free(&sydbox->config.proc_pid_auto)) {
+	if (!syd_map_free(&sydbox->config.proc_pid_auto) &&
+	    syd_map_size_64s(&sydbox->config.proc_pid_auto)) {
 		syd_map_clear_64s(&sydbox->config.proc_pid_auto);
 		syd_map_term_64s(&sydbox->config.proc_pid_auto);
 	}
-	if (!syd_map_free(&sydbox->tree)) {
+	if (!syd_map_free(&sydbox->tree) &&
+	    syd_map_size_64v(&sydbox->tree)) {
 		syd_map_clear_64v(&sydbox->tree);
 		syd_map_term_64v(&sydbox->tree);
 	}
@@ -2377,6 +2412,7 @@ void cleanup_for_child(void)
 	filter_free();
 	reset_sandbox(&sydbox->config.box_static);
 
+	/*
 	struct acl_node *acl_node;
 	ACLQ_FREE(acl_node, &sydbox->config.exec_kill_if_match, xfree);
 
@@ -2384,6 +2420,7 @@ void cleanup_for_child(void)
 	ACLQ_FREE(acl_node, &sydbox->config.filter_read, xfree);
 	ACLQ_FREE(acl_node, &sydbox->config.filter_write, xfree);
 	ACLQ_FREE(acl_node, &sydbox->config.filter_network, free_sockmatch);
+	*/
 }
 
 void cleanup_for_sydbox(void)
@@ -2404,6 +2441,23 @@ void cleanup_for_sydbox(void)
 
 int main(int argc, char **argv)
 {
+	int arg, opt, r, opt_t[5];
+	size_t i;
+	char *c, *opt_magic = NULL;
+	struct utsname buf_uts;
+
+	/* Run IPC Tool if requested. */
+	if (argc >= 2 && streq(argv[1], "ipc"))
+		return syd_ipc_main(--argc, ++argv);
+
+	int my_argc = argc;
+	char **my_argv = argv;
+
+	/* Early initialisations */
+	arg0 = argv[0];
+	dump_set_fd(-3);
+	init_early();
+
 	/*
 	 * Resolve pidfd_send_signal system call number.
 	 * We use it in rescue interrupt handler so as
@@ -2432,12 +2486,15 @@ int main(int argc, char **argv)
 			return ENOMEM;
 		}
 		if (access(bin, X_OK) == 0) {
-			free(bin);
 			execv(bin, argv + 1);
+			free(bin);
 			exit(ECANCELED);
 		}
 		free(bin);
 	}
+
+	uid_t real_euid = geteuid();
+	gid_t real_egid = getegid();
 
 	/*
 	 * Be paranoid about file mode creation mask.
@@ -2468,20 +2525,9 @@ int main(int argc, char **argv)
 		OPT_KEEP_SIGMASK,
 	};
 
-	int arg, opt, r, opt_t[5];
-	size_t i;
-	char *c, *opt_magic = NULL;
-	struct utsname buf_uts;
-
-	uid_t real_euid = geteuid();
-	gid_t real_egid = getegid();
-
 	/* Zero-initialise option states */
 	enum sydbox_export_mode opt_export_mode = SYDBOX_EXPORT_NUL;
 	uint8_t opt_mem_access = SYDBOX_CONFIG_MEMACCESS_MAX;
-
-	/* Early initialisations */
-	dump_set_fd(-3); init_early();
 
 	if ((r = syd_proc_yama_ptrace_scope(&yama_ptrace_scope)) < 0) {
 		errno = -r;
@@ -2796,6 +2842,7 @@ int main(int argc, char **argv)
 			break;
 #endif
 		case 'S':
+		case OPT_UID:
 			if ((r = safe_atoi(optarg, &arg) < 0)) {
 				errno = -r;
 				say_errno("Invalid argument for --setuid option: "
@@ -2803,7 +2850,7 @@ int main(int argc, char **argv)
 				usage(stderr, 1);
 			}
 			uid = (uid_t)arg;
-			force_uid = 1;
+			//force_uid = 1;
 			break;
 		case OPT_ADD_GID:
 			if ((r = safe_atoi(optarg, &arg) < 0)) {
@@ -2884,11 +2931,16 @@ int main(int argc, char **argv)
 		case 'K':
 			set_umask(atoi(optarg));
 			break;
+#if 0
 		case OPT_UID:
-			set_uid(atoi(optarg));
+			uid = atoi(optarg);
+			set_uid(uid);
 			break;
+#endif
+		case 'G':
 		case OPT_GID:
-			set_gid(atoi(optarg));
+			gid = atoi(optarg);
+			set_gid(gid);
 			break;
 		case 'V':
 			set_pid_env_var(optarg);
@@ -3064,6 +3116,23 @@ int main(int argc, char **argv)
 	unsetenv("XAUTHORITY");
 	unsetenv("WINDOWID");
 
+	sandbox_t *box = box_current(NULL);
+	char box_repr[5] = {0};
+	box_repr[0] = sandbox_mode_toc(box->mode.sandbox_read);
+	box_repr[1] = sandbox_mode_toc(box->mode.sandbox_write);
+	box_repr[2] = sandbox_mode_toc(box->mode.sandbox_exec);
+	box_repr[3] = sandbox_mode_toc(box->mode.sandbox_network);
+	box_repr[4] = '\0';
+	setenv("SYDBOX", box_repr, 1);
+
+	/*
+	 * For deny sandbox modes, apply default allow lists.
+	 */
+	for (i = 0; syd_system_allowlist[i]; i++)
+		magic_cast_string(NULL,
+				  syd_system_allowlist[i],
+				  0);
+
 	if (opt_export_mode != SYDBOX_EXPORT_NUL)
 		sydbox->export_mode = opt_export_mode;
 	if (opt_mem_access < SYDBOX_CONFIG_MEMACCESS_MAX)
@@ -3073,6 +3142,7 @@ int main(int argc, char **argv)
 	switch (dump_get_fd()) {
 	case 0:
 	case -1:
+	case -3:
 		break;
 	case -42:
 	default:
@@ -3082,17 +3152,57 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	int my_argc;
-	char **my_argv;
-	if (optind == argc) {
+	my_argc -= optind;
+	my_argv += optind;
+	argc = my_argc;
+	argv = my_argv;
+
+	/*
+	 * Act as a multicall binary for
+	 * the Syd family of commands.
+	 */
+	plan9 = false;
+	sh = false;
+	rc = false;
+	if (argc == 0) {
+		sh = true;
+	} else if (argc >= 1) {
+		if (streq(argv[0], "sh")) {
+			sh = true;
+		} else if (streq(argv[0], "rc")) {
+			plan9 = true;
+			rc = true;
+		}
+		else if (streq(argv[0], SYDBOX_NOEXEC_NAME))
+			noexec = true;
+	}
+
+	if (plan9 || rc) {
+		close_fds[0] = 4;
+		close_fds[1] = 0;
+
+		setenv("SHELL", "syd-rc", 1);
+		set_arg0("☮syd-rc");
+		sydbox->program_invocation_name = xstrdup("☮syd-rc");
+		//FIXME does not work!
+		//command = syd_rc_main;
+		my_argv[0] = arg0;
+		my_argc = ELEMENTSOF(sydrc_argv);
+		my_argv = sydrc_argv;
+	}
+
+	if (rc || sh) {
 		config_parse_spec(DATADIR "/" PACKAGE
 				  "/default.syd-" STRINGIFY(SYDBOX_API_VERSION));
-		setenv("SHELL", "/bin/bash", 1);
+		setenv("SHELL", "syd", 1);
 		mapuser = 0;
 		mapgroup = 0;
 		set_uid(0);
 		set_gid(0);
-		set_arg0("☮syd-sh");
+		if (sh)
+			set_arg0("☮syd-sh");
+		else if (rc)
+			set_arg0("☮syd-rc");
 		set_working_directory(xstrdup("tmp"));
 		close_fds[0] = 3;
 		close_fds[1] = 0;
@@ -3104,14 +3214,18 @@ int main(int argc, char **argv)
 				  CLONE_NEWUSER|\
 				  CLONE_NEWTIME|\
 				  CLONE_NEWCGROUP);
-		procmnt = "/proc";
-		my_argc = ELEMENTSOF(sydsh_argv);
-		my_argv = sydsh_argv;
-		sydbox->program_invocation_name = xstrdup("☮syd-sh");
+		if (sh) {
+			my_argc = ELEMENTSOF(sydsh_argv);
+			my_argv = sydsh_argv;
+		} else if (rc) {
+			my_argc = ELEMENTSOF(sydrc_argv);
+			my_argv = sydrc_argv;
+		} else {
+			assert_not_reached();
+		}
+		sydbox->program_invocation_name = xstrdup(get_arg0());
 		child_block_interrupt_signals = true;
 	} else {
-		my_argv = (char **)(argv + optind);
-		my_argc = argc - optind;
 		/*
 		 * Initial program_invocation_name to be used for P_COMM(current).
 		 * Saves one proc_comm() call.
@@ -3142,7 +3256,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Set useful environment variables for children */
-	setenv("SYDBOX", SEE_EMILY_PLAY, 1);
+	setenv("SYDBOX_PLAY", SEE_EMILY_PLAY, 1);
 	setenv("SYDBOX_VERSION", VERSION, 1);
 	setenv("SYDBOX_API_VERSION", STRINGIFY(SYDBOX_API_VERSION), 1);
 	setenv("SYDBOX_ACTIVE", THE_PIPER, 1);
@@ -3153,8 +3267,12 @@ int main(int argc, char **argv)
 	pid_t pid;
 	syd_process_t *child;
 
-	if (unshare(unshare_flags) == -1)
+	if (unshare_flags != 0 &&
+	    (r = syd_unshare(unshare_flags)) < 0 &&
+	    r != -ECANCELED) {
+		errno = -r;
 		die_errno("unshare");
+	}
 
 	if (force_boottime)
 		syd_settime(boottime, CLOCK_BOOTTIME);

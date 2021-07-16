@@ -442,6 +442,9 @@ struct syd_process {
 	/* Denied system call will return this value */
 	long retval;
 
+	/* xxh64 hash of the binary which executed the process. */
+	uint64_t xxh;
+
 	/* Arguments of last system call */
 	long args[6];
 
@@ -661,7 +664,10 @@ struct sydbox {
 	uint16_t filter_count;
 	uint32_t arch[SYD_SECCOMP_ARCH_ARGV_SIZ];
 
-	/* SHA-1 Context and Hash */
+	/* xxh64 hash of the binary which of the SydB☮x process. */
+	uint64_t xxh;
+
+	/* SHA-1 Context and Hash of the SydB☮x execute process. */
 	syd_SHA_CTX sha1;
 	char hash[SYD_SHA1_HEXSZ];
 
@@ -842,6 +848,10 @@ void process_remove(syd_process_t *p);
 syd_process_t *process_lookup(pid_t pid);
 char *process_comm(syd_process_t *p, const char *arg0);
 
+void dump_one_process(syd_process_t *current, bool verbose)
+	SYD_GCC_ATTR((nonnull(1)));
+void sig_usr(int sig);
+
 /*************************************/
 /* Security Functions */
 static inline bool sydbox_syscall_flag_cont(void)
@@ -984,6 +994,8 @@ int syd_read_vm_data(syd_process_t *current, long addr, char *dest, size_t len);
 int syd_read_vm_data_full(syd_process_t *current, long addr, unsigned long *argval);
 ssize_t syd_write_vm_data(syd_process_t *current, long addr, char *src,
 			  size_t len);
+int syd_mprotect(void *ptr, size_t size, int prot)
+	SYD_GCC_ATTR((nonnull(1)));
 int syd_rmem_alloc(syd_process_t *current);
 int syd_rmem_write(syd_process_t *current);
 
@@ -1047,8 +1059,12 @@ static inline sandbox_t *box_current(syd_process_t *current)
 	return current ? P_BOX(current) : &sydbox->config.box_static;
 }
 
-void init_sandbox(sandbox_t *box);
-void copy_sandbox(sandbox_t *box_dest, sandbox_t *box_src);
+int sandbox_protect(sandbox_t *box, int prot)
+	SYD_GCC_ATTR((nonnull(1)));
+void init_sandbox(sandbox_t *box)
+	SYD_GCC_ATTR((nonnull(1)));
+void copy_sandbox(sandbox_t *box_dest, sandbox_t *box_src)
+	SYD_GCC_ATTR((nonnull(1)));
 void reset_sandbox(sandbox_t *box);
 int new_sandbox(sandbox_t **box_ptr);
 void free_sandbox(sandbox_t *box);
@@ -1242,6 +1258,7 @@ int sys_clone(syd_process_t *current);
 int sys_execve(syd_process_t *current);
 int sys_execveat(syd_process_t *current);
 int sys_stat(syd_process_t *current);
+int sys_lstat(syd_process_t *current);
 int sys_fstatat(syd_process_t *current);
 int sys_statx(syd_process_t *current);
 int sys_uname(syd_process_t *current);
