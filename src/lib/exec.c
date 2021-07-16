@@ -177,9 +177,10 @@ int syd_execv(const char *command,
 {
 	int r = 0;
 
+	if (opt && opt->command)
+		return syd_execf(opt->command, argc, argv, opt);
 	r = syd_exec_apply(opt, &argv[0]);
 	if (r < 0)
 		return r;
-
 	return execv(command, argv);
 }

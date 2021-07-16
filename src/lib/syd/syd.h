@@ -249,6 +249,7 @@ struct syd_exec_opt {
 	const uint32_t *supplementary_gids;
 	size_t supplementary_gids_length;
 	const char *pid_env_var;
+	int (*command)(int argc, char **argv);
 };
 
 SYD_GCC_ATTR((warn_unused_result,nonnull(1,3,4)))
