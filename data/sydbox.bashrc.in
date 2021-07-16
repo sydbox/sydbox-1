@@ -96,14 +96,15 @@ shopt -s checkwinsize
 reset >/dev/null 2>/dev/null
 
 # Check magic command status.
-if test -e '/dev/sydbox'; then
+if syd ipc check; then
     echo >&2 "[0;1;33;93m"
     stat /dev/sydbox 1>&2
     echo >&2 "[0m"
     echo >&2 "[0;1;36;96mMagic commands are enabled.[0m"
     echo >&2 "[0;1;36;96mYou may configure Sydb☮x using the »/dev/sydbox« virtual device node.[0m"
     echo >&2 "[0;1;36;96mWhen you're done lock the Sydb☮x sandbox with the command:[0m"
-    echo -e >&2 "[0;1;31;91m»stat /dev/sydbox/core/trace/magic_lock:on«[0m"
+    echo -e >&2 "[0;1;31;91m»syd ipc lock«[0m"
+    echo -e >&2 "See [0;1;31;91m»syd ipc --help«[0m for details."
     echo -e >&2 "/dev/sydbox: [0;1;32;92mOK[0m"
 else
     :
@@ -111,7 +112,7 @@ else
 fi
 
 # Greet the user.
-test -n "$SYDBOX" && echo "$SYDBOX"
+test -n "$SYDBOX_PLAY" && echo "$SYDBOX_PLAY"
 echo >&2 "Welcome to the Sydb☮x shell."
 echo >&2 "Have fun, type »exit« to exit."
 
@@ -336,10 +337,10 @@ esac
 
 # {{{ Prompt
 ps_sandbox() {
-    if test -e /dev/sydbox; then
-        echo -e "${bashrc_colour_l_pink}>${bashrc_colour_m_orng}syd:☠"
+    if syd ipc check; then
+        echo -e "${bashrc_colour_l_pink}>${bashrc_colour_m_orng}syd:☠$(syd ipc status)"
     else
-        echo -e "${bashrc_colour_l_pink}>${bashrc_colour_m_gren}syd:✓"
+        echo -e "${bashrc_colour_l_pink}>${bashrc_colour_m_gren}syd:✓$(syd ipc status)"
     fi
 }
 
