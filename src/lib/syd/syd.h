@@ -374,6 +374,8 @@ int syd_ipc_check(bool *check)
 	SYD_GCC_ATTR((nonnull(1)));
 int syd_ipc_lock(void);
 int syd_ipc_exec_lock(void);
+int syd_ipc_exec(int argc, char *const*argv)
+	SYD_GCC_ATTR((nonnull(2)));
 int syd_ipc_use_toolong_hack(bool on);
 int syd_ipc_kill(uint8_t signum);
 int syd_ipc_kill_if_match(const char *pattern, char addrem)

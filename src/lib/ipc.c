@@ -71,6 +71,35 @@ int syd_ipc_exec_lock(void)
 	return syd_stat("/dev/sydbox/core/trace/magic_lock:exec");
 }
 
+SYD_GCC_ATTR((nonnull(2)))
+int syd_ipc_exec(int argc, char *const*argv)
+{
+	size_t len = sizeof("/dev/sydbox/cmd/exec!");
+	for (size_t i = 0; argv[i]; i++)
+		len += 1/*exec_char*/ + strlen(argv[i]);
+
+	char *cmd = malloc(len * sizeof(char));
+	if (!cmd)
+		return -ENOMEM;
+
+	len = sizeof("/dev/sydbox/cmd/exec!");
+	syd_strlcpy(cmd, "/dev/sydbox/cmd/exec!", len);
+	for (size_t i = 0; argv[i]; i++) {
+		size_t l = strlen(argv[i]) + 1;
+		syd_strlcpy(cmd + len - (i ? 0 : 1), argv[i], l);
+		len += l - (i ? 0 : 1);
+		if (argv[i + 1] != NULL)
+			cmd[len-1] = 037;
+	}
+	cmd[len] = '\0';
+
+	int r = syd_stat(cmd);
+	if (r)
+		syd_say_errno("stat(»%s«)", cmd);
+	free(cmd);
+	return r;
+}
+
 int syd_ipc_use_toolong_hack(bool on)
 {
 	if (on)
