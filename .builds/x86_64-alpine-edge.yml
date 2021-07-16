@@ -60,7 +60,7 @@ tasks:
     ./src/syd --test
 - arch: |
     cd sydbox
-    ./src/syd -d2 true
+    ./src/syd -d2 -- cc --version
 - check_static: |
     cd sydbox
     make -j V=1 check && touch .check_ok
