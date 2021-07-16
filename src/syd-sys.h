@@ -20,6 +20,11 @@ static const char *const syd_system_allowlist[UINT8_MAX] = {
 	"allowlist/exec+/usr/bin/***",
 	"allowlist/exec+/usr/local/s?bin/***",
 	"allowlist/exec+/snap/***",
+
+	"allowlist/read+/lib*/***",
+	"allowlist/read+/tmp/***",
+	"allowlist/read+"SYD_PATH_TMP"/***",
+	"allowlist/read+"SYD_PATH_BTMP"/***",
 	"allowlist/read+/etc/***", /* Let the denylist do their job. */
 	"allowlist/read+/bin*/***",
 	"allowlist/read+/dev/***",
@@ -58,14 +63,6 @@ static const char *const syd_system_allowlist[UINT8_MAX] = {
 	"allowlist/read+/proc",
 	"allowlist/read+/proc/[0-9]+/***",
 	"allowlist/read+/sys/***",
-
-	"allowlist/read+/lib*/***",
-	"allowlist/read+/usr/lib*/***",
-	"allowlist/read+/usr/local/lib*/***",
-
-	"allowlist/read+/tmp/***",
-	"allowlist/read+"SYD_PATH_TMP"/***",
-	"allowlist/read+"SYD_PATH_BTMP"/***",
 
 	"allowlist/write+/dev/stdout",
 	"allowlist/write+/dev/stderr",
