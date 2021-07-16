@@ -10,10 +10,11 @@
 
 void init_sandbox(sandbox_t *box)
 {
-	box->mode.sandbox_exec = SANDBOX_OFF;
-	box->mode.sandbox_read = SANDBOX_OFF;
-	box->mode.sandbox_write = SANDBOX_OFF;
-	box->mode.sandbox_network = SANDBOX_OFF;
+	/* Be paranoid */
+	box->mode.sandbox_exec = SANDBOX_BPF;
+	box->mode.sandbox_read = SANDBOX_BPF;
+	box->mode.sandbox_write = SANDBOX_BPF;
+	box->mode.sandbox_network = SANDBOX_BPF;
 
 	box->magic_lock = LOCK_UNSET;
 
