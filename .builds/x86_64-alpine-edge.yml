@@ -8,6 +8,7 @@ packages:
 - libseccomp-static
 - libxslt
 - bison
+- coreutils
 - gettext
 - grep
 - bind-tools
