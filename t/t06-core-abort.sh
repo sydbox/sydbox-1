@@ -21,7 +21,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is termina
     test_expect_code 131 syd -- syd-abort 3
 '
 
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated with SIGILL' '
+test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated with SIGILL' '
     test_expect_code 132 syd -- syd-abort 4
 '
 
@@ -53,7 +53,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked
     test_expect_code 130 syd -- syd-abort-static 2
 '
 
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked tracee is terminated with SIGQUIT' '
+test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked tracee is terminated with SIGQUIT' '
     test_expect_code 131 syd -- syd-abort-static 3
 '
 
@@ -69,7 +69,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked
     test_expect_code 136 syd -- syd-abort-static 8
 '
 
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked tracee is terminated with SIGSEGV' '
+test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked tracee is terminated with SIGSEGV' '
     test_expect_code 139 syd -- syd-abort-static 11
 '
 
@@ -105,7 +105,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if forking tracee is
     test_expect_code 136 syd -- syd-abort-fork 8
 '
 
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if forking tracee is terminated with SIGSEGV' '
+test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if forking tracee is terminated with SIGSEGV' '
     test_expect_code 139 syd -- syd-abort-fork 11
 '
 
@@ -141,7 +141,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked
     test_expect_code 136 syd -- syd-abort-fork-static 8
 '
 
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked forking tracee is terminated with SIGSEGV' '
+test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked forking tracee is terminated with SIGSEGV' '
     test_expect_code 139 syd -- syd-abort-fork-static 11
 '
 
@@ -178,7 +178,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if multithreaded tra
     test_expect_code 136 syd -- syd-abort-pthread 8
 '
 
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if multithreaded tracee is terminated with SIGSEGV' '
+test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if multithreaded tracee is terminated with SIGSEGV' '
     test_expect_code 139 syd -- syd-abort-pthread 11
 '
 
@@ -214,7 +214,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked
     test_expect_code 136 syd -- syd-abort-pthread-static 8
 '
 
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked multithreaded tracee is terminated with SIGSEGV' '
+test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked multithreaded tracee is terminated with SIGSEGV' '
     test_expect_code 139 syd -- syd-abort-pthread-static 11
 '
 

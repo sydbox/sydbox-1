@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 # coding: utf-8
 # Copyright 2021 Ali Polatel <alip@exherbo.org>
 # Released under the terms of the GNU General Public License v2

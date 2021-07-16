@@ -21,7 +21,6 @@ static const char *const syd_system_allowlist[UINT8_MAX] = {
 	"allowlist/exec+/usr/local/s?bin/***",
 	"allowlist/exec+/snap/***",
 	"allowlist/read+/etc/***", /* Let the denylist do their job. */
-	"allowlist/read+/home/***", /* ditto */
 	"allowlist/read+/bin*/***",
 	"allowlist/read+/dev/***",
 	"allowlist/read+/lib*/***",

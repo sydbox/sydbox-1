@@ -21,7 +21,6 @@ int main(int argc, char *argv[])
 
 	size_t i;
 	char *f;
-	char *x = p;
 	for (i = 0, f = p; p[i] == '/'; f++, i++);
 	char *y = strchrnul(f, '/');
 	for (;;) {
@@ -29,10 +28,10 @@ int main(int argc, char *argv[])
 
 		c = *y; *y = 0;
 		expect_errno = access(p, F_OK) ? 0 : EEXIST;
-		fprintf(stderr, "next_dir: »%s«\n", x);
+		fprintf(stderr, "next_dir: »%s«\n", p);
 
 		errno = 0;
-		if (mkdir(x, 0700) < 0) {;/*ignore*/}
+		if (mkdir(p, 0700) < 0) {;/*ignore*/}
 		if (errno != expect_errno) {
 			fprintf(stderr, "mkdir: expected %d, got %d\n", expect_errno, errno);
 			return errno;
@@ -40,8 +39,12 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "mkdir: OK\n");
 
 		errno = 0;
-		if (chdir(x) < 0) {;/*ignore*/}
+		if (chdir(p) < 0) {;/*ignore*/}
 		if (errno != 0) {
+			if (errno == ENOENT) {
+				fprintf(stderr, "chdir: NOT OK\n");
+				return EEXIST;
+			}
 			fprintf(stderr, "mkdir: expected %d, got %d\n", 0, errno);
 			return errno;
 		}

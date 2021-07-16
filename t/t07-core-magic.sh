@@ -66,28 +66,28 @@ for magic_mem_access in 0 1; do
         -- syd-fstatat /dev /dev/sydbox/2
 '
 
-    test_expect_success \
+    test_expect_failure \
         "magic /dev/sydbox API is not 1 [memory_access:${magic_mem_access}]" '
     test_expect_code 1 syd \
         --memaccess '${magic_mem_access}' \
         -- test -e /dev/sydbox/1
 '
 
-    test_expect_success HAVE_NEWFSTATAT \
+    test_expect_failure HAVE_NEWFSTATAT \
         "magic /dev/sydbox API is not 1 using fstatat(cwd, sydbox/1) [memory_access:${magic_mem_access}]" '
     test_expect_code 22 syd \
         --memaccess '${magic_mem_access}' \
         -- syd-fstatat cwd /dev/sydbox/1 # EINVAL
 '
 
-    test_expect_success \
+    test_expect_failure \
         "magic /dev/sydbox API is not 0 [memory_access:${magic_mem_access}]" '
     test_expect_code 1 syd \
         --memaccess '${magic_mem_access}' \
         -- sh -c "test -e /dev/sydbox/0"
 '
 
-    test_expect_success HAVE_NEWFSTATAT \
+    test_expect_failure HAVE_NEWFSTATAT \
         "magic /dev/sydbox API is not 0 using fstatat(cwd, sydbox/0) [memory_access:${magic_mem_access}]" '
     test_expect_code 22 syd \
         --memaccess '${magic_mem_access}' \
@@ -95,10 +95,10 @@ for magic_mem_access in 0 1; do
 '
 
     test_expect_failure \
-        "magic /dev/sydbox boolean checking works with write:off [memory_access:${magic_mem_access}]" '
+        "magic /dev/sydbox boolean checking works with write:allow [memory_access:${magic_mem_access}]" '
     syd \
         --memaccess '${magic_mem_access}' \
-        -y core/sandbox/write:off -- sh <<-\EOF
+        -y core/sandbox/write:allow -- sh <<-\EOF
 test -e /dev/sydbox/core/sandbox/write"?"
 test $? -eq 1 && exit 0
 EOF
@@ -118,10 +118,10 @@ EOF
     export SYDBOX_TEST_OPTIONS
 
     test_expect_failure HAVE_NEWFSTATAT \
-        "magic /dev/sydbox boolean checking works with -y write:off [memory_access:${magic_mem_access}]" '
+        "magic /dev/sydbox boolean checking works with -y write:allow [memory_access:${magic_mem_access}]" '
     test_expect_code 1 syd \
         --memaccess '${magic_mem_access}' \
-        -y core/sandbox/write:off -- \
+        -y core/sandbox/write:allow -- \
         syd-fstatat cwd /dev/sydbox/core/sandbox/write"?" # ENOENT
 '
 

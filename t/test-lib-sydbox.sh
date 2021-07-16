@@ -158,7 +158,7 @@ test_bpf_action() {
 test_must_violate() {
 	retval=0
 	save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
-	SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS -mcore/violation/exit_code:0"
+	SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS -ycore/violation/exit_code:0"
 	export SYDBOX_TEST_OPTIONS
 	"$@"
 	exit_code=$?

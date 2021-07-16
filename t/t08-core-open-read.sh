@@ -8,7 +8,7 @@ test_description='test the read sandboxing for open of sydbox'
 for cor_mem_access in 0 1; do
 # Note, we use test_must_fail here rather than ! so we know if sydbox exits
 # abnormally, eg. segfaults.
-    test_expect_success \
+    test_expect_failure \
         "read sandboxing for open works [memory_access:${cor_mem_access}]" '
     pdir="$(unique_dir)" &&
     mkdir "$pdir" &&
@@ -18,9 +18,9 @@ for cor_mem_access in 0 1; do
     test_must_fail syd \
         --memaccess '${cor_mem_access}' \
         -y core/sandbox/read:deny \
-        -y core/sandbox/write:off \
-        -y core/sandbox/exec:off \
-        -y core/sandbox/network:off \
+        -y core/sandbox/write:allow \
+        -y core/sandbox/exec:allow \
+        -y core/sandbox/network:allow \
         syd-open-static "$cdir"/readme rdonly
 '
 

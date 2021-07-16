@@ -93,6 +93,8 @@ then
 fi
 
 ################################################################
+SYDBOX_TEST_OPTIONS="-y core/violation/raise_fail:1"
+export SYDBOX_TEST_OPTIONS
 # It appears that people try to run tests without building...
 SYDBOX_BUILD_DIR="@TOP_BUILDDIR@"
 if test -z "$SYDBOX_TEST_INSTALLED"
@@ -1794,7 +1796,16 @@ build_option () {
 }
 
 # Support for new system calls
+test_set_prereq HAVE_IPV6
 test x"@SYDBOX_HAVE_NEWFSTATAT@" = x"0" || test_set_prereq HAVE_NEWFSTATAT
+
+test_lazy_prereq NC '
+	nc -h
+'
+
+test_lazy_prereq TIMEOUT '
+	timeout --version
+'
 
 test_lazy_prereq CURL '
 	curl --version
@@ -1816,8 +1827,12 @@ test_lazy_prereq JQ '
 	jq --version
 '
 
+test_lazy_prereq PY2 '
+	python2 --version
+'
+
 test_lazy_prereq PY3 '
-	python3 --version | grep -iq "Python 3"
+	python3 --version
 '
 
 test_lazy_prereq TRINITY '

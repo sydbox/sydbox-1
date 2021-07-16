@@ -130,13 +130,12 @@ static size_t arch_argv_idx;
 #ifdef HAVE_SIG_ATOMIC_T
 static volatile sig_atomic_t debugger_present = -1;
 static volatile sig_atomic_t interrupted, interrupted_reload, interrupted_trap;
-static volatile sig_atomic_t interruptid;
+static volatile sig_atomic_t interruptcode, interruptid, interruptstat;
 #else
 static volatile int debugger_present = -1;
 static volatile int interrupted, interrupted_reload, interrupted_trap;
-static volatile int interruptid
+static volatile int interruptcode, interruptid, interruptstat;
 #endif
-static int interruptcode, interruptstat;
 static sigset_t empty_set, blocked_set, interrupt_set;
 static bool debugger_killed;
 
@@ -1019,6 +1018,7 @@ static void init_signal_sets(void)
 	sigaddset(&interrupt_set, SIGINT);
 	sigaddset(&interrupt_set, SIGUSR1);
 	sigaddset(&interrupt_set, SIGUSR2);
+	sigaddset(&interrupt_set, SIGTRAP);
 
 	sigaddset(&blocked_set, SIGABRT);
 	sigaddset(&blocked_set, SIGALRM);
@@ -1045,6 +1045,7 @@ static void init_signal_sets(void)
 	sigaddset(&blocked_set, SIGUSR2);
 	sigaddset(&blocked_set, SIGXCPU);
 	sigaddset(&blocked_set, SIGXFSZ);
+	sigaddset(&blocked_set, SIGWINCH);
 }
 
 #if 0
@@ -1254,46 +1255,54 @@ static int sig_child(void)
 			op = "?";
 			break;
 		}
-		if (interruptcode == CLD_EXITED)
-			sydbox->exit_code = WEXITSTATUS(interruptstat);
-		else if (interruptcode == CLD_KILLED ||
-			 interruptcode == CLD_DUMPED)
+		if (interruptcode == CLD_EXITED) {
+			sydbox->exit_code = interruptstat <= 7
+				? interruptstat
+				: WEXITSTATUS(interruptstat);
+		} else if (interruptcode == CLD_KILLED ||
+			 interruptcode == CLD_DUMPED) {
 			sydbox->exit_code = 128 + WTERMSIG(interruptstat);
-		say("SⒶnd☮x Pr☮cess %d»%s« exits with %d, secure:%s%s%s, code:%d»%s«, status:%#lx.",
-		    pid,
-		    sydbox->program_invocation_name,
-		    sydbox->exit_code,
-		    sydbox->violation
-			? ANSI_DARK_RED
-			: ANSI_DARK_GREEN,
-		    sydbox->violation
-			? "✕"
-			: "✓",
-		    SYD_WARN,
-		    interruptcode, op,
-		    (unsigned long)interruptstat);
+		}
+		if (sydbox->violation || sydbox->exit_code > 7)
+			say("SⒶnd☮x Pr☮cess %d»%s« exits with %d, secure:%s%s%s, code:%d»%s«, status:%#lx.",
+			    pid,
+			    sydbox->program_invocation_name,
+			    sydbox->exit_code,
+			    sydbox->violation
+				? ANSI_DARK_RED
+				: ANSI_DARK_GREEN,
+			    sydbox->violation
+				? "✕"
+				: "✓",
+			    SYD_WARN,
+			    interruptcode, op,
+			    (unsigned long)interruptstat);
 	}
 
 	if (p && process_is_zombie(p->pid)) {
 		bury_process(p, true);
-		return 0;
+		goto reap;
 	}
-	// reap_zombies();
 
 	for (;;) {
 		pid_t cpid;
 		cpid = waitpid(pid, &status, __WALL|WNOHANG);
 		if (cpid >= 0)
-			return 0;
+			/* return 0; */
+			break; /* see below for reap zombies */
 		switch (errno) {
 		case EINTR:
 			continue;
 		case ECHILD:
-			return 0;
+			break; /* see below for reap zombies */
 		default:
 			assert_not_reached();
 		}
 	}
+
+reap:
+	reap_zombies();
+	return (process_count_alive() == 0) ? ECHILD : 0;
 }
 
 static int handle_interrupt(int sig)
@@ -1391,6 +1400,7 @@ static int handle_interrupt_trap(int sig)
 		warn("Refusing Trap Request to protect Sandbox Integrity.");
 		break;
 	default:
+		warn("SydB☮x: Hello TrⒶcer!");
 		break;
 	}
 
@@ -1501,6 +1511,8 @@ static inline size_t process_count_alive(void)
 	syd_process_t *node;
 
 	syd_map_foreach_value(&sydbox->tree, node) {
+		if (node->flags & SYD_IN_EXECVE)
+			continue;
 		/* See the explanation in reap_zombies */
 		if (!process_is_zombie(node->pid))
 			continue;
@@ -1890,7 +1902,8 @@ notify_receive:
 		 * Handle critical paths early and fast.
 		 * Search early for exec before getting a process entry.
 		 */
-		if (startswith(name, "exec")) {
+		if ((current && (current->flags & SYD_IN_EXECVE)) ||
+		    startswith(name, "exec")) {
 			pid_t leader_pid = process_find_exec(pid);
 			if (!current) {
 				parent = process_lookup(leader_pid);
@@ -2006,7 +2019,8 @@ pid_validate:
 			 */
 			if (current) {
 				sydbox_syscall_allow();
-				if (startswith(name, "exec") &&
+				if (((current->flags & SYD_IN_EXECVE) ||
+				     startswith(name, "exec")) &&
 				    sydbox->execve_wait) {
 					/* allow the initial exec */
 					not_exec = true;
@@ -2032,16 +2046,17 @@ pid_validate:
 					set_process_name = true;
 #endif
 				}
+				/* reap zombies after notify respond */
+				reap_my_zombies = true;
 				if (pid == execve_pid) {
 					if (current)
 						current->execve_pid = 0;
+					current->flags &= ~SYD_IN_EXECVE;
 				} else {
 					current = process_lookup(pid);
 					switch_execve_leader(execve_pid,
 							     current);
 					current->execve_pid = 0;
-					/* reap zombies after notify respond
-					reap_my_zombies = true; */
 				}
 				if (current) {
 					if (current->abspath) {
@@ -2061,8 +2076,12 @@ pid_validate:
 			current->flags &= ~SYD_IN_EXECVE;
 
 notify_respond:
+		allow_interrupts();
 		r = seccomp_notify_respond(sydbox->notify_fd,
 					   sydbox->response);
+		if (interrupted && (intr = handle_interrupt(interrupted)))
+			break;
+		block_signals(1);
 		if (r < 0) {
 			if (r == -EINTR || errno == EINTR)
 				goto notify_respond;
@@ -2093,6 +2112,8 @@ out:
 		if (reap_my_zombies) {
 			reap_my_zombies = false;
 			reap_zombies();
+			/* if (process_count_alive() == 0)
+				break; */
 		}
 #if 0
 #if ENABLE_PSYSCALL
@@ -2156,17 +2177,25 @@ static syd_process_t *startup_child(int argc, char **argv)
 	sydbox->pid_valid = PID_INIT_VALID;
 
 	if (!noexec && !command) {
-		pathname = path_lookup(argv[0]);
+		pathname = strchr(argv[0], '/') ? strdup(argv[0]) : path_lookup(argv[0]);
 		if (!pathname)
 			die_errno("Path look up for »%s« failed", argv[0]);
 		if ((r = syd_path_to_xxh64_hex(pathname, &sydbox->xxh, NULL)) < 0) {
 			errno = -r;
 			say_errno("Cannot calculate XXH64 checksum of file "
 				  "»%s«", pathname);
-		} else if ((r = syd_path_to_sha1_hex(pathname, sydbox->hash)) < 0) {
+		} else {
+			sayv("Calculated XXH64 checksum of file "
+			     "»%s« -> »%#lx«", pathname, sydbox->xxh);
+		}
+
+		if ((r = syd_path_to_sha1_hex(pathname, sydbox->hash)) < 0) {
 			errno = -r;
-			say_errno("Cannot calculate SHA-1 DC_PARTIALCOLL checksum of file "
+			say_errno("Cannot calculate SHA-1DC_PARTIALCOLL checksum of file "
 				  "»%s«", pathname);
+		} else {
+			sayv("Calculated SHA-1DC_PARTIALCOLL checksum of file "
+			     "»%s« -> »%s«", pathname, sydbox->hash);
 		}
 	} else if (noexec) {
 		strlcpy(sydbox->hash, "<noexec>", sizeof("<noexec>"));
@@ -2199,6 +2228,14 @@ static syd_process_t *startup_child(int argc, char **argv)
 
 	/* Set up the signal handler so that we get exit notification. */
 	init_sigchild();
+	/*
+	 * We want to be absolutely safe
+	 * against interrupts to the best
+	 * we can.
+	 * This initialises the signal sets
+	 * and blocks all signals.
+	 */
+	block_signals(1);
 
 	/*
 	 * Mark SydB☮x's process id so that the seccomp filtering can
@@ -2374,9 +2411,11 @@ seccomp_init:
 	close(pfd[0]);
 	sydbox->seccomp_fd = -1;
 
+	current->flags |= SYD_IN_EXECVE;
 	current->pid = pid;
 	current->ppid = sydbox->sydbox_pid;
 	sydbox->execve_pid = pid;
+	process_add(current);
 
 	return current;
 }
@@ -3156,6 +3195,7 @@ int main(int argc, char **argv)
 	my_argv += optind;
 	argc = my_argc;
 	argv = my_argv;
+	//say("argc:%d arg0:%s optind:%d", argc, arg0, optind);
 
 	/*
 	 * Act as a multicall binary for
@@ -3167,9 +3207,7 @@ int main(int argc, char **argv)
 	if (argc == 0) {
 		sh = true;
 	} else if (argc >= 1) {
-		if (streq(argv[0], "sh")) {
-			sh = true;
-		} else if (streq(argv[0], "rc")) {
+		if (streq(argv[0], "rc")) {
 			plan9 = true;
 			rc = true;
 		}
@@ -3231,7 +3269,7 @@ int main(int argc, char **argv)
 		 * Saves one proc_comm() call.
 		 */
 		if (asprintf(&sydbox->program_invocation_name, "☮%s",
-			     argv[optind]) < 0)
+			     argv[0]) < 0)
 			;
 	}
 	config_done();
