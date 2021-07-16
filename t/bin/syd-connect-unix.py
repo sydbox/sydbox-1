@@ -14,10 +14,12 @@ except OSError as e:
         sys.stderr.write("OK: bind returned EADDRNOTAVAIL\n")
     sys.exit(e.errno)
 except Exception as e:
+    if e.errno == errno.ENOMEM:
+        sys.stderr.write("OK: bind returned ENOMEM\n")
+        sys.exit(99)
     sys.stderr.write("Unexpected exception: %r\n" % e)
     sys.exit(0)
 else:
     sys.exit(0)
 finally:
    probe.close()
-
