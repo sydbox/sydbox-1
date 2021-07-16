@@ -46,12 +46,12 @@ unsigned acl_pathmatch(enum acl_action defaction, const aclq_t *restrict aclq,
 	/* The last matching pattern decides */
 	node_match = NULL;
 	ACLQ_FOREACH(node, aclq) {
-		if (pathmatch(node->match, path)) {
-			/*sayv("match: %s ⊆ %s", (const char *)node->match, path);*/
+		if (node->match && pathmatch(node->match, path)) {
+			sayv("syd-match: %s ⊆ %s", (const char *)node->match, path);
 			node_match = node;
-		} /*else {
-			sayv("nomatch: %s ⨂ %s", (const char *)node->match, path);
-		} */
+		} else {
+			sayv("syd-acl-nomatch: %s ⨂ %s", (const char *)node->match, path);
+		}
 	}
 
 	return acl_check(defaction, node_match, match);
