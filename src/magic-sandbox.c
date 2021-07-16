@@ -54,6 +54,10 @@ static int magic_set_sandbox(enum sandbox_type t, const char *str, syd_process_t
 		say("Use »allow« or »deny« for kernel & user-space sandboxing");
 		say("The sandbox modes »bpf« and »deny« are recommended.");
 		return MAGIC_RET_INVALID_VALUE;
+	} else if (r == SANDBOX_BPF && sydbox->execve_pidfd) {
+		say("Setting sandbox mde to »bpf« during runtime, "
+		    "assuming »deny«");
+		r = SANDBOX_DENY;
 	}
 
 	box = box_current(current);
