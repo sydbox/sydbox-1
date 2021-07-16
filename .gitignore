@@ -115,7 +115,9 @@ Makefile
 # Plan9 Rc
 /rc/*.tab.h
 /rc/*.tab.c
+/rc/rcmain
 /rc/syn.c
+/rc/syd-rc
 
 # Sydb☮x-1
 /misc/syd-hilite
