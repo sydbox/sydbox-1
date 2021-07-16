@@ -67,32 +67,28 @@ usage: "PACKAGE" [-hv]\n\
 
 static int puts_exec(char **argv)
 {
-	int i = 0;
+	size_t i = 0;
 
-	if (argv[0] == NULL)
+	if (argv[i] == NULL)
 		usage(stderr, EXIT_FAILURE);
-	if (!strcmp(argv[0], "--"))
-		i = 1;
+	if (!strcmp(argv[i], "--"))
+		++i;
 	if (argv[i] == NULL)
 		usage(stderr, EXIT_FAILURE);
 
-	printf("%s/cmd/exec%c", SYDBOX_MAGIC_PREFIX, SYDBOX_MAGIC_EXEC_CHAR);
-	for (;argv[i]; i++) {
+	printf(SYDBOX_MAGIC_PREFIX"/cmd/exec%c", SYDBOX_MAGIC_EXEC_CHAR);
+	for (; argv[i]; i++) {
 		printf("%s", argv[i]);
 		if (argv[i+1] != NULL)
 			fputc(SYD_UNIT_SEP, stdout); /* unit separator */
 	}
-
 	return EXIT_SUCCESS;
 }
 
 int main(int argc, char **argv)
 {
-	int i;
-
 	if (argv[1] == NULL)
 		usage(stderr, EXIT_FAILURE);
-
 	if (argv[1][0] == '-') {
 		if (!strcmp(argv[1], "-h") ||
 		    !strcmp(argv[1], "--help"))
@@ -105,10 +101,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	for (i = 0; key_table[i].cmd; i++) {
+	for (size_t i = 0; key_table[i].cmd; i++) {
 		if (!strcmp(key_table[i].cmd, argv[1]))
 			return key_table[i].puts(&argv[2]);
 	}
-	oops("invalid command `%s'", argv[1]);
+	oops("Invalid command »%s«", argv[1]);
 	usage(stderr, EXIT_FAILURE);
 }
