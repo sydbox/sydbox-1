@@ -71,14 +71,14 @@ int syd_ipc_exec_lock(void)
 	return syd_stat("/dev/sydbox/core/trace/magic_lock:exec");
 }
 
+static char syd_ipc_status_buf[SYD_IPC_STATUS_MAX];
 SYD_GCC_ATTR((nonnull(1)))
 int syd_ipc_status(char const **status)
 {
 	int r;
 	bool on;
-	char syd_ipc_status[SYD_IPC_STATUS_MAX] = {0};
 
-	char *s = syd_ipc_status;
+	char *s = syd_ipc_status_buf;
 	*status = s;
 	size_t i = 0;
 

@@ -91,9 +91,6 @@ int syd_ipc_main(int argc, char *const*argv)
 			die_errno("syd_ipc_check");
 		}
 		return check ? EXIT_SUCCESS : EXIT_FAILURE;
-	} else if (!strcmp(cmd, "status")) {
-		//syd_ipc_status(prompt);
-		printf("TODO\n");
 	} else if (!strcmp(cmd, "lock")) {
 		if ((r = syd_ipc_lock()) < 0) {
 			errno = -r;
