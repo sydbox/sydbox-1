@@ -6,6 +6,7 @@
  */
 
 #include "syd-box.h"
+#include <sys/mman.h>
 
 int magic_set_trace_memory_access(const void *val, syd_process_t *current)
 {
@@ -57,12 +58,10 @@ int magic_set_trace_magic_lock(const void *val, syd_process_t *current)
 	box->magic_lock = l;
 	if (!current)
 		return MAGIC_RET_OK;
-
 #if 0
-	say("set magic lock to %u<%s> for process:%u<%s,%s,%u-%u>.",
-	    l, lock_state_to_string(l),
-	    current->pid, current->comm, current->hash,
-	    current->ppid, current->tgid);
+#TODO Check if this is a good idea security-wise.
+	if (box->magic_lock == LOCK_SET)
+		syd_mprotect(box, sizeof(sandbox_t), PROT_READ);
 #endif
 
 	/* Set magic lock for grand ppid and grand tgid too,
