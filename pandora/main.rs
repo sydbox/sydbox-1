@@ -661,62 +661,62 @@ commands are permitted.
 Here's a list of `pandora sandbox` commands:
 
 # Querying sandbox status
-- `check`: Check whether the program is being executed under
+- »check«: Check whether the program is being executed under
   sandboxing.
-- `enabled` or `enabled_path`: Check whether path
+- »enabled« or »enabled_path«: Check whether path
   sandboxing is enabled.
-- `enabled_exec`: Check whether exec sandboxing is enabled.
-- `enabled_net`: Check whether network sandboxing is enabled.
+- »enabled_exec«: Check whether exec sandboxing is enabled.
+- »enabled_net«: Check whether network sandboxing is enabled.
 
 # Turning sandboxing on/off
-- `enable` or `enable_path`: Enable path sandboxing.
-- `disable` or `disable_path`: Disable path sandboxing.
-- `enable_exec`: Enable exec sandboxing.
-- `disable_exec`: Disable exec sandboxing.
-- `enable_net`: Enable network sandboxing.
-- `disable_net`: Disable network sandboxing.
+- »enable« or »enable_path«: Enable path sandboxing.
+- »disable« or »disable_path«: Disable path sandboxing.
+- »enable_exec«: Enable exec sandboxing.
+- »disable_exec«: Disable exec sandboxing.
+- »enable_net«: Enable network sandboxing.
+- »disable_net«: Disable network sandboxing.
 
 # Whitelisting
-- `allow` or `allow_path`: Whitelist a path for path
+- »allow« or »allow_path«: Whitelist a path for path
   sandboxing.  Takes one extra argument which must be an __absolute__ path.
-- `disallow` or `disallow_path`: Removes a path from
+- »disallow« or »disallow_path«: Removes a path from
   the path sandboxing whitelist. Takes one extra argument which must be an
   __absolute__ path.
-- `allow_exec`: Whitelist a path for `execve()` sandboxing.  Takes
+- »allow_exec«: Whitelist a path for »execve()« sandboxing.  Takes
   one extra argument which must be an __absolute__ path.
-- `disallow_exec`: Removes a path from the `execve()` sandboxing whitelist.
+- »disallow_exec«: Removes a path from the »execve()« sandboxing whitelist.
 Takes one extra argument which must be an __absolute__ path.
-- `allow_net`: Whitelist a network address for `bind()` whitelist -
-  or for `connect()` whitelist if _--connect_ option is given.
-- `disallow_net`: Removes a network address from the `bind()`
-  whitelist - or from `connect()` whitelist if _--connect_ option is given.
+- »allow_net«: Whitelist a network address for »bind()« whitelist -
+  or for »connect()« whitelist if _--connect_ option is given.
+- »disallow_net«: Removes a network address from the »bind()«
+  whitelist - or from »connect()« whitelist if _--connect_ option is given.
 
 # Filtering
-- `addfilter` or `addfilter_path`: Add a pattern as
-  a path sandboxing filter. Takes one extra argument which is a `fnmatch()` pattern.
-- `rmfilter` or `rmfilter_path`: Removes a pattern
+- »addfilter« or »addfilter_path«: Add a pattern as
+  a path sandboxing filter. Takes one extra argument which is a »fnmatch()« pattern.
+- »rmfilter« or »rmfilter_path«: Removes a pattern
   from the path sandboxing filter list. Takes one extra argument which is a
-  `fnmatch()` pattern.
-- `addfilter_exec`: Add a pattern as a `execve()` sandboxing filter.
-  Takes one extra argument which is a `fnmatch()` pattern.
-- `rmfilter_exec`: Removes a pattern from the `execve()` sandboxing
-  filter list. Takes one extra argument which is a `fnmatch()` pattern.
-- `addfilter_net`: Add a network address as a network sandboxing
+  »fnmatch()« pattern.
+- »addfilter_exec«: Add a pattern as a »execve()« sandboxing filter.
+  Takes one extra argument which is a »fnmatch()« pattern.
+- »rmfilter_exec«: Removes a pattern from the »execve()« sandboxing
+  filter list. Takes one extra argument which is a »fnmatch()« pattern.
+- »addfilter_net«: Add a network address as a network sandboxing
   filter.  Takes one extra argument which is a network address.
-- `rmfilter_net`: Removes a pattern from the network sandboxing
+- »rmfilter_net«: Removes a pattern from the network sandboxing
   filter list. Takes one extra argument which is a network address.
 
 # Miscellaneous commands
-- `lock`: Lock magic commands. After calling this none of the
+- »lock«: Lock magic commands. After calling this none of the
   »sandbox` commands will work. You don«t need to call this, see
-  `exec_lock`.
-- `exec_lock`: Lock magic commands upon `execve()`.
-- `wait_eldest`: By default, sydb☮x waits for all traced processes
+  »exec_lock«.
+- »exec_lock«: Lock magic commands upon »execve()«.
+- »wait_eldest«: By default, sydb☮x waits for all traced processes
   to exit before exiting. However, this isn't desired in some cases. For example
   when a daemon, like udev, is restarted from within an exheres which will go on its
   execution after installation. This command makes sydb☮x resume all processes and
   exit after the eldest process has exited.
-- `wait_all`: Wait for all processes before exiting. This is the
+- »wait_all«: Wait for all processes before exiting. This is the
   default.
 
 # Specifying Network Addresses
@@ -1162,7 +1162,7 @@ fn sydbox_internal_path_2(cmd: &str, op: char, argv: &[&str]) -> bool {
 fn esandbox(cmd: &[&str]) -> bool {
     let command = cmd[0];
     match command {
-        "check" => magic_stat("/dev/sydbox"),
+        "check" => magic_stat("/dev/sydbox/kill"),
         "lock" => magic_stat("/dev/sydbox/core/trace/magic_lock:on"),
         "exec_lock" => magic_stat("/dev/sydbox/core/trace/magic_lock:exec"),
         "wait_all" => magic_stat("/dev/sydbox/core/trace/exit_wait_all:true"),
