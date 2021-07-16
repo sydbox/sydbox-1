@@ -16,11 +16,7 @@
 static inline int syd_stat(const char *path)
 {
 	struct stat buf;
-
-	errno = 0;
-	if (stat(path, &buf) != 0)
-		return -errno;
-	return 0;
+	return (stat(path, &buf) != 0) ? -errno : 0;
 }
 
 SYD_GCC_ATTR((nonnull(1)))
@@ -28,21 +24,24 @@ int syd_ipc_api(uint8_t *api)
 {
 	int r;
 
-	if ((r = syd_stat("/dev/sydbox/" syd_str(SYDBOX_API_VERSION))) == 0)
+	if ((r = syd_stat("/dev/sydbox/" syd_str(SYDBOX_API_VERSION))) == 0) {
 		*api = SYDBOX_API_VERSION;
-	else if (r < 0 && r != -ENOENT && r != -EINVAL)
+		return 0;
+	}
+	if (r < 0 && r != -ENOENT && r != -EINVAL)
 		return r;
-	if ((r = syd_stat("/dev/sydbox/2")) == 0)
+	if ((r = syd_stat("/dev/sydbox/2")) == 0) {
 		*api = 2;
-	else if (r < 0 && r != -ENOENT && r != -EINVAL)
+		return 0;
+	}
+	if (r < 0 && r != -ENOENT && r != -EINVAL)
 		return r;
-	if ((r = syd_stat("/dev/sydbox/1")) == 0)
+	if ((r = syd_stat("/dev/sydbox/1")) == 0) {
 		*api = 1;
-	else if (r < 0 && r != -ENOENT && r != -EINVAL)
+		return 0;
+	}
+	if (r < 0 && r != -ENOENT && r != -EINVAL)
 		return r;
-	else
-		*api = 0;
-
 	return 0;
 }
 
