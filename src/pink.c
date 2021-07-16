@@ -20,8 +20,9 @@
 #include <poll.h>
 #include <stdbool.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
@@ -627,6 +628,20 @@ ssize_t syd_write_data(syd_process_t *current, long addr, void *buf,
 	SYD_RETURN_IF_DEAD(current);
 
 	return process_vm_write(current, addr, buf, count);
+}
+
+SYD_GCC_ATTR((nonnull(1)))
+int syd_mprotect(void *ptr, size_t size, int prot)
+{
+	int r;
+
+	if ((r = mprotect(ptr, size, prot)) < 0)
+	{
+		r = -errno;
+		if (r != -EINVAL)
+			say_errno("mprotect(%p,%zu,%d)", ptr, size, prot);
+	}
+	return r;
 }
 
 int syd_rmem_alloc(syd_process_t *current)
