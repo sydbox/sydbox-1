@@ -24,7 +24,7 @@ sources:
 - https://git.sr.ht/~alip/sydbox
 tasks:
 - libseccomp: |
-    test -d || git clone https://github.com/seccomp/libseccomp.git && cd libseccomp && ./autogen.sh && ./configure --prefix=/usr --enable-static && make -j$(nproc) && sudo make -j install
+    test -d libseccomp || git clone https://github.com/seccomp/libseccomp.git && cd libseccomp && ./autogen.sh && ./configure --prefix=/usr --enable-static && make -j$(nproc) && sudo make -j install
 - init: |
     grep CONFIG_CROSS_MEMORY_ATTACH /proc/config || true
     zgrep CONFIG_CROSS_MEMORY_ATTACH /proc/config.gz || true
