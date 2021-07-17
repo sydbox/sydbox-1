@@ -3095,7 +3095,7 @@ int main(int argc, char **argv)
 
 	const char *env;
 	if ((env = secure_getenv(SYDBOX_DUMP_ENV)))
-		dump_set_fd(2);
+		dump_set_fd(STDERR_FILENO);
 #if 0
 	if ((env = secure_getenv(SYDBOX_CONFIG_ENV)))
 		config_parse_spec(env);
