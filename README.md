@@ -116,17 +116,37 @@ of SydB☮x: **bring easy, simple, flexible and powerful security to the
 Linux user!**
 
 The basic idea of SydB☮x is to run a command under certain restrictions.
-These restrictions define which system calls the command is permitted to run and which argument
+These are the seccomp restrictions which restricts system calls and SydB☮x'
+command line flags to create new namespaces (**containers**), change user,
+change group, add additional groups, change directory, chroot into directory,
+change the root mount, and various other daemon options (**cgroups support
+is work in progress.**). See the [SydB☮x manual page](https://sydbox.exherbo.org)
+for details.
+
+Run SydB☮x without arguments to drop into the SydB☮x shell which is running in a new
+pid, user, mount, net, time and cgroup namespace with its home under a temporary
+directory under »/tmp«, with read, write, exec and network sandboxing modes set to
+»deny« but with **unlocked sandbox status** which is insecure but allows
+the user to configure the SydB☮x using the `stat(2)` IPC using the special
+»/dev/sydb☮x« device node. See `syd ipc --help` for details. Use `syd ipc lock`
+to **switch to secure mode** under SydB☮x or run SydB☮x with `sydbox --lock`
+
+**Secure Computing Mode**, also known as
+»[Seccomp](https://en.wikipedia.org/wiki/Seccomp)« allows the user to define
+restrictions on which system calls the command is permitted to run and which argument
 values are permitted for the given system call. The restrictions may be applied via two ways.
-[seccomp-bpf](https://man7.org/linux/man-pages/man2/seccomp.2.html) can be used to apply
-simple Secure Computing user filters to run sandboxing fully on kernel space,
-and [seccomp-notify](https://git.kernel.org/linus/fb3c5386b382d4097476ce9647260fc89b34afdb) functionality can
+
+1. [seccomp-bpf](https://man7.org/linux/man-pages/man2/seccomp.2.html) can be used to apply
+simple Secure Computing user filters to run sandboxing fully on kernel space, and
+2. [seccomp-notify](https://git.kernel.org/linus/fb3c5386b382d4097476ce9647260fc89b34afdb) functionality can
 be used to run sandboxing on kernel space and fallback to user space to dereference pointer
-arguments of system calls -- which are one of
-[pathname](https://en.wikipedia.org/wiki/Path_(computing)),
-[UNIX socket address](https://en.wikipedia.org/wiki/Unix_domain_socket),
-[IPv4](https://en.wikipedia.org/wiki/IPv4) or
-[IPv6](https://en.wikipedia.org/wiki/IPv6)
+arguments of system calls,
+
+which are one of
+- [pathname](https://en.wikipedia.org/wiki/Path_(computing)),
+- [UNIX socket address](https://en.wikipedia.org/wiki/Unix_domain_socket),
+- [IPv4](https://en.wikipedia.org/wiki/IPv4) or
+- [IPv6](https://en.wikipedia.org/wiki/IPv6)
 network address -- and make dynamic decisions
 using `rsync`-like [wildcards](https://en.wikipedia.org/wiki/Wildcard_character)
 such as
@@ -314,7 +334,7 @@ Takes one extra argument which must be an __absolute__ path.
 
 #### Miscellaneous commands
 - `lock`: Lock magic commands. After calling this none of the
-  `sandbox` commands will work. You don't need to call this, see
+  »sandbox` commands will work. You don«t need to call this, see
   `exec_lock`.
 - `exec_lock`: Lock magic commands upon `execve()`.
 - `wait_eldest`: By default, sydbox waits for all traced processes
@@ -378,10 +398,10 @@ I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ uname -a
 I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ hostname
 sydb☮x
 I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ cat /etc/passwd
-{"id":5,"ts":1625053319,"pid":520579,"event":{"id":15,"name":"☮☮ps"},"sys":"open","syd":"open(`/etc/passwd')","comm":"cat","cmd":"cat /etc/passwd ","cwd":"/tmp/syd-2-1000-423516-FOBHci","ppid":423516,"tgid":520579,"proc":{"ppid":423517,"tgid":520579,"cwd":"/tmp/syd-2-1000-423516-FOBHci"}}
+{"id":5,"ts":1625053319,"pid":520579,"event":{"id":15,"name":"☮☮ps"},"sys":"open","syd":"open(»/etc/passwd«)","comm":"cat","cmd":"cat /etc/passwd ","cwd":"/tmp/syd-2-1000-423516-FOBHci","ppid":423516,"tgid":520579,"proc":{"ppid":423517,"tgid":520579,"cwd":"/tmp/syd-2-1000-423516-FOBHci"}}
 cat: /etc/passwd: Operation not permitted
 I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ cd /tmp
-{"id":9,"ts":1625053379,"pid":423517,"event":{"id":15,"name":"☮☮ps"},"sys":"chdir","syd":"chdir(`/tmp')","comm":"bash","cmd":"bash --rcfile /usr/share/sydbox/sydbox.bashrc -i ","cwd":"/tmp/syd-2-1000-423516-FOBHci","ppid":0,"tgid":423517,"proc":{"ppid":423516,"tgid":423517,"cwd":"/tmp/syd-2-1000-423516-FOBHci"}}
+{"id":9,"ts":1625053379,"pid":423517,"event":{"id":15,"name":"☮☮ps"},"sys":"chdir","syd":"chdir(»/tmp«)","comm":"bash","cmd":"bash --rcfile /usr/share/sydbox/sydbox.bashrc -i ","cwd":"/tmp/syd-2-1000-423516-FOBHci","ppid":0,"tgid":423517,"proc":{"ppid":423516,"tgid":423517,"cwd":"/tmp/syd-2-1000-423516-FOBHci"}}
 bash: cd: /tmp: Permission denied
 I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $
 ```
@@ -441,14 +461,14 @@ For instance if you see an access violation such as
 sydbox: 8< -- Access Violation! --
 sydbox: connect(-1, unix:/run/user/1000/pulse/native)
 sydbox: proc: AudioIPC Server[754336] (parent:0)
-sydbox: cwd: `/home/alip/src/exherbo/sydbox-1'
-sydbox: cmdline: `/usr/lib/firefox/firefox '
+sydbox: cwd: »/home/alip/src/exherbo/sydbox-1«
+sydbox: cmdline: »/usr/lib/firefox/firefox «
 sydbox: >8 --
 sydbox: 8< -- Access Violation! --
 sydbox: connect(-1, unix:/var/run/pulse/native)
 sydbox: proc: AudioIPC Server[754336] (parent:0)
-sydbox: cwd: `/home/alip/src/exherbo/sydbox-1'
-sydbox: cmdline: `/usr/lib/firefox/firefox '
+sydbox: cwd: »/home/alip/src/exherbo/sydbox-1«
+sydbox: cmdline: »/usr/lib/firefox/firefox «
 sydbox: >8 --
 ```
 
