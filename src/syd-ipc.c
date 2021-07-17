@@ -154,13 +154,21 @@ usage: "PACKAGE" [-hv] {command args...}\n\
 Commands:\n\
 api                        -- Display SydB☮x API Version\n\
 check                      -- Check the status of Magic IPC\n\
-status [--prompt]          -- Check the status of Sandboxing\n\
-                              With »--prompt«, print a short summary version\n\
-                              suitable for adding to the Shell Prompt\n\
+hash                       -- Get SydB☮x's calculation of XXH-64 hash\n\
+                              of the binary that executed the current process.\n\
+                              In addition print the SHA-1DC_PARTIALCOLL hash\n\
+                              of the SydB☮x Execute Process.\n\
+                              You may verify these hashes with\n\
+                              »syd hash -6« for XXH-64 and\n\
+                              »syd hash -s« for SHA-1DC_PARTIALCOLL\n\
+                              respectively.\n\
 lock                       -- Lock the SydB☮x Magic IPC\n\
 exec_lock                  -- Mark the SydB☮x Magic IPC\n\
                               pending to be locked on next process execution\n\
-exec {command args...}     -- Execute a process outside the Sandbox\n\
+status                     -- Check the status of Sandboxing\n\
+                              Print a short summary version,\n\
+                              suitable for adding to the Shell Prompt\n\
+exec {command args...}     -- Execute a process outside the Sandbox (DANGEROUS!)\n\
 kill {signal}              -- Send signal to the SydB☮x Execute Process\n\
 kill_add_match {wildcard}  -- Add wildcard to the list of Execute Path Kill Patterns\n\
 kill_rem_match {wildcard}  -- Remove wildcard from the list of Execute Path Kill Patterns\n\
