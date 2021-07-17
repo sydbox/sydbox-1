@@ -103,7 +103,7 @@ int syd_ipc_main(int argc, char *const*argv)
 			errno = -r;
 			die_errno("syd_ipc_status");
 		}
-		puts(status);
+		fputs(status, stdout);
 		return EXIT_SUCCESS;
 	} else if (!strcmp(cmd, "exec_lock")) {
 		if ((r = syd_ipc_exec_lock()) < 0) {
