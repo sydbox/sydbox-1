@@ -343,7 +343,9 @@ retry_vm_writev:
 			 * Invalidate FDs ASAP!
 			 */
 			proc_invalidate();
-		} else if (errno != EFAULT && nwritten < 0 && r == 0) {
+		} else if (errno == EFAULT) {
+			/* read only buffer, continue without warning */
+		} else if (nwritten < 0 && r == 0) {
 			int save_errno = errno;
 			say_errno("process_vm_write(%d)", current->pid);
 			errno = save_errno;
