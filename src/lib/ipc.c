@@ -107,7 +107,7 @@ int syd_ipc_status(char const **status)
 	if ((r = syd_ipc_check(&on)) < 0)
 		s[i++] = '_';
 	else
-		s[i++] = on ? '@' : '?';
+		s[i++] = on ? '?' : '@';
 
 	if ((r = syd_ipc_get_read(&on)) < 0)
 		s[i++] = '_';

@@ -410,9 +410,9 @@ I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $
 
 **Here is a screenshot:**
 
-<a href="https://dev.exherbo.org/~alip/images/syd-crypto.png">
+<a href="https://dev.exherbo.org/~alip/images/syd-shell.png">
   <img alt="SydB☮x:Shell"
-       src="https://dev.exherbo.org/~alip/images/syd-sh.png"
+       src="https://dev.exherbo.org/~alip/images/syd-shell.png"
        title="SydB☮x:Shell"
        style="border: 0px; margin: 0px"
   />
