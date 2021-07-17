@@ -3,7 +3,7 @@
  *
  * Useful utility macros
  *
- * Copyright (c) 2011, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2013, 2014, 2021 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
@@ -12,6 +12,7 @@
 #ifndef MACRO_H
 #define MACRO_H 1
 
+#include <inttypes.h>
 #include <stdbool.h>
 #include <string.h>
 #include "pink.h"
@@ -24,6 +25,9 @@
 
 #define PTR_TO_UINT(p)		((unsigned int) ((uintptr_t) (p)))
 #define UINT_TO_PTR(u)		((void*) ((uintptr_t) (u)))
+
+#define PTR_TO_UINT64(p)	((uint64_t) ((uintptr_t) (p)))
+#define UINT64_TO_PTR(u)	((void*) ((uintptr_t) (u)))
 
 #define PTR_TO_UINT32(p)	((uint32_t) ((uintptr_t) (p)))
 #define UINT32_TO_PTR(u)	((void*) ((uintptr_t) (u)))
