@@ -34,42 +34,12 @@ test_expect_success GREP_P 'invalid architecture action is kill ' '
 
 test_expect_success GREP_P 'default action is allow' '
     syd noexec &&
-    test_bpf_action default ALLOW
+    test_bpf_action default LOG
 '
 
 test_expect_success GREP_P 'default action is allow with --bpf-only' '
     syd -b noexec &&
-    test_bpf_action default ALLOW
-'
-
-test_expect_success GREP_P 'default action is permission denied with Level 1 restrictions' '
-    syd -b -y core/restrict/general:1 noexec &&
-    test_bpf_action default "ERRNO\(1\)"
-'
-
-test_expect_success GREP_P 'default action is permission denied with -b and Level 1 restrictions' '
-    syd -b -y core/restrict/general:1 noexec &&
-    test_bpf_action default "ERRNO\(1\)"
-'
-
-test_expect_success GREP_P 'default action is permission denied with Level 2 restrictions' '
-    syd -b -y core/restrict/general:2 noexec &&
-    test_bpf_action default "ERRNO\(1\)"
-'
-
-test_expect_success GREP_P 'default action is permission denied with -b and Level 2 restrictions' '
-    syd -b -y core/restrict/general:2 noexec &&
-    test_bpf_action default "ERRNO\(1\)"
-'
-
-test_expect_success GREP_P 'default action is permission denied with Level 3 restrictions' '
-    syd -b -y core/restrict/general:3 noexec &&
-    test_bpf_action default "ERRNO\(1\)"
-'
-
-test_expect_success GREP_P 'default action is permission denied with -b and Level 3 restrictions' '
-    syd -b -y core/restrict/general:3 noexec &&
-    test_bpf_action default "ERRNO\(1\)"
+    test_bpf_action default LOG
 '
 
 test_expect_success GREP_P 'default action is allow with read sandboxing bpf' '
@@ -79,7 +49,7 @@ test_expect_success GREP_P 'default action is allow with read sandboxing bpf' '
         -y core/sandbox/exec:allow \
         -y core/sandbox/network:allow \
         noexec &&
-    test_bpf_action default ALLOW
+    test_bpf_action default LOG
 '
 
 test_expect_success GREP_P 'default action is allow with write sandboxing bpf' '
@@ -89,7 +59,7 @@ test_expect_success GREP_P 'default action is allow with write sandboxing bpf' '
         -y core/sandbox/exec:allow \
         -y core/sandbox/network:allow \
         noexec &&
-    test_bpf_action default ALLOW
+    test_bpf_action default LOG
 '
 
 test_expect_success 'default action is allow with exec sandboxing bpf' '
@@ -99,7 +69,7 @@ test_expect_success 'default action is allow with exec sandboxing bpf' '
         -y core/sandbox/exec:bpf \
         -y core/sandbox/network:allow \
         noexec &&
-    test_bpf_action default ALLOW
+    test_bpf_action default LOG
 '
 
 test_expect_success 'default action is allow with network sandboxing bpf' '
@@ -109,7 +79,7 @@ test_expect_success 'default action is allow with network sandboxing bpf' '
         -y core/sandbox/exec:allow \
         -y core/sandbox/network:bpf \
         noexec &&
-    test_bpf_action default ALLOW
+    test_bpf_action default LOG
 '
 
 test_done
