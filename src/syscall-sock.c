@@ -23,6 +23,8 @@
 #include "dump.h"
 #include "proc.h"
 
+extern int syd_system_check_addr(syd_process_t *current, const char *hash);
+
 static uint32_t action_simple(int deny_errno, enum sandbox_mode mode)
 {
 	switch (mode) {
@@ -141,7 +143,10 @@ static int filter_connect_call(int sysnum, int deny_errno)
 static int sys_connect_call(syd_process_t *current, bool sockaddr_in_msghdr,
 			    long sysnum, unsigned arg_index, int deny_errno)
 {
+	int r;
 	syscall_info_t info;
+	struct pink_sockaddr *psa;
+	char ip[64];
 
 #define sub_connect(p, i)	((i) == 1 && \
 				 (p)->subcall == PINK_SOCKET_SUBCALL_CONNECT)
@@ -152,8 +157,8 @@ static int sys_connect_call(syd_process_t *current, bool sockaddr_in_msghdr,
 #define sub_sendto(p, i)	((i) == 4 && \
 				 (p)->subcall == PINK_SOCKET_SUBCALL_SENDTO)
 
-	if (sandbox_not_network(current))
-		return 0;
+	/* Default DenyList appears before Sandbox status check. */
+	psa = xmalloc(sizeof(struct pink_sockaddr));
 
 	init_sysinfo(&info);
 	if (sandbox_deny_network(current) || sydbox->permissive)
@@ -173,6 +178,55 @@ static int sys_connect_call(syd_process_t *current, bool sockaddr_in_msghdr,
 #undef sub_sendto
 	info.sockaddr_in_msghdr = sockaddr_in_msghdr;
 
+	if ((r = syd_read_socket_address(current, info.sockaddr_in_msghdr,
+					 info.arg_index, info.ret_fd,
+					 psa)) < 0) {
+		free(psa);
+		return r;
+	}
+
+	/* check for supported socket family. */
+	switch (psa->family) {
+	case AF_UNIX:
+		goto check_access;
+	case AF_INET:
+		inet_ntop(AF_INET, &psa->u.sa_in.sin_addr, ip, sizeof(ip));
+		break;
+	case AF_INET6:
+		inet_ntop(AF_INET6, &psa->u.sa6.sin6_addr, ip, sizeof(ip));
+		break;
+	case -1: /* NULL! */
+		/*
+		 * This can happen e.g. when sendto() is called with a socket in
+		 * connected state:
+		 *	sendto(sockfd, buf, len, flags, NULL, 0);
+		 * This is also equal to calling:
+		 *	send(sockfd, buf, len, flags);
+		 * and we do not sandbox sockets in connected state.
+		 *
+		 * TODO: ENOTCONN
+		 */
+		free(psa);
+		return 0;
+	default:
+		goto check_access;
+	}
+
+	/* If we're here we have an »ip« to check against
+	 * the Default Network Deny List. */
+	char hash[SYD_XXH64_HEXSZ+1];
+	uint64_t digest = syd_name_to_xxh64_hex(ip, strlen(ip), 1984, hash);
+	sayv("Calculated XXH hash %"PRIu64" of Ip Address »%s«", digest, ip);
+	if ((r = syd_system_check_addr(current, (const char *)&digest)) < 0) {
+		free(psa);
+		return r;
+	}
+check_access:
+	if (sandbox_not_network(current)) {
+		free(psa);
+		return 0;
+	}
+	info.cache_addr = psa;
 	return box_check_socket(current, &info);
 }
 

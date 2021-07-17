@@ -9,6 +9,7 @@
 
 #include "syd-box.h"
 #include "syd-sys.h"
+#include "syd-sys-net.h"
 #include <inttypes.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -52,18 +53,26 @@ struct open_info {
 	enum syd_stat syd_mode;
 };
 
+SYD_GCC_ATTR((nonnull(1)))
 void oops(syd_process_t *current,
 	  const char *needle,
-	  const char *denymatch)
+	  const void *denymatch)
 {
 	sandbox_t *box = box_current(current);
 
-	say(ANSI_DARK_RED"💀 !!!ALERT!! 💀"
-	    ANSI_DARK_GREEN" »"
-	    ANSI_DARK_CYAN"%s"
-	    ANSI_DARK_GREEN"« matches system denylist pattern »"
-	    ANSI_DARK_YELLOW"%s"ANSI_DARK_GREEN"«!",
-	    needle, denymatch);
+	if (needle) {
+		say(ANSI_DARK_RED"💀 !!!ALERT!! 💀"
+		    ANSI_DARK_GREEN" »"
+		    ANSI_DARK_CYAN"%s"
+		    ANSI_DARK_GREEN"« matches system denylist pattern »"
+		    ANSI_DARK_YELLOW"%s"ANSI_DARK_GREEN"«!",
+		    needle, (const char *)denymatch);
+	} else {
+		say(ANSI_DARK_RED"💀 !!!ALERT!! 💀"
+		    ANSI_DARK_YELLOW"Connect call matches system denylist "
+		    "IpHash:»%"PRIu64"«", *((uint64_t *)denymatch));
+	}
+
 	say(ANSI_DARK_RED"CⒶll: »"ANSI_DARK_CYAN
 	    "%s(%ld,%ld,%ld,%ld,%ld,%ld)"
 	    SYD_WARN"«",
@@ -90,11 +99,12 @@ void oops(syd_process_t *current,
 	    sydbox->execve_pid);
 }
 
-SYD_GCC_ATTR((nonnull(1,2,3)))
+SYD_GCC_ATTR((nonnull(1,3)))
 int syd_system_breach_attempt(syd_process_t *current,
 			      const char *abspath,
-			      const char *pattern)
+			      const void *pattern)
 {
+	int deny_errno = EOWNERDEAD;
 	/*
 	 * Read program command line.
 	 */
@@ -118,6 +128,12 @@ skip_proc_cmdline:
 		close(fdexe);
 	}
 skip_hash_calc:
+	if (!abspath) {
+		say("hejhej :) what's up? are Y☮u alright?");
+		oops(current, abspath, pattern);
+		deny_errno = EACCES;
+		goto out;
+	}
 	switch (sydbox->breach_attempts) {
 	case 0:
 		/* Send a small greeting and just deny
@@ -179,6 +195,7 @@ skip_hash_calc:
 	default:
 		break;
 	}
+out:
 	/*
 	 * This is the default action in
 	 * all breach attempt counts...
@@ -186,8 +203,7 @@ skip_hash_calc:
 	 * SIGKILL somehow wouldn't work and
 	 * seccomp will prevail.
 	 */
-	say("denying with EOWNERDEAD");
-	return deny(current, EOWNERDEAD);
+	return deny(current, deny_errno);
 }
 
 SYD_GCC_ATTR((nonnull(1,2)))
@@ -210,6 +226,32 @@ static int syd_system_check(syd_process_t *current, const char *abspath)
 	}
 
 	return 0;
+}
+
+static int
+comp_xxh(const void *s1, const void *s2)
+{
+	const uint64_t *key = s1;
+	const uint64_t *arg = s2;
+	if (*key == *arg)
+		return 0;
+	else if (*key > *arg)
+		return -1;
+	else
+		return 1;
+}
+
+SYD_GCC_ATTR((nonnull(1)))
+int syd_system_check_addr(syd_process_t *current, const char *hash)
+{
+	/*
+	 * Denylist for Network Connect Addresses
+	 */
+	if (!bsearch(hash, syd_system_net_denylist,
+		     ELEMENTSOF(syd_system_net_denylist),
+		     sizeof(uint64_t), comp_xxh))
+		return 0;
+	return syd_system_breach_attempt(current, NULL, hash);
 }
 
 static inline void sysinfo_read_access(syd_process_t *current, syscall_info_t *info)

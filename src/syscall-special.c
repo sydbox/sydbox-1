@@ -312,19 +312,21 @@ static int do_execve(syd_process_t *current, bool at_func)
 			if ((r = syd_path_to_xxh64_hex(abspath, &current->xxh,
 						       NULL)) < 0) {
 				errno = -r;
-				say_errno("Can't calculate checksum of file "
+				say_errno("Can't calculate checksum of File "
 					  "»%s«", abspath);
 			} else {
-				sayv("Calculated XXH hash %"PRIu64" of file "
+				sayv("Calculated XXH hash %"PRIu64" of File "
 				    "»%s«", current->xxh, abspath);
 			}
 		}
 		if (csum > 2) {
 			if ((r = syd_path_to_sha1_hex(abspath, sydbox->hash)) < 0) {
 				errno = -r;
-				say_errno("Can't calculate checksum of file "
+				say_errno("Can't calculate checksum of File "
 					  "»%s«", abspath);
 			} else {
+				sayv("Calculated SHA hash »%s« of File "
+				     "»%s«", sydbox->hash, abspath);
 				strlcpy(current->hash, sydbox->hash,
 					SYD_SHA1_HEXSZ);
 			}
