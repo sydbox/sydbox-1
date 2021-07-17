@@ -100,24 +100,26 @@ int syd_path_to_sha1_hex(const char *pathname, char *hex);
 #define SYD_XXH128_HEXSZ 32
 
 uint32_t syd_name_to_xxh32_hex(const void *restrict buffer, size_t size,
-			       uint32_t seed, char *hex);
-SYD_GCC_ATTR((nonnull(1,4)))
+			       uint32_t seed, char *hex)
+	SYD_GCC_ATTR((nonnull(1)));
 bool syd_vrfy_xxh32_hex(const void *restrict buffer, size_t size,
-			uint32_t seed, const char *hex);
-SYD_GCC_ATTR((nonnull(1)))
-int syd_file_to_xxh32_hex(FILE *file, uint32_t *digest, char *hex);
-SYD_GCC_ATTR((nonnull(1)))
-int syd_path_to_xxh32_hex(const char *restrict, uint32_t *digest, char *hex);
+			uint32_t seed, const char *hex)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_file_to_xxh32_hex(FILE *file, uint32_t *digest, char *hex)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_path_to_xxh32_hex(const char *restrict, uint32_t *digest, char *hex)
+	SYD_GCC_ATTR((nonnull(1)));
 
 uint64_t syd_name_to_xxh64_hex(const void *restrict buffer, size_t size,
-			       uint64_t seed, char *hex);
-SYD_GCC_ATTR((nonnull(1,4)))
+			       uint64_t seed, char *hex)
+	SYD_GCC_ATTR((nonnull(1)));
 bool syd_vrfy_xxh64_hex(const void *restrict buffer, size_t size,
-			uint64_t seed, const char *hex);
-SYD_GCC_ATTR((nonnull(1)))
-int syd_file_to_xxh64_hex(FILE *file, uint64_t *digest, char *hex);
-SYD_GCC_ATTR((nonnull(1)))
-int syd_path_to_xxh64_hex(const char *restrict pathname, uint64_t *digest, char *hex);
+			uint64_t seed, const char *hex)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_file_to_xxh64_hex(FILE *file, uint64_t *digest, char *hex)
+	SYD_GCC_ATTR((nonnull(1)));
+int syd_path_to_xxh64_hex(const char *restrict pathname, uint64_t *digest, char *hex)
+	SYD_GCC_ATTR((nonnull(1)));
 
 #if 0
 #TODO implement!

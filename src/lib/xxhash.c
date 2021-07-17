@@ -56,7 +56,7 @@ static unsigned syd_isLittleEndian(void)
 #endif
 #define SYD_HASH_SALT "1984GogoL1984"
 
-SYD_GCC_ATTR((nonnull(1,4)))
+SYD_GCC_ATTR((nonnull(1)))
 uint32_t syd_name_to_xxh32_hex(const void *restrict buffer, size_t size,
 			       uint32_t seed, char *hex)
 {
@@ -69,8 +69,10 @@ uint32_t syd_name_to_xxh32_hex(const void *restrict buffer, size_t size,
 
 	free(buffer_salted);
 
-	hex[0] = '\0';
-	sprintf(hex, "%" syd_str(SYD_XXH32_HEXSZ)"x", hash);
+	if (hex) {
+		hex[0] = '\0';
+		sprintf(hex, "%" syd_str(SYD_XXH32_HEXSZ)"x", hash);
+	}
 
 	return hash;
 }
@@ -98,7 +100,7 @@ bool syd_vrfy_xxh32_hex(const void *restrict buffer, size_t size,
 	}
 }
 
-SYD_GCC_ATTR((nonnull(1,4)))
+SYD_GCC_ATTR((nonnull(1)))
 uint64_t syd_name_to_xxh64_hex(const void *restrict buffer, size_t size,
 			       uint64_t seed, char *hex)
 {
@@ -111,8 +113,10 @@ uint64_t syd_name_to_xxh64_hex(const void *restrict buffer, size_t size,
 
 	free(buffer_salted);
 
-	hex[0] = '\0';
-	sprintf(hex, "%" syd_str(SYD_XXH64_HEXSZ)"lx", hash);
+	if (hex) {
+		hex[0] = '\0';
+		sprintf(hex, "%" syd_str(SYD_XXH64_HEXSZ)"lx", hash);
+	}
 
 	return hash;
 }
