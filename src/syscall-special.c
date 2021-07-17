@@ -619,8 +619,33 @@ static int write_uname(syd_process_t *current, unsigned int buf_index)
 	int r;
 	struct new_utsname buf;
 
+	if (os_release <= KERNEL_VERSION(2,4,0)) {
+		strlcpy(buf.release, FAKE_RELEASE,
+			sizeof(FAKE_RELEASE));
+	} else if (os_release <= KERNEL_VERSION(2,6,0)) {
+		strlcpy(buf.release, "2.6."FAKE_RELEASE,
+			sizeof("2.6."FAKE_RELEASE));
+	} else if (os_release <= KERNEL_VERSION(3,0,0)) {
+		strlcpy(buf.release, "3.5."FAKE_RELEASE,
+			sizeof("3.5."FAKE_RELEASE));
+	} else if (os_release <= KERNEL_VERSION(4,0,0)) {
+		strlcpy(buf.release, "4.0."FAKE_RELEASE,
+			sizeof("4.0."FAKE_RELEASE));
+	} else if (os_release <= KERNEL_VERSION(5,0,0)) {
+		strlcpy(buf.release, "5.0."FAKE_RELEASE,
+			sizeof("5.1."FAKE_RELEASE));
+	} else if (os_release <= KERNEL_VERSION(5,4,0)) {
+		strlcpy(buf.release, "5.4."FAKE_RELEASE,
+			sizeof("5.4."FAKE_RELEASE));
+	} else if (os_release <= KERNEL_VERSION(6,0,0)) {
+		strlcpy(buf.release, "5.42."FAKE_RELEASE,
+			sizeof("5.42."FAKE_RELEASE));
+	} else {
+		strlcpy(buf.release, "7.42."FAKE_RELEASE,
+			sizeof("7.42."FAKE_RELEASE));
+	}
+
 	strlcpy(buf.sysname, FAKE_SYSNAME, sizeof(FAKE_SYSNAME));
-	strlcpy(buf.release, FAKE_RELEASE, sizeof(FAKE_RELEASE));
 	strlcpy(buf.version, FAKE_VERSION, sizeof(FAKE_VERSION));
 	strlcpy(buf.nodename, FAKE_NODENAME, sizeof(FAKE_NODENAME));
 	strlcpy(buf.machine, FAKE_MACHINE, sizeof(FAKE_MACHINE));

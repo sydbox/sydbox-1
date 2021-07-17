@@ -780,6 +780,7 @@ typedef struct syscall_info syscall_info_t;
 
 /* Global variables */
 extern sydbox_t *sydbox;
+extern unsigned os_release;
 
 #if 0
 #if SYDBOX_HAVE_DUMP_BUILTIN

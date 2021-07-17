@@ -58,7 +58,7 @@
 #define switch_execve_flags(f) ((f) & ~(SYD_IN_CLONE|SYD_IN_EXECVE))
 
 sydbox_t *sydbox;
-static unsigned os_release;
+unsigned os_release;
 static uint8_t yama_ptrace_scope;
 static struct sigaction child_sa;
 
