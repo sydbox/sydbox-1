@@ -13,10 +13,17 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+SYD_GCC_ATTR((nonnull(1)))
 static inline int syd_stat(const char *path)
 {
 	struct stat buf;
 	return (stat(path, &buf) != 0) ? -errno : 0;
+}
+
+SYD_GCC_ATTR((nonnull(1,2)))
+static inline int syd_stat_buf(const char *path, struct stat *buf)
+{
+	return (stat(path, buf) != 0) ? -errno : 0;
 }
 
 SYD_GCC_ATTR((nonnull(1)))
@@ -69,6 +76,18 @@ int syd_ipc_lock(void)
 int syd_ipc_exec_lock(void)
 {
 	return syd_stat("/dev/sydbox/core/trace/magic_lock:exec");
+}
+
+SYD_GCC_ATTR((nonnull(1)))
+int syd_ipc_hash(uint64_t *digest)
+{
+	int r;
+	struct stat buf;
+
+	if ((r = syd_stat_buf("/dev/sydbox", &buf)) < 0)
+		return r;
+	*digest = (uint64_t)buf.st_mtime;
+	return 0;
 }
 
 static char syd_ipc_status_buf[SYD_IPC_STATUS_MAX];

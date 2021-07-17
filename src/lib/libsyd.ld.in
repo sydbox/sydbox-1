@@ -96,6 +96,7 @@ global:
 	syd_ipc_api;
 	syd_ipc_check;
 	syd_ipc_lock;
+	syd_ipc_hash;
 	syd_ipc_status;
 	syd_ipc_exec_lock;
 	syd_ipc_exec;
