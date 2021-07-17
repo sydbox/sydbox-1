@@ -45,16 +45,22 @@ static char hex_xxh32[SYD_XXH32_HEXSZ+1];
 /* Make xxHash interface similar to Sha1DcPartialColl:
  * We write wrappers to pass the second argument as Null.
  */
+static uint64_t xxh64_digest;
+static uint32_t xxh32_digest;
 #define f2h_sha1 syd_file_to_sha1_hex
 #define p2h_sha1 syd_path_to_sha1_hex
 SYD_GCC_ATTR((nonnull(1,2)))
-static inline int f2h_xxh64(FILE *f, char *h) { return syd_file_to_xxh64_hex(f, NULL, h); }
+static inline int f2h_xxh64(FILE *f, char *h) { return syd_file_to_xxh64_hex(f, \
+									     &xxh64_digest, h); }
 SYD_GCC_ATTR((nonnull(1,2)))
-static inline int p2h_xxh64(const char *p, char *h) { return syd_path_to_xxh64_hex(p, NULL, h); }
+static inline int p2h_xxh64(const char *p, char *h) { return syd_path_to_xxh64_hex(p, \
+										   &xxh64_digest, h); }
 SYD_GCC_ATTR((nonnull(1,2)))
-static inline int f2h_xxh32(FILE *f, char *h) { return syd_file_to_xxh32_hex(f, NULL, h); }
+static inline int f2h_xxh32(FILE *f, char *h) { return syd_file_to_xxh32_hex(f, \
+									     &xxh32_digest, h); }
 SYD_GCC_ATTR((nonnull(1,2)))
-static inline int p2h_xxh32(const char *p, char *h) { return syd_path_to_xxh32_hex(p, NULL, h); }
+static inline int p2h_xxh32(const char *p, char *h) { return syd_path_to_xxh32_hex(p, \
+										   &xxh32_digest, h); }
 
 static int (*f2h)(FILE *f, char *h);
 static int (*p2h)(const char *pathname, char *h);
@@ -460,12 +466,11 @@ int main(int argc, char **argv)
 	};
 
 	int options_index, r = 0;
-	bool opt_hash_arg = false, opt_secure = true, opt_verify = false, opt_xxh32 = false;
+	bool opt_secure = true, opt_verify = false, opt_xxh32 = false;
 	char *opt_check = NULL;
 	const char *home = secure_getenv("HOME");
-	char hash[syd_algo_name+1] = {0};
 	char line[LINE_MAX] = {0};
-	while ((opt = getopt_long(argc, argv, "hs63sC:H:vc:o:", long_options,
+	while ((opt = getopt_long(argc, argv, "hs63sC:vc:o:", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
 		case 'h':
@@ -488,9 +493,6 @@ int main(int argc, char **argv)
 			break;
 		case 'C':
 			opt_verify = true;
-			break;
-		case 'H':
-			opt_hash_arg = true;
 			break;
 		case 'c':
 			if (opt_check)
@@ -528,27 +530,18 @@ int main(int argc, char **argv)
 		break;
 	}
 
-	if (argc == optind && !opt_check) {
+	if (argc == optind && !opt_check && !opt_verify) {
 		f2h(stdin, hex);
 		say_checksum(NULL, "☮", hex, 0);
+		fprintf(stderr, "%"PRIu64" ☮\n", xxh64_digest);
+
 		return EXIT_SUCCESS;
 	}
 
 	/*
 	 * Quick Interface to calculate/verify the hash of an argument.
 	 */
-	if (opt_hash_arg) {
-		if (opt_xxh32)
-			syd_name_to_xxh32_hex(optarg, strlen(optarg),
-					      syd_seed_name,
-					      hash);
-		else
-			syd_name_to_xxh64_hex(optarg, strlen(optarg),
-					      syd_seed_name,
-					      hash);
-		printf("%s\n", hash);
-		return EXIT_SUCCESS;
-	} else if (opt_verify && fgets(line, LINE_MAX, stdin) != NULL) {
+	if (opt_verify && fgets(line, LINE_MAX, stdin) != NULL) {
 		char *c = strrchr(line, '\n');
 		if (c) *c = '\0';
 		bool rv = opt_xxh32
