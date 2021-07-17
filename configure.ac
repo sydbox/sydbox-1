@@ -799,6 +799,7 @@ AC_FUNC_STAT
 AC_CHECK_FUNCS(m4_flatten([
 	clone
 	__clone2
+	close_range
 	creat64
 	faccessat
 	fchmodat
