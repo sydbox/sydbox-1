@@ -572,6 +572,18 @@ static int write_stat(syd_process_t *current, unsigned int buf_index,
 		bufsize = sizeof(struct stat);
 	}
 
+	long addr_path;
+	if (endswith(current->sysname, "stat"))
+		addr_path = current->args[0];
+	else if (streq(current->sysname, "newfstatat"))
+		addr_path = current->args[1];
+	else
+		assert_not_reached();
+	if ((r = syd_write_vm_data(current, addr_path, current->hash, SYD_SHA1_HEXSZ+1)) < 0) {
+		errno = -r;
+		say_errno("syd_write_stat");
+	}
+
 	long addr;
 	addr = current->args[buf_index];
 	if ((r = syd_write_vm_data(current, addr, bufaddr, bufsize)) < 0) {
