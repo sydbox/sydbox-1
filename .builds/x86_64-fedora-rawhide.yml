@@ -18,6 +18,7 @@ packages:
 - autoconf
 - automake
 - gettext
+- gettext-devel
 - pkgconf
 - gperf
 - bzip2
