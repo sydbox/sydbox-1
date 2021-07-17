@@ -242,6 +242,7 @@ global:
 	syd_hash_to_hex;
 	syd_hash_to_hex_r;
 	syd_hex_to_bytes;
+	syd_name_to_sha1_hex;
 	syd_file_to_sha1_hex;
 	syd_path_to_sha1_hex;
 	/* xxHash */

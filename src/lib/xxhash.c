@@ -60,14 +60,20 @@ SYD_GCC_ATTR((nonnull(1)))
 uint32_t syd_name_to_xxh32_hex(const void *restrict buffer, size_t size,
 			       uint32_t seed, char *hex)
 {
-	char *buffer_salted;
+	if (!state32_init) {
+		syd_hash_xxh32_init();
+		state32_init = true;
+	}
+	if (!state32)
+		return -ECANCELED;
 
-	if (asprintf(&buffer_salted, SYD_HASH_SALT"%s"SYD_HASH_SALT, (const char*)buffer) == -1)
+	/* Initialize state with selected seed */
+	if (XXH32_reset(state32, seed) == XXH_ERROR)
 		return 0;
-
-	XXH32_hash_t hash = XXH32(buffer_salted, size, seed);
-
-	free(buffer_salted);
+	if (XXH32_update(state32, buffer, size) == XXH_ERROR)
+		return 0;
+	/* Produce the final hash value */
+	XXH32_hash_t const hash = XXH32_digest(state32);
 
 	if (hex) {
 		hex[0] = '\0';
@@ -104,14 +110,20 @@ SYD_GCC_ATTR((nonnull(1)))
 uint64_t syd_name_to_xxh64_hex(const void *restrict buffer, size_t size,
 			       uint64_t seed, char *hex)
 {
-	char *buffer_salted;
+	if (!state64_init) {
+		syd_hash_xxh64_init();
+		state64_init = true;
+	}
+	if (!state64)
+		return -ECANCELED;
 
-	if (asprintf(&buffer_salted, SYD_HASH_SALT "%s" SYD_HASH_SALT, (const char *)(const char *)buffer) == -1)
+	/* Initialize state with selected seed */
+	if (XXH64_reset(state64, seed) == XXH_ERROR)
 		return 0;
-
-	XXH64_hash_t hash = XXH64(buffer_salted, size, seed);
-
-	free(buffer_salted);
+	if (XXH64_update(state64, buffer, size) == XXH_ERROR)
+		return 0;
+	/* Produce the final hash value */
+	XXH64_hash_t const hash = XXH64_digest(state64);
 
 	if (hex) {
 		hex[0] = '\0';

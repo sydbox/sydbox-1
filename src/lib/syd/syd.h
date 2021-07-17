@@ -89,6 +89,8 @@ char *syd_hash_to_hex_r(char *buffer, const unsigned char *hash);
 char *syd_hash_to_hex(const unsigned char *hash); /* static buffer result! */
 int syd_hex_to_bytes(unsigned char *binary, const char *hex, size_t len);
 
+int syd_name_to_sha1_hex(const void *buffer, size_t size,
+			 char *hex) SYD_GCC_ATTR((nonnull(1)));
 int syd_file_to_sha1_hex(FILE *file, char *hex);
 int syd_path_to_sha1_hex(const char *pathname, char *hex);
 

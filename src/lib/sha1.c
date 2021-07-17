@@ -33,6 +33,24 @@ static char glob_hex[SYD_SHA1_HEXSZ + 1];
 #define SYD_PATH_TO_HEX_BUFSIZ (65536) /* better, sha1dc's default. */
 static char glob_buf[SYD_PATH_TO_HEX_BUFSIZ];
 
+SYD_GCC_ATTR((nonnull(1)))
+int syd_name_to_sha1_hex(const void *buffer, size_t size,
+			 char *hex)
+{
+	int r;
+
+	if (!syd_sha1_initialised) {
+		syd_hash_sha1_init();
+		syd_sha1_initialised = 1;
+	}
+
+	syd_hash_sha1_update(&glob_ctx, buffer, size);
+	r = syd_hash_sha1_final(&glob_ctx, glob_hash);
+	syd_strlcpy(hex, syd_hash_to_hex(glob_hash),
+		    SYD_SHA1_HEXSZ + 1);
+	return r;
+}
+
 int syd_file_to_sha1_hex(FILE *file, char *hex)
 {
 	if (!syd_sha1_initialised) {
