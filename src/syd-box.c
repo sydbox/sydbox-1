@@ -32,6 +32,7 @@
 #include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <sys/random.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
 #include <sys/ptrace.h>
@@ -297,10 +298,13 @@ static int seccomp_setup(void)
 
 	/* initialize Secure Computing */
 	bool using_arch_native = true; /* Loaded by libseccomp by default. */
+	/*
 	if (sydbox->config.restrict_general > 0)
 		sydbox->seccomp_action = SCMP_ACT_ERRNO(EPERM);
 	else
 		sydbox->seccomp_action = SCMP_ACT_ALLOW;
+	*/
+	sydbox->seccomp_action = SCMP_ACT_ERRNO(EOWNERDEAD);
 	if (!(sydbox->ctx = seccomp_init(sydbox->seccomp_action)))
 		die_errno("seccomp_init");
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_NNP, 1)) < 0)

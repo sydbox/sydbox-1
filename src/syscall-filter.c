@@ -22,6 +22,7 @@
 #include <sys/kd.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/random.h>
 #include <sys/vt.h>
 #include <asm/unistd.h>
 
@@ -40,6 +41,1447 @@
  * circumventing the sandbox by a TOCTOU attack is arguably less likely
  * with these system calls permitted.
  */
+static const int allow_list_level0[] = {
+#ifdef __SNR__llseek
+	SCMP_SYS(_llseek),
+#endif
+#ifdef __SNR__newselect
+	SCMP_SYS(_newselect),
+#endif
+#ifdef __SNR__sysctl
+	SCMP_SYS(_sysctl),
+#endif
+#ifdef __SNR_accept
+	SCMP_SYS(accept),
+#endif
+#ifdef __SNR_accept4
+	SCMP_SYS(accept4),
+#endif
+#ifdef __SNR_access
+	SCMP_SYS(access),
+#endif
+#ifdef __SNR_acct
+	SCMP_SYS(acct),
+#endif
+#if 0
+#ifdef __SNR_add_key
+	SCMP_SYS(add_key),
+#endif
+#ifdef __SNR_adjtimex
+	SCMP_SYS(adjtimex),
+#endif
+#ifdef __SNR_afs_syscall
+	SCMP_SYS(afs_syscall),
+#endif
+#endif
+#ifdef __SNR_alarm
+	SCMP_SYS(alarm),
+#endif
+#ifdef __SNR_arch_prctl
+	SCMP_SYS(arch_prctl),
+#endif
+#ifdef __SNR_arm_fadvise64_64
+	SCMP_SYS(arm_fadvise64_64),
+#endif
+#ifdef __SNR_arm_sync_file_range
+	SCMP_SYS(arm_sync_file_range),
+#endif
+#ifdef __SNR_bdflush
+	SCMP_SYS(bdflush),
+#endif
+#ifdef __SNR_bind
+	SCMP_SYS(bind),
+#endif
+#ifdef __SNR_bpf
+	SCMP_SYS(bpf),
+#endif
+#ifdef __SNR_break
+	SCMP_SYS(break),
+#endif
+#ifdef __SNR_breakpoint
+	SCMP_SYS(breakpoint),
+#endif
+#ifdef __SNR_brk
+	SCMP_SYS(brk),
+#endif
+#ifdef __SNR_cachectl
+	SCMP_SYS(cachectl),
+#endif
+#ifdef __SNR_cacheflush
+	SCMP_SYS(cacheflush),
+#endif
+#ifdef __SNR_capget
+	SCMP_SYS(capget),
+#endif
+#ifdef __SNR_capset
+	SCMP_SYS(capset),
+#endif
+#ifdef __SNR_chdir
+	SCMP_SYS(chdir),
+#endif
+#ifdef __SNR_chmod
+	SCMP_SYS(chmod),
+#endif
+#ifdef __SNR_chown
+	SCMP_SYS(chown),
+#endif
+#ifdef __SNR_chown32
+	SCMP_SYS(chown32),
+#endif
+#ifdef __SNR_chroot
+	SCMP_SYS(chroot),
+#endif
+#ifdef __SNR_clock_adjtime
+	SCMP_SYS(clock_adjtime),
+#endif
+#ifdef __SNR_clock_adjtime64
+	SCMP_SYS(clock_adjtime64),
+#endif
+#ifdef __SNR_clock_getres
+	SCMP_SYS(clock_getres),
+#endif
+#ifdef __SNR_clock_getres_time64
+	SCMP_SYS(clock_getres_time64),
+#endif
+#ifdef __SNR_clock_gettime
+	SCMP_SYS(clock_gettime),
+#endif
+#ifdef __SNR_clock_gettime64
+	SCMP_SYS(clock_gettime64),
+#endif
+#ifdef __SNR_clock_nanosleep
+	SCMP_SYS(clock_nanosleep),
+#endif
+#ifdef __SNR_clock_nanosleep_time64
+	SCMP_SYS(clock_nanosleep_time64),
+#endif
+#ifdef __SNR_clock_settime
+	SCMP_SYS(clock_settime),
+#endif
+#ifdef __SNR_clock_settime64
+	SCMP_SYS(clock_settime64),
+#endif
+#ifdef __SNR_clone
+	SCMP_SYS(clone),
+#endif
+#ifdef __SNR_clone3
+	SCMP_SYS(clone3),
+#endif
+#ifdef __SNR_close
+	SCMP_SYS(close),
+#endif
+#ifdef __SNR_connect
+	SCMP_SYS(connect),
+#endif
+#ifdef __SNR_copy_file_range
+	SCMP_SYS(copy_file_range),
+#endif
+#ifdef __SNR_creat
+	SCMP_SYS(creat),
+#endif
+#if 0
+#ifdef __SNR_create_module
+	SCMP_SYS(create_module),
+#endif
+#ifdef __SNR_delete_module
+	SCMP_SYS(delete_module),
+#endif
+#endif
+#ifdef __SNR_dup
+	SCMP_SYS(dup),
+#endif
+#ifdef __SNR_dup2
+	SCMP_SYS(dup2),
+#endif
+#ifdef __SNR_dup3
+	SCMP_SYS(dup3),
+#endif
+#ifdef __SNR_epoll_create
+	SCMP_SYS(epoll_create),
+#endif
+#ifdef __SNR_epoll_create1
+	SCMP_SYS(epoll_create1),
+#endif
+#ifdef __SNR_epoll_ctl
+	SCMP_SYS(epoll_ctl),
+#endif
+#ifdef __SNR_epoll_ctl_old
+	SCMP_SYS(epoll_ctl_old),
+#endif
+#ifdef __SNR_epoll_pwait
+	SCMP_SYS(epoll_pwait),
+#endif
+#ifdef __SNR_epoll_wait
+	SCMP_SYS(epoll_wait),
+#endif
+#ifdef __SNR_epoll_wait_old
+	SCMP_SYS(epoll_wait_old),
+#endif
+#ifdef __SNR_eventfd
+	SCMP_SYS(eventfd),
+#endif
+#ifdef __SNR_eventfd2
+	SCMP_SYS(eventfd2),
+#endif
+#ifdef __SNR_execve
+	SCMP_SYS(execve),
+#endif
+#ifdef __SNR_execveat
+	SCMP_SYS(execveat),
+#endif
+#ifdef __SNR_exit
+	SCMP_SYS(exit),
+#endif
+#ifdef __SNR_exit_group
+	SCMP_SYS(exit_group),
+#endif
+#ifdef __SNR_faccessat
+	SCMP_SYS(faccessat),
+#endif
+#ifdef __SNR_fadvise64
+	SCMP_SYS(fadvise64),
+#endif
+#ifdef __SNR_fadvise64_64
+	SCMP_SYS(fadvise64_64),
+#endif
+#ifdef __SNR_fallocate
+	SCMP_SYS(fallocate),
+#endif
+#ifdef __SNR_fanotify_init
+	SCMP_SYS(fanotify_init),
+#endif
+#ifdef __SNR_fanotify_mark
+	SCMP_SYS(fanotify_mark),
+#endif
+#ifdef __SNR_fchdir
+	SCMP_SYS(fchdir),
+#endif
+#ifdef __SNR_fchmod
+	SCMP_SYS(fchmod),
+#endif
+#ifdef __SNR_fchmodat
+	SCMP_SYS(fchmodat),
+#endif
+#ifdef __SNR_fchown
+	SCMP_SYS(fchown),
+#endif
+#ifdef __SNR_fchown32
+	SCMP_SYS(fchown32),
+#endif
+#ifdef __SNR_fchownat
+	SCMP_SYS(fchownat),
+#endif
+#ifdef __SNR_fcntl
+	SCMP_SYS(fcntl),
+#endif
+#ifdef __SNR_fcntl64
+	SCMP_SYS(fcntl64),
+#endif
+#ifdef __SNR_fdatasync
+	SCMP_SYS(fdatasync),
+#endif
+#ifdef __SNR_fgetxattr
+	SCMP_SYS(fgetxattr),
+#endif
+#ifdef __SNR_finit_module
+	SCMP_SYS(finit_module),
+#endif
+#ifdef __SNR_flistxattr
+	SCMP_SYS(flistxattr),
+#endif
+#ifdef __SNR_flock
+	SCMP_SYS(flock),
+#endif
+#ifdef __SNR_fork
+	SCMP_SYS(fork),
+#endif
+#ifdef __SNR_fremovexattr
+	SCMP_SYS(fremovexattr),
+#endif
+#ifdef __SNR_fsconfig
+	SCMP_SYS(fsconfig),
+#endif
+#ifdef __SNR_fsetxattr
+	SCMP_SYS(fsetxattr),
+#endif
+#ifdef __SNR_fsmount
+	SCMP_SYS(fsmount),
+#endif
+#ifdef __SNR_fsopen
+	SCMP_SYS(fsopen),
+#endif
+#ifdef __SNR_fspick
+	SCMP_SYS(fspick),
+#endif
+#ifdef __SNR_fstat
+	SCMP_SYS(fstat),
+#endif
+#ifdef __SNR_fstat64
+	SCMP_SYS(fstat64),
+#endif
+#ifdef __SNR_fstatat64
+	SCMP_SYS(fstatat64),
+#endif
+#ifdef __SNR_fstatfs
+	SCMP_SYS(fstatfs),
+#endif
+#ifdef __SNR_fstatfs64
+	SCMP_SYS(fstatfs64),
+#endif
+#ifdef __SNR_fsync
+	SCMP_SYS(fsync),
+#endif
+#ifdef __SNR_ftime
+	SCMP_SYS(ftime),
+#endif
+#ifdef __SNR_ftruncate
+	SCMP_SYS(ftruncate),
+#endif
+#ifdef __SNR_ftruncate64
+	SCMP_SYS(ftruncate64),
+#endif
+#ifdef __SNR_futex
+	SCMP_SYS(futex),
+#endif
+#ifdef __SNR_futex_time64
+	SCMP_SYS(futex_time64),
+#endif
+#ifdef __SNR_futimesat
+	SCMP_SYS(futimesat),
+#endif
+#if 0
+#ifdef __SNR_get_kernel_syms
+	SCMP_SYS(get_kernel_syms),
+#endif
+#endif
+#ifdef __SNR_get_mempolicy
+	SCMP_SYS(get_mempolicy),
+#endif
+#ifdef __SNR_get_robust_list
+	SCMP_SYS(get_robust_list),
+#endif
+#ifdef __SNR_get_thread_area
+	SCMP_SYS(get_thread_area),
+#endif
+#ifdef __SNR_get_tls
+	SCMP_SYS(get_tls),
+#endif
+#ifdef __SNR_getcpu
+	SCMP_SYS(getcpu),
+#endif
+#ifdef __SNR_getcwd
+	SCMP_SYS(getcwd),
+#endif
+#ifdef __SNR_getdents
+	SCMP_SYS(getdents),
+#endif
+#ifdef __SNR_getdents64
+	SCMP_SYS(getdents64),
+#endif
+#ifdef __SNR_getegid
+	SCMP_SYS(getegid),
+#endif
+#ifdef __SNR_getegid32
+	SCMP_SYS(getegid32),
+#endif
+#ifdef __SNR_geteuid
+	SCMP_SYS(geteuid),
+#endif
+#ifdef __SNR_geteuid32
+	SCMP_SYS(geteuid32),
+#endif
+#ifdef __SNR_getgid
+	SCMP_SYS(getgid),
+#endif
+#ifdef __SNR_getgid32
+	SCMP_SYS(getgid32),
+#endif
+#ifdef __SNR_getgroups
+	SCMP_SYS(getgroups),
+#endif
+#ifdef __SNR_getgroups32
+	SCMP_SYS(getgroups32),
+#endif
+#ifdef __SNR_getitimer
+	SCMP_SYS(getitimer),
+#endif
+#ifdef __SNR_getpeername
+	SCMP_SYS(getpeername),
+#endif
+#ifdef __SNR_getpgid
+	SCMP_SYS(getpgid),
+#endif
+#ifdef __SNR_getpgrp
+	SCMP_SYS(getpgrp),
+#endif
+#ifdef __SNR_getpid
+	SCMP_SYS(getpid),
+#endif
+#ifdef __SNR_getpmsg
+	SCMP_SYS(getpmsg),
+#endif
+#ifdef __SNR_getppid
+	SCMP_SYS(getppid),
+#endif
+#ifdef __SNR_getpriority
+	SCMP_SYS(getpriority),
+#endif
+#ifdef __SNR_getrandom
+	SCMP_SYS(getrandom),
+#endif
+#ifdef __SNR_getresgid
+	SCMP_SYS(getresgid),
+#endif
+#ifdef __SNR_getresgid32
+	SCMP_SYS(getresgid32),
+#endif
+#ifdef __SNR_getresuid
+	SCMP_SYS(getresuid),
+#endif
+#ifdef __SNR_getresuid32
+	SCMP_SYS(getresuid32),
+#endif
+#ifdef __SNR_getrlimit
+	SCMP_SYS(getrlimit),
+#endif
+#ifdef __SNR_getrusage
+	SCMP_SYS(getrusage),
+#endif
+#ifdef __SNR_getsid
+	SCMP_SYS(getsid),
+#endif
+#ifdef __SNR_getsockname
+	SCMP_SYS(getsockname),
+#endif
+#ifdef __SNR_getsockopt
+	SCMP_SYS(getsockopt),
+#endif
+#ifdef __SNR_gettid
+	SCMP_SYS(gettid),
+#endif
+#ifdef __SNR_gettimeofday
+	SCMP_SYS(gettimeofday),
+#endif
+#ifdef __SNR_getuid
+	SCMP_SYS(getuid),
+#endif
+#ifdef __SNR_getuid32
+	SCMP_SYS(getuid32),
+#endif
+#ifdef __SNR_getxattr
+	SCMP_SYS(getxattr),
+#endif
+#if 0
+#ifdef __SNR_gtty
+	SCMP_SYS(gtty),
+#endif
+#endif
+#ifdef __SNR_idle
+	SCMP_SYS(idle),
+#endif
+#if 0
+#ifdef __SNR_init_module
+	SCMP_SYS(init_module),
+#endif
+#endif
+#ifdef __SNR_inotify_add_watch
+	SCMP_SYS(inotify_add_watch),
+#endif
+#ifdef __SNR_inotify_init
+	SCMP_SYS(inotify_init),
+#endif
+#ifdef __SNR_inotify_init1
+	SCMP_SYS(inotify_init1),
+#endif
+#ifdef __SNR_inotify_rm_watch
+	SCMP_SYS(inotify_rm_watch),
+#endif
+#ifdef __SNR_io_cancel
+	SCMP_SYS(io_cancel),
+#endif
+#ifdef __SNR_io_destroy
+	SCMP_SYS(io_destroy),
+#endif
+#ifdef __SNR_io_getevents
+	SCMP_SYS(io_getevents),
+#endif
+#ifdef __SNR_io_pgetevents
+	SCMP_SYS(io_pgetevents),
+#endif
+#ifdef __SNR_io_pgetevents_time64
+	SCMP_SYS(io_pgetevents_time64),
+#endif
+#ifdef __SNR_io_setup
+	SCMP_SYS(io_setup),
+#endif
+#ifdef __SNR_io_submit
+	SCMP_SYS(io_submit),
+#endif
+#ifdef __SNR_io_uring_enter
+	SCMP_SYS(io_uring_enter),
+#endif
+#ifdef __SNR_io_uring_register
+	SCMP_SYS(io_uring_register),
+#endif
+#ifdef __SNR_io_uring_setup
+	SCMP_SYS(io_uring_setup),
+#endif
+#ifdef __SNR_ioctl
+	SCMP_SYS(ioctl),
+#endif
+#ifdef __SNR_ioperm
+	SCMP_SYS(ioperm),
+#endif
+#ifdef __SNR_iopl
+	SCMP_SYS(iopl),
+#endif
+#ifdef __SNR_ioprio_get
+	SCMP_SYS(ioprio_get),
+#endif
+#ifdef __SNR_ioprio_set
+	SCMP_SYS(ioprio_set),
+#endif
+#ifdef __SNR_ipc
+	SCMP_SYS(ipc),
+#endif
+#ifdef __SNR_kcmp
+	SCMP_SYS(kcmp),
+#endif
+#if 0
+#ifdef __SNR_kexec_file_load
+	SCMP_SYS(kexec_file_load),
+#endif
+#ifdef __SNR_kexec_load
+	SCMP_SYS(kexec_load),
+#endif
+#ifdef __SNR_keyctl
+	SCMP_SYS(keyctl),
+#endif
+#endif
+#ifdef __SNR_kill
+	SCMP_SYS(kill),
+#endif
+#ifdef __SNR_lchown
+	SCMP_SYS(lchown),
+#endif
+#ifdef __SNR_lchown32
+	SCMP_SYS(lchown32),
+#endif
+#ifdef __SNR_lgetxattr
+	SCMP_SYS(lgetxattr),
+#endif
+#ifdef __SNR_link
+	SCMP_SYS(link),
+#endif
+#ifdef __SNR_linkat
+	SCMP_SYS(linkat),
+#endif
+#ifdef __SNR_listen
+	SCMP_SYS(listen),
+#endif
+#ifdef __SNR_listxattr
+	SCMP_SYS(listxattr),
+#endif
+#ifdef __SNR_llistxattr
+	SCMP_SYS(llistxattr),
+#endif
+#ifdef __SNR_lock
+	SCMP_SYS(lock),
+#endif
+#ifdef __SNR_lookup_dcookie
+	SCMP_SYS(lookup_dcookie),
+#endif
+#ifdef __SNR_lremovexattr
+	SCMP_SYS(lremovexattr),
+#endif
+#ifdef __SNR_lseek
+	SCMP_SYS(lseek),
+#endif
+#ifdef __SNR_lsetxattr
+	SCMP_SYS(lsetxattr),
+#endif
+#ifdef __SNR_lstat
+	SCMP_SYS(lstat),
+#endif
+#ifdef __SNR_lstat64
+	SCMP_SYS(lstat64),
+#endif
+#ifdef __SNR_madvise
+	SCMP_SYS(madvise),
+#endif
+#ifdef __SNR_mbind
+	SCMP_SYS(mbind),
+#endif
+#ifdef __SNR_membarrier
+	SCMP_SYS(membarrier),
+#endif
+#ifdef __SNR_memfd_create
+	SCMP_SYS(memfd_create),
+#endif
+#ifdef __SNR_migrate_pages
+	SCMP_SYS(migrate_pages),
+#endif
+#ifdef __SNR_mincore
+	SCMP_SYS(mincore),
+#endif
+#ifdef __SNR_mkdir
+	SCMP_SYS(mkdir),
+#endif
+#ifdef __SNR_mkdirat
+	SCMP_SYS(mkdirat),
+#endif
+#ifdef __SNR_mknod
+	SCMP_SYS(mknod),
+#endif
+#ifdef __SNR_mknodat
+	SCMP_SYS(mknodat),
+#endif
+#ifdef __SNR_mlock
+	SCMP_SYS(mlock),
+#endif
+#ifdef __SNR_mlock2
+	SCMP_SYS(mlock2),
+#endif
+#ifdef __SNR_mlockall
+	SCMP_SYS(mlockall),
+#endif
+#ifdef __SNR_mmap
+	SCMP_SYS(mmap),
+#endif
+#ifdef __SNR_mmap2
+	SCMP_SYS(mmap2),
+#endif
+#ifdef __SNR_modify_ldt
+	SCMP_SYS(modify_ldt),
+#endif
+#ifdef __SNR_mount
+	SCMP_SYS(mount),
+#endif
+#ifdef __SNR_move_mount
+	SCMP_SYS(move_mount),
+#endif
+#ifdef __SNR_move_pages
+	SCMP_SYS(move_pages),
+#endif
+#ifdef __SNR_mprotect
+	SCMP_SYS(mprotect),
+#endif
+#ifdef __SNR_mpx
+	SCMP_SYS(mpx),
+#endif
+#ifdef __SNR_mq_getsetattr
+	SCMP_SYS(mq_getsetattr),
+#endif
+#ifdef __SNR_mq_notify
+	SCMP_SYS(mq_notify),
+#endif
+#ifdef __SNR_mq_open
+	SCMP_SYS(mq_open),
+#endif
+#ifdef __SNR_mq_timedreceive
+	SCMP_SYS(mq_timedreceive),
+#endif
+#ifdef __SNR_mq_timedreceive_time64
+	SCMP_SYS(mq_timedreceive_time64),
+#endif
+#ifdef __SNR_mq_timedsend
+	SCMP_SYS(mq_timedsend),
+#endif
+#ifdef __SNR_mq_timedsend_time64
+	SCMP_SYS(mq_timedsend_time64),
+#endif
+#ifdef __SNR_mq_unlink
+	SCMP_SYS(mq_unlink),
+#endif
+#ifdef __SNR_mremap
+	SCMP_SYS(mremap),
+#endif
+#ifdef __SNR_msgctl
+	SCMP_SYS(msgctl),
+#endif
+#ifdef __SNR_msgget
+	SCMP_SYS(msgget),
+#endif
+#ifdef __SNR_msgrcv
+	SCMP_SYS(msgrcv),
+#endif
+#ifdef __SNR_msgsnd
+	SCMP_SYS(msgsnd),
+#endif
+#ifdef __SNR_msync
+	SCMP_SYS(msync),
+#endif
+#ifdef __SNR_multiplexer
+	SCMP_SYS(multiplexer),
+#endif
+#ifdef __SNR_munlock
+	SCMP_SYS(munlock),
+#endif
+#ifdef __SNR_munlockall
+	SCMP_SYS(munlockall),
+#endif
+#ifdef __SNR_munmap
+	SCMP_SYS(munmap),
+#endif
+#ifdef __SNR_name_to_handle_at
+	SCMP_SYS(name_to_handle_at),
+#endif
+#ifdef __SNR_nanosleep
+	SCMP_SYS(nanosleep),
+#endif
+#ifdef __SNR_newfstatat
+	SCMP_SYS(newfstatat),
+#endif
+#if 0
+#ifdef __SNR_nfsservctl
+	SCMP_SYS(nfsservctl),
+#endif
+#endif
+#ifdef __SNR_nice
+	SCMP_SYS(nice),
+#endif
+#ifdef __SNR_oldfstat
+	SCMP_SYS(oldfstat),
+#endif
+#ifdef __SNR_oldlstat
+	SCMP_SYS(oldlstat),
+#endif
+#ifdef __SNR_oldolduname
+	SCMP_SYS(oldolduname),
+#endif
+#ifdef __SNR_oldstat
+	SCMP_SYS(oldstat),
+#endif
+#ifdef __SNR_olduname
+	SCMP_SYS(olduname),
+#endif
+#ifdef __SNR_oldwait4
+	SCMP_SYS(oldwait4),
+#endif
+#ifdef __SNR_open
+	SCMP_SYS(open),
+#endif
+#ifdef __SNR_open_by_handle_at
+	SCMP_SYS(open_by_handle_at),
+#endif
+#ifdef __SNR_open_tree
+	SCMP_SYS(open_tree),
+#endif
+#ifdef __SNR_openat
+	SCMP_SYS(openat),
+#endif
+#ifdef __SNR_pause
+	SCMP_SYS(pause),
+#endif
+#if 0
+#ifdef __SNR_pciconfig_iobase
+	SCMP_SYS(pciconfig_iobase),
+#endif
+#ifdef __SNR_pciconfig_read
+	SCMP_SYS(pciconfig_read),
+#endif
+#ifdef __SNR_pciconfig_write
+	SCMP_SYS(pciconfig_write),
+#endif
+#endif
+#ifdef __SNR_perf_event_open
+	SCMP_SYS(perf_event_open),
+#endif
+#ifdef __SNR_personality
+	SCMP_SYS(personality),
+#endif
+#ifdef __SNR_pidfd_open
+	SCMP_SYS(pidfd_open),
+#endif
+#ifdef __SNR_pidfd_send_signal
+	SCMP_SYS(pidfd_send_signal),
+#endif
+#ifdef __SNR_pipe
+	SCMP_SYS(pipe),
+#endif
+#ifdef __SNR_pipe2
+	SCMP_SYS(pipe2),
+#endif
+#ifdef __SNR_pivot_root
+	SCMP_SYS(pivot_root),
+#endif
+#ifdef __SNR_pkey_alloc
+	SCMP_SYS(pkey_alloc),
+#endif
+#ifdef __SNR_pkey_free
+	SCMP_SYS(pkey_free),
+#endif
+#ifdef __SNR_pkey_mprotect
+	SCMP_SYS(pkey_mprotect),
+#endif
+#ifdef __SNR_poll
+	SCMP_SYS(poll),
+#endif
+#ifdef __SNR_ppoll
+	SCMP_SYS(ppoll),
+#endif
+#ifdef __SNR_ppoll_time64
+	SCMP_SYS(ppoll_time64),
+#endif
+#ifdef __SNR_prctl
+	SCMP_SYS(prctl),
+#endif
+#ifdef __SNR_pread64
+	SCMP_SYS(pread64),
+#endif
+#ifdef __SNR_preadv
+	SCMP_SYS(preadv),
+#endif
+#ifdef __SNR_preadv2
+	SCMP_SYS(preadv2),
+#endif
+#ifdef __SNR_prlimit64
+	SCMP_SYS(prlimit64),
+#endif
+#if 0
+#ifdef __SNR_process_vm_readv
+	SCMP_SYS(process_vm_readv),
+#endif
+#ifdef __SNR_process_vm_writev
+	SCMP_SYS(process_vm_writev),
+#endif
+#ifdef __SNR_prof
+	SCMP_SYS(prof),
+#endif
+#endif
+#ifdef __SNR_profil
+	SCMP_SYS(profil),
+#endif
+#ifdef __SNR_pselect6
+	SCMP_SYS(pselect6),
+#endif
+#ifdef __SNR_pselect6_time64
+	SCMP_SYS(pselect6_time64),
+#endif
+#if 0
+#ifdef __SNR_ptrace
+	SCMP_SYS(ptrace),
+#endif
+#endif
+#ifdef __SNR_putpmsg
+	SCMP_SYS(putpmsg),
+#endif
+#ifdef __SNR_pwrite64
+	SCMP_SYS(pwrite64),
+#endif
+#ifdef __SNR_pwritev
+	SCMP_SYS(pwritev),
+#endif
+#ifdef __SNR_pwritev2
+	SCMP_SYS(pwritev2),
+#endif
+#if 0
+#ifdef __SNR_query_module
+	SCMP_SYS(query_module),
+#endif
+#endif
+#ifdef __SNR_quotactl
+	SCMP_SYS(quotactl),
+#endif
+#ifdef __SNR_read
+	SCMP_SYS(read),
+#endif
+#ifdef __SNR_readahead
+	SCMP_SYS(readahead),
+#endif
+#ifdef __SNR_readdir
+	SCMP_SYS(readdir),
+#endif
+#ifdef __SNR_readlink
+	SCMP_SYS(readlink),
+#endif
+#ifdef __SNR_readlinkat
+	SCMP_SYS(readlinkat),
+#endif
+#ifdef __SNR_readv
+	SCMP_SYS(readv),
+#endif
+#if 0
+#ifdef __SNR_reboot
+	SCMP_SYS(reboot),
+#endif
+#endif
+#ifdef __SNR_recv
+	SCMP_SYS(recv),
+#endif
+#ifdef __SNR_recvfrom
+	SCMP_SYS(recvfrom),
+#endif
+#ifdef __SNR_recvmmsg
+	SCMP_SYS(recvmmsg),
+#endif
+#ifdef __SNR_recvmmsg_time64
+	SCMP_SYS(recvmmsg_time64),
+#endif
+#ifdef __SNR_recvmsg
+	SCMP_SYS(recvmsg),
+#endif
+#ifdef __SNR_remap_file_pages
+	SCMP_SYS(remap_file_pages),
+#endif
+#ifdef __SNR_removexattr
+	SCMP_SYS(removexattr),
+#endif
+#ifdef __SNR_rename
+	SCMP_SYS(rename),
+#endif
+#ifdef __SNR_renameat
+	SCMP_SYS(renameat),
+#endif
+#ifdef __SNR_renameat2
+	SCMP_SYS(renameat2),
+#endif
+#if 0
+#ifdef __SNR_request_key
+	SCMP_SYS(request_key),
+#endif
+#endif
+#ifdef __SNR_restart_syscall
+	SCMP_SYS(restart_syscall),
+#endif
+#ifdef __SNR_riscv_flush_icache
+	SCMP_SYS(riscv_flush_icache),
+#endif
+#ifdef __SNR_rmdir
+	SCMP_SYS(rmdir),
+#endif
+#ifdef __SNR_rseq
+	SCMP_SYS(rseq),
+#endif
+#ifdef __SNR_rt_sigaction
+	SCMP_SYS(rt_sigaction),
+#endif
+#ifdef __SNR_rt_sigpending
+	SCMP_SYS(rt_sigpending),
+#endif
+#ifdef __SNR_rt_sigprocmask
+	SCMP_SYS(rt_sigprocmask),
+#endif
+#ifdef __SNR_rt_sigqueueinfo
+	SCMP_SYS(rt_sigqueueinfo),
+#endif
+#ifdef __SNR_rt_sigreturn
+	SCMP_SYS(rt_sigreturn),
+#endif
+#ifdef __SNR_rt_sigsuspend
+	SCMP_SYS(rt_sigsuspend),
+#endif
+#ifdef __SNR_rt_sigtimedwait
+	SCMP_SYS(rt_sigtimedwait),
+#endif
+#ifdef __SNR_rt_sigtimedwait_time64
+	SCMP_SYS(rt_sigtimedwait_time64),
+#endif
+#ifdef __SNR_rt_tgsigqueueinfo
+	SCMP_SYS(rt_tgsigqueueinfo),
+#endif
+#ifdef __SNR_rtas
+	SCMP_SYS(rtas),
+#endif
+#ifdef __SNR_s390_guarded_storage
+	SCMP_SYS(s390_guarded_storage),
+#endif
+#ifdef __SNR_s390_pci_mmio_read
+	SCMP_SYS(s390_pci_mmio_read),
+#endif
+#ifdef __SNR_s390_pci_mmio_write
+	SCMP_SYS(s390_pci_mmio_write),
+#endif
+#ifdef __SNR_s390_runtime_instr
+	SCMP_SYS(s390_runtime_instr),
+#endif
+#ifdef __SNR_s390_sthyi
+	SCMP_SYS(s390_sthyi),
+#endif
+#ifdef __SNR_sched_get_priority_max
+	SCMP_SYS(sched_get_priority_max),
+#endif
+#ifdef __SNR_sched_get_priority_min
+	SCMP_SYS(sched_get_priority_min),
+#endif
+#ifdef __SNR_sched_getaffinity
+	SCMP_SYS(sched_getaffinity),
+#endif
+#ifdef __SNR_sched_getattr
+	SCMP_SYS(sched_getattr),
+#endif
+#ifdef __SNR_sched_getparam
+	SCMP_SYS(sched_getparam),
+#endif
+#ifdef __SNR_sched_getscheduler
+	SCMP_SYS(sched_getscheduler),
+#endif
+#ifdef __SNR_sched_rr_get_interval
+	SCMP_SYS(sched_rr_get_interval),
+#endif
+#ifdef __SNR_sched_rr_get_interval_time64
+	SCMP_SYS(sched_rr_get_interval_time64),
+#endif
+#ifdef __SNR_sched_setaffinity
+	SCMP_SYS(sched_setaffinity),
+#endif
+#ifdef __SNR_sched_setattr
+	SCMP_SYS(sched_setattr),
+#endif
+#ifdef __SNR_sched_setparam
+	SCMP_SYS(sched_setparam),
+#endif
+#ifdef __SNR_sched_setscheduler
+	SCMP_SYS(sched_setscheduler),
+#endif
+#ifdef __SNR_sched_yield
+	SCMP_SYS(sched_yield),
+#endif
+#ifdef __SNR_seccomp
+	SCMP_SYS(seccomp),
+#endif
+#if 0
+#ifdef __SNR_security
+	SCMP_SYS(security),
+#endif
+#endif
+#ifdef __SNR_select
+	SCMP_SYS(select),
+#endif
+#ifdef __SNR_semctl
+	SCMP_SYS(semctl),
+#endif
+#ifdef __SNR_semget
+	SCMP_SYS(semget),
+#endif
+#ifdef __SNR_semop
+	SCMP_SYS(semop),
+#endif
+#ifdef __SNR_semtimedop
+	SCMP_SYS(semtimedop),
+#endif
+#ifdef __SNR_semtimedop_time64
+	SCMP_SYS(semtimedop_time64),
+#endif
+#ifdef __SNR_send
+	SCMP_SYS(send),
+#endif
+#ifdef __SNR_sendfile
+	SCMP_SYS(sendfile),
+#endif
+#ifdef __SNR_sendfile64
+	SCMP_SYS(sendfile64),
+#endif
+#ifdef __SNR_sendmmsg
+	SCMP_SYS(sendmmsg),
+#endif
+#ifdef __SNR_sendmsg
+	SCMP_SYS(sendmsg),
+#endif
+#ifdef __SNR_sendto
+	SCMP_SYS(sendto),
+#endif
+#ifdef __SNR_set_mempolicy
+	SCMP_SYS(set_mempolicy),
+#endif
+#ifdef __SNR_set_robust_list
+	SCMP_SYS(set_robust_list),
+#endif
+#ifdef __SNR_set_thread_area
+	SCMP_SYS(set_thread_area),
+#endif
+#ifdef __SNR_set_tid_address
+	SCMP_SYS(set_tid_address),
+#endif
+#ifdef __SNR_set_tls
+	SCMP_SYS(set_tls),
+#endif
+#ifdef __SNR_setdomainname
+	SCMP_SYS(setdomainname),
+#endif
+#ifdef __SNR_setfsgid
+	SCMP_SYS(setfsgid),
+#endif
+#ifdef __SNR_setfsgid32
+	SCMP_SYS(setfsgid32),
+#endif
+#ifdef __SNR_setfsuid
+	SCMP_SYS(setfsuid),
+#endif
+#ifdef __SNR_setfsuid32
+	SCMP_SYS(setfsuid32),
+#endif
+#ifdef __SNR_setgid
+	SCMP_SYS(setgid),
+#endif
+#ifdef __SNR_setgid32
+	SCMP_SYS(setgid32),
+#endif
+#ifdef __SNR_setgroups
+	SCMP_SYS(setgroups),
+#endif
+#ifdef __SNR_setgroups32
+	SCMP_SYS(setgroups32),
+#endif
+#ifdef __SNR_sethostname
+	SCMP_SYS(sethostname),
+#endif
+#ifdef __SNR_setitimer
+	SCMP_SYS(setitimer),
+#endif
+#ifdef __SNR_setns
+	SCMP_SYS(setns),
+#endif
+#ifdef __SNR_setpgid
+	SCMP_SYS(setpgid),
+#endif
+#ifdef __SNR_setpriority
+	SCMP_SYS(setpriority),
+#endif
+#ifdef __SNR_setregid
+	SCMP_SYS(setregid),
+#endif
+#ifdef __SNR_setregid32
+	SCMP_SYS(setregid32),
+#endif
+#ifdef __SNR_setresgid
+	SCMP_SYS(setresgid),
+#endif
+#ifdef __SNR_setresgid32
+	SCMP_SYS(setresgid32),
+#endif
+#ifdef __SNR_setresuid
+	SCMP_SYS(setresuid),
+#endif
+#ifdef __SNR_setresuid32
+	SCMP_SYS(setresuid32),
+#endif
+#ifdef __SNR_setreuid
+	SCMP_SYS(setreuid),
+#endif
+#ifdef __SNR_setreuid32
+	SCMP_SYS(setreuid32),
+#endif
+#ifdef __SNR_setrlimit
+	SCMP_SYS(setrlimit),
+#endif
+#ifdef __SNR_setsid
+	SCMP_SYS(setsid),
+#endif
+#ifdef __SNR_setsockopt
+	SCMP_SYS(setsockopt),
+#endif
+#ifdef __SNR_settimeofday
+	SCMP_SYS(settimeofday),
+#endif
+#ifdef __SNR_setuid
+	SCMP_SYS(setuid),
+#endif
+#ifdef __SNR_setuid32
+	SCMP_SYS(setuid32),
+#endif
+#ifdef __SNR_setxattr
+	SCMP_SYS(setxattr),
+#endif
+#ifdef __SNR_sgetmask
+	SCMP_SYS(sgetmask),
+#endif
+#ifdef __SNR_shmat
+	SCMP_SYS(shmat),
+#endif
+#ifdef __SNR_shmctl
+	SCMP_SYS(shmctl),
+#endif
+#ifdef __SNR_shmdt
+	SCMP_SYS(shmdt),
+#endif
+#ifdef __SNR_shmget
+	SCMP_SYS(shmget),
+#endif
+#ifdef __SNR_shutdown
+	SCMP_SYS(shutdown),
+#endif
+#ifdef __SNR_sigaction
+	SCMP_SYS(sigaction),
+#endif
+#ifdef __SNR_sigaltstack
+	SCMP_SYS(sigaltstack),
+#endif
+#ifdef __SNR_signal
+	SCMP_SYS(signal),
+#endif
+#ifdef __SNR_signalfd
+	SCMP_SYS(signalfd),
+#endif
+#ifdef __SNR_signalfd4
+	SCMP_SYS(signalfd4),
+#endif
+#ifdef __SNR_sigpending
+	SCMP_SYS(sigpending),
+#endif
+#ifdef __SNR_sigprocmask
+	SCMP_SYS(sigprocmask),
+#endif
+#ifdef __SNR_sigreturn
+	SCMP_SYS(sigreturn),
+#endif
+#ifdef __SNR_sigsuspend
+	SCMP_SYS(sigsuspend),
+#endif
+#ifdef __SNR_socket
+	SCMP_SYS(socket),
+#endif
+#ifdef __SNR_socketcall
+	SCMP_SYS(socketcall),
+#endif
+#ifdef __SNR_socketpair
+	SCMP_SYS(socketpair),
+#endif
+#ifdef __SNR_splice
+	SCMP_SYS(splice),
+#endif
+#ifdef __SNR_spu_create
+	SCMP_SYS(spu_create),
+#endif
+#ifdef __SNR_spu_run
+	SCMP_SYS(spu_run),
+#endif
+#ifdef __SNR_ssetmask
+	SCMP_SYS(ssetmask),
+#endif
+#ifdef __SNR_stat
+	SCMP_SYS(stat),
+#endif
+#ifdef __SNR_stat64
+	SCMP_SYS(stat64),
+#endif
+#ifdef __SNR_statfs
+	SCMP_SYS(statfs),
+#endif
+#ifdef __SNR_statfs64
+	SCMP_SYS(statfs64),
+#endif
+#ifdef __SNR_statx
+	SCMP_SYS(statx),
+#endif
+#ifdef __SNR_stime
+	SCMP_SYS(stime),
+#endif
+#ifdef __SNR_stty
+	SCMP_SYS(stty),
+#endif
+#ifdef __SNR_subpage_prot
+	SCMP_SYS(subpage_prot),
+#endif
+#ifdef __SNR_swapcontext
+	SCMP_SYS(swapcontext),
+#endif
+#if 0
+#ifdef __SNR_swapoff
+	SCMP_SYS(swapoff),
+#endif
+#ifdef __SNR_swapon
+	SCMP_SYS(swapon),
+#endif
+#endif
+#ifdef __SNR_switch_endian
+	SCMP_SYS(switch_endian),
+#endif
+#ifdef __SNR_symlink
+	SCMP_SYS(symlink),
+#endif
+#ifdef __SNR_symlinkat
+	SCMP_SYS(symlinkat),
+#endif
+#ifdef __SNR_sync
+	SCMP_SYS(sync),
+#endif
+#ifdef __SNR_sync_file_range
+	SCMP_SYS(sync_file_range),
+#endif
+#ifdef __SNR_sync_file_range2
+	SCMP_SYS(sync_file_range2),
+#endif
+#ifdef __SNR_syncfs
+	SCMP_SYS(syncfs),
+#endif
+#ifdef __SNR_sys_debug_setcontext
+	SCMP_SYS(sys_debug_setcontext),
+#endif
+#ifdef __SNR_syscall
+	SCMP_SYS(syscall),
+#endif
+#ifdef __SNR_sysfs
+	SCMP_SYS(sysfs),
+#endif
+#ifdef __SNR_sysinfo
+	SCMP_SYS(sysinfo),
+#endif
+#if 0
+#ifdef __SNR_syslog
+	SCMP_SYS(syslog),
+#endif
+#endif
+#ifdef __SNR_sysmips
+	SCMP_SYS(sysmips),
+#endif
+#ifdef __SNR_tee
+	SCMP_SYS(tee),
+#endif
+#ifdef __SNR_tgkill
+	SCMP_SYS(tgkill),
+#endif
+#ifdef __SNR_time
+	SCMP_SYS(time),
+#endif
+#ifdef __SNR_timer_create
+	SCMP_SYS(timer_create),
+#endif
+#ifdef __SNR_timer_delete
+	SCMP_SYS(timer_delete),
+#endif
+#ifdef __SNR_timer_getoverrun
+	SCMP_SYS(timer_getoverrun),
+#endif
+#ifdef __SNR_timer_gettime
+	SCMP_SYS(timer_gettime),
+#endif
+#ifdef __SNR_timer_gettime64
+	SCMP_SYS(timer_gettime64),
+#endif
+#ifdef __SNR_timer_settime
+	SCMP_SYS(timer_settime),
+#endif
+#ifdef __SNR_timer_settime64
+	SCMP_SYS(timer_settime64),
+#endif
+#ifdef __SNR_timerfd
+	SCMP_SYS(timerfd),
+#endif
+#ifdef __SNR_timerfd_create
+	SCMP_SYS(timerfd_create),
+#endif
+#ifdef __SNR_timerfd_gettime
+	SCMP_SYS(timerfd_gettime),
+#endif
+#ifdef __SNR_timerfd_gettime64
+	SCMP_SYS(timerfd_gettime64),
+#endif
+#ifdef __SNR_timerfd_settime
+	SCMP_SYS(timerfd_settime),
+#endif
+#ifdef __SNR_timerfd_settime64
+	SCMP_SYS(timerfd_settime64),
+#endif
+#ifdef __SNR_times
+	SCMP_SYS(times),
+#endif
+#ifdef __SNR_tkill
+	SCMP_SYS(tkill),
+#endif
+#ifdef __SNR_truncate
+	SCMP_SYS(truncate),
+#endif
+#ifdef __SNR_truncate64
+	SCMP_SYS(truncate64),
+#endif
+#ifdef __SNR_tuxcall
+	SCMP_SYS(tuxcall),
+#endif
+#ifdef __SNR_ugetrlimit
+	SCMP_SYS(ugetrlimit),
+#endif
+#ifdef __SNR_ulimit
+	SCMP_SYS(ulimit),
+#endif
+#ifdef __SNR_umask
+	SCMP_SYS(umask),
+#endif
+#ifdef __SNR_umount
+	SCMP_SYS(umount),
+#endif
+#ifdef __SNR_umount2
+	SCMP_SYS(umount2),
+#endif
+#ifdef __SNR_uname
+	SCMP_SYS(uname),
+#endif
+#ifdef __SNR_unlink
+	SCMP_SYS(unlink),
+#endif
+#ifdef __SNR_unlinkat
+	SCMP_SYS(unlinkat),
+#endif
+#ifdef __SNR_unshare
+	SCMP_SYS(unshare),
+#endif
+#ifdef __SNR_uselib
+	SCMP_SYS(uselib),
+#endif
+#ifdef __SNR_userfaultfd
+	SCMP_SYS(userfaultfd),
+#endif
+#ifdef __SNR_usr26
+	SCMP_SYS(usr26),
+#endif
+#ifdef __SNR_usr32
+	SCMP_SYS(usr32),
+#endif
+#ifdef __SNR_ustat
+	SCMP_SYS(ustat),
+#endif
+#ifdef __SNR_utime
+	SCMP_SYS(utime),
+#endif
+#ifdef __SNR_utimensat
+	SCMP_SYS(utimensat),
+#endif
+#ifdef __SNR_utimensat_time64
+	SCMP_SYS(utimensat_time64),
+#endif
+#ifdef __SNR_utimes
+	SCMP_SYS(utimes),
+#endif
+#ifdef __SNR_vfork
+	SCMP_SYS(vfork),
+#endif
+#ifdef __SNR_vhangup
+	SCMP_SYS(vhangup),
+#endif
+#if 0
+#ifdef __SNR_vm86
+	SCMP_SYS(vm86),
+#endif
+#ifdef __SNR_vm86old
+	SCMP_SYS(vm86old),
+#endif
+#endif
+#ifdef __SNR_vmsplice
+	SCMP_SYS(vmsplice),
+#endif
+#if 0
+#ifdef __SNR_vserver
+	SCMP_SYS(vserver),
+#endif
+#endif
+#ifdef __SNR_wait4
+	SCMP_SYS(wait4),
+#endif
+#ifdef __SNR_waitid
+	SCMP_SYS(waitid),
+#endif
+#ifdef __SNR_waitpid
+	SCMP_SYS(waitpid),
+#endif
+#ifdef __SNR_write
+	SCMP_SYS(write),
+#endif
+#ifdef __SNR_writev
+	SCMP_SYS(writev),
+#endif
+};
+
+#if 0
 /* See the individual rules at filter_general_level_0() function for further
  * limitations on set{u,g}id, process_vm_{read,write}v etc. or see the
  * manual page. **/
@@ -530,6 +1972,7 @@ static const int allow_list_level0[] = {
 	SCMP_SYS(write),
 	SCMP_SYS(writev),
 };
+#endif
 
 static const int filter_gen_level1[] = {
 	SCMP_SYS(close),
@@ -1197,6 +2640,7 @@ static int filter_general_level_0(void)
 {
 	int r;
 
+#if 0
 	/* Note, seccomp returns EEXIST if the rule already exists,
 	 * and EACCES when one attempts to add a rule with the same
 	 * action as the default action, ie the rule is redundant.
@@ -1206,7 +2650,11 @@ static int filter_general_level_0(void)
 	for (unsigned i = 0; i < ELEMENTSOF(deny_list_level0); i++) {
 		syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ECANCELED),
 			     deny_list_level0[i], 0);
-		if (r && r != -EEXIST && r != -EACCES && r != -EINVAL) {
+		if (r &&
+		    r != -EEXIST &&
+		    r != -EACCES &&
+		    r != -EINVAL &&
+		    r != -EFAULT) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(deny_list_level0[i],
 								SCMP_ARCH_NATIVE);
@@ -1220,10 +2668,15 @@ static int filter_general_level_0(void)
 			return r;
 		}
 	}
+#endif
 	for (unsigned i = 0; i < ELEMENTSOF(allow_list_level0); i++) {
 		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, allow_list_level0[i],
 			     0);
-		if (r && r != -EEXIST && r != -EACCES && r != -EINVAL) {
+		if (r &&
+		    r != -EEXIST &&
+		    r != -EACCES &&
+		    r != -EINVAL &&
+		    r != -EFAULT) {
 			char *name;
 			name = seccomp_syscall_resolve_num_arch(allow_list_level0[i],
 								SCMP_ARCH_NATIVE);
@@ -1572,6 +3025,16 @@ static int filter_general_level_0(void)
 				    SCMP_A0_32( SCMP_CMP_NE, user_gid, user_gid ));
 	}
 skip_restrict_id:
+
+	/* Restrict get_random and block GRND_RANDOM to prevent the sandboxed
+	 * process from exhausting the system entropy.
+	 * This is in place together with the default denylist that prevents
+	 * access to /dev/random.
+	 */
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL),
+			    SCMP_SYS(getrandom), 1,
+			    SCMP_A2_64( SCMP_CMP_MASKED_EQ,
+					GRND_RANDOM, GRND_RANDOM));
 
 	return 0;
 }
