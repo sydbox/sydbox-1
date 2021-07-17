@@ -1284,6 +1284,8 @@ static int sig_child(void)
 			    SYD_WARN,
 			    interruptcode, op,
 			    (unsigned long)interruptstat);
+		bury_process(p, true);
+		goto reap;
 	}
 
 	if (p && process_is_zombie(p->pid)) {
