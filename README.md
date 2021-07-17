@@ -2,10 +2,10 @@
 
 <table>
 <td>
-<a href="https://repology.org/project/awesome/versions">
-  <img alt="Repology:SydBox"
+<a href="https://repology.org/project/sydbox/versions">
+  <img alt="Repology:SydB☮x"
        src="https://repology.org/badge/version-for-repo/exherbo/sydbox.svg"
-       title="Repology:SydBox"
+       title="Repology:SydB☮x"
        style="border: 0px; margin: 0px"
   />
 </a></td>
@@ -21,23 +21,23 @@ discovered and consensus on a better solution is reached."
 </a></td>
 <td>
 <a href="https://scan.coverity.com/projects/sydbox">
-  <img alt="Coverity:SydBox"
+  <img alt="Coverity:SydB☮x"
        src="https://scan.coverity.com/projects/sydbox/badge.svg"
-       title="Coverity:SydBox"
+       title="Coverity:SydB☮x"
        style="border: 0px; margin: 0px"
   />
 </a></td>
 <td>
 <a href='https://coveralls.io/gitlab/sydbox/sydbox'>
-<img alt='Coverage:SydBox'
-     title='Coverage:SydBox'
+<img alt='Coverage:SydB☮x'
+     title='Coverage:SydB☮x'
      style='border: 0px; margin: 0px;'
      src='https://coveralls.io/repos/gitlab/sydbox/sydbox/badge.svg'
 /></a></td>
 <td>
 <a href='https://builds.sr.ht/~alip'>
-<img alt='Sourcehut.Builds:SydBox'
-     title='Sourcehut.Builds:SydBox'
+<img alt='Sourcehut.Builds:SydB☮x'
+     title='Sourcehut.Builds:SydB☮x'
      style='border: 0px; margin: 0px;'
      src='https://builds.sr.ht/~alip.svg'
 /></a></td>
@@ -55,15 +55,15 @@ discovered and consensus on a better solution is reached."
 <img
     src="https://dev.exherbo.org/~alip/images/sydbox160.png"
     alt="SydB☮x"
-    title="That cat's something I can't explain!"
+    title="ThⒶt cⒶt's s☮mething I cⒶn't explⒶin!"
     style="border: 0px; margin: 0px"
 /></a></td>
 <td>
 <a href="https://github.com/seccomp/libseccomp">
 <img
     src="https://dev.exherbo.org/~alip/images/libseccomp.png"
-    alt="LibSecComp"
-    title="LibSecComp"
+    alt="LibSecC☮mp"
+    title="LibSecC☮mp"
     style="border: 0px; margin: 0px"
 />
 </a></td>
@@ -71,8 +71,8 @@ discovered and consensus on a better solution is reached."
 <a href="https://www.exherbo.org/docs/gettingstarted.html">
 <img
     src="https://dev.exherbo.org/~alip/images/zebrapig.png"
-    alt="ZebraPig"
-    title="I AM ZEBRAPIG"
+    alt="ZebrⒶPig"
+    title="I AM ZEBRⒶPIG"
     style="border: 0px; margin: 0px"
 />
 </a></td>
@@ -104,7 +104,7 @@ access to filesystem and network resources.
 - sydB☮x written in portable C and licensed GPLv2.
 - libsyd is written in portable C and licensed GPLv2.
 
-SydB☮x requires **no root access** and
+SydB☮x requires **no r☮☮t Ⓐccess** and
 **no [ptrace](https://man7.org/linux/man-pages/man2/ptrace.2.html)** rights.
 They don't depend on any specific Linux kernel option to function.
 The only dependency is [libseccomp](https://github.com/seccomp/libseccomp)
@@ -407,6 +407,16 @@ I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ cd /tmp
 bash: cd: /tmp: Permission denied
 I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $
 ```
+
+**Here is a screenshot:**
+
+<a href="https://dev.exherbo.org/~alip/images/syd-crypto.png">
+  <img alt="SydB☮x:Shell"
+       src="https://dev.exherbo.org/~alip/images/syd-sh.png"
+       title="SydB☮x:Shell"
+       style="border: 0px; margin: 0px"
+  />
+</a>
 
 ## Example 2: Sandbox Firefox
 
