@@ -129,6 +129,14 @@ int syd_ipc_main(int argc, char *const*argv)
 			die_errno("syd_ipd_exec");
 		}
 		return EXIT_SUCCESS;
+	} else if (!strcmp(cmd, "kill")) {
+		if (!argc)
+			die("kill requires exactly one argument.");
+		if ((r = syd_ipc_kill(atoi(argv[0]))) < 0) {
+			errno = -r;
+			die_errno("syd_ipc_kill");
+		}
+		return EXIT_SUCCESS;
 	}
 
 

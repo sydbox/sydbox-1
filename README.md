@@ -126,7 +126,8 @@ for details.
 Run SydB☮x without arguments to drop into the SydB☮x shell which is running in a new
 pid, user, mount, net, time and cgroup namespace with its home under a temporary
 directory under »/tmp«, with read, write, exec and network sandboxing modes set to
-»deny« but with **unlocked sandbox status** which is insecure but allows
+»deny« but with **unlocked sandbox status** which is insecure, try
+`syd ipc kill 9` as an example on why, but allows
 the user to configure the SydB☮x using the `stat(2)` IPC using the special
 »/dev/sydb☮x« device node. See `syd ipc --help` for details. Use `syd ipc lock`
 to **switch to secure mode** under SydB☮x or run SydB☮x with `sydbox --lock`.
