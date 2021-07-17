@@ -775,6 +775,7 @@ struct syscall_info {
 	/* Cached data (to be reused by another sandboxing (read,write etc.) */
 	const char *cache_abspath;
 	const struct stat *cache_statbuf;
+	struct pink_sockaddr *cache_addr;
 };
 typedef struct syscall_info syscall_info_t;
 

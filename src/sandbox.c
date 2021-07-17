@@ -696,7 +696,15 @@ int box_check_socket(syd_process_t *current, syscall_info_t *info)
 
 	pid = current->pid;
 	abspath = NULL;
-	psa = xmalloc(sizeof(struct pink_sockaddr));
+
+	/* Step 0: check for cached sockaddr from a previous check */
+	if (!info->cache_addr) {
+		psa = xmalloc(sizeof(struct pink_sockaddr));
+	} else {
+		/* use cached sockaddr */
+		psa = (struct pink_sockaddr *)info->cache_addr;
+		goto check_access;
+	}
 
 	if ((r = syd_read_socket_address(current, info->sockaddr_in_msghdr,
 					 info->arg_index, info->ret_fd,
@@ -723,6 +731,17 @@ int box_check_socket(syd_process_t *current, syscall_info_t *info)
 		r = 0;
 		goto out;
 	default:
+		break;
+	}
+
+	const aclq_t *access_lists[2];
+check_access:
+	access_lists[0] = info->access_list;
+	access_lists[1] = info->access_list_global;
+
+	if (psa->family != AF_UNIX &&
+	    psa->family != AF_INET &&
+	    psa->family != AF_INET6) {
 		if (sydbox->config.allowlist_unsupported_socket_families) {
 			/* allow unsupported socket family */
 			goto out;
@@ -730,10 +749,6 @@ int box_check_socket(syd_process_t *current, syscall_info_t *info)
 		r = deny(current, EAFNOSUPPORT);
 		goto report;
 	}
-
-	const aclq_t *access_lists[2];
-	access_lists[0] = info->access_list;
-	access_lists[1] = info->access_list_global;
 
 	if (psa->family == AF_UNIX && !path_abstract(psa->u.sa_un.sun_path)) {
 		/* Non-abstract UNIX socket, resolve the path. */
