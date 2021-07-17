@@ -280,7 +280,6 @@ static void dump_process(pid_t pid)
 
 static int dump_init(enum dump what)
 {
-	int fd_orig = -1;
 	const char *pathname;
 
 	if (!nodump)
@@ -288,9 +287,8 @@ static int dump_init(enum dump what)
 	if (nodump > 0)
 		return 0;
 
-	if (what == DUMP_OOPS && fd <= 0) {
-		fd_orig = fd;
-		fd = STDERR_FILENO;
+	if (what == DUMP_OOPS) {
+		; /* continue; */
 	} else if (fd == -3) {
 		return -EBADF; /* Early initialisation, nothing to do. */
 	} else if (fd == -42) {
@@ -312,17 +310,14 @@ static int dump_init(enum dump what)
 	}
 	if (fp)
 		fclose(fp);
-	fp = fdopen(fd, "a");
-	if (!fp)
-		die_errno("fdopen_dump");
+	if (fd >= 0) {
+		fp = fdopen(fd, "a");
+		if (!fp)
+			die_errno("fdopen_dump");
+	}
 	if (fd > STDERR_FILENO &&
 	    fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
 		die_errno("fcntl");
-	if (what == DUMP_OOPS && fd_orig == STDERR_FILENO) {
-		fd = fd_orig;
-		fclose(fp);
-		fp = fdopen(fd, "a");
-	}
 	nodump = 1;
 
 	return 0;
@@ -333,8 +328,6 @@ inline bool dump_enabled(void) {
 		return false;
 	if (fd >= 0)
 		return true;
-	if (nodump > 0)
-		return false;
 	if (fd <= 0 && fd != -42)
 		return false;
 	return true;
