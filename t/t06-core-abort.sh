@@ -21,7 +21,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is termina
     test_expect_code 131 syd -- syd-abort 3
 '
 
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated with SIGILL' '
+test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if tracee is terminated with SIGILL' '
     test_expect_code 132 syd -- syd-abort 4
 '
 
@@ -57,7 +57,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked
     test_expect_code 131 syd -- syd-abort-static 3
 '
 
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked tracee is terminated with SIGILL' '
+test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked tracee is terminated with SIGILL' '
     test_expect_code 132 syd -- syd-abort-static 4
 '
 
@@ -129,7 +129,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked
     test_expect_code 131 syd -- syd-abort-fork-static 3
 '
 
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked forking tracee is terminated with SIGILL' '
+test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if statically linked forking tracee is terminated with SIGILL' '
     test_expect_code 132 syd -- syd-abort-fork-static 4
 '
 
@@ -165,7 +165,7 @@ test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if multithreaded tra
     test_expect_code 131 syd -- syd-abort-pthread 3
 '
 
-test_expect_success NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if multithreaded tracee is terminated with SIGILL' '
+test_expect_failure NOT_ON_BUILD_HOST 'return 128 + $SIGNUM if multithreaded tracee is terminated with SIGILL' '
     test_expect_code 132 syd -- syd-abort-pthread 4
 '
 
