@@ -41,6 +41,84 @@
  * circumventing the sandbox by a TOCTOU attack is arguably less likely
  * with these system calls permitted.
  */
+static const int deny_list_level0[] = {
+#ifdef __SNR_add_key
+	SCMP_SYS(add_key),
+#endif
+#ifdef __SNR_adjtimex
+	SCMP_SYS(adjtimex),
+#endif
+#ifdef __SNR_afs_syscall
+	SCMP_SYS(afs_syscall),
+#endif
+#ifdef __SNR_create_module
+	SCMP_SYS(create_module),
+#endif
+#ifdef __SNR_delete_module
+	SCMP_SYS(delete_module),
+#endif
+#ifdef __SNR_get_kernel_syms
+	SCMP_SYS(get_kernel_syms),
+#endif
+#ifdef __SNR_kexec_file_load
+	SCMP_SYS(kexec_file_load),
+#endif
+#ifdef __SNR_kexec_load
+	SCMP_SYS(kexec_load),
+#endif
+#ifdef __SNR_keyctl
+	SCMP_SYS(keyctl),
+#endif
+#ifdef __SNR_init_module
+	SCMP_SYS(init_module),
+#endif
+#ifdef __SNR_pciconfig_iobase
+	SCMP_SYS(pciconfig_iobase),
+#endif
+#ifdef __SNR_pciconfig_read
+	SCMP_SYS(pciconfig_read),
+#endif
+#ifdef __SNR_pciconfig_write
+	SCMP_SYS(pciconfig_write),
+#endif
+#ifdef __SNR_pidfd_getfd
+	SCMP_SYS(pidfd_getfd
+#endif
+#ifdef __SNR_nfsservctl
+	SCMP_SYS(nfsservctl),
+#endif
+#ifdef __SNR_process_madvise
+	SCMP_SYS(process_madvise)
+#endif
+#ifdef __SNR_process_vm_readv
+	SCMP_SYS(process_vm_readv),
+#endif
+#ifdef __SNR_process_vm_writev
+	SCMP_SYS(process_vm_writev),
+#endif
+#ifdef __SNR_prof
+	SCMP_SYS(prof),
+#endif
+#ifdef __SNR_ptrace
+	SCMP_SYS(ptrace),
+#endif
+#ifdef __SNR_security
+	SCMP_SYS(security),
+#endif
+#ifdef __SNR_syslog
+	SCMP_SYS(syslog),
+#endif
+#ifdef __SNR_vm86
+	SCMP_SYS(vm86),
+#endif
+#ifdef __SNR_vm86old
+	SCMP_SYS(vm86old),
+#endif
+#ifdef __SNR_vserver
+	SCMP_SYS(vserver),
+#endif
+};
+
 static const int allow_list_level0[] = {
 #ifdef __SNR__llseek
 	SCMP_SYS(_llseek),
@@ -51,6 +129,7 @@ static const int allow_list_level0[] = {
 #ifdef __SNR__sysctl
 	SCMP_SYS(_sysctl),
 #endif
+#if 0
 #ifdef __SNR_accept
 	SCMP_SYS(accept),
 #endif
@@ -60,19 +139,9 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_access
 	SCMP_SYS(access),
 #endif
+#endif
 #ifdef __SNR_acct
 	SCMP_SYS(acct),
-#endif
-#if 0
-#ifdef __SNR_add_key
-	SCMP_SYS(add_key),
-#endif
-#ifdef __SNR_adjtimex
-	SCMP_SYS(adjtimex),
-#endif
-#ifdef __SNR_afs_syscall
-	SCMP_SYS(afs_syscall),
-#endif
 #endif
 #ifdef __SNR_alarm
 	SCMP_SYS(alarm),
@@ -89,8 +158,10 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_bdflush
 	SCMP_SYS(bdflush),
 #endif
+#if 0
 #ifdef __SNR_bind
 	SCMP_SYS(bind),
+#endif
 #endif
 #ifdef __SNR_bpf
 	SCMP_SYS(bpf),
@@ -116,6 +187,7 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_capset
 	SCMP_SYS(capset),
 #endif
+#if 0
 #ifdef __SNR_chdir
 	SCMP_SYS(chdir),
 #endif
@@ -127,6 +199,7 @@ static const int allow_list_level0[] = {
 #endif
 #ifdef __SNR_chown32
 	SCMP_SYS(chown32),
+#endif
 #endif
 #ifdef __SNR_chroot
 	SCMP_SYS(chroot),
@@ -161,30 +234,28 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_clock_settime64
 	SCMP_SYS(clock_settime64),
 #endif
+#if 0
 #ifdef __SNR_clone
 	SCMP_SYS(clone),
 #endif
 #ifdef __SNR_clone3
 	SCMP_SYS(clone3),
 #endif
+#endif
 #ifdef __SNR_close
 	SCMP_SYS(close),
 #endif
+#if 0
 #ifdef __SNR_connect
 	SCMP_SYS(connect),
+#endif
 #endif
 #ifdef __SNR_copy_file_range
 	SCMP_SYS(copy_file_range),
 #endif
+#if 0
 #ifdef __SNR_creat
 	SCMP_SYS(creat),
-#endif
-#if 0
-#ifdef __SNR_create_module
-	SCMP_SYS(create_module),
-#endif
-#ifdef __SNR_delete_module
-	SCMP_SYS(delete_module),
 #endif
 #endif
 #ifdef __SNR_dup
@@ -223,11 +294,13 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_eventfd2
 	SCMP_SYS(eventfd2),
 #endif
+#if 0
 #ifdef __SNR_execve
 	SCMP_SYS(execve),
 #endif
 #ifdef __SNR_execveat
 	SCMP_SYS(execveat),
+#endif
 #endif
 #ifdef __SNR_exit
 	SCMP_SYS(exit),
@@ -235,8 +308,10 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_exit_group
 	SCMP_SYS(exit_group),
 #endif
+#if 0
 #ifdef __SNR_faccessat
 	SCMP_SYS(faccessat),
+#endif
 #endif
 #ifdef __SNR_fadvise64
 	SCMP_SYS(fadvise64),
@@ -253,6 +328,7 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_fanotify_mark
 	SCMP_SYS(fanotify_mark),
 #endif
+#if 0
 #ifdef __SNR_fchdir
 	SCMP_SYS(fchdir),
 #endif
@@ -270,6 +346,7 @@ static const int allow_list_level0[] = {
 #endif
 #ifdef __SNR_fchownat
 	SCMP_SYS(fchownat),
+#endif
 #endif
 #ifdef __SNR_fcntl
 	SCMP_SYS(fcntl),
@@ -292,8 +369,10 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_flock
 	SCMP_SYS(flock),
 #endif
+#if 0
 #ifdef __SNR_fork
 	SCMP_SYS(fork),
+#endif
 #endif
 #ifdef __SNR_fremovexattr
 	SCMP_SYS(fremovexattr),
@@ -346,12 +425,9 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_futex_time64
 	SCMP_SYS(futex_time64),
 #endif
+#if 0
 #ifdef __SNR_futimesat
 	SCMP_SYS(futimesat),
-#endif
-#if 0
-#ifdef __SNR_get_kernel_syms
-	SCMP_SYS(get_kernel_syms),
 #endif
 #endif
 #ifdef __SNR_get_mempolicy
@@ -372,11 +448,13 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_getcwd
 	SCMP_SYS(getcwd),
 #endif
+#if 0
 #ifdef __SNR_getdents
 	SCMP_SYS(getdents),
 #endif
 #ifdef __SNR_getdents64
 	SCMP_SYS(getdents64),
+#endif
 #endif
 #ifdef __SNR_getegid
 	SCMP_SYS(getegid),
@@ -426,8 +504,10 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_getpriority
 	SCMP_SYS(getpriority),
 #endif
+#if 0
 #ifdef __SNR_getrandom
 	SCMP_SYS(getrandom),
+#endif
 #endif
 #ifdef __SNR_getresgid
 	SCMP_SYS(getresgid),
@@ -450,8 +530,10 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_getsid
 	SCMP_SYS(getsid),
 #endif
+#if 0
 #ifdef __SNR_getsockname
 	SCMP_SYS(getsockname),
+#endif
 #endif
 #ifdef __SNR_getsockopt
 	SCMP_SYS(getsockopt),
@@ -526,8 +608,10 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_io_uring_setup
 	SCMP_SYS(io_uring_setup),
 #endif
+#if 0
 #ifdef __SNR_ioctl
 	SCMP_SYS(ioctl),
+#endif
 #endif
 #ifdef __SNR_ioperm
 	SCMP_SYS(ioperm),
@@ -548,28 +632,22 @@ static const int allow_list_level0[] = {
 	SCMP_SYS(kcmp),
 #endif
 #if 0
-#ifdef __SNR_kexec_file_load
-	SCMP_SYS(kexec_file_load),
-#endif
-#ifdef __SNR_kexec_load
-	SCMP_SYS(kexec_load),
-#endif
-#ifdef __SNR_keyctl
-	SCMP_SYS(keyctl),
-#endif
-#endif
 #ifdef __SNR_kill
 	SCMP_SYS(kill),
 #endif
+#endif
+#if 0
 #ifdef __SNR_lchown
 	SCMP_SYS(lchown),
 #endif
 #ifdef __SNR_lchown32
 	SCMP_SYS(lchown32),
 #endif
+#endif
 #ifdef __SNR_lgetxattr
 	SCMP_SYS(lgetxattr),
 #endif
+#if 0
 #ifdef __SNR_link
 	SCMP_SYS(link),
 #endif
@@ -585,18 +663,22 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_llistxattr
 	SCMP_SYS(llistxattr),
 #endif
+#endif
 #ifdef __SNR_lock
 	SCMP_SYS(lock),
 #endif
 #ifdef __SNR_lookup_dcookie
 	SCMP_SYS(lookup_dcookie),
 #endif
+#if 0
 #ifdef __SNR_lremovexattr
 	SCMP_SYS(lremovexattr),
+#endif
 #endif
 #ifdef __SNR_lseek
 	SCMP_SYS(lseek),
 #endif
+#if 0
 #ifdef __SNR_lsetxattr
 	SCMP_SYS(lsetxattr),
 #endif
@@ -605,6 +687,7 @@ static const int allow_list_level0[] = {
 #endif
 #ifdef __SNR_lstat64
 	SCMP_SYS(lstat64),
+#endif
 #endif
 #ifdef __SNR_madvise
 	SCMP_SYS(madvise),
@@ -624,6 +707,7 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_mincore
 	SCMP_SYS(mincore),
 #endif
+#if 0
 #ifdef __SNR_mkdir
 	SCMP_SYS(mkdir),
 #endif
@@ -636,6 +720,7 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_mknodat
 	SCMP_SYS(mknodat),
 #endif
+#endif
 #ifdef __SNR_mlock
 	SCMP_SYS(mlock),
 #endif
@@ -645,11 +730,13 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_mlockall
 	SCMP_SYS(mlockall),
 #endif
+#if 0
 #ifdef __SNR_mmap
 	SCMP_SYS(mmap),
 #endif
 #ifdef __SNR_mmap2
 	SCMP_SYS(mmap2),
+#endif
 #endif
 #ifdef __SNR_modify_ldt
 	SCMP_SYS(modify_ldt),
@@ -663,8 +750,10 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_move_pages
 	SCMP_SYS(move_pages),
 #endif
+#if 0
 #ifdef __SNR_mprotect
 	SCMP_SYS(mprotect),
+#endif
 #endif
 #ifdef __SNR_mpx
 	SCMP_SYS(mpx),
@@ -729,12 +818,9 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_nanosleep
 	SCMP_SYS(nanosleep),
 #endif
+#if 0
 #ifdef __SNR_newfstatat
 	SCMP_SYS(newfstatat),
-#endif
-#if 0
-#ifdef __SNR_nfsservctl
-	SCMP_SYS(nfsservctl),
 #endif
 #endif
 #ifdef __SNR_nice
@@ -758,8 +844,10 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_oldwait4
 	SCMP_SYS(oldwait4),
 #endif
+#if 0
 #ifdef __SNR_open
 	SCMP_SYS(open),
+#endif
 #endif
 #ifdef __SNR_open_by_handle_at
 	SCMP_SYS(open_by_handle_at),
@@ -767,22 +855,13 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_open_tree
 	SCMP_SYS(open_tree),
 #endif
+#if 0
 #ifdef __SNR_openat
 	SCMP_SYS(openat),
 #endif
+#endif
 #ifdef __SNR_pause
 	SCMP_SYS(pause),
-#endif
-#if 0
-#ifdef __SNR_pciconfig_iobase
-	SCMP_SYS(pciconfig_iobase),
-#endif
-#ifdef __SNR_pciconfig_read
-	SCMP_SYS(pciconfig_read),
-#endif
-#ifdef __SNR_pciconfig_write
-	SCMP_SYS(pciconfig_write),
-#endif
 #endif
 #ifdef __SNR_perf_event_open
 	SCMP_SYS(perf_event_open),
@@ -838,17 +917,6 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_prlimit64
 	SCMP_SYS(prlimit64),
 #endif
-#if 0
-#ifdef __SNR_process_vm_readv
-	SCMP_SYS(process_vm_readv),
-#endif
-#ifdef __SNR_process_vm_writev
-	SCMP_SYS(process_vm_writev),
-#endif
-#ifdef __SNR_prof
-	SCMP_SYS(prof),
-#endif
-#endif
 #ifdef __SNR_profil
 	SCMP_SYS(profil),
 #endif
@@ -857,11 +925,6 @@ static const int allow_list_level0[] = {
 #endif
 #ifdef __SNR_pselect6_time64
 	SCMP_SYS(pselect6_time64),
-#endif
-#if 0
-#ifdef __SNR_ptrace
-	SCMP_SYS(ptrace),
-#endif
 #endif
 #ifdef __SNR_putpmsg
 	SCMP_SYS(putpmsg),
@@ -918,12 +981,15 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_recvmmsg_time64
 	SCMP_SYS(recvmmsg_time64),
 #endif
+#if 0
 #ifdef __SNR_recvmsg
 	SCMP_SYS(recvmsg),
+#endif
 #endif
 #ifdef __SNR_remap_file_pages
 	SCMP_SYS(remap_file_pages),
 #endif
+#if 0
 #ifdef __SNR_removexattr
 	SCMP_SYS(removexattr),
 #endif
@@ -936,6 +1002,7 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_renameat2
 	SCMP_SYS(renameat2),
 #endif
+#endif
 #if 0
 #ifdef __SNR_request_key
 	SCMP_SYS(request_key),
@@ -947,8 +1014,10 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_riscv_flush_icache
 	SCMP_SYS(riscv_flush_icache),
 #endif
+#if 0
 #ifdef __SNR_rmdir
 	SCMP_SYS(rmdir),
+#endif
 #endif
 #ifdef __SNR_rseq
 	SCMP_SYS(rseq),
@@ -1040,11 +1109,6 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_seccomp
 	SCMP_SYS(seccomp),
 #endif
-#if 0
-#ifdef __SNR_security
-	SCMP_SYS(security),
-#endif
-#endif
 #ifdef __SNR_select
 	SCMP_SYS(select),
 #endif
@@ -1075,11 +1139,13 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_sendmmsg
 	SCMP_SYS(sendmmsg),
 #endif
+#if 0
 #ifdef __SNR_sendmsg
 	SCMP_SYS(sendmsg),
 #endif
 #ifdef __SNR_sendto
 	SCMP_SYS(sendto),
+#endif
 #endif
 #ifdef __SNR_set_mempolicy
 	SCMP_SYS(set_mempolicy),
@@ -1111,11 +1177,13 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_setfsuid32
 	SCMP_SYS(setfsuid32),
 #endif
+#if 0
 #ifdef __SNR_setgid
 	SCMP_SYS(setgid),
 #endif
 #ifdef __SNR_setgid32
 	SCMP_SYS(setgid32),
+#endif
 #endif
 #ifdef __SNR_setgroups
 	SCMP_SYS(setgroups),
@@ -1174,14 +1242,18 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_settimeofday
 	SCMP_SYS(settimeofday),
 #endif
+#if 0
 #ifdef __SNR_setuid
 	SCMP_SYS(setuid),
 #endif
 #ifdef __SNR_setuid32
 	SCMP_SYS(setuid32),
 #endif
+#endif
+#if 0
 #ifdef __SNR_setxattr
 	SCMP_SYS(setxattr),
+#endif
 #endif
 #ifdef __SNR_sgetmask
 	SCMP_SYS(sgetmask),
@@ -1249,6 +1321,7 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_ssetmask
 	SCMP_SYS(ssetmask),
 #endif
+#if 0
 #ifdef __SNR_stat
 	SCMP_SYS(stat),
 #endif
@@ -1264,6 +1337,7 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_statx
 	SCMP_SYS(statx),
 #endif
+#endif
 #ifdef __SNR_stime
 	SCMP_SYS(stime),
 #endif
@@ -1273,6 +1347,7 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_subpage_prot
 	SCMP_SYS(subpage_prot),
 #endif
+
 #ifdef __SNR_swapcontext
 	SCMP_SYS(swapcontext),
 #endif
@@ -1287,11 +1362,13 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_switch_endian
 	SCMP_SYS(switch_endian),
 #endif
+#if 0
 #ifdef __SNR_symlink
 	SCMP_SYS(symlink),
 #endif
 #ifdef __SNR_symlinkat
 	SCMP_SYS(symlinkat),
+#endif
 #endif
 #ifdef __SNR_sync
 	SCMP_SYS(sync),
@@ -1317,19 +1394,16 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_sysinfo
 	SCMP_SYS(sysinfo),
 #endif
-#if 0
-#ifdef __SNR_syslog
-	SCMP_SYS(syslog),
-#endif
-#endif
 #ifdef __SNR_sysmips
 	SCMP_SYS(sysmips),
 #endif
 #ifdef __SNR_tee
 	SCMP_SYS(tee),
 #endif
+#if 0
 #ifdef __SNR_tgkill
 	SCMP_SYS(tgkill),
+#endif
 #endif
 #ifdef __SNR_time
 	SCMP_SYS(time),
@@ -1376,14 +1450,18 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_times
 	SCMP_SYS(times),
 #endif
+#if 0
 #ifdef __SNR_tkill
 	SCMP_SYS(tkill),
 #endif
+#endif
+#if 0
 #ifdef __SNR_truncate
 	SCMP_SYS(truncate),
 #endif
 #ifdef __SNR_truncate64
 	SCMP_SYS(truncate64),
+#endif
 #endif
 #ifdef __SNR_tuxcall
 	SCMP_SYS(tuxcall),
@@ -1397,6 +1475,7 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_umask
 	SCMP_SYS(umask),
 #endif
+#if 0
 #ifdef __SNR_umount
 	SCMP_SYS(umount),
 #endif
@@ -1411,6 +1490,7 @@ static const int allow_list_level0[] = {
 #endif
 #ifdef __SNR_unlinkat
 	SCMP_SYS(unlinkat),
+#endif
 #endif
 #ifdef __SNR_unshare
 	SCMP_SYS(unshare),
@@ -1430,12 +1510,17 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_ustat
 	SCMP_SYS(ustat),
 #endif
+#if 0
 #ifdef __SNR_utime
 	SCMP_SYS(utime),
 #endif
+#endif
+#if 0
 #ifdef __SNR_utimensat
 	SCMP_SYS(utimensat),
 #endif
+#endif
+#if 0
 #ifdef __SNR_utimensat_time64
 	SCMP_SYS(utimensat_time64),
 #endif
@@ -1445,24 +1530,12 @@ static const int allow_list_level0[] = {
 #ifdef __SNR_vfork
 	SCMP_SYS(vfork),
 #endif
+#endif
 #ifdef __SNR_vhangup
 	SCMP_SYS(vhangup),
 #endif
-#if 0
-#ifdef __SNR_vm86
-	SCMP_SYS(vm86),
-#endif
-#ifdef __SNR_vm86old
-	SCMP_SYS(vm86old),
-#endif
-#endif
 #ifdef __SNR_vmsplice
 	SCMP_SYS(vmsplice),
-#endif
-#if 0
-#ifdef __SNR_vserver
-	SCMP_SYS(vserver),
-#endif
 #endif
 #ifdef __SNR_wait4
 	SCMP_SYS(wait4),
@@ -1481,1034 +1554,6 @@ static const int allow_list_level0[] = {
 #endif
 };
 
-#if 0
-/* See the individual rules at filter_general_level_0() function for further
- * limitations on set{u,g}id, process_vm_{read,write}v etc. or see the
- * manual page. **/
-static const int deny_list_level0[] = {
-	/*
-	 * SydB☮x denies these system call unconditionally to
-	 * restrict potential privilege escalation or to mitigate
-	 * the affects after privilege escalation.
-	 */
-	SCMP_SYS(acct),
-	SCMP_SYS(add_key),
-	SCMP_SYS(adjtimex),
-	SCMP_SYS(afs_syscall),
-	SCMP_SYS(chroot),
-	SCMP_SYS(finit_module),
-	SCMP_SYS(fsmount),
-	SCMP_SYS(get_kernel_syms),
-	SCMP_SYS(init_module),
-	SCMP_SYS(kexec_file_load),
-	SCMP_SYS(kexec_load),
-	SCMP_SYS(keyctl),
-	SCMP_SYS(mount),
-	SCMP_SYS(move_mount),
-	SCMP_SYS(nfsservctl),
-#ifdef __SNR_pidfd_getfd
-	SCMP_SYS(pidfd_getfd),
-#else
-	438, /* __NR_pidfd_getfd */
-#endif
-	SCMP_SYS(pivot_root),
-	SCMP_SYS(pkey_alloc),
-	SCMP_SYS(pkey_free),
-	SCMP_SYS(pkey_mprotect),
-	SCMP_SYS(process_vm_readv),
-	SCMP_SYS(process_vm_writev),
-	SCMP_SYS(ptrace),
-	SCMP_SYS(quotactl),
-	SCMP_SYS(reboot),
-	SCMP_SYS(request_key),
-	SCMP_SYS(security),
-	SCMP_SYS(setdomainname),
-	SCMP_SYS(sethostname),
-	SCMP_SYS(swapoff),
-	SCMP_SYS(swapon),
-	SCMP_SYS(syslog),
-	SCMP_SYS(umount),
-	SCMP_SYS(umount2),
-	SCMP_SYS(unshare),
-	SCMP_SYS(uselib),
-	SCMP_SYS(vm86),
-	SCMP_SYS(vm86old),
-	SCMP_SYS(vserver),
-};
-
-static const int allow_list_level0[] = {
-	/* Level 0 Safe calls.
-	 *
-	 * Group 0: process id calls.
-	 * Obsoleted by the extensive list.
-	 */
-#if 0
-	SCMP_SYS(gettid),
-	SCMP_SYS(getpid),
-	SCMP_SYS(getgid),
-	SCMP_SYS(geteuid),
-	SCMP_SYS(getegid),
-	SCMP_SYS(getppid),
-	SCMP_SYS(getpgrp),
-	SCMP_SYS(getgroups),
-	SCMP_SYS(getresuid),
-	SCMP_SYS(getresgid),
-	SCMP_SYS(getpgid),
-	SCMP_SYS(getsid),
-#endif
-
-	/* This system calls are enabled
-	 * unless there's a seccomp filter of
-	 * higher priority such as USER_NOTIFY,
-	 * ERRNO or KILL_PROCESS which SydB☮x
-	 * applies depending on configuration.
-	 *
-	 * The default fallback here is to
-	 * ERRNO(ENOSYS) if the system call
-	 * is not in the list.
-	 */
-	SCMP_SYS(_llseek),
-	SCMP_SYS(_newselect),
-	SCMP_SYS(_sysctl),
-	SCMP_SYS(accept),
-	SCMP_SYS(accept4),
-	SCMP_SYS(access),
-	SCMP_SYS(alarm),
-	SCMP_SYS(arch_prctl),
-	SCMP_SYS(bdflush),
-	SCMP_SYS(bind),
-	SCMP_SYS(bpf),
-	SCMP_SYS(break),
-	SCMP_SYS(brk),
-	SCMP_SYS(capget),
-	SCMP_SYS(capset),
-	SCMP_SYS(chdir),
-	SCMP_SYS(chmod),
-	SCMP_SYS(chown),
-	SCMP_SYS(chown32),
-	SCMP_SYS(clock_adjtime),
-	SCMP_SYS(clock_adjtime64),
-	SCMP_SYS(clock_getres),
-	SCMP_SYS(clock_getres_time64),
-	SCMP_SYS(clock_gettime),
-	SCMP_SYS(clock_gettime64),
-	SCMP_SYS(clock_nanosleep),
-	SCMP_SYS(clock_nanosleep_time64),
-	SCMP_SYS(clock_settime),
-	SCMP_SYS(clock_settime64),
-	SCMP_SYS(clone),
-	SCMP_SYS(clone3),
-	SCMP_SYS(close),
-#ifdef __SNR_close_range
-	SCMP_SYS(close_range),
-#endif
-	SCMP_SYS(connect),
-	SCMP_SYS(copy_file_range),
-	SCMP_SYS(creat),
-	SCMP_SYS(create_module),
-	SCMP_SYS(delete_module),
-	SCMP_SYS(dup),
-	SCMP_SYS(dup2),
-	SCMP_SYS(dup3),
-	SCMP_SYS(epoll_create),
-	SCMP_SYS(epoll_create1),
-	SCMP_SYS(epoll_ctl),
-	SCMP_SYS(epoll_ctl_old),
-	SCMP_SYS(epoll_pwait),
-#ifdef __SNR_epoll_pwait2
-	SCMP_SYS(epoll_pwait2),
-#endif
-	SCMP_SYS(epoll_wait),
-	SCMP_SYS(epoll_wait_old),
-	SCMP_SYS(eventfd),
-	SCMP_SYS(eventfd2),
-	SCMP_SYS(execve),
-	SCMP_SYS(execveat),
-	SCMP_SYS(exit),
-	SCMP_SYS(exit_group),
-	SCMP_SYS(faccessat),
-#ifdef __SNR_faccessat2
-	SCMP_SYS(faccessat2),
-#endif
-	SCMP_SYS(fadvise64),
-	SCMP_SYS(fadvise64_64),
-	SCMP_SYS(fallocate),
-	SCMP_SYS(fanotify_init),
-	SCMP_SYS(fanotify_mark),
-	SCMP_SYS(fchdir),
-	SCMP_SYS(fchmod),
-	SCMP_SYS(fchmodat),
-	SCMP_SYS(fchown),
-	SCMP_SYS(fchown32),
-	SCMP_SYS(fchownat),
-	SCMP_SYS(fcntl),
-	SCMP_SYS(fcntl64),
-	SCMP_SYS(fdatasync),
-	SCMP_SYS(fgetxattr),
-	SCMP_SYS(flistxattr),
-	SCMP_SYS(flock),
-	SCMP_SYS(fork),
-	SCMP_SYS(fremovexattr),
-	SCMP_SYS(fsconfig),
-	SCMP_SYS(fsetxattr),
-	SCMP_SYS(fsopen),
-	SCMP_SYS(fspick),
-	SCMP_SYS(fstat),
-	SCMP_SYS(fstat64),
-	SCMP_SYS(fstatat64),
-	SCMP_SYS(fstatfs),
-	SCMP_SYS(fstatfs64),
-	SCMP_SYS(fsync),
-	SCMP_SYS(ftime),
-	SCMP_SYS(ftruncate),
-	SCMP_SYS(ftruncate64),
-	SCMP_SYS(futex),
-	SCMP_SYS(futex_time64),
-	SCMP_SYS(futimesat),
-	SCMP_SYS(get_mempolicy),
-	SCMP_SYS(get_robust_list),
-	SCMP_SYS(get_thread_area),
-	SCMP_SYS(getcpu),
-	SCMP_SYS(getcwd),
-	SCMP_SYS(getdents),
-	SCMP_SYS(getdents64),
-	SCMP_SYS(getegid),
-	SCMP_SYS(getegid32),
-	SCMP_SYS(geteuid),
-	SCMP_SYS(geteuid32),
-	SCMP_SYS(getgid),
-	SCMP_SYS(getgid32),
-	SCMP_SYS(getgroups),
-	SCMP_SYS(getgroups32),
-	SCMP_SYS(getitimer),
-	SCMP_SYS(getpeername),
-	SCMP_SYS(getpgid),
-	SCMP_SYS(getpgrp),
-	SCMP_SYS(getpid),
-	SCMP_SYS(getpmsg),
-	SCMP_SYS(getppid),
-	SCMP_SYS(getpriority),
-	SCMP_SYS(getrandom),
-	SCMP_SYS(getresgid),
-	SCMP_SYS(getresgid32),
-	SCMP_SYS(getresuid),
-	SCMP_SYS(getresuid32),
-	SCMP_SYS(getrlimit),
-	SCMP_SYS(getrusage),
-	SCMP_SYS(getsid),
-	SCMP_SYS(getsockname),
-	SCMP_SYS(getsockopt),
-	SCMP_SYS(gettid),
-	SCMP_SYS(gettimeofday),
-	SCMP_SYS(getuid),
-	SCMP_SYS(getuid32),
-	SCMP_SYS(getxattr),
-	SCMP_SYS(gtty),
-	SCMP_SYS(idle),
-	SCMP_SYS(inotify_add_watch),
-	SCMP_SYS(inotify_init),
-	SCMP_SYS(inotify_init1),
-	SCMP_SYS(inotify_rm_watch),
-	SCMP_SYS(io_cancel),
-	SCMP_SYS(io_destroy),
-	SCMP_SYS(io_getevents),
-	SCMP_SYS(io_pgetevents),
-	SCMP_SYS(io_pgetevents_time64),
-	SCMP_SYS(io_setup),
-	SCMP_SYS(io_submit),
-	SCMP_SYS(io_uring_enter),
-	SCMP_SYS(io_uring_register),
-	SCMP_SYS(io_uring_setup),
-	SCMP_SYS(ioctl),
-	SCMP_SYS(ioperm),
-	SCMP_SYS(iopl),
-	SCMP_SYS(ioprio_get),
-	SCMP_SYS(ioprio_set),
-	SCMP_SYS(ipc),
-	SCMP_SYS(kcmp),
-	SCMP_SYS(kill),
-	SCMP_SYS(lchown),
-	SCMP_SYS(lchown32),
-	SCMP_SYS(lgetxattr),
-	SCMP_SYS(link),
-	SCMP_SYS(linkat),
-	SCMP_SYS(listen),
-	SCMP_SYS(listxattr),
-	SCMP_SYS(llistxattr),
-	SCMP_SYS(lock),
-	SCMP_SYS(lookup_dcookie),
-	SCMP_SYS(lremovexattr),
-	SCMP_SYS(lseek),
-	SCMP_SYS(lsetxattr),
-	SCMP_SYS(lstat),
-	SCMP_SYS(lstat64),
-	SCMP_SYS(madvise),
-	SCMP_SYS(mbind),
-	SCMP_SYS(membarrier),
-	SCMP_SYS(migrate_pages),
-	SCMP_SYS(mincore),
-	SCMP_SYS(mkdir),
-	SCMP_SYS(mkdirat),
-	SCMP_SYS(mknod),
-	SCMP_SYS(mknodat),
-	SCMP_SYS(mlock),
-	SCMP_SYS(mlock2),
-	SCMP_SYS(mlockall),
-	SCMP_SYS(mmap),
-	SCMP_SYS(mmap2),
-	SCMP_SYS(modify_ldt),
-	SCMP_SYS(move_pages),
-	SCMP_SYS(mprotect),
-	SCMP_SYS(mpx),
-	SCMP_SYS(mq_getsetattr),
-	SCMP_SYS(mq_notify),
-	SCMP_SYS(mq_open),
-	SCMP_SYS(mq_timedreceive),
-	SCMP_SYS(mq_timedreceive_time64),
-	SCMP_SYS(mq_timedsend),
-	SCMP_SYS(mq_timedsend_time64),
-	SCMP_SYS(mq_unlink),
-	SCMP_SYS(mremap),
-	SCMP_SYS(msgctl),
-	SCMP_SYS(msgget),
-	SCMP_SYS(msgrcv),
-	SCMP_SYS(msgsnd),
-	SCMP_SYS(msync),
-	SCMP_SYS(munlock),
-	SCMP_SYS(munlockall),
-	SCMP_SYS(munmap),
-	SCMP_SYS(name_to_handle_at),
-	SCMP_SYS(nanosleep),
-	SCMP_SYS(newfstatat),
-	SCMP_SYS(nice),
-	SCMP_SYS(oldfstat),
-	SCMP_SYS(oldlstat),
-	SCMP_SYS(oldolduname),
-	SCMP_SYS(oldstat),
-	SCMP_SYS(olduname),
-	SCMP_SYS(open),
-	SCMP_SYS(open_by_handle_at),
-	SCMP_SYS(open_tree),
-	SCMP_SYS(openat),
-#ifdef __SNR_openat2
-	SCMP_SYS(openat2),
-#endif
-	SCMP_SYS(pause),
-	SCMP_SYS(perf_event_open),
-	SCMP_SYS(personality),
-	SCMP_SYS(pipe),
-	SCMP_SYS(pipe2),
-	SCMP_SYS(poll),
-	SCMP_SYS(ppoll),
-	SCMP_SYS(ppoll_time64),
-	SCMP_SYS(prctl),
-	SCMP_SYS(pread64),
-	SCMP_SYS(preadv),
-	SCMP_SYS(preadv2),
-	SCMP_SYS(prlimit64),
-#ifdef __SNR_process_madvise
-	SCMP_SYS(process_madvise),
-#endif
-	SCMP_SYS(prof),
-	SCMP_SYS(profil),
-	SCMP_SYS(pselect6),
-	SCMP_SYS(pselect6_time64),
-	SCMP_SYS(putpmsg),
-	SCMP_SYS(pwrite64),
-	SCMP_SYS(pwritev),
-	SCMP_SYS(pwritev2),
-	SCMP_SYS(query_module),
-	SCMP_SYS(read),
-	SCMP_SYS(readahead),
-	SCMP_SYS(readdir),
-	SCMP_SYS(readlink),
-	SCMP_SYS(readlinkat),
-	SCMP_SYS(readv),
-	SCMP_SYS(recvfrom),
-	SCMP_SYS(recvmmsg),
-	SCMP_SYS(recvmmsg_time64),
-	SCMP_SYS(recvmsg),
-	SCMP_SYS(remap_file_pages),
-	SCMP_SYS(removexattr),
-	SCMP_SYS(rename),
-	SCMP_SYS(renameat),
-	SCMP_SYS(renameat2),
-	SCMP_SYS(restart_syscall),
-	SCMP_SYS(rmdir),
-	SCMP_SYS(rseq),
-	SCMP_SYS(rt_sigaction),
-	SCMP_SYS(rt_sigpending),
-	SCMP_SYS(rt_sigprocmask),
-	SCMP_SYS(rt_sigqueueinfo),
-	SCMP_SYS(rt_sigreturn),
-	SCMP_SYS(rt_sigsuspend),
-	SCMP_SYS(rt_sigtimedwait),
-	SCMP_SYS(rt_sigtimedwait_time64),
-	SCMP_SYS(rt_tgsigqueueinfo),
-	SCMP_SYS(sched_get_priority_max),
-	SCMP_SYS(sched_get_priority_min),
-	SCMP_SYS(sched_getaffinity),
-	SCMP_SYS(sched_getattr),
-	SCMP_SYS(sched_getparam),
-	SCMP_SYS(sched_getscheduler),
-	SCMP_SYS(sched_rr_get_interval),
-	SCMP_SYS(sched_rr_get_interval_time64),
-	SCMP_SYS(sched_setaffinity),
-	SCMP_SYS(sched_setattr),
-	SCMP_SYS(sched_setparam),
-	SCMP_SYS(sched_setscheduler),
-	SCMP_SYS(sched_yield),
-	SCMP_SYS(select),
-	SCMP_SYS(semctl),
-	SCMP_SYS(semget),
-	SCMP_SYS(semop),
-	SCMP_SYS(semtimedop),
-	SCMP_SYS(semtimedop_time64),
-	SCMP_SYS(sendfile),
-	SCMP_SYS(sendfile64),
-	SCMP_SYS(sendmmsg),
-	SCMP_SYS(sendmsg),
-	SCMP_SYS(sendto),
-	SCMP_SYS(set_mempolicy),
-	SCMP_SYS(set_robust_list),
-	SCMP_SYS(set_thread_area),
-	SCMP_SYS(set_tid_address),
-	SCMP_SYS(setfsgid),
-	SCMP_SYS(setfsgid32),
-	SCMP_SYS(setfsuid),
-	SCMP_SYS(setfsuid32),
-	SCMP_SYS(setgid),
-	SCMP_SYS(setgid32),
-	SCMP_SYS(setgroups),
-	SCMP_SYS(setgroups32),
-	SCMP_SYS(setitimer),
-	SCMP_SYS(setns),
-	SCMP_SYS(setpgid),
-	SCMP_SYS(setpriority),
-	SCMP_SYS(setregid),
-	SCMP_SYS(setregid32),
-	SCMP_SYS(setresgid),
-	SCMP_SYS(setresgid32),
-	SCMP_SYS(setresuid),
-	SCMP_SYS(setresuid32),
-	SCMP_SYS(setreuid),
-	SCMP_SYS(setreuid32),
-	SCMP_SYS(setrlimit),
-	SCMP_SYS(setsid),
-	SCMP_SYS(setsockopt),
-	SCMP_SYS(settimeofday),
-	SCMP_SYS(setuid),
-	SCMP_SYS(setuid32),
-	SCMP_SYS(setxattr),
-	SCMP_SYS(sgetmask),
-	SCMP_SYS(shutdown),
-	SCMP_SYS(sigaction),
-	SCMP_SYS(sigaltstack),
-	SCMP_SYS(signal),
-	SCMP_SYS(signalfd),
-	SCMP_SYS(signalfd4),
-	SCMP_SYS(sigpending),
-	SCMP_SYS(sigprocmask),
-	SCMP_SYS(sigreturn),
-	SCMP_SYS(sigsuspend),
-	SCMP_SYS(socket),
-	SCMP_SYS(socketcall),
-	SCMP_SYS(socketpair),
-	SCMP_SYS(splice),
-	SCMP_SYS(ssetmask),
-	SCMP_SYS(stat),
-	SCMP_SYS(stat64),
-	SCMP_SYS(statfs),
-	SCMP_SYS(statfs64),
-	SCMP_SYS(statx),
-	SCMP_SYS(stime),
-	SCMP_SYS(stty),
-	SCMP_SYS(symlink),
-	SCMP_SYS(symlinkat),
-	SCMP_SYS(sync),
-	SCMP_SYS(sync_file_range),
-	SCMP_SYS(syncfs),
-	SCMP_SYS(sysfs),
-	SCMP_SYS(sysinfo),
-	SCMP_SYS(syslog),
-	SCMP_SYS(tee),
-	SCMP_SYS(tgkill),
-	SCMP_SYS(time),
-	SCMP_SYS(timer_create),
-	SCMP_SYS(timer_delete),
-	SCMP_SYS(timer_getoverrun),
-	SCMP_SYS(timer_gettime),
-	SCMP_SYS(timer_gettime64),
-	SCMP_SYS(timer_settime),
-	SCMP_SYS(timer_settime64),
-	SCMP_SYS(timerfd_create),
-	SCMP_SYS(timerfd_gettime),
-	SCMP_SYS(timerfd_gettime64),
-	SCMP_SYS(timerfd_settime),
-	SCMP_SYS(timerfd_settime64),
-	SCMP_SYS(times),
-	SCMP_SYS(tkill),
-	SCMP_SYS(truncate),
-	SCMP_SYS(truncate64),
-	SCMP_SYS(tuxcall),
-	SCMP_SYS(ugetrlimit),
-	SCMP_SYS(ulimit),
-	SCMP_SYS(umask),
-	SCMP_SYS(uname),
-	SCMP_SYS(unlink),
-	SCMP_SYS(unlinkat),
-	SCMP_SYS(userfaultfd),
-	SCMP_SYS(ustat),
-	SCMP_SYS(utime),
-	SCMP_SYS(utimensat),
-	SCMP_SYS(utimensat_time64),
-	SCMP_SYS(utimes),
-	SCMP_SYS(vfork),
-	SCMP_SYS(vhangup),
-	SCMP_SYS(vmsplice),
-	SCMP_SYS(wait4),
-	SCMP_SYS(waitid),
-	SCMP_SYS(waitpid),
-	SCMP_SYS(write),
-	SCMP_SYS(writev),
-};
-#endif
-
-static const int filter_gen_level1[] = {
-	SCMP_SYS(close),
-	SCMP_SYS(dup),
-#ifdef __NR_dup2
-	SCMP_SYS(dup2),
-#endif
-	SCMP_SYS(exit),
-	SCMP_SYS(exit_group),
-	SCMP_SYS(execve),
-#ifdef __NR_execveat
-	SCMP_SYS(execveat),
-#endif
-	SCMP_SYS(arch_prctl),
-	SCMP_SYS(getpid),
-	SCMP_SYS(set_tid_address),
-	SCMP_SYS(pause),
-	SCMP_SYS(read),
-#ifdef __NR_readv
-	SCMP_SYS(readv),
-#endif
-#ifdef __NR_preadv
-	SCMP_SYS(preadv),
-#endif
-#ifdef __NR_preadv2
-	SCMP_SYS(preadv2),
-#endif
-	SCMP_SYS(write),
-#ifdef __NR_writev
-	SCMP_SYS(writev),
-#endif
-#ifdef __NR_pwritev
-	SCMP_SYS(pwritev),
-#endif
-#ifdef __NR_pwritev2
-	SCMP_SYS(pwritev2),
-#endif
-	SCMP_SYS(sigreturn),
-	SCMP_SYS(stat),
-#ifdef __NR_stat64
-	SCMP_SYS(stat64),
-#endif
-	SCMP_SYS(fstat),
-#ifdef __NR_fstat64
-	SCMP_SYS(fstat64),
-#endif
-	SCMP_SYS(lstat),
-#ifdef __NR_newfstatat
-	SCMP_SYS(newfstatat),
-#endif
-	SCMP_SYS(brk),
-#ifdef __NR_mmap
-	SCMP_SYS(mmap),
-#endif
-#ifdef __NR_mmap2
-	SCMP_SYS(mmap2),
-#endif
-#ifdef __NR_munmap
-	SCMP_SYS(munmap),
-#endif
-};
-
-static const int filter_gen_level2[] = {
-	SCMP_SYS(arch_prctl),
-	SCMP_SYS(access),
-	SCMP_SYS(brk),
-	SCMP_SYS(clock_gettime),
-	SCMP_SYS(close),
-	SCMP_SYS(clone),
-	SCMP_SYS(dup),
-#ifdef __NR_dup2
-	SCMP_SYS(dup2),
-#endif
-	SCMP_SYS(epoll_create),
-	SCMP_SYS(epoll_wait),
-#ifdef __NR_epoll_pwait
-	SCMP_SYS(epoll_pwait),
-#endif
-	SCMP_SYS(execve),
-#ifdef __NR_execveat
-	SCMP_SYS(execveat),
-#endif
-	SCMP_SYS(exit),
-	SCMP_SYS(exit_group),
-	SCMP_SYS(fork),
-	SCMP_SYS(vfork),
-	SCMP_SYS(clone),
-#ifdef __NR_clone3
-	SCMP_SYS(clone3),
-#endif
-#ifdef __NR_eventfd2
-	SCMP_SYS(eventfd2),
-#endif
-#ifdef __NR_pipe2
-	SCMP_SYS(pipe2),
-#endif
-#ifdef __NR_pipe
-	SCMP_SYS(pipe),
-#endif
-	SCMP_SYS(fcntl),
-	SCMP_SYS(fstat),
-#ifdef __NR_fstat64
-	SCMP_SYS(fstat64),
-#endif
-	SCMP_SYS(fsync),
-	SCMP_SYS(futex),
-	SCMP_SYS(getdents),
-	SCMP_SYS(getdents64),
-	SCMP_SYS(getegid),
-#ifdef __NR_getegid32
-	SCMP_SYS(getegid32),
-#endif
-	SCMP_SYS(geteuid),
-#ifdef __NR_geteuid32
-	SCMP_SYS(geteuid32),
-#endif
-	SCMP_SYS(getgid),
-#ifdef __NR_getgid32
-	SCMP_SYS(getgid32),
-#endif
-	SCMP_SYS(getpgrp),
-	SCMP_SYS(getpid),
-	SCMP_SYS(getppid),
-	SCMP_SYS(getpgid),
-#ifdef __NR_getrlimit
-	SCMP_SYS(getrlimit),
-#endif
-	SCMP_SYS(gettimeofday),
-	SCMP_SYS(gettid),
-	SCMP_SYS(getuid),
-#ifdef __NR_getuid32
-	SCMP_SYS(getuid32),
-#endif
-	SCMP_SYS(lseek),
-#ifdef __NR__llseek
-	SCMP_SYS(_llseek),
-#endif
-	// glob uses this..
-	SCMP_SYS(lstat),
-	SCMP_SYS(mlockall),
-#ifdef __NR_mmap
-	SCMP_SYS(mmap),
-#endif
-#ifdef __NR_mmap2
-	SCMP_SYS(mmap2),
-#endif
-#ifdef __NR_munmap
-	SCMP_SYS(munmap),
-#endif
-#ifdef __NR_nanosleep
-	SCMP_SYS(nanosleep),
-#endif
-	SCMP_SYS(open),
-	SCMP_SYS(openat),
-/*
- * TODO: This does not work with libseccomp-2.5.1
-#ifdef __NR_openat2
-	SCMP_SYS(openat2),
-#endif
-*/
-	SCMP_SYS(pause),
-#ifdef __NR_preadv
-	SCMP_SYS(preadv),
-#endif
-#ifdef __NR_preadv2
-	SCMP_SYS(preadv2),
-#endif
-#ifdef __NR_prlimit
-	SCMP_SYS(prlimit),
-#endif
-#ifdef __NR_prlimit64
-	SCMP_SYS(prlimit64),
-#endif
-	SCMP_SYS(pselect6),
-	SCMP_SYS(read),
-	SCMP_SYS(pause),
-#ifdef __NR_readv
-	SCMP_SYS(readv),
-#endif
-	SCMP_SYS(rt_sigaction),
-	SCMP_SYS(rt_sigprocmask),
-	SCMP_SYS(rt_sigreturn),
-	SCMP_SYS(sched_getaffinity),
-#ifdef __NR_sched_yield
-	SCMP_SYS(sched_yield),
-#endif
-	SCMP_SYS(sendmsg),
-	SCMP_SYS(set_robust_list),
-	SCMP_SYS(setpgid),
-#ifdef __NR_setrlimit
-	SCMP_SYS(setrlimit),
-#endif
-	SCMP_SYS(shutdown),
-#ifdef __NR_sigaltstack
-	SCMP_SYS(sigaltstack),
-#endif
-#ifdef __NR_sigreturn
-	SCMP_SYS(sigreturn),
-#endif
-	SCMP_SYS(stat),
-	SCMP_SYS(uname),
-	SCMP_SYS(wait4),
-	SCMP_SYS(write),
-#ifdef __NR_writev
-	SCMP_SYS(writev),
-#endif
-#ifdef __NR_pwritev
-	SCMP_SYS(pwritev),
-#endif
-#ifdef __NR_pwritev2
-	SCMP_SYS(pwritev2),
-#endif
-	SCMP_SYS(exit_group),
-	SCMP_SYS(exit),
-
-	SCMP_SYS(madvise),
-	SCMP_SYS(membarrier),
-	SCMP_SYS(set_tid_address),
-	SCMP_SYS(stat),
-#ifdef __NR_stat64
-	// getaddrinfo uses this..
-	SCMP_SYS(stat64),
-#endif
-
-#ifdef __NR_getrandom
-	SCMP_SYS(getrandom),
-#endif
-
-#ifdef __NR_sysinfo
-// qsort uses this..
-	SCMP_SYS(sysinfo),
-#endif
-/*
-* These socket syscalls are not required on x86_64 and not supported with
-* some libseccomp versions (eg: 1.0.1)
-*/
-#if defined(__i386)
-	SCMP_SYS(recv),
-	SCMP_SYS(send),
-#endif
-	// socket syscalls
-	SCMP_SYS(bind),
-	SCMP_SYS(listen),
-	SCMP_SYS(connect),
-	SCMP_SYS(getsockname),
-#ifdef __NR_getpeername
-	SCMP_SYS(getpeername),
-#endif
-	SCMP_SYS(recvmsg),
-	SCMP_SYS(recvfrom),
-	SCMP_SYS(sendto),
-#ifdef __NR_readlink
-	SCMP_SYS(readlink),
-#endif
-#ifdef __NR_readlinkat
-	SCMP_SYS(readlinkat),
-#endif
-	SCMP_SYS(unlink),
-#ifdef __NR_unlinkat
-	SCMP_SYS(unlinkat),
-#endif
-	SCMP_SYS(select),
-#ifdef __NR_pselect6
-	SCMP_SYS(pselect6),
-#endif
-	SCMP_SYS(poll),
-#ifdef __NR_readlink
-	SCMP_SYS(readlink),
-#endif
-#ifdef __NR_readlinkat
-	SCMP_SYS(readlinkat),
-#endif
-};
-
-static const int filter_gen_level3[] = {
-	SCMP_SYS(arch_prctl),
-	SCMP_SYS(access),
-	SCMP_SYS(brk),
-	SCMP_SYS(clock_gettime),
-	SCMP_SYS(close),
-	SCMP_SYS(clone),
-	SCMP_SYS(dup),
-#ifdef __NR_dup2
-	SCMP_SYS(dup2),
-#endif
-	SCMP_SYS(epoll_create),
-	SCMP_SYS(epoll_wait),
-#ifdef __NR_epoll_pwait
-	SCMP_SYS(epoll_pwait),
-#endif
-	SCMP_SYS(execve),
-#ifdef __NR_execveat
-	SCMP_SYS(execveat),
-#endif
-	SCMP_SYS(exit),
-	SCMP_SYS(exit_group),
-	SCMP_SYS(fork),
-	SCMP_SYS(vfork),
-	SCMP_SYS(clone),
-#ifdef __NR_clone3
-	SCMP_SYS(clone3),
-#endif
-#ifdef __NR_eventfd2
-	SCMP_SYS(eventfd2),
-#endif
-#ifdef __NR_pipe2
-	SCMP_SYS(pipe2),
-#endif
-#ifdef __NR_pipe
-	SCMP_SYS(pipe),
-#endif
-	SCMP_SYS(fcntl),
-	SCMP_SYS(fstat),
-#ifdef __NR_fstat64
-	SCMP_SYS(fstat64),
-#endif
-	SCMP_SYS(fsync),
-	SCMP_SYS(futex),
-	SCMP_SYS(getdents),
-	SCMP_SYS(getdents64),
-	SCMP_SYS(getegid),
-#ifdef __NR_getegid32
-	SCMP_SYS(getegid32),
-#endif
-	SCMP_SYS(geteuid),
-#ifdef __NR_geteuid32
-	SCMP_SYS(geteuid32),
-#endif
-	SCMP_SYS(getgid),
-#ifdef __NR_getgid32
-	SCMP_SYS(getgid32),
-#endif
-	SCMP_SYS(getpgrp),
-	SCMP_SYS(getpid),
-	SCMP_SYS(getppid),
-	SCMP_SYS(getpgid),
-#ifdef __NR_getrlimit
-	SCMP_SYS(getrlimit),
-#endif
-	SCMP_SYS(gettimeofday),
-	SCMP_SYS(gettid),
-	SCMP_SYS(getuid),
-#ifdef __NR_getuid32
-	SCMP_SYS(getuid32),
-#endif
-	SCMP_SYS(lseek),
-#ifdef __NR__llseek
-	SCMP_SYS(_llseek),
-#endif
-	// glob uses this..
-	SCMP_SYS(lstat),
-	SCMP_SYS(mlockall),
-#ifdef __NR_mmap
-	SCMP_SYS(mmap),
-#endif
-#ifdef __NR_mmap2
-	SCMP_SYS(mmap2),
-#endif
-#ifdef __NR_munmap
-	SCMP_SYS(munmap),
-#endif
-#ifdef __NR_nanosleep
-	SCMP_SYS(nanosleep),
-#endif
-	SCMP_SYS(open),
-	SCMP_SYS(openat),
-#ifdef __NR_preadv
-	SCMP_SYS(preadv),
-#endif
-#ifdef __NR_preadv2
-	SCMP_SYS(preadv2),
-#endif
-#ifdef __NR_prlimit
-	SCMP_SYS(prlimit),
-#endif
-#ifdef __NR_prlimit64
-	SCMP_SYS(prlimit64),
-#endif
-	SCMP_SYS(pselect6),
-	SCMP_SYS(read),
-#ifdef __NR_readv
-	SCMP_SYS(readv),
-#endif
-	SCMP_SYS(rt_sigaction),
-	SCMP_SYS(rt_sigprocmask),
-	SCMP_SYS(rt_sigreturn),
-	SCMP_SYS(sched_getaffinity),
-#ifdef __NR_sched_yield
-	SCMP_SYS(sched_yield),
-#endif
-	SCMP_SYS(sendmsg),
-	SCMP_SYS(set_robust_list),
-	SCMP_SYS(setpgid),
-#ifdef __NR_setrlimit
-	SCMP_SYS(setrlimit),
-#endif
-	SCMP_SYS(shutdown),
-#ifdef __NR_sigaltstack
-	SCMP_SYS(sigaltstack),
-#endif
-#ifdef __NR_sigreturn
-	SCMP_SYS(sigreturn),
-#endif
-	SCMP_SYS(stat),
-	SCMP_SYS(uname),
-	SCMP_SYS(wait4),
-	SCMP_SYS(write),
-#ifdef __NR_writev
-	SCMP_SYS(writev),
-#endif
-#ifdef __NR_pwritev
-	SCMP_SYS(pwritev),
-#endif
-#ifdef __NR_pwritev2
-	SCMP_SYS(pwritev2),
-#endif
-	SCMP_SYS(exit_group),
-	SCMP_SYS(exit),
-
-	SCMP_SYS(madvise),
-	SCMP_SYS(membarrier),
-	SCMP_SYS(set_tid_address),
-	SCMP_SYS(stat),
-#ifdef __NR_stat64
-	// getaddrinfo uses this..
-	SCMP_SYS(stat64),
-#endif
-
-#ifdef __NR_getrandom
-	SCMP_SYS(getrandom),
-#endif
-
-#ifdef __NR_sysinfo
-// qsort uses this..
-	SCMP_SYS(sysinfo),
-#endif
-/*
-* These socket syscalls are not required on x86_64 and not supported with
-* some libseccomp versions (eg: 1.0.1)
-*/
-#if defined(__i386)
-	SCMP_SYS(recv),
-	SCMP_SYS(send),
-#endif
-	// socket syscalls
-	SCMP_SYS(bind),
-	SCMP_SYS(listen),
-	SCMP_SYS(connect),
-	SCMP_SYS(getsockname),
-#ifdef __NR_getpeername
-	SCMP_SYS(getpeername),
-#endif
-	SCMP_SYS(recvmsg),
-	SCMP_SYS(recvfrom),
-	SCMP_SYS(sendto),
-#ifdef __NR_readlink
-	SCMP_SYS(readlink),
-#endif
-#ifdef __NR_readlinkat
-	SCMP_SYS(readlinkat),
-#endif
-	SCMP_SYS(unlink),
-#ifdef __NR_unlinkat
-	SCMP_SYS(unlinkat),
-#endif
-	SCMP_SYS(select),
-#ifdef __NR_pselect6
-	SCMP_SYS(pselect6),
-#endif
-	SCMP_SYS(poll),
-#ifdef __NR_readlink
-	SCMP_SYS(readlink),
-#endif
-#ifdef __NR_readlinkat
-	SCMP_SYS(readlinkat),
-#endif
-	/* Level 3 additions */
-	SCMP_SYS(chmod),
-#ifdef __NR_fchmod
-	SCMP_SYS(fchmod),
-#endif
-#ifdef __NR_fchmodat
-	SCMP_SYS(fchmodat),
-#endif
-	SCMP_SYS(chown),
-#ifdef __NR_chown32
-	SCMP_SYS(chown32),
-#endif
-	SCMP_SYS(lchown),
-#ifdef __NR_lchown32
-	SCMP_SYS(lchown32),
-#endif
-#ifdef __NR_fchownat
-	SCMP_SYS(fchownat),
-#endif
-	SCMP_SYS(creat),
-	SCMP_SYS(mkdir),
-	SCMP_SYS(mkdirat),
-	SCMP_SYS(mknod),
-	SCMP_SYS(mknodat),
-	SCMP_SYS(rmdir),
-	SCMP_SYS(truncate),
-#ifdef __NR_truncate64
-	SCMP_SYS(truncate64),
-#endif
-	SCMP_SYS(link),
-	SCMP_SYS(linkat),
-	SCMP_SYS(unlink),
-	SCMP_SYS(unlinkat),
-	SCMP_SYS(rename),
-	SCMP_SYS(renameat),
-#ifdef __NR_renameat2
-	SCMP_SYS(renameat2),
-#endif
-	SCMP_SYS(symlink),
-	SCMP_SYS(symlinkat),
-	SCMP_SYS(utime),
-	SCMP_SYS(utimes),
-#ifdef __NR_utimensat
-	SCMP_SYS(utimensat),
-#endif
-#ifdef __NR_futimesat
-	SCMP_SYS(futimesat),
-#endif
-	SCMP_SYS(setxattr),
-	SCMP_SYS(lsetxattr),
-	SCMP_SYS(removexattr),
-	SCMP_SYS(lremovexattr),
-/*
- * TODO: This does not work with libseccomp-2.5.1
-#ifdef __NR_openat2
-	SCMP_SYS(openat2),
-#endif
-*/
-};
-
 bool filter_includes(int sysnum)
 {
 	size_t max;
@@ -2522,28 +1567,8 @@ bool filter_includes(int sysnum)
 		"fork", "vfork",
 	};
 
-	switch (sydbox->config.restrict_general) {
-	case 0:
-		filter = NULL;
-		max = 0;
-		break; /* Level 0 is checked unconditionally, below */
-	case 1:
-		filter = filter_gen_level1;
-		max = ELEMENTSOF(filter_gen_level1);
-		break;
-	case 2:
-		filter = filter_gen_level2;
-		max = ELEMENTSOF(filter_gen_level2);
-		break;
-	case 3:
-		filter = filter_gen_level3;
-		max = ELEMENTSOF(filter_gen_level3);
-		break;
-	default:
-		assert_not_reached();
-	}
-
-	/* Check Level 0 first */
+	filter = NULL;
+	max = 0;
 	for (size_t i = 0; i < ELEMENTSOF(level0_names); i++) {
 		int nr = seccomp_syscall_resolve_name(level0_names[i]);
 		if (nr == __NR_SCMP_ERROR)
@@ -2557,16 +1582,10 @@ bool filter_includes(int sysnum)
 			return true;
 		}
 	}
-
-	if (sydbox->config.restrict_general < 1)
-		return false;
-
-	for (size_t i = 0; i < max; i++)
-		if (sysnum == filter[i])
-			return true;
 	return false;
 }
 
+#if 0
 static int filter_open_readonly(void)
 {
 	int r;
@@ -2612,63 +1631,12 @@ static int filter_time(void)
 
 	return 0;
 }
-
-static int filter_rt_sigaction(void)
-{
-	int r;
-	int param[] = { SIGINT, SIGTERM, SIGPIPE, SIGUSR1, SIGUSR2, SIGHUP,
-		SIGCHLD, SIGSEGV, SIGILL, SIGFPE, SIGBUS, SIGSYS, SIGIO,
-#ifdef SIGXFSZ
-		SIGXFSZ
 #endif
-	};
-	uint32_t action = SCMP_ACT_ALLOW;
-
-	if (action == sydbox->seccomp_action)
-		return 0;
-
-	for (unsigned short i = 0; i < ELEMENTSOF(param); i++) {
-		syd_rule_add_return(sydbox->ctx, action,
-				    SCMP_SYS(rt_sigaction), 1,
-				    SCMP_CMP32(0, SCMP_CMP_EQ, param[i]));
-	}
-
-	return 0;
-}
 
 static int filter_general_level_0(void)
 {
 	int r;
 
-#if 0
-	/* Note, seccomp returns EEXIST if the rule already exists,
-	 * and EACCES when one attempts to add a rule with the same
-	 * action as the default action, ie the rule is redundant.
-	 * EINVAL is returned when the system call is invalid.
-	 * We do not error in these three cases and resume operation.
-	 */
-	for (unsigned i = 0; i < ELEMENTSOF(deny_list_level0); i++) {
-		syd_rule_add(sydbox->ctx, SCMP_ACT_ERRNO(ECANCELED),
-			     deny_list_level0[i], 0);
-		if (r &&
-		    r != -EEXIST &&
-		    r != -EACCES &&
-		    r != -EINVAL &&
-		    r != -EFAULT) {
-			char *name;
-			name = seccomp_syscall_resolve_num_arch(deny_list_level0[i],
-								SCMP_ARCH_NATIVE);
-			errno = -r;
-			say_errno("Sandbox failed to add syscall index %d (NR=%d) "
-				  "name \"%s\" to Level 0. Received libseccomp error",
-				  i, deny_list_level0[i],
-				  name ? name : "?");
-			if (name)
-				free(name);
-			return r;
-		}
-	}
-#endif
 	for (unsigned i = 0; i < ELEMENTSOF(allow_list_level0); i++) {
 		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, allow_list_level0[i],
 			     0);
@@ -2690,6 +1658,27 @@ static int filter_general_level_0(void)
 			return r;
 		}
 	}
+	for (unsigned i = 0; i < ELEMENTSOF(deny_list_level0); i++) {
+		syd_rule_add(sydbox->ctx, SCMP_ACT_KILL, deny_list_level0[i],
+			     0);
+		if (r &&
+		    r != -EEXIST &&
+		    r != -EACCES &&
+		    r != -EINVAL &&
+		    r != -EFAULT) {
+			char *name;
+			name = seccomp_syscall_resolve_num_arch(deny_list_level0[i],
+								SCMP_ARCH_NATIVE);
+			errno = -r;
+			say_errno("Sandbox failed to add syscall index %d (NR=%d) "
+				  "name \"%s\" to Level 0. Received libseccomp error",
+				  i, deny_list_level0[i],
+				  name ? name : "?");
+			if (name)
+				free(name);
+			return r;
+		}
+	}
 
 	/*
 	 * ++ Restricting process memory read/write operations.
@@ -2700,17 +1689,9 @@ static int filter_general_level_0(void)
 	 * unconditionally disallows access to /proc/$pid/mem for both read
 	 * and write based open calls.
 	 */
-	/*
-	 * FIXME: Load these two calls below outside libseccomp,
-	 * as they are not supported yet, hence the __SNR
-	 * rather than the __NR ifdef check below.
-	 */
-#ifdef __SNR_process_madvise
-	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EFAULT),
-			    __NR_process_madvise, 0);
-#endif
-#ifdef __SNR_pidfd_getfd
-	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+
+#ifndef __SNR_pidfd_getfd
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_KILL,
 			    __NR_pidfd_getfd, 0);
 #endif
 	if (use_notify()) {
@@ -2760,27 +1741,6 @@ static int filter_general_level_0(void)
 		}
 #endif /* __NR_pidfd_send_signal */
 
-		const pid_t protect_pids[] = {
-			sydbox->execve_pid,
-			sydbox->sydbox_pid,
-			INT_MAX,
-		};
-		for (size_t i = 0; protect_pids[i] != INT_MAX; i++) {
-			pid_t pid = protect_pids[i];
-#ifdef __NR_process_vm_readv
-			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
-					    SCMP_SYS(process_vm_readv), 1,
-					    SCMP_A0_64( SCMP_CMP_EQ,
-							pid ));
-#endif
-#ifdef __NR_process_vm_writev
-			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
-					    SCMP_SYS(process_vm_writev), 1,
-					    SCMP_A0_64( SCMP_CMP_EQ,
-							pid ));
-#endif
-		}
-
 		static const int kill_calls[] = {
 			SCMP_SYS(kill),
 			SCMP_SYS(tkill),
@@ -2828,6 +1788,9 @@ static int filter_general_level_0(void)
 				  sydbox->sydbox_pid, SCMP_SYS(tgkill));
 		}
 	}
+	syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, SCMP_SYS(tgkill), 0);
+	syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, SCMP_SYS(tkill), 0);
+	syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, SCMP_SYS(kill), 0);
 
 	/*
 	 * ++ Restricting system calls with user/group ID arguments.
@@ -3007,9 +1970,15 @@ static int filter_general_level_0(void)
 		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL),
 				    SCMP_SYS(setuid), 1,
 				    SCMP_A0_32( SCMP_CMP_LE, SYD_UID_MIN, SYD_UID_MIN ));
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL),
+				    SCMP_SYS(setuid32), 1,
+				    SCMP_A0_32( SCMP_CMP_LE, SYD_UID_MIN, SYD_UID_MIN ));
 	} else {
 		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
 				    SCMP_SYS(setuid), 1,
+				    SCMP_A0_32( SCMP_CMP_NE, user_uid, user_uid ));
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+				    SCMP_SYS(setuid32), 1,
 				    SCMP_A0_32( SCMP_CMP_NE, user_uid, user_uid ));
 	}
 
@@ -3019,12 +1988,22 @@ static int filter_general_level_0(void)
 		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL),
 				    SCMP_SYS(setgid), 1,
 				    SCMP_A0_32( SCMP_CMP_LE, SYD_GID_MIN, SYD_GID_MIN ));
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EINVAL),
+				    SCMP_SYS(setgid32), 1,
+				    SCMP_A0_32( SCMP_CMP_LE, SYD_GID_MIN, SYD_GID_MIN ));
 	} else {
 		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
 				    SCMP_SYS(setuid), 1,
 				    SCMP_A0_32( SCMP_CMP_NE, user_gid, user_gid ));
+		syd_rule_add_return(sydbox->ctx, SCMP_ACT_ERRNO(EPERM),
+				    SCMP_SYS(setuid32), 1,
+				    SCMP_A0_32( SCMP_CMP_NE, user_gid, user_gid ));
 	}
 skip_restrict_id:
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW, SCMP_SYS(setuid), 0);
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW, SCMP_SYS(setuid32), 0);
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid), 0);
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid32), 0);
 
 	/* Restrict get_random and block GRND_RANDOM to prevent the sandboxed
 	 * process from exhausting the system entropy.
@@ -3035,128 +2014,7 @@ skip_restrict_id:
 			    SCMP_SYS(getrandom), 1,
 			    SCMP_A2_64( SCMP_CMP_MASKED_EQ,
 					GRND_RANDOM, GRND_RANDOM));
-
-	return 0;
-}
-
-static int filter_general_level_1(void)
-{
-	int r;
-
-	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level1); i++) {
-		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, filter_gen_level1[i],
-			     0);
-		if (r && r != -EEXIST && r != -EACCES && r != -EINVAL) {
-			char *name;
-			name = seccomp_syscall_resolve_num_arch(filter_gen_level1[i],
-								SCMP_ARCH_NATIVE);
-			errno = -r;
-			say_errno("Sandbox failed to add syscall index %d (NR=%d) "
-				  "name \"%s\" to Level 1. Received libseccomp error",
-				  i, filter_gen_level1[i],
-				  name ? name : "?");
-			if (name)
-				free(name);
-			return r;
-		}
-	}
-
-	if ((r = filter_open_readonly()) < 0)
-		return r;
-
-	return 0;
-}
-
-static int filter_general_level_2(void)
-{
-	int r;
-
-	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level2); i++) {
-		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, filter_gen_level2[i],
-			     0);
-		if (r && r != -EEXIST && r != -EACCES && r != -EINVAL) {
-			char *name;
-			name = seccomp_syscall_resolve_num_arch(filter_gen_level2[i],
-								SCMP_ARCH_NATIVE);
-			errno = -r;
-			say_errno("Sandbox failed to add syscall index %d (NR=%d) "
-				  "name \"%s\" to Level 2. Received libseccomp error",
-				  i, filter_gen_level2[i],
-				  name ? name : "?");
-			if (name)
-				free(name);
-			return r;
-		}
-	}
-
-#ifdef __NR_newfstatat
-	// Libc 2.33 uses this syscall to implement both fstat() and stat().
-	//
-	// The trouble is that to implement fstat(fd, &st), it calls:
-	//     newfstatat(fs, "", &st, AT_EMPTY_PATH)
-	// We can't detect this usage in particular, because "" is a pointer
-	// we don't control.  And we can't just look for AT_EMPTY_PATH, since
-	// AT_EMPTY_PATH only has effect when the path string is empty.
-	//
-	// So our only solution seems to be allowing all fstatat calls, which
-	// means that an attacker can stat() anything on the filesystem. That's
-	// not a great solution, but I can't find a better one.
-	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW,
-			    SCMP_SYS(newfstatat), 0);
-#endif
-
-	if ((r = filter_time()) < 0)
-		return r;
-	if ((r = filter_rt_sigaction()) < 0)
-		return r;
-
-	return 0;
-}
-
-static int filter_general_level_3(void)
-{
-	int r;
-
-	for (unsigned i = 0; i < ELEMENTSOF(filter_gen_level3); i++) {
-		syd_rule_add(sydbox->ctx, SCMP_ACT_ALLOW, filter_gen_level3[i],
-			     0);
-		if (r && r != -EEXIST && r != -EACCES && r != -EINVAL) {
-			char *name;
-			name = seccomp_syscall_resolve_num_arch(filter_gen_level3[i],
-								SCMP_ARCH_NATIVE);
-			errno = -r;
-			say_errno("Sandbox failed to add syscall index %d (NR=%d) "
-				  "name \"%s\" to Level 3. Received libseccomp error",
-				  i, filter_gen_level3[i],
-				  name ? name : "?");
-			if (name)
-				free(name);
-			return r;
-		}
-	}
-
-#ifdef __NR_newfstatat
-	// Libc 2.33 uses this syscall to implement both fstat() and stat().
-	//
-	// The trouble is that to implement fstat(fd, &st), it calls:
-	//     newfstatat(fs, "", &st, AT_EMPTY_PATH)
-	// We can't detect this usage in particular, because "" is a pointer
-	// we don't control.  And we can't just look for AT_EMPTY_PATH, since
-	// AT_EMPTY_PATH only has effect when the path string is empty.
-	//
-	// So our only solution seems to be allowing all fstatat calls, which
-	// means that an attacker can stat() anything on the filesystem. That's
-	// not a great solution, but I can't find a better one.
-	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW,
-			    SCMP_SYS(newfstatat), 0);
-#endif
-
-	if ((r = filter_open_readonly()) < 0)
-		return r;
-	if ((r = filter_time()) < 0)
-		return r;
-	if ((r = filter_rt_sigaction()) < 0)
-		return r;
+	syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW, SCMP_SYS(getrandom), 0);
 
 	return 0;
 }
@@ -3177,19 +2035,6 @@ int filter_general(void)
 		for (unsigned int i = 0; i < ELEMENTSOF(allow_calls); i++)
 			syd_rule_add_return(sydbox->ctx, SCMP_ACT_ALLOW,
 					    allow_calls[i], 0);
-	}
-
-	switch (sydbox->config.restrict_general) {
-	case 0:
-		break;
-	case 1:
-		return filter_general_level_1();
-	case 2:
-		return filter_general_level_2();
-	case 3:
-		return filter_general_level_3();
-	default:
-		return -EINVAL;
 	}
 
 	/*

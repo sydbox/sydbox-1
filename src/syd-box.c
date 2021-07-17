@@ -304,7 +304,7 @@ static int seccomp_setup(void)
 	else
 		sydbox->seccomp_action = SCMP_ACT_ALLOW;
 	*/
-	sydbox->seccomp_action = SCMP_ACT_ERRNO(EOWNERDEAD);
+	sydbox->seccomp_action = SCMP_ACT_LOG;
 	if (!(sydbox->ctx = seccomp_init(sydbox->seccomp_action)))
 		die_errno("seccomp_init");
 	if ((r = seccomp_attr_set(sydbox->ctx, SCMP_FLTATR_CTL_NNP, 1)) < 0)
