@@ -41,8 +41,6 @@ static void syd_hash_xxh64_init(void);
 static void syd_hash_xxh32_init(void);
 static XXH64_state_t *state64;
 static XXH32_state_t *state32;
-static bool state64_init;
-static bool state32_init;
 
 #define SYD_PATH_TO_HEX_BUFSZ (65536) /* best so far goes over 2G/s with xxh64. */
 static char glob_buf[SYD_PATH_TO_HEX_BUFSZ];
@@ -60,12 +58,7 @@ SYD_GCC_ATTR((nonnull(1)))
 uint32_t syd_name_to_xxh32_hex(const void *restrict buffer, size_t size,
 			       uint32_t seed, char *hex)
 {
-	if (!state32_init) {
-		syd_hash_xxh32_init();
-		state32_init = true;
-	}
-	if (!state32)
-		return -ECANCELED;
+	syd_hash_xxh32_init();
 
 	/* Initialize state with selected seed */
 	if (XXH32_reset(state32, seed) == XXH_ERROR)
@@ -110,13 +103,7 @@ SYD_GCC_ATTR((nonnull(1)))
 uint64_t syd_name_to_xxh64_hex(const void *restrict buffer, size_t size,
 			       uint64_t seed, char *hex)
 {
-	if (!state64_init) {
-		syd_hash_xxh64_init();
-		state64_init = true;
-	}
-	if (!state64)
-		return -ECANCELED;
-
+	syd_hash_xxh64_init();
 	/* Initialize state with selected seed */
 	if (XXH64_reset(state64, seed) == XXH_ERROR)
 		return 0;
@@ -165,14 +152,9 @@ bool syd_vrfy_xxh64_hex(const void *restrict buffer, size_t size,
 SYD_GCC_ATTR((nonnull(1)))
 int syd_file_to_xxh64_hex(FILE *file, uint64_t *digest, char *hex)
 {
-	int r = 0;
+	int r;
 
-	if (!state64_init) {
-		syd_hash_xxh64_init();
-		state64_init = true;
-	}
-	if (!state64)
-		return -ECANCELED;
+	syd_hash_xxh64_init();
 
 	/* Initialize state with selected seed */
 	XXH64_hash_t const seed = 1984;
@@ -180,6 +162,7 @@ int syd_file_to_xxh64_hex(FILE *file, uint64_t *digest, char *hex)
 		return -ENOTRECOVERABLE;
 
 	/* Feed the state with input data, any size, any number of times */
+	r = 0;
 	for (;;) {
 		errno = 0;
 		ssize_t nread = fread(glob_buf, 1, SYD_PATH_TO_HEX_BUFSZ, file);
@@ -216,12 +199,7 @@ int syd_file_to_xxh32_hex(FILE *file, uint32_t *digest, char *hex)
 {
 	int r = 0;
 
-	if (!state32_init) {
-		syd_hash_xxh32_init();
-		state32_init = true;
-	}
-	if (!state32)
-		return -ECANCELED;
+	syd_hash_xxh32_init();
 
 	/* Initialize state with selected seed */
 	XXH32_hash_t const seed = 2525;
