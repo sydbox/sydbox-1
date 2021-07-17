@@ -207,12 +207,12 @@ static const char *const syd_system_denylist[UINT8_MAX] = {
 	"**/kallsyms",
 	"**/kcore",
 	"**/swaps",
-	"**/version",
 	"**/log/*audit*",
 	"**/log/*auth*",
 	NULL,
 
 #if 0
+	"**/version",
 	"**/partitions*",
 	"**/devices*",
 	"**/locks*",
