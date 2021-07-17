@@ -137,8 +137,18 @@ int syd_ipc_main(int argc, char *const*argv)
 			die_errno("syd_ipc_kill");
 		}
 		return EXIT_SUCCESS;
+	} else if (!strcmp(cmd, "kill_add_match") ||
+		   !strcmp(cmd, "kill_rem_match")) {
+		if (!argc)
+			die("kill requires at least one argument.");
+		char addrem = !strcmp(cmd, "kill_add_match") ? '+' : '-';
+		for (int i = 1; i < argc; i++) {
+			if ((r = syd_ipc_kill_if_match(argv[i], addrem)) < 0) {
+				errno = -r;
+				die_errno("syd_ipc_kill_if_match");
+			}
+		}
 	}
-
 
 	return EXIT_SUCCESS;
 }

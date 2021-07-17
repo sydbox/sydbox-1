@@ -1505,13 +1505,6 @@ static void reap_zombies(void)
 #endif
 }
 
-static int process_send_signal(pid_t pid, int sig)
-{
-	if (kill(pid, sig) < 0)
-		return -errno;
-	return 0;
-}
-
 static inline size_t process_count_alive(void)
 {
 	size_t count = 0;
@@ -1527,16 +1520,6 @@ static inline size_t process_count_alive(void)
 	}
 
 	return count;
-}
-
-static bool process_kill(pid_t pid, int sig)
-{
-	int r;
-
-	if ((r = process_send_signal(pid, sig)) < 0)
-		return r == -ESRCH;
-	say_errno("pidfd_send_signal");
-	return false;
 }
 
 #if 0
@@ -1711,8 +1694,6 @@ static int event_clone(syd_process_t *current, const char clone_type,
 
 static int event_exec(syd_process_t *current)
 {
-	int r;
-	const char *match;
 
 	assert(current);
 
@@ -1729,31 +1710,16 @@ static int event_exec(syd_process_t *current)
 	current->flags |= SYD_IN_EXECVE;
 	current->execve_pid = current->pid;
 
+#if 0
 	if (!current->abspath) /* nothing left to do */
 		return 0;
-
-	/* kill_if_match */
-	r = 0;
-	if (acl_match_path(ACL_ACTION_NONE, &sydbox->config.exec_kill_if_match,
-			   current->abspath, &match)) {
-		say("kill_if_match pattern=»%s« matches execve path=»%s«",
-		    match, current->abspath);
-		say("killing process");
-		process_kill(current->pid, SIGKILL);
-		return -ESRCH;
-	}
-	/* execve path does not match if_match patterns */
-
-	if (magic_query_violation_raise_safe(current)) {
-		//say("execve: %d executed »%s«", current->pid, current->abspath);
-		dump(DUMP_EXEC, current->pid, current->abspath);
-	}
+#endif
 
 	//Intentionally not freeing to handle multithreaded execve. */
 	//free(current->abspath);
 	//current->abspath = NULL;
 
-	return r;
+	return 0;
 }
 
 static int event_syscall(syd_process_t *current)

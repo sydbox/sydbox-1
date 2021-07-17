@@ -272,6 +272,25 @@ static int do_execve(syd_process_t *current, bool at_func)
 	if (abspath) {
 		current->abspath = abspath;
 
+		/* kill_if_match */
+		r = 0;
+		const char *match;
+		if (acl_match_path(ACL_ACTION_NONE,
+				   &sydbox->config.exec_kill_if_match,
+				   current->abspath, &match)) {
+			say("kill_if_match pattern=»%s« matches execve path=»%s«",
+			    match, current->abspath);
+			say("killing process");
+			kill_one(current, SIGLOST);
+			return -ESRCH;
+		}
+		/* execve path does not match if_match patterns */
+
+		if (dump_enabled()) {
+			//say("execve: %d executed »%s«", current->pid, current->abspath);
+			dump(DUMP_EXEC, current->pid, current->abspath);
+		}
+
 		/*
 		 * Calculate the XXH64 & SHA1 checksums of the pathname
 		 * of the command to be executed by the process.
