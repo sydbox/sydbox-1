@@ -3091,8 +3091,10 @@ int main(int argc, char **argv)
 		die("options --monotonic and --boottime require "
 		    "unsharing of a time namespace (-t)");
 
-#if 0
 	const char *env;
+	if ((env = secure_getenv(SYDBOX_DUMP_ENV)))
+		dump_set_fd(2);
+#if 0
 	if ((env = secure_getenv(SYDBOX_CONFIG_ENV)))
 		config_parse_spec(env);
 #endif

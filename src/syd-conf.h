@@ -177,6 +177,10 @@
 # define SYDBOX_CONFIG_ENV "SYDBOX_CONFIG"
 #endif
 
+#ifndef SYDBOX_DUMP_ENV
+# define SYDBOX_DUMP_ENV "SYDBOX_DUMP"
+#endif
+
 #ifndef SYDBOX_MAGIC_PREFIX
 # define SYDBOX_MAGIC_PREFIX "/dev/sydbox"
 #endif
