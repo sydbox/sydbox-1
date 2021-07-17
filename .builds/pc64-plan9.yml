@@ -1,0 +1,9 @@
+image: 9front
+packages:
+- rsync
+sources:
+- https://git.sr.ht/~alip/sydbox
+tasks:
+- init: |
+    uname -a
+    mkdir root
