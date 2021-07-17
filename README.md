@@ -129,7 +129,7 @@ directory under »/tmp«, with read, write, exec and network sandboxing modes se
 »deny« but with **unlocked sandbox status** which is insecure but allows
 the user to configure the SydB☮x using the `stat(2)` IPC using the special
 »/dev/sydb☮x« device node. See `syd ipc --help` for details. Use `syd ipc lock`
-to **switch to secure mode** under SydB☮x or run SydB☮x with `sydbox --lock`
+to **switch to secure mode** under SydB☮x or run SydB☮x with `sydbox --lock`.
 
 **Secure Computing Mode**, also known as
 »[Seccomp](https://en.wikipedia.org/wiki/Seccomp)« allows the user to define
