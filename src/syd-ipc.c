@@ -97,6 +97,14 @@ int syd_ipc_main(int argc, char *const*argv)
 			die_errno("syd_ipc_lock");
 		}
 		return EXIT_SUCCESS;
+	} else if (!strcmp(cmd, "hash")) {
+		uint64_t hash;
+		if ((r = syd_ipc_hash(&hash)) < 0) {
+			errno = -r;
+			die_errno("syd_ipc_hash");
+		}
+		printf("%" syd_str(SYD_XXH64_HEXSZ) "lx /dev/sydb☮x\n", hash);
+		return EXIT_SUCCESS;
 	} else if (!strcmp(cmd, "status")) {
 		const char *status;
 		if ((r = syd_ipc_status(&status)) < 0) {

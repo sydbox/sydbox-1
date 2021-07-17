@@ -2272,11 +2272,11 @@ startup_child:
 
 		pid = sydbox->execve_pid;
 		current->pid = pid;
-		proc_validate(pid);
-		init_process_data(current, NULL, false); /* calls proc_cwd */
 		strlcpy(current->comm, sydbox->program_invocation_name,
 			SYDBOX_PROC_MAX);
 #if 0
+		proc_validate(pid);
+		init_process_data(current, NULL, false); /* calls proc_cwd */
 		syd_proc_cmdline(sydbox->pfd, current->prog, LINE_MAX-1);
 		current->prog[LINE_MAX-1] = '\0';
 #endif
