@@ -385,29 +385,6 @@ for other applications. It's installed under `$sharedir/sydbox/default.syd-2` wh
 `syd --lock` to disable this for a more real jail experience. Note in this
 mode `/dev/sydbox` is inaccessible.
 
-```
-$ syd
-There is no other day
-Let's try it another way
-You'll lose your mind and play
-Free games for may
-See Emily play
-
-I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ pandora sandbox check
-/dev/sydbox: OK
-I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ uname -a
-☮ sydb☮x 2.2.0 #2 ♡ GNU/Linux
-I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ hostname
-sydb☮x
-I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ cat /etc/passwd
-{"id":5,"ts":1625053319,"pid":520579,"event":{"id":15,"name":"☮☮ps"},"sys":"open","syd":"open(»/etc/passwd«)","comm":"cat","cmd":"cat /etc/passwd ","cwd":"/tmp/syd-2-1000-423516-FOBHci","ppid":423516,"tgid":520579,"proc":{"ppid":423517,"tgid":520579,"cwd":"/tmp/syd-2-1000-423516-FOBHci"}}
-cat: /etc/passwd: Operation not permitted
-I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $ cd /tmp
-{"id":9,"ts":1625053379,"pid":423517,"event":{"id":15,"name":"☮☮ps"},"sys":"chdir","syd":"chdir(»/tmp«)","comm":"bash","cmd":"bash --rcfile /usr/share/sydbox/sydbox.bashrc -i ","cwd":"/tmp/syd-2-1000-423516-FOBHci","ppid":0,"tgid":423517,"proc":{"ppid":423516,"tgid":423517,"cwd":"/tmp/syd-2-1000-423516-FOBHci"}}
-bash: cd: /tmp: Permission denied
-I have no name!@sydb☮x /tmp/syd-2-1000-423516-FOBHci $
-```
-
 **Here is a screenshot:**
 
 <a href="https://dev.exherbo.org/~alip/images/syd-shell.png">
