@@ -282,7 +282,8 @@ int box_resolve_path(const char *path, const char *prefix, pid_t tid,
 
 	if (path == NULL && prefix == NULL)
 		return -EINVAL;
-	if (path == NULL || path[0] == '\0')
+	if (path == NULL ||
+	    (path[0] == '\0' || (path[0] == '.' && path[1] == '\0')))
 		abspath = xstrdup(prefix);
 	else if (prefix == NULL)
 		abspath = xstrdup(path);
