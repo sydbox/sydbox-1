@@ -1054,12 +1054,11 @@ static void init_signal_sets(void)
 	sigaddset(&blocked_set, SIGWINCH);
 }
 
-#if 0
 static inline void allow_signals(void)
 {
 	sigprocmask(SIG_SETMASK, &empty_set, NULL);
 }
-#endif
+
 static inline void allow_interrupts(void)
 {
 	sigprocmask(SIG_UNBLOCK, &interrupt_set, NULL);
@@ -1091,8 +1090,6 @@ static void init_signals(void)
 	struct sigaction sa;
 
 	init_signal_sets();
-
-	block_signals(1);
 
 	/* Stop */
 	sa.sa_handler = SIG_IGN;
@@ -1288,14 +1285,10 @@ static int sig_child(void)
 			    SYD_WARN,
 			    interruptcode, op,
 			    (unsigned long)interruptstat);
-		bury_process(p, true);
-		goto reap;
 	}
 
-	if (p && process_is_zombie(p->pid)) {
+	if (p && process_is_zombie(p->pid))
 		bury_process(p, true);
-		goto reap;
-	}
 
 	for (;;) {
 		pid_t cpid;
@@ -1313,9 +1306,10 @@ static int sig_child(void)
 		}
 	}
 
-reap:
 	reap_zombies();
-	return (process_count_alive() == 0) ? ECHILD : 0;
+	if (!process_count_alive())
+		return ECHILD;
+	return 0;
 }
 
 static int handle_interrupt(int sig)
@@ -1754,19 +1748,28 @@ static int notify_loop()
 
 notify_receive:
 		memset(sydbox->request, 0, sizeof(struct seccomp_notif));
+		block_signals(1);
 		allow_interrupts();
 		r = seccomp_notify_receive(sydbox->notify_fd,
 					   sydbox->request);
+		block_signals(1);
 		if (interrupted && (intr = handle_interrupt(interrupted)))
 			break;
 		interrupted = 0;
-		block_signals(1);
+		if (interrupted_trap) {
+			handle_interrupt_trap(interrupted_trap);
+			//signal(SIGTRAP, SIG_DFL);
+		}
+		interrupted_trap = 0;
+		if (interrupted_reload)
+			handle_interrupt_reload(interrupted_reload);
+		interrupted_reload = 0;
 		if (r < 0) {
 			if (r == -EINTR)
 				goto notify_receive;
-			else if (r == -ECANCELED)
+			else if (r == -ECANCELED) {
 				break;
-			else if (r == -ENOENT || errno == ENOTTY) {
+			} else if (r == -ENOENT || errno == ENOTTY) {
 				/* If we didn't find a notification,
 				 * it could be that the task was
 				 * interrupted by a fatal signal between
@@ -2055,12 +2058,22 @@ pid_validate:
 			current->flags &= ~SYD_IN_EXECVE;
 
 notify_respond:
+		block_signals(1);
 		allow_interrupts();
 		r = seccomp_notify_respond(sydbox->notify_fd,
 					   sydbox->response);
+		block_signals(1);
 		if (interrupted && (intr = handle_interrupt(interrupted)))
 			break;
-		block_signals(1);
+		interrupted = 0;
+		if (interrupted_trap) {
+			handle_interrupt_trap(interrupted_trap);
+			//signal(SIGTRAP, SIG_DFL);
+		}
+		interrupted_trap = 0;
+		if (interrupted_reload)
+			handle_interrupt_reload(interrupted_reload);
+		interrupted_reload = 0;
 		if (r < 0) {
 			if (r == -EINTR || errno == EINTR)
 				goto notify_respond;
@@ -2107,22 +2120,6 @@ out:
 			jump = false;
 			break;
 		}
-		/* We handled quick cases, we are permitted to interrupt now. */
-		r = 0;
-		allow_interrupts();
-		if (interrupted && (r = handle_interrupt(interrupted))) {
-			break;
-		}
-		interrupted = 0;
-		if (interrupted_trap) {
-			handle_interrupt_trap(interrupted_trap);
-			//signal(SIGTRAP, SIG_DFL);
-		}
-		interrupted_trap = 0;
-		block_signals(1);
-		if (interrupted_reload)
-			handle_interrupt_reload(interrupted_reload);
-		interrupted_reload = 0;
 	}
 
 	seccomp_notify_free(sydbox->request, sydbox->response);
@@ -2136,6 +2133,8 @@ out:
 	 * vfork et al.
 	 */
 	kill_all(SIGLOST);
+
+	allow_signals();
 
 	return r;
 }
