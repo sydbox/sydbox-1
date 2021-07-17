@@ -382,8 +382,8 @@ int syd_ipc_lock(void);
  * of the /dev/sydbox magic device node. This hash is
  * currently an XXH64 hash.
  */
-int syd_ipc_hash(uint64_t *digest)
-	SYD_GCC_ATTR((nonnull(1)));
+int syd_ipc_hash(uint64_t *digest, char **hash)
+	SYD_GCC_ATTR((nonnull(1,2)));
 
 #define SYD_IPC_STATUS_MAX 6
 int syd_ipc_status(char const **status)

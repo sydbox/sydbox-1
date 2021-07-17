@@ -78,15 +78,18 @@ int syd_ipc_exec_lock(void)
 	return syd_stat("/dev/sydbox/core/trace/magic_lock:exec");
 }
 
-SYD_GCC_ATTR((nonnull(1)))
-int syd_ipc_hash(uint64_t *digest)
+static char syd_ipc_hash_buf[SYD_SHA1_HEXSZ+1];
+SYD_GCC_ATTR((nonnull(1,2)))
+int syd_ipc_hash(uint64_t *digest, char **hash)
 {
 	int r;
 	struct stat buf;
 
-	if ((r = syd_stat_buf("/dev/sydbox", &buf)) < 0)
+	syd_strlcpy(syd_ipc_hash_buf, "/dev/sydbox", sizeof("/dev/sydbox"));
+	if ((r = syd_stat_buf(syd_ipc_hash_buf, &buf)) < 0)
 		return r;
 	*digest = (uint64_t)buf.st_mtime;
+	*hash = syd_ipc_hash_buf;
 	return 0;
 }
 
