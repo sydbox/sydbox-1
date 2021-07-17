@@ -146,8 +146,9 @@ which are one of
 - [pathname](https://en.wikipedia.org/wiki/Path_(computing)),
 - [UNIX socket address](https://en.wikipedia.org/wiki/Unix_domain_socket),
 - [IPv4](https://en.wikipedia.org/wiki/IPv4) or
-- [IPv6](https://en.wikipedia.org/wiki/IPv6)
-network address -- and make dynamic decisions
+- [IPv6](https://en.wikipedia.org/wiki/IPv6) network address --
+
+and make dynamic decisions
 using `rsync`-like [wildcards](https://en.wikipedia.org/wiki/Wildcard_character)
 such as
 [`allowlist/write+/home/sydbox/***`](https://sydbox.exherbo.org/#pattern-matching)
