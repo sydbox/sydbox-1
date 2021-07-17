@@ -186,7 +186,6 @@ SYD_CFLAGS_SAFE=" \
 SYD_CFLAGS_DEBUG=" \
 -D_SYD_DEBUG \
 -g -gdwarf-4 \
--gz=zlib \
 -mfentry \
 -mrecord-mcount \
 -D_SYD_DEBUG_OK \
