@@ -1060,6 +1060,11 @@ static inline void allow_interrupts(void)
 {
 	sigprocmask(SIG_UNBLOCK, &interrupt_set, NULL);
 }
+static inline void block_interrupts(int on)
+{
+	if (on)
+		sigprocmask(SIG_BLOCK, &interrupt_set, NULL);
+}
 static inline void block_signals(int on)
 {
 	if (on)
@@ -2230,14 +2235,7 @@ static syd_process_t *startup_child(int argc, char **argv)
 
 	/* Set up the signal handler so that we get exit notification. */
 	init_sigchild();
-	/*
-	 * We want to be absolutely safe
-	 * against interrupts to the best
-	 * we can.
-	 * This initialises the signal sets
-	 * and blocks all signals.
-	 */
-	block_signals(1);
+	block_interrupts(1);
 
 	/*
 	 * Mark SydB☮x's process id so that the seccomp filtering can
