@@ -562,9 +562,11 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent,
 	if (parent) {
 		current->execve_pid = parent->execve_pid;
 		current->xxh = parent->xxh;
+		syd_strlcpy(current->hash, parent->hash, SYD_SHA1_HEXSZ+1);
 		copy_sandbox(P_BOX(current), P_BOX(parent));
 	} else {
 		current->xxh = sydbox->xxh;
+		syd_strlcpy(current->hash, sydbox->hash, SYD_SHA1_HEXSZ+1);
 		copy_sandbox(P_BOX(current), box_current(NULL));
 	}
 	if (P_BOX(current)->magic_lock == LOCK_SET)
